@@ -4,19 +4,18 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { parseArgs } from "node:util";
 import vm from "node:vm";
 
 import { transformAsync } from "@babel/core";
 import { build } from "esbuild";
 
-import { AvailabilityChecker } from "./availability.mjs";
-import { tr } from "./i18n.mjs";
-import { loadEnvironment, metro } from "./metro.mjs";
-import { parseVersion, versionAtLeast } from "./version.mjs";
+import { AvailabilityChecker } from "./availability.ts";
+import { tr } from "./i18n.ts";
+import { loadEnvironment, metro } from "./metro.ts";
+import { parseVersion, versionAtLeast } from "./version.ts";
 
 const { version } = JSON.parse(
-  fs.readFileSync(new URL("package.json", import.meta.url), "utf8"),
+  fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
 const require = createRequire(import.meta.url);
 const { peerDependencies } = require("@swipt/api/package.json");
@@ -531,7 +530,7 @@ function evaluateExtension(source, availableResult) {
     context,
     { filename: "extension.js" },
   );
-  const module = { exports: {} };
+  const module: { exports: any } = { exports: {} };
   factory(
     (specifier) => {
       if (!Object.hasOwn(modules, specifier)) {
@@ -571,7 +570,7 @@ function evaluateExtension(source, availableResult) {
     return converter[side]({ target: "draft-2020-12" });
   };
   const actions = Object.entries(definition.actions ?? {}).map(
-    ([name, action]) => {
+    ([name, action]: [string, any]) => {
       if (typeof action?.title !== "string" || action.title === "") {
         throw new Error(
           tr("the action {action} needs a title", {
@@ -630,7 +629,7 @@ const sourceFiles = (output) => ({
   ...(output.extension ? { "extension.js": output.extension } : {}),
 });
 
-export async function buildProject(root, checker) {
+export async function buildProject(root, checker?) {
   const project = loadProject(root);
   const output = await bundle(project);
   if (checker === undefined) {

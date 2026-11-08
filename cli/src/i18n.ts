@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const locales = new URL("locales/", import.meta.url);
+const locales = new URL("../locales/", import.meta.url);
 
 const languages = new Set([
   "en",
@@ -61,7 +61,7 @@ const messages =
 
 const pluralRules = new Intl.PluralRules(language);
 
-export function tr(key, values = {}) {
+export function tr(key, values: Record<string, any> = {}) {
   const message = messages[key] ?? key;
   const text =
     typeof message === "string"

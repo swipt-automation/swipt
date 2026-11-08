@@ -1,4 +1,9 @@
-import { execFile, execFileSync, spawn } from "node:child_process";
+import {
+  type StdioOptions,
+  execFile,
+  execFileSync,
+  spawn,
+} from "node:child_process";
 import { X509Certificate, createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -11,13 +16,13 @@ import { promisify } from "node:util";
 import password from "@inquirer/password";
 import select from "@inquirer/select";
 
-import { UsageError, open } from "./client.mjs";
+import { UsageError, open } from "./client.ts";
 import {
   findPublished,
   runningSwipt,
   tryUnlock,
   withToken,
-} from "./connection.mjs";
+} from "./connection.ts";
 import {
   apps,
   configureGuest,
@@ -34,8 +39,8 @@ import {
   serverPath,
   terminateApp,
   uninstallApp,
-} from "./coredevice.mjs";
-import { language, tr } from "./i18n.mjs";
+} from "./coredevice.ts";
+import { language, tr } from "./i18n.ts";
 import {
   choose,
   columns,
@@ -43,7 +48,7 @@ import {
   printScriptError,
   selectTheme,
   step,
-} from "./output.mjs";
+} from "./output.ts";
 import { LogLevel } from "./proto/common_pb.js";
 
 const exec = promisify(execFile);
@@ -154,7 +159,7 @@ async function github(url, accept, signal) {
     if ([401, 403, 429].includes(response.status)) {
       message += `; ${process.env.GITHUB_TOKEN ? "GITHUB_TOKEN" : "set GITHUB_TOKEN to a token that"} must read the repository and stay under the rate limit`;
     }
-    const error = new Error(message);
+    const error: Error & { status?: number } = new Error(message);
     error.status = response.status;
     throw error;
   }
@@ -162,7 +167,7 @@ async function github(url, accept, signal) {
 }
 
 async function findRelease(nightly, signal) {
-  const read = async (name) =>
+  const read = async (name): Promise<any> =>
     (
       await github(
         `https://api.github.com/repos/${repository}/releases/${name}`,
@@ -185,7 +190,7 @@ async function findRelease(nightly, signal) {
     }
     return found;
   };
-  const metadata = await (
+  const metadata: any = await (
     await github(asset("metadata.json").url, "application/octet-stream", signal)
   ).json();
   return {
@@ -416,7 +421,7 @@ async function provision(work, id, team, device, update) {
     }
   };
   const certificates = path.join(work, "certificate");
-  const stdio = ["ignore", "pipe", "ignore"];
+  const stdio: StdioOptions = ["ignore", "pipe", "ignore"];
   const extract = () =>
     execFileSync(
       "codesign",
@@ -484,7 +489,7 @@ async function resign(app, id, signing, update) {
           info,
         ],
         { stdio: "pipe" },
-      ),
+      ) as unknown as string,
     );
   } catch (error) {
     if (!plistValueMissing.test(error.stderr)) {
@@ -591,7 +596,9 @@ function xcodeSignedIn() {
         },
       ),
     );
-    return Object.values(lists).some((accounts) => accounts.length > 0);
+    return Object.values(lists).some(
+      (accounts: unknown[]) => accounts.length > 0,
+    );
   } catch (error) {
     if (plistValueMissing.test(error.stderr)) {
       return false;
@@ -745,7 +752,7 @@ async function signingPeriod(device, id, team) {
 function expirationText(time) {
   const hours = (time - Date.now()) / 3_600_000;
   const days = Math.round(hours / 24);
-  const [value, unit] =
+  const [value, unit]: [number, Intl.RelativeTimeFormatUnit] =
     hours < 24
       ? [Math.max(Math.round(hours), 1), "hour"]
       : days < 7
@@ -761,7 +768,7 @@ function expirationText(time) {
 }
 
 async function askPasscode(context) {
-  const type = await select(
+  const type = await select<string | null>(
     {
       message: tr(
         "Set up auto-unlock? Swipt can then unlock this device by itself",
@@ -797,7 +804,7 @@ async function askPasscode(context) {
       await password(
         {
           message: tr("Device passcode"),
-          theme: { i18n: { maskedText: tr("[input is masked]") } },
+          theme: { i18n: { maskedText: tr("[input is masked]") } } as any,
           validate(passcode) {
             try {
               passcodeOf(options(passcode));
@@ -943,7 +950,11 @@ async function mountDiskImage(context, device, app) {
   }
 }
 
-async function deploy(context, { device, team, current }, updateOnly) {
+async function deploy(
+  context,
+  { device, team, current }: { device: any; team?: any; current: any },
+  updateOnly,
+) {
   const passcode = await installPasscode(context, device, current);
   const release = await step(
     tr("checking the latest release"),
@@ -1193,7 +1204,14 @@ async function printAPI(context, device) {
   );
 }
 
-async function openConfigured(context, device, id, passcode, updated, app) {
+async function openConfigured(
+  context,
+  device,
+  id,
+  passcode,
+  updated?,
+  app?,
+) {
   const publishes = !context.options["no-setup-api"];
   if (device.virtual) {
     await step(
@@ -1236,7 +1254,7 @@ async function openConfigured(context, device, id, passcode, updated, app) {
   }
 }
 
-async function launch(device, id, args) {
+async function launch(device, id, args?) {
   try {
     await step(tr("opening Swipt on {device}", { device: device.name }), () =>
       launchApp(device, id, args),
@@ -1477,7 +1495,7 @@ async function serve(udid, passcode, signal, diskImage) {
   });
   const exited = new Promise((resolve) => server.once("close", resolve));
   const url = new Promise((resolve, reject) => {
-    server.once("error", (error) =>
+    server.once("error", (error: NodeJS.ErrnoException) =>
       reject(error.code === "ENOENT" ? new Error(serverHint) : error),
     );
     exited.then((code) =>
@@ -1594,7 +1612,7 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
             for await (const response of client.repl.execute(
               {
                 code: fs.readFileSync(
-                  new URL("sideload/trust.js", import.meta.url),
+                  new URL("../sideload/trust.js", import.meta.url),
                   "utf8",
                 ),
                 args: [trustMessages, ...args],

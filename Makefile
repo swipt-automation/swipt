@@ -20,7 +20,7 @@ encodings:
 	cd $(RUNTIME) && bun encodings.mjs
 
 proto:
-	rm -rf cli/proto
+	rm -rf cli/src/proto
 	node_modules/.bin/buf generate
 
 $(RUNTIME_BUNDLE): $(RUNTIME_BUNDLE_INPUTS)

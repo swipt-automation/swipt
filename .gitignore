@@ -5,3 +5,4 @@ xcuserdata/
 /build/
 node_modules/
 /.next/
+/cli/dist/

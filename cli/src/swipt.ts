@@ -2,19 +2,41 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { Code, RpcError, UsageError } from "./client.mjs";
-import * as connection from "./connection.mjs";
-import * as device from "./device.mjs";
-import { tr } from "./i18n.mjs";
-import { FalseResult } from "./output.mjs";
-import { buildProject, createCommand, sourceCommand } from "./project.mjs";
-import * as sideload from "./sideload.mjs";
+import { Code, RpcError, UsageError } from "./client.ts";
+import * as connection from "./connection.ts";
+import * as device from "./device.ts";
+import { tr } from "./i18n.ts";
+import { FalseResult } from "./output.ts";
+import { buildProject, createCommand, sourceCommand } from "./project.ts";
+import * as sideload from "./sideload.ts";
 
-const globalOptions = {
+interface Option {
+  type: "string" | "boolean";
+  short?: string;
+  value?: string;
+  help: string;
+}
+
+type Options = Record<string, Option>;
+
+interface Command {
+  name: string;
+  use?: string;
+  short: string;
+  description?: string[];
+  args?: [least: number, most: number];
+  options?: Options;
+  commands?: Command[];
+  passthrough?: (word: string) => boolean;
+  parse?: (values: Record<string, any>) => Record<string, any>;
+  run?: (context: any) => unknown;
+}
+
+const globalOptions: Options = {
   help: { type: "boolean", short: "h", help: tr("help") },
 };
 
-const deviceOption = {
+const deviceOption: Options = {
   device: {
     type: "string",
     short: "d",
@@ -23,7 +45,7 @@ const deviceOption = {
   },
 };
 
-const sideloadOptions = {
+const sideloadOptions: Options = {
   device: {
     type: "string",
     short: "d",
@@ -37,7 +59,7 @@ const sideloadOptions = {
   },
 };
 
-const passcodeOptions = (help) => ({
+const passcodeOptions = (help): Options => ({
   passcode: { type: "string", value: "CODE", help },
   "passcode-type": {
     type: "string",
@@ -46,11 +68,11 @@ const passcodeOptions = (help) => ({
   },
 });
 
-const nightlyOption = {
+const nightlyOption: Options = {
   nightly: { type: "boolean", help: tr("use nightly build") },
 };
 
-const setupStepOptions = {
+const setupStepOptions: Options = {
   "no-setup-pair": { type: "boolean", help: tr("do not pair Swipt") },
   "no-setup-api": {
     type: "boolean",
@@ -58,7 +80,7 @@ const setupStepOptions = {
   },
 };
 
-const setupOptions = {
+const setupOptions: Options = {
   "no-setup": {
     type: "boolean",
     help: tr("do not pair Swipt, trust its developer or publish its API"),
@@ -116,7 +138,7 @@ function parseCount(text, option) {
   return Number(text);
 }
 
-const dataCommands = (operand, files) => {
+const dataCommands = (operand, files): Command => {
   const before = operand === "" ? 0 : 1;
   return {
     name: "data",
@@ -176,7 +198,7 @@ const dataCommands = (operand, files) => {
   };
 };
 
-const commands = [
+const commands: Command[] = [
   {
     name: "project",
     short: tr("Make, build and deploy swiplet projects"),
@@ -471,13 +493,13 @@ const commands = [
   },
 ];
 
-const root = {
+const root: Command = {
   name: "swipt",
   short: tr("Swipt CLI"),
   commands,
 };
 
-const parseOptions = (options) =>
+const parseOptions = (options: Options) =>
   Object.fromEntries(
     Object.entries(options ?? {}).map(([name, option]) => [
       name,
@@ -485,7 +507,7 @@ const parseOptions = (options) =>
     ]),
   );
 
-function allOptions(command, collected = {}) {
+function allOptions(command: Command, collected = {}) {
   Object.assign(collected, parseOptions(command.options));
   for (const child of command.commands ?? []) {
     allOptions(child, collected);
@@ -493,7 +515,7 @@ function allOptions(command, collected = {}) {
   return collected;
 }
 
-function usage(trail) {
+function usage(trail: Command[]) {
   const command = trail.at(-1);
   const name = trail.map((it) => it.name).join(" ");
   const lines = [command.short, ""];
@@ -524,7 +546,7 @@ function usage(trail) {
   if (command.description) {
     lines.push("", ...command.description);
   }
-  const options = {
+  const options: Options = {
     ...trail.reduce((found, it) => ({ ...found, ...it.options }), {}),
     ...globalOptions,
   };
@@ -584,7 +606,7 @@ function resolve(argv) {
     consumed++;
   }
   const command = trail.at(-1);
-  const options = trail.reduce(
+  const options: Options = trail.reduce(
     (found, it) => ({ ...found, ...it.options }),
     {},
   );
@@ -641,7 +663,7 @@ function resolve(argv) {
   return { trail, help, args, values: parsed.values };
 }
 
-function printError(error, target, operation) {
+function printError(error, target, operation?) {
   let exit = 1;
   let message = error.message;
   if (error instanceof UsageError) {

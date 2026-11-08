@@ -9,14 +9,24 @@
   },
   "type": "module",
   "bin": {
-    "swipt": "swipt.mjs"
+    "swipt": "./dist/swipt.js"
+  },
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "*.mjs",
+    "dist",
     "locales",
-    "proto",
     "sideload"
   ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -43,5 +53,9 @@
   "optionalDependencies": {
     "@swipt/server-darwin-arm64": "0.1.0",
     "@swipt/server-darwin-x64": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsdown": "^0.23.7"
   }
 }

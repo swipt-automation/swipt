@@ -7,9 +7,9 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { label, sameName } from "./connection.mjs";
-import { tr } from "./i18n.mjs";
-import { choose, interactive, step } from "./output.mjs";
+import { label, sameName } from "./connection.ts";
+import { tr } from "./i18n.ts";
+import { choose, interactive, step } from "./output.ts";
 
 const exec = promisify(execFile);
 
@@ -60,10 +60,7 @@ export const serverHint = tr(
 );
 
 export function serverPath() {
-  const built = path.join(
-    path.dirname(import.meta.dirname),
-    "build/swipt-server",
-  );
+  const built = path.resolve(import.meta.dirname, "../../build/swipt-server");
   if (fs.existsSync(built)) {
     return built;
   }
@@ -107,7 +104,7 @@ async function guest(device, args) {
 }
 
 function callGuest(device, method, params = {}) {
-  return new Promise((resolve, reject) => {
+  return new Promise<any>((resolve, reject) => {
     const socket = net.createConnection(device.socket, () =>
       socket.write(`${JSON.stringify({ t: "rpc", method, params })}\n`),
     );
@@ -117,7 +114,7 @@ function callGuest(device, method, params = {}) {
       if (chunk.includes(10)) {
         socket.destroy();
         try {
-          const reply = JSON.parse(Buffer.concat(chunks));
+          const reply = JSON.parse(Buffer.concat(chunks) as unknown as string);
           if (reply.ok) {
             resolve(reply.result);
           } else {
@@ -174,7 +171,12 @@ const reachability = tr(
 const deviceLine = (device) =>
   `  ${device.name}  ${device.udid}${device.offline ? `  ${tr("(offline)")}` : ""}`;
 
-async function findDevice(context, { required = true, filter }) {
+interface DeviceQuery {
+  required?: boolean;
+  filter?: (devices: any[]) => Promise<any[]> | any[];
+}
+
+async function findDevice(context, { required = true, filter }: DeviceQuery) {
   const given = context.options.device;
   const [listed, virtual] = await step(
     tr("looking for devices"),
@@ -345,7 +347,7 @@ async function launchOnGuest(device, id) {
 export const configureGuest = (device, id, name) =>
   guest(device, ["configure", id, name]);
 
-export async function coreDevice(context, options = {}) {
+export async function coreDevice(context, options: DeviceQuery = {}) {
   const device = await findDevice(context, options);
   if (device.virtual) {
     await step(

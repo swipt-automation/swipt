@@ -3,16 +3,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-import { apps, coreDevice } from "@swipt/cli/coredevice.mjs";
-import { FalseResult } from "@swipt/cli/output.mjs";
+import { apps, coreDevice } from "@swipt/cli/coredevice";
+import { FalseResult } from "@swipt/cli/output";
 import {
   bundleId,
   installAndOpen,
   installPasscode,
-} from "@swipt/cli/sideload.mjs";
+} from "@swipt/cli/sideload";
 
-import { buildExpoModulesCore } from "./expo-modules-core.mjs";
-import { syncLocales } from "./strings.mjs";
+import { buildExpoModulesCore } from "./expo-modules-core.ts";
+import { syncLocales } from "./strings.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = path.join(
@@ -24,7 +24,7 @@ const interrupt = new AbortController();
 process.on("SIGINT", () => interrupt.abort());
 process.env.PATH = `${path.join(root, "build")}${path.delimiter}${process.env.PATH}`;
 
-function run(command, args, env) {
+function run(command, args, env?) {
   const result = spawnSync(command, args, {
     cwd: root,
     env: { ...process.env, ...env },

@@ -27,7 +27,9 @@ export const Code = {
 export class UsageError extends Error {}
 
 export class RpcError extends Error {
-  constructor(code, message) {
+  declare code: number;
+
+  constructor(code: number, message?: string) {
     super(message);
     this.code = code;
   }
@@ -96,6 +98,7 @@ function parseMetadata(body) {
 }
 
 class FrameReader {
+  declare schema: any;
   pending = Buffer.alloc(0);
 
   constructor(schema) {
@@ -144,7 +147,10 @@ function checkStatus(headers) {
 }
 
 function requestHeaders(connection) {
-  const headers = { "content-type": contentType, "x-grpc-web": "1" };
+  const headers: Record<string, string> = {
+    "content-type": contentType,
+    "x-grpc-web": "1",
+  };
   if (connection.token !== "") {
     headers.authorization = `Bearer ${connection.token}`;
   }
@@ -210,7 +216,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   let failure;
   let closed = false;
   let headersSeen = false;
-  let wake = () => {};
+  let wake: (value?: unknown) => void = () => {};
   const notify = () => {
     const current = wake;
     wake = () => {};
@@ -335,13 +341,16 @@ async function single(iterable) {
   return found;
 }
 
-function bind(service, connection) {
-  const client = {};
+function bind(service, connection): Record<string, any> {
+  const client: Record<string, any> = {};
   for (const method of service.methods) {
     const streamsInput =
       method.methodKind === "client_streaming" ||
       method.methodKind === "bidi_streaming";
-    client[method.localName] = (input, options = {}) => {
+    client[method.localName] = (
+      input,
+      options: { signal?: AbortSignal } = {},
+    ) => {
       const call = (streamsInput ? invokeWebSocket : invokeHTTP)(
         connection,
         method,

@@ -8,9 +8,9 @@ import { setTimeout as sleep } from "node:timers/promises";
 import Bonjour from "bonjour-service";
 import multicastDNS from "multicast-dns";
 
-import { Code, RpcError, UsageError, open } from "./client.mjs";
-import { tr } from "./i18n.mjs";
-import { columns } from "./output.mjs";
+import { Code, RpcError, UsageError, open } from "./client.ts";
+import { tr } from "./i18n.ts";
+import { columns } from "./output.ts";
 import {
   DeviceConnectionProblem,
   DeviceConnectionState,
@@ -32,7 +32,7 @@ function load() {
   try {
     text = fs.readFileSync(storeFile, "utf8");
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return {};
     }
     throw error;
@@ -93,7 +93,7 @@ async function browse(signal, until, limit = browseLimit) {
   const bonjour = new Bonjour({
     socket: dgram.createSocket("udp4"),
     bind: false,
-  });
+  } as any);
   const found = new Map();
   const enough = new AbortController();
   try {
@@ -188,7 +188,7 @@ export async function tryUnlock(client, signal) {
   return undefined;
 }
 
-async function discover(signal, stored, until) {
+async function discover(signal, stored, until?) {
   const found = await browse(signal, until);
   let changed = false;
   for (const it of found) {

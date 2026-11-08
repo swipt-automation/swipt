@@ -7,7 +7,7 @@ import { transformAsync } from "@babel/core";
 import { loadProjectEnv } from "@expo/env";
 import { imageSize } from "image-size";
 
-import { tr } from "./i18n.mjs";
+import { tr } from "./i18n.ts";
 
 const require = createRequire(import.meta.url);
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -308,7 +308,12 @@ function checkWorklets(root) {
   }
 }
 
-export function metro(root, { assets, sourcemap }) {
+interface MetroOptions {
+  assets?: Map<string, string>;
+  sourcemap?: boolean;
+}
+
+export function metro(root, { assets, sourcemap }: MetroOptions) {
   checkWorklets(root);
   const configName = babelConfigNames.find((name) =>
     fs.existsSync(path.join(root, name)),

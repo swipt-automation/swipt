@@ -53,7 +53,7 @@ jobs:
             PREVIOUS=$(git tag -l --format='%(contents:subject)' nightly)
             RELEASED=$(curl -fsSL --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/metadata.json" | jq -r '"\(.version) \(.build)"' || true)
             if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] && git diff --quiet 'nightly^{commit}' HEAD -- . \
-              ':!.github' ':!cli' ':!cmd' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!dev/strings.mjs' ':!*_test.go'; then
+              ':!.github' ':!cli' ':!cmd' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!dev/strings.ts' ':!*_test.go'; then
               APP_CHANGED=false
             fi
           fi
@@ -194,7 +194,7 @@ jobs:
             build/expo-modules-core/inputs
             build/expo-modules-core/jsi/Products
             node_modules/expo-modules-core/prebuilds/output/*/xcframeworks/ExpoModulesCore.xcframework
-          key: expo-modules-core-${{ steps.xcode.outputs.build }}-${{ hashFiles('dev/expo-modules-core.mjs', 'node_modules/expo-modules-core/package.json', 'node_modules/expo-modules-core/spm.config.json', 'node_modules/expo-modules-core/ios/**', 'node_modules/expo-modules-core/common/**', 'node_modules/expo-modules-jsi/package.json', 'node_modules/expo-modules-jsi/apple/**', 'node_modules/expo-modules-macros/package.json', 'node_modules/react-native/package.json') }}
+          key: expo-modules-core-${{ steps.xcode.outputs.build }}-${{ hashFiles('dev/expo-modules-core.ts', 'node_modules/expo-modules-core/package.json', 'node_modules/expo-modules-core/spm.config.json', 'node_modules/expo-modules-core/ios/**', 'node_modules/expo-modules-core/common/**', 'node_modules/expo-modules-jsi/package.json', 'node_modules/expo-modules-jsi/apple/**', 'node_modules/expo-modules-macros/package.json', 'node_modules/react-native/package.json') }}
       - name: Set up React Native
         run: bun dev frameworks
       - name: Save ExpoModulesCore
@@ -321,6 +321,14 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Build CLI
+        run: |-
+          bun install --frozen-lockfile --filter @swipt/cli
+          bun run --cwd cli build
       - name: Publish
         run: |-
           CURRENT=$(npm view @swipt/api@nightly version 2> /dev/null || true)
@@ -535,6 +543,14 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Build CLI
+        run: |-
+          bun install --frozen-lockfile --filter @swipt/cli
+          bun run --cwd cli build
       - name: Publish
         run: .github/publish_packages.sh "${TAG#v}" latest
         env:

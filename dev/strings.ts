@@ -4,13 +4,14 @@ import path from "node:path";
 import { parseSync, traverse } from "@babel/core";
 
 function collectStrings(cli) {
-  const keys = new Set();
-  for (const name of fs.globSync("*.mjs", { cwd: cli })) {
+  const keys = new Set<string>();
+  for (const name of fs.globSync("src/*.ts", { cwd: cli })) {
     const file = path.join(cli, name);
     traverse(
       parseSync(fs.readFileSync(file, "utf8"), {
         babelrc: false,
         configFile: false,
+        parserOpts: { plugins: ["typescript"] },
         sourceType: "module",
       }),
       {
@@ -32,7 +33,7 @@ function collectStrings(cli) {
   return keys;
 }
 
-const placeholders = (text, optional) =>
+const placeholders = (text, optional?) =>
   [
     ...new Set(
       [...text.matchAll(/\{(\w+)\}/g)]

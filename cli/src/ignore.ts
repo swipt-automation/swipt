@@ -6,12 +6,18 @@ const excluded = (name) =>
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+interface Rule {
+  negated: boolean;
+  directory: boolean;
+  pattern?: RegExp;
+}
+
 function parseRule(line) {
   line = line.replace(/[ \t\r]+$/, "");
   if (line === "" || line.startsWith("#")) {
     return undefined;
   }
-  const rule = { negated: false, directory: false };
+  const rule: Rule = { negated: false, directory: false };
   if (line.startsWith("!")) {
     rule.negated = true;
     line = line.slice(1);

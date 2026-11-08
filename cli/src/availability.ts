@@ -5,8 +5,8 @@ import { NodeFlags, SyntaxKind } from "typescript/unstable/ast";
 import { isTypeNode } from "typescript/unstable/ast/is";
 import { API, SymbolFlags } from "typescript/unstable/sync";
 
-import { language, tr } from "./i18n.mjs";
-import { parseVersion, versionAtLeast } from "./version.mjs";
+import { language, tr } from "./i18n.ts";
+import { parseVersion, versionAtLeast } from "./version.ts";
 
 const requirements = {
   apiLevel: {

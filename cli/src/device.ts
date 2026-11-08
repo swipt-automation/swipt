@@ -8,10 +8,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fromJson, toJson } from "@bufbuild/protobuf";
 import { ValueSchema, timestampFromMs } from "@bufbuild/protobuf/wkt";
 
-import { UsageError, unauthenticated } from "./client.mjs";
-import { attach } from "./connection.mjs";
-import { tr } from "./i18n.mjs";
-import { Ignorer, relativePath } from "./ignore.mjs";
+import { UsageError, unauthenticated } from "./client.ts";
+import { attach } from "./connection.ts";
+import { tr } from "./i18n.ts";
+import { Ignorer, relativePath } from "./ignore.ts";
 import {
   columns,
   dateTime,
@@ -20,9 +20,9 @@ import {
   serviceEnabledText,
   serviceStatusText,
   serviceText,
-} from "./output.mjs";
-import { AvailabilityChecker } from "./availability.mjs";
-import { buildProject, loadProject } from "./project.mjs";
+} from "./output.ts";
+import { AvailabilityChecker } from "./availability.ts";
+import { buildProject, loadProject } from "./project.ts";
 import { LogLevel } from "./proto/common_pb.js";
 import { ServiceStatus } from "./proto/swiplets_pb.js";
 
@@ -30,7 +30,7 @@ const uploadChunk = 256 << 10;
 const rebuildDelay = 300;
 const logReconnect = 2000;
 
-const { version } = createRequire(import.meta.url)("./package.json");
+const { version } = createRequire(import.meta.url)("../package.json");
 
 const readStdin = () => fs.readFileSync(0);
 
@@ -68,7 +68,7 @@ export const logs = (context) =>
     if (index < 0) {
       throw new UsageError(tr("--level is error, warn, info or debug"));
     }
-    const request = {
+    const request: Record<string, any> = {
       follow: options.follow,
       tail: options.tail ?? 100,
       swipletId: options.swiplet ?? "",
@@ -285,6 +285,7 @@ const isLocal = (name) => {
 };
 
 class FileSink {
+  declare root: string;
   files = new Map();
   saved = 0;
 
@@ -677,7 +678,7 @@ export async function develop(context) {
     );
   };
   const watch = () =>
-    new Promise((resolve, reject) => {
+    new Promise<void>((resolve, reject) => {
       let ignore = new Ignorer(root);
       let timer;
       const watcher = fs.watch(root, { recursive: true }, (_, filename) => {
@@ -759,6 +760,7 @@ function readScript([first, ...args]) {
 }
 
 class ImageSink {
+  declare output: string | undefined;
   directory = "";
 
   constructor(output) {

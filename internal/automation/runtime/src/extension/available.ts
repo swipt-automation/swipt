@@ -1,6 +1,6 @@
 import { apiLevel } from "@swipt/api/package.json";
 
-import { parseVersion, versionAtLeast } from "../../../../../cli/version.mjs";
+import { parseVersion, versionAtLeast } from "../../../../../cli/src/version";
 import { native } from "./native";
 
 const platforms: Readonly<Record<string, string>> = { iOS: "ios" };

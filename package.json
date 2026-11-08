@@ -9,7 +9,8 @@
     "internal/automation/runtime/modules/*"
   ],
   "scripts": {
-    "dev": "node dev/main.mjs"
+    "dev": "bun run --cwd cli build --log-level warn && tsx dev/main.ts",
+    "typecheck": "bun run --cwd cli build --log-level warn && bun run --filter @swipt/cli --filter swipt-dev typecheck"
   },
   "dependencies": {
     "swipt-runtime": "workspace:*"

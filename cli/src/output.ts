@@ -4,7 +4,7 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
-import { tr } from "./i18n.mjs";
+import { tr } from "./i18n.ts";
 import { LogLevel, LogLevelSchema } from "./proto/common_pb.js";
 import { ServiceStatus } from "./proto/swiplets_pb.js";
 
@@ -160,7 +160,7 @@ export const serviceEnabledText = (enabled) =>
 
 export const serviceStatusText = (status) => serviceStatuses[status];
 
-export function serviceText(id, state) {
+export function serviceText(_id, state) {
   const enabled = serviceEnabledText(state?.enabled);
   const status = serviceStatuses[state?.status ?? ServiceStatus.UNSPECIFIED];
   let text = state?.since
