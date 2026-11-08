@@ -8,10 +8,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fromJson, toJson } from "@bufbuild/protobuf";
 import { ValueSchema, timestampFromMs } from "@bufbuild/protobuf/wkt";
 
-import { UsageError, unauthenticated } from "./client.ts";
-import { attach } from "./connection.ts";
-import { tr } from "./i18n.ts";
-import { Ignorer, relativePath } from "./ignore.ts";
+import { UsageError, unauthenticated } from "./client";
+import { attach } from "./connection";
+import { tr } from "./i18n";
+import { Ignorer, relativePath } from "./ignore";
 import {
   columns,
   dateTime,
@@ -20,9 +20,9 @@ import {
   serviceEnabledText,
   serviceStatusText,
   serviceText,
-} from "./output.ts";
-import { AvailabilityChecker } from "./availability.ts";
-import { buildProject, loadProject } from "./project.ts";
+} from "./output";
+import { AvailabilityChecker } from "./availability";
+import { buildProject, loadProject } from "./project";
 import { LogLevel } from "./proto/common_pb.js";
 import { ServiceStatus } from "./proto/swiplets_pb.js";
 

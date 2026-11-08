@@ -11,8 +11,8 @@ import {
   installPasscode,
 } from "@swipt/cli/sideload";
 
-import { buildExpoModulesCore } from "./expo-modules-core.ts";
-import { syncLocales } from "./strings.ts";
+import { buildExpoModulesCore } from "./expo-modules-core";
+import { syncLocales } from "./strings";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = path.join(

@@ -8,9 +8,9 @@ import { setTimeout as sleep } from "node:timers/promises";
 import Bonjour from "bonjour-service";
 import multicastDNS from "multicast-dns";
 
-import { Code, RpcError, UsageError, open } from "./client.ts";
-import { tr } from "./i18n.ts";
-import { columns } from "./output.ts";
+import { Code, RpcError, UsageError, open } from "./client";
+import { tr } from "./i18n";
+import { columns } from "./output";
 import {
   DeviceConnectionProblem,
   DeviceConnectionState,

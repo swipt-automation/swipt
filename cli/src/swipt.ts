@@ -2,13 +2,13 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { Code, RpcError, UsageError } from "./client.ts";
-import * as connection from "./connection.ts";
-import * as device from "./device.ts";
-import { tr } from "./i18n.ts";
-import { FalseResult } from "./output.ts";
-import { buildProject, createCommand, sourceCommand } from "./project.ts";
-import * as sideload from "./sideload.ts";
+import { Code, RpcError, UsageError } from "./client";
+import * as connection from "./connection";
+import * as device from "./device";
+import { tr } from "./i18n";
+import { FalseResult } from "./output";
+import { buildProject, createCommand, sourceCommand } from "./project";
+import * as sideload from "./sideload";
 
 interface Option {
   type: "string" | "boolean";

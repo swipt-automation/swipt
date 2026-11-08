@@ -16,13 +16,13 @@ import { promisify } from "node:util";
 import password from "@inquirer/password";
 import select from "@inquirer/select";
 
-import { UsageError, open } from "./client.ts";
+import { UsageError, open } from "./client";
 import {
   findPublished,
   runningSwipt,
   tryUnlock,
   withToken,
-} from "./connection.ts";
+} from "./connection";
 import {
   apps,
   configureGuest,
@@ -39,8 +39,8 @@ import {
   serverPath,
   terminateApp,
   uninstallApp,
-} from "./coredevice.ts";
-import { language, tr } from "./i18n.ts";
+} from "./coredevice";
+import { language, tr } from "./i18n";
 import {
   choose,
   columns,
@@ -48,7 +48,7 @@ import {
   printScriptError,
   selectTheme,
   step,
-} from "./output.ts";
+} from "./output";
 import { LogLevel } from "./proto/common_pb.js";
 
 const exec = promisify(execFile);

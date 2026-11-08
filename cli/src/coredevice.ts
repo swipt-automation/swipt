@@ -7,9 +7,9 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { label, sameName } from "./connection.ts";
-import { tr } from "./i18n.ts";
-import { choose, interactive, step } from "./output.ts";
+import { label, sameName } from "./connection";
+import { tr } from "./i18n";
+import { choose, interactive, step } from "./output";
 
 const exec = promisify(execFile);
 

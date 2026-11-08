@@ -7,7 +7,7 @@ import { transformAsync } from "@babel/core";
 import { loadProjectEnv } from "@expo/env";
 import { imageSize } from "image-size";
 
-import { tr } from "./i18n.ts";
+import { tr } from "./i18n";
 
 const require = createRequire(import.meta.url);
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));

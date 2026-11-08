@@ -4,7 +4,7 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
-import { tr } from "./i18n.ts";
+import { tr } from "./i18n";
 import { LogLevel, LogLevelSchema } from "./proto/common_pb.js";
 import { ServiceStatus } from "./proto/swiplets_pb.js";
 

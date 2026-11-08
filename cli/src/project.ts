@@ -9,10 +9,10 @@ import vm from "node:vm";
 import { transformAsync } from "@babel/core";
 import { build } from "esbuild";
 
-import { AvailabilityChecker } from "./availability.ts";
-import { tr } from "./i18n.ts";
-import { loadEnvironment, metro } from "./metro.ts";
-import { parseVersion, versionAtLeast } from "./version.ts";
+import { AvailabilityChecker } from "./availability";
+import { tr } from "./i18n";
+import { loadEnvironment, metro } from "./metro";
+import { parseVersion, versionAtLeast } from "./version";
 
 const { version } = JSON.parse(
   fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"),
