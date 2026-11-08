@@ -5,8 +5,8 @@ import select from "@inquirer/select";
 import stringWidth from "string-width";
 
 import { tr } from "./i18n";
-import { LogLevel, LogLevelSchema } from "./proto/common_pb.js";
-import { ServiceStatus } from "./proto/swiplets_pb.js";
+import { LogLevel, LogLevelSchema } from "./proto/common_pb";
+import { ServiceStatus } from "./proto/swiplets_pb";
 
 export class FalseResult extends Error {}
 

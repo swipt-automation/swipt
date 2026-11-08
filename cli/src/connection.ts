@@ -14,7 +14,7 @@ import { columns } from "./output";
 import {
   DeviceConnectionProblem,
   DeviceConnectionState,
-} from "./proto/common_pb.js";
+} from "./proto/common_pb";
 
 const browseLimit = 1500;
 const browseRequery = 300;

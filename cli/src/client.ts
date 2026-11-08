@@ -2,10 +2,10 @@ import dns from "node:dns";
 
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 
-import { LogService } from "./proto/logs_pb.js";
-import { REPLService } from "./proto/repl_pb.js";
-import { SwipletService } from "./proto/swiplets_pb.js";
-import { SystemService } from "./proto/system_pb.js";
+import { LogService } from "./proto/logs_pb";
+import { REPLService } from "./proto/repl_pb";
+import { SwipletService } from "./proto/swiplets_pb";
+import { SystemService } from "./proto/system_pb";
 
 const largestMessage = 128 << 20;
 const contentType = "application/grpc-web+proto";

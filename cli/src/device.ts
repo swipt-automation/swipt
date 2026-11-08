@@ -23,8 +23,8 @@ import {
 } from "./output";
 import { AvailabilityChecker } from "./availability";
 import { buildProject, loadProject } from "./project";
-import { LogLevel } from "./proto/common_pb.js";
-import { ServiceStatus } from "./proto/swiplets_pb.js";
+import { LogLevel } from "./proto/common_pb";
+import { ServiceStatus } from "./proto/swiplets_pb";
 
 const uploadChunk = 256 << 10;
 const rebuildDelay = 300;

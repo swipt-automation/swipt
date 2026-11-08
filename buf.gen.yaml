@@ -8,6 +8,4 @@ plugins:
     opt: paths=source_relative
   - local: node_modules/.bin/protoc-gen-es
     out: cli/src/proto
-    opt:
-      - target=js
-      - import_extension=.js
+    opt: target=ts

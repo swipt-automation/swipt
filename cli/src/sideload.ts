@@ -49,7 +49,7 @@ import {
   selectTheme,
   step,
 } from "./output";
-import { LogLevel } from "./proto/common_pb.js";
+import { LogLevel } from "./proto/common_pb";
 
 const exec = promisify(execFile);
 
