@@ -1,8 +1,34 @@
 import { tr } from "../../../i18n";
+import { columns, dateTime } from "../../../output";
 import { defineCommand } from "../../command";
+import { session } from "../../session";
 import { operandCount } from "./operand";
 
-export const list = (operand, files) => {
+const listFiles = (target) => (context) =>
+  session(context, async (client) => {
+    const {
+      id,
+      args: [directory = ""],
+    } = target(context.args);
+    const { files } = await client.swiplets.listDataFiles(
+      {
+        swipletId: id,
+        path: directory,
+        recursive: context.options.recursive,
+      },
+      { signal: context.signal },
+    );
+    const rows = files.map((file) => [
+      file.directory ? "-" : String(file.size),
+      dateTime(file.modified),
+      file.directory ? `${file.path}/` : file.path,
+    ]);
+    if (rows.length > 0) {
+      console.log(columns(rows));
+    }
+  });
+
+export const list = (operand, target) => {
   const before = operandCount(operand);
   return defineCommand({
     name: "list",
@@ -12,6 +38,6 @@ export const list = (operand, files) => {
     options: {
       recursive: { type: "boolean", help: tr("include subdirectories") },
     },
-    run: files.list,
+    run: listFiles(target),
   });
 };

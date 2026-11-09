@@ -1,4 +1,3 @@
-import * as device from "../../../device";
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { data } from "../data";
@@ -9,6 +8,21 @@ import { list } from "./list";
 import { remove } from "./remove";
 import { service } from "./service";
 import { show } from "./show";
+
+const swipletData = ([id, ...args]) => ({
+  id,
+  wholeDirectory: (name) =>
+    tr(
+      "{path} names the data directory of {swiplet}; save it with --output DIRECTORY",
+      { path: name, swiplet: id },
+    ),
+  subdirectory: (name) =>
+    tr(
+      "{path} is a directory in the data directory of {swiplet}; save it with --output DIRECTORY",
+      { path: name, swiplet: id },
+    ),
+  args,
+});
 
 export const swiplet = defineCommand({
   name: "swiplet",
@@ -21,6 +35,6 @@ export const swiplet = defineCommand({
     remove,
     call,
     service,
-    data("ID ", device.swipletData),
+    data("ID ", swipletData),
   ],
 });

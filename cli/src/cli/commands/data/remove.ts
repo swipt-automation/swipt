@@ -1,8 +1,21 @@
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
+import { session } from "../../session";
 import { operandCount } from "./operand";
 
-export const remove = (operand, files) => {
+const removeFile = (target) => (context) =>
+  session(context, async (client) => {
+    const {
+      id,
+      args: [name],
+    } = target(context.args);
+    await client.swiplets.removeDataFile(
+      { swipletId: id, path: name, recursive: context.options.recursive },
+      { signal: context.signal },
+    );
+  });
+
+export const remove = (operand, target) => {
   const before = operandCount(operand);
   return defineCommand({
     name: "remove",
@@ -15,6 +28,6 @@ export const remove = (operand, files) => {
         help: tr("include directory contents"),
       },
     },
-    run: files.remove,
+    run: removeFile(target),
   });
 };

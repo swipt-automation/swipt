@@ -1,6 +1,6 @@
-import * as device from "../../../../device";
 import { tr } from "../../../../i18n";
 import { defineCommand } from "../../../command";
+import { setService } from "./services";
 
 export const disable = defineCommand({
   name: "disable",
@@ -10,5 +10,5 @@ export const disable = defineCommand({
   options: {
     watch: { type: "boolean", help: tr("watch the state") },
   },
-  run: device.setService(false),
+  run: setService(false),
 });

@@ -1,7 +1,10 @@
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
+
 import { UsageError } from "../../../client";
-import * as device from "../../../device";
 import { tr } from "../../../i18n";
+import { printLog } from "../../../output";
 import { defineCommand } from "../../command";
+import { session } from "../../session";
 import { deviceOption } from "../flags";
 
 const durationUnits = {
@@ -54,6 +57,33 @@ function parseCount(text, option) {
   return Number(text);
 }
 
+const readLogs = (context) =>
+  session(context, async (client) => {
+    const { options } = context;
+    const levels = ["error", "warn", "info", "debug"];
+    const index = levels.indexOf(options.level);
+    if (index < 0) {
+      throw new UsageError(tr("--level is error, warn, info or debug"));
+    }
+    const request: Record<string, any> = {
+      follow: options.follow,
+      tail: options.tail ?? 100,
+      swipletId: options.swiplet ?? "",
+      level: index + 1,
+    };
+    if (options.since > 0) {
+      request.since = timestampFromMs(Date.now() - options.since);
+      if (options.tail === undefined) {
+        request.tail = 0xffffffff;
+      }
+    }
+    for await (const response of client.logs.readLogs(request, {
+      signal: context.signal,
+    })) {
+      printLog(response.entry, true);
+    }
+  });
+
 export const logs = defineCommand({
   name: "logs",
   short: tr("Print the logs"),
@@ -80,5 +110,5 @@ export const logs = defineCommand({
     since: parseDuration(options.since, "--since"),
     level: options.level ?? "info",
   }),
-  run: device.logs,
+  run: readLogs,
 });

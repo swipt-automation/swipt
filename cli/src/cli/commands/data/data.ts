@@ -8,7 +8,7 @@ import { write } from "./write";
 
 // operand is "" for the REPL and "ID " for a swiplet, which takes the swiplet
 // ID before the path.
-export const data = (operand, files) =>
+export const data = (operand, target) =>
   defineCommand({
     name: "data",
     short:
@@ -16,10 +16,10 @@ export const data = (operand, files) =>
         ? tr("Manage the files in the data directory of the REPL")
         : tr("Manage the files in the data directory of a swiplet"),
     commands: [
-      list(operand, files),
-      read(operand, files),
-      write(operand, files),
-      remove(operand, files),
-      clear(operand, files),
+      list(operand, target),
+      read(operand, target),
+      write(operand, target),
+      remove(operand, target),
+      clear(operand, target),
     ],
   });
