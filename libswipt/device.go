@@ -55,10 +55,11 @@ const defaultRemotePairingPort = 49152
 
 type LoopbackAddress struct {
 	LocalNetwork bool
+	address      netip.AddrPort
 }
 
-func newLoopbackAddress(peer vpnpeer.Peer) *LoopbackAddress {
-	return &LoopbackAddress{LocalNetwork: peer.LocalNetwork}
+func newLoopbackAddress(peer vpnpeer.Peer, port uint16) *LoopbackAddress {
+	return &LoopbackAddress{LocalNetwork: peer.LocalNetwork, address: netip.AddrPortFrom(peer.Address, port)}
 }
 
 type LoopbackProbe struct {
@@ -85,7 +86,7 @@ func (p *LoopbackProbe) Run() (*LoopbackAddress, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newLoopbackAddress(peer), nil
+	return newLoopbackAddress(peer, p.port), nil
 }
 
 func (p *LoopbackProbe) Cancel() {
@@ -136,7 +137,7 @@ func newDevice(options *DeviceOptions, handler DeviceHandler, logFactory *log.Fa
 						})
 					}
 					if err == nil {
-						d.loopback.Store(newLoopbackAddress(peer))
+						d.loopback.Store(newLoopbackAddress(peer, port))
 						return connected, nil
 					}
 				}
@@ -147,6 +148,9 @@ func newDevice(options *DeviceOptions, handler DeviceHandler, logFactory *log.Fa
 				localError = err
 				allowLocal = false
 			}
+		},
+		Reachable: func(ctx context.Context) error {
+			return vpnpeer.Check(ctx, d.loopback.Load().address)
 		},
 		Logger:                    logFactory.Logger(),
 		Observer:                  &deviceObserver{handler: handler},
@@ -197,6 +201,10 @@ func (d *Device) UpdateSettings(settings *DeviceSettings) error {
 
 func (d *Device) LoopbackAddress() *LoopbackAddress {
 	return d.loopback.Load()
+}
+
+func (d *Device) CheckRoute() {
+	d.connection.CheckRoute()
 }
 
 func (d *Device) SetRemotePairingPort(port int32) {

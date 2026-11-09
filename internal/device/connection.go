@@ -73,10 +73,11 @@ type Observer interface {
 }
 
 type Options struct {
-	Name     string
-	Connect  func(ctx context.Context) (*coredevice.Device, error)
-	Logger   logger.ContextLogger
-	Observer Observer
+	Name      string
+	Connect   func(ctx context.Context) (*coredevice.Device, error)
+	Reachable func(ctx context.Context) error
+	Logger    logger.ContextLogger
+	Observer  Observer
 
 	// BLSBacklightState: 0 off, 1 inactiveOn, 2 activeOn, 3 dimmed (BacklightServices
 	// 24A446, NSStringFromBLSBacklightState 0x22582161c, table 0x268a47640); -1 unavailable.
@@ -111,6 +112,7 @@ type Connection struct {
 	retry       chan struct{}
 	demand      chan struct{}
 	displayWake chan struct{}
+	routeCheck  chan struct{}
 
 	access         sync.Mutex
 	started        bool
@@ -161,6 +163,7 @@ func New(options Options) *Connection {
 		retry:       make(chan struct{}, 1),
 		demand:      make(chan struct{}, 1),
 		displayWake: make(chan struct{}, 1),
+		routeCheck:  make(chan struct{}, 1),
 		deviceWake:  make(chan struct{}),
 		images:      diskImages{directory: options.DiskImageDirectory, logger: options.Logger},
 	}
@@ -343,6 +346,13 @@ func (s *Connection) Retry() {
 	s.wakeLoop()
 	if cancel != nil {
 		cancel(errRetryRequested)
+	}
+}
+
+func (s *Connection) CheckRoute() {
+	select {
+	case s.routeCheck <- struct{}{}:
+	default:
 	}
 }
 
@@ -644,29 +654,41 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 
 func (s *Connection) watchRoute(session context.Context, device *coredevice.Device) error {
 	local, remote := device.TransportAddr()
+	routed := local.IsValid() && remote.IsValid()
 	var tick <-chan time.Time
-	if local.IsValid() && remote.IsValid() {
+	if routed {
 		ticker := time.NewTicker(routeCheckInterval)
 		defer ticker.Stop()
 		tick = ticker.C
 	}
 	for {
+		var requested bool
 		select {
 		case <-device.Done():
 			return nil
 		case <-session.Done():
 			return nil
 		case <-tick:
+		case <-s.routeCheck:
+			requested = true
 		}
-		conn, err := net.DialUDP("udp", nil, net.UDPAddrFromAddrPort(remote))
-		if err != nil {
-			continue
+		if routed {
+			conn, err := net.DialUDP("udp", nil, net.UDPAddrFromAddrPort(remote))
+			if err == nil {
+				current := M.AddrPortFromNet(conn.LocalAddr()).Addr().Unmap()
+				_ = conn.Close()
+				if current != local.Addr().Unmap() {
+					s.logger.Debug("device route changed from ", local.Addr(), " to ", current)
+					return errRerouted
+				}
+			}
 		}
-		current := M.AddrPortFromNet(conn.LocalAddr()).Addr().Unmap()
-		_ = conn.Close()
-		if current != local.Addr().Unmap() {
-			s.logger.Debug("device route changed from ", local.Addr(), " to ", current)
-			return errRerouted
+		if requested && s.options.Reachable != nil {
+			err := s.options.Reachable(session)
+			if err != nil {
+				s.logger.Debug("device route lost: ", err)
+				return errRerouted
+			}
 		}
 	}
 }

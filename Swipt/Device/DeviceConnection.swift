@@ -21,6 +21,13 @@ final class DeviceConnection {
             case .connecting, .preparing, .running: true
             }
         }
+
+        var isAttached: Bool {
+            switch self {
+            case .idle, .connecting, .failed: false
+            case .preparing, .running: true
+            }
+        }
     }
 
     private(set) var phase: Phase = .idle
@@ -55,6 +62,9 @@ final class DeviceConnection {
         if !pairing.isPaired {
             return String(localized: "Pair this device in Swipt first.")
         }
+        if usesCellular {
+            return String(localized: "Swipt only stops working on cellular data, due to Apple’s restrictions on developer services.")
+        }
         if autoUnlock.problem != nil {
             return String(localized: "Check Settings › Automatic Unlock.")
         }
@@ -65,6 +75,7 @@ final class DeviceConnection {
         observePairing()
         observeAvailability()
         observeSettings()
+        monitorPath()
     }
 
     func clearFailure() {
@@ -86,7 +97,12 @@ final class DeviceConnection {
     func startProbing() {
         remotePairing.start()
         probeClients += 1
-        guard pathMonitor == nil else { return }
+        if probeClients == 1 {
+            probe()
+        }
+    }
+
+    private func monitorPath() {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let cellular = path.usesInterfaceType(.cellular)
@@ -95,6 +111,7 @@ final class DeviceConnection {
                 if self.usesCellular != cellular {
                     self.usesCellular = cellular
                 }
+                self.device.checkRoute()
                 self.probe()
             }
         }
@@ -103,14 +120,18 @@ final class DeviceConnection {
     }
 
     private func probe() {
-        guard pathMonitor != nil else { return }
         probeTask?.cancel()
+        probeTask = nil
+        if usesCellular, tunnelFound != false {
+            tunnelFound = false
+        }
+        guard probeClients > 0, !usesCellular else { return }
         probeTask = Task {
             var reportedFailure: String?
             while !Task.isCancelled {
                 let found: Bool
                 let throughLocalNetwork: Bool
-                if phase == .preparing || phase == .running {
+                if phase.isAttached {
                     found = true
                     throughLocalNetwork = device.loopbackAddress()?.localNetwork ?? false
                 } else {
@@ -149,8 +170,6 @@ final class DeviceConnection {
         remotePairing.stop()
         probeClients = max(0, probeClients - 1)
         guard probeClients == 0 else { return }
-        pathMonitor?.cancel()
-        pathMonitor = nil
         probeTask?.cancel()
         probeTask = nil
     }
@@ -206,6 +225,7 @@ final class DeviceConnection {
     }
 
     private func handle(_ change: DeviceStateChange) {
+        let wasAttached = phase.isAttached
         switch change.state {
         case LibSwiptDeviceConnecting:
             phase = .connecting
@@ -220,6 +240,9 @@ final class DeviceConnection {
             }
         default:
             phase = change.errorCode == LibSwiptDeviceErrorNone ? .idle : .failed
+        }
+        if wasAttached, !phase.isAttached {
+            probe()
         }
     }
 }

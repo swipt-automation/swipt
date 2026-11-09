@@ -71,6 +71,15 @@ func Find(ctx context.Context, port uint16, allowLocal bool) (Peer, error) {
 	if len(addresses) == 0 {
 		return Peer{}, E.Errors(E.New("vpnpeer: no VPN address to try"), scanErr)
 	}
+	return loopBack(ctx, addresses, port, scanErr)
+}
+
+func Check(ctx context.Context, address netip.AddrPort) error {
+	_, err := loopBack(ctx, []netip.Addr{address.Addr()}, address.Port(), nil)
+	return err
+}
+
+func loopBack(ctx context.Context, addresses []netip.Addr, port uint16, scanErr error) (Peer, error) {
 	ctx, cancel := context.WithTimeout(ctx, answerLimit)
 	defer cancel()
 	deadline, _ := ctx.Deadline()
