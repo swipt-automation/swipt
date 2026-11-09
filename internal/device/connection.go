@@ -705,6 +705,7 @@ func (s *Connection) attach(session context.Context, device *coredevice.Device, 
 	s.attemptErr = nil
 	s.wakeWaitersLocked()
 	s.access.Unlock()
+	go s.input.prepareTouches(c)
 	go s.pollDisplay(c)
 	s.clip.update()
 	s.phone.attached(c)

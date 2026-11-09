@@ -192,6 +192,21 @@ func (q *hidQueue) acquire(ctx context.Context, c *conn) (*hidGrant, error) {
 	return nil, E.Cause(ctx.Err(), "wait for the device's input")
 }
 
+// A conn keeps its touch connection until it detaches, so it connects as the
+// conn attaches; the first tap otherwise waited 48 ms for it (iPad17,1, iPadOS
+// 27.3 24C5037i). Touches go through the indigo service, which attaches no
+// keyboard that would hide the software one.
+func (q *hidQueue) prepareTouches(c *conn) {
+	grant, err := q.acquire(c.ctx, c)
+	if err != nil {
+		return
+	}
+	defer grant.release()
+	if err = grant.software().PrepareTouches(c.ctx); err != nil && c.ctx.Err() == nil {
+		q.logger.Debug(E.Cause(err, "connect the device's touches"))
+	}
+}
+
 func (g *hidGrant) release() {
 	g.once.Do(func() { close(g.done) })
 }
