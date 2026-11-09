@@ -34,6 +34,7 @@ final class DeviceConnection {
     private(set) var tunnelFound: Bool?
     private(set) var tunnelThroughLocalNetwork = false
     private(set) var usesCellular = false
+    private(set) var isAvailable = false
 
     let remotePairing = RemotePairingBrowser()
     let pairingSession: PairingSession
@@ -42,6 +43,7 @@ final class DeviceConnection {
     @PerceptionIgnored private var pathMonitor: NWPathMonitor?
     @PerceptionIgnored private var probeClients = 0
     @PerceptionIgnored private var isBrowsing = false
+    @PerceptionIgnored private var ready: (() -> Void)?
 
     private var autoUnlock: AutoUnlockSettings { .shared }
     private var pairing: PairingStore { .shared }
@@ -71,9 +73,9 @@ final class DeviceConnection {
         return nil
     }
 
-    func start() {
+    func start(ready: @escaping () -> Void) {
+        self.ready = ready
         observePairing()
-        observeAvailability()
         observeSettings()
         monitorPath()
     }
@@ -110,6 +112,11 @@ final class DeviceConnection {
                 guard let self else { return }
                 if self.usesCellular != cellular {
                     self.usesCellular = cellular
+                }
+                if let ready = self.ready {
+                    self.ready = nil
+                    self.observeAvailability()
+                    ready()
                 }
                 self.device.checkRoute()
                 self.probe()
@@ -192,6 +199,9 @@ final class DeviceConnection {
             unavailableReason ?? ""
         } onChange: { [weak self] in
             DispatchQueue.main.async { self?.observeAvailability() }
+        }
+        if isAvailable != message.isEmpty {
+            isAvailable = message.isEmpty
         }
         configure { $0.setUnavailable(message) }
     }

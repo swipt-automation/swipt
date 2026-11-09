@@ -100,7 +100,6 @@ type Device struct {
 	pairingPort atomic.Uint32
 	pairing     atomic.Pointer[pairingFile]
 	loopback    atomic.Pointer[LoopbackAddress]
-	unavailable atomic.Bool
 }
 
 func newDevice(options *DeviceOptions, handler DeviceHandler, logFactory *log.Factory) *Device {
@@ -182,14 +181,10 @@ func (d *Device) SetPairingRecord(record []byte) error {
 
 func (d *Device) SetUnavailable(message string) {
 	if message != "" {
-		d.unavailable.Store(true)
 		d.connection.SetUnavailable(E.New(message))
 		return
 	}
 	d.connection.SetUnavailable(nil)
-	if d.unavailable.Swap(false) {
-		d.services.RetryServices()
-	}
 }
 
 func (d *Device) UpdateSettings(settings *DeviceSettings) error {

@@ -118,6 +118,16 @@ func (s *Connection) interruptedLocked(since time.Time) bool {
 	return s.detachedAt.After(since) || s.attached != nil && s.attached.device.Closed()
 }
 
+func (p *Phone) Availability() (<-chan struct{}, error) {
+	s := p.connection
+	s.access.Lock()
+	defer s.access.Unlock()
+	if s.unavailable != nil {
+		return s.availability, E.Cause1(ErrUnavailable, s.unavailable)
+	}
+	return s.availability, nil
+}
+
 func (p *Phone) WaitConnected(ctx context.Context) error {
 	release := p.connection.hold()
 	defer release()

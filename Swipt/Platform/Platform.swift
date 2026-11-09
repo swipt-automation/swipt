@@ -151,15 +151,16 @@ final class Platform {
                 isAppActive.withLock { $0 = active }
             }
         }
-        device.start()
         let box = UncheckedSendable(value: core)
-        Self.queue.async {
-            do {
-                try box.value.start()
-            } catch {
-                let message = error.localizedDescription
-                DispatchQueue.main.async {
-                    ErrorAlert.shared.report(AlertState(String(localized: "Couldn’t Start Swipt"), errorMessage: message))
+        device.start {
+            Self.queue.async {
+                do {
+                    try box.value.start()
+                } catch {
+                    let message = error.localizedDescription
+                    DispatchQueue.main.async {
+                        ErrorAlert.shared.report(AlertState(String(localized: "Couldn’t Start Swipt"), errorMessage: message))
+                    }
                 }
             }
         }
@@ -403,6 +404,7 @@ final class Platform {
     }
 
     private var apiOptions: LibSwiptAPIOptions? {
+        guard device.isAvailable else { return nil }
         let cloudflare = developer.isCloudflareEnabled ? cloudflareTunnel : nil
         let tailscale = isTailscaleRunning ? self.tailscale : nil
         guard developer.isLocalNetworkEnabled || cloudflare != nil || tailscale != nil else { return nil }
@@ -468,7 +470,7 @@ final class Platform {
 
     private func observeCloudflare() {
         let options = withPerceptionTracking { () -> LibSwiptCloudflareTunnelOptions? in
-            guard developer.isCloudflareEnabled, developer.isCloudflareComplete else { return nil }
+            guard device.isAvailable, developer.isCloudflareEnabled, developer.isCloudflareComplete else { return nil }
             let options = LibSwiptCloudflareTunnelOptions()
             options.mode = developer.cloudflareMode.rawValue
             if developer.cloudflareMode == .tunnel {
@@ -537,7 +539,7 @@ final class Platform {
 
     private func observeTailscale() {
         let isEnabled = withPerceptionTracking {
-            developer.isTailscaleEnabled
+            device.isAvailable && developer.isTailscaleEnabled
         } onChange: { [weak self] in
             DispatchQueue.main.async { self?.observeTailscale() }
         }

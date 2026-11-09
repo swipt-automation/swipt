@@ -143,17 +143,48 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 		case <-ctx.Done():
 		}
 	}
+	phone := r.host.options.Device
 	failures := 0
 	for ctx.Err() == nil {
 		select {
 		case <-r.retry:
 		default:
 		}
+		var availability <-chan struct{}
+		if phone != nil {
+			var unavailable error
+			availability, unavailable = phone.Availability()
+			if unavailable != nil {
+				r.logger.Info("the service waits for the device: ", describeError(unavailable))
+				r.set(ServiceStarting, unavailable)
+				select {
+				case <-availability:
+				case <-ctx.Done():
+				}
+				continue
+			}
+		}
 		r.set(ServiceStarting, nil)
 		started := time.Now()
-		err := r.runService(ctx)
+		err := r.runService(ctx, availability)
 		if ctx.Err() != nil {
 			break
+		}
+		if r.host.deviceLost(err, started) {
+			r.logger.Info("the service waits for the device: ", describeError(err))
+			r.set(ServiceStarting, err)
+			err = phone.WaitConnected(ctx)
+			if err == nil {
+				continue
+			}
+			if ctx.Err() != nil {
+				break
+			}
+		}
+		select {
+		case <-availability:
+			continue
+		default:
 		}
 		if err == nil || errors.Is(err, ErrSwipletOutdated) {
 			r.access.Lock()
@@ -168,17 +199,6 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 			r.access.Unlock()
 			return
 		}
-		if r.host.deviceLost(err, started) {
-			r.logger.Info("the service waits for the device: ", describeError(err))
-			r.set(ServiceStarting, err)
-			err = r.host.options.Device.WaitConnected(ctx)
-			if err == nil {
-				continue
-			}
-			if ctx.Err() != nil {
-				break
-			}
-		}
 		r.logger.Error("the service stopped: ", failureOf(err).Describe())
 		r.set(ServiceFailed, err)
 		if time.Since(started) >= stableService {
@@ -190,6 +210,8 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 		case <-wait.C:
 		case <-r.retry:
 			failures = 0
+		case <-availability:
+			failures = 0
 		case <-ctx.Done():
 		}
 		wait.Stop()
@@ -197,7 +219,7 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 	r.set(ServiceStopped, nil)
 }
 
-func (r *runner) runService(ctx context.Context) error {
+func (r *runner) runService(ctx context.Context, availability <-chan struct{}) error {
 	ctx, swiplet, exit, err := r.enter(ctx)
 	if err != nil {
 		return err
@@ -206,6 +228,16 @@ func (r *runner) runService(ctx context.Context) error {
 	if !swiplet.Manifest.Service {
 		return E.Cause1(ErrNotFound, E.New("the swiplet ", strconv.Quote(r.id), " has no service"))
 	}
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	go func() {
+		select {
+		case <-availability:
+			_, unavailable := r.host.options.Device.Availability()
+			cancel(unavailable)
+		case <-ctx.Done():
+		}
+	}()
 	_, err = r.host.execute(ctx, swiplet, r.host.options.Dialog, r.log, entry{}, func() { r.set(ServiceRunning, nil) })
 	return err
 }

@@ -126,6 +126,7 @@ type Connection struct {
 	failure        error
 	failedAt       time.Time
 	unavailable    error
+	availability   chan struct{}
 	attemptErr     error
 	failedAttempts uint64
 	attached       *conn
@@ -157,15 +158,16 @@ func New(options Options) *Connection {
 		options.IdleTimeout = defaultIdleTimeout
 	}
 	s := &Connection{
-		options:     options,
-		logger:      options.Logger,
-		done:        make(chan struct{}),
-		retry:       make(chan struct{}, 1),
-		demand:      make(chan struct{}, 1),
-		displayWake: make(chan struct{}, 1),
-		routeCheck:  make(chan struct{}, 1),
-		deviceWake:  make(chan struct{}),
-		images:      diskImages{directory: options.DiskImageDirectory, logger: options.Logger},
+		options:      options,
+		logger:       options.Logger,
+		done:         make(chan struct{}),
+		retry:        make(chan struct{}, 1),
+		demand:       make(chan struct{}, 1),
+		displayWake:  make(chan struct{}, 1),
+		routeCheck:   make(chan struct{}, 1),
+		deviceWake:   make(chan struct{}),
+		availability: make(chan struct{}),
+		images:       diskImages{directory: options.DiskImageDirectory, logger: options.Logger},
 	}
 	s.name.Store(&options.Name)
 	s.settings.Store(&Settings{})
@@ -325,7 +327,13 @@ func (s *Connection) waitConn(ctx context.Context, persistent bool) (*conn, erro
 
 func (s *Connection) SetUnavailable(err error) {
 	s.access.Lock()
+	if err == nil && s.unavailable == nil || err != nil && s.unavailable != nil && err.Error() == s.unavailable.Error() {
+		s.access.Unlock()
+		return
+	}
 	s.unavailable = err
+	close(s.availability)
+	s.availability = make(chan struct{})
 	if err != nil {
 		s.wakeWaitersLocked()
 	}
