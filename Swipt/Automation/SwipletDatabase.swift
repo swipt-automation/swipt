@@ -7,7 +7,7 @@ enum SwipletDatabase {
 
         var id: String
         var position: Int
-        var etag: String
+        var repository: String
     }
 
     private nonisolated struct RepositoryRow: Codable, FetchableRecord, PersistableRecord {
@@ -34,17 +34,19 @@ enum SwipletDatabase {
         var description: String
         var version: String
         var versionCode: Int64
+        var minimumAPILevel: Int64
+        var minimumIOSVersion: String
         var iconColor: String?
-        var iconSymbol: String?
+        var iconSymbol: String
         var url: String
         var sha256: String
     }
 
     private static let database = AppDatabase.shared
 
-    static func swipletIDs() throws -> [String] {
+    static func swiplets() throws -> [(id: String, repository: String)] {
         try database.read { db in
-            try SwipletRow.order(Column("position")).select(Column("id"), as: String.self).fetchAll(db)
+            try SwipletRow.order(Column("position")).fetchAll(db).map { ($0.id, $0.repository) }
         }
     }
 
@@ -52,22 +54,16 @@ enum SwipletDatabase {
         try database.write { db in
             try SwipletRow.filter(!ids.contains(Column("id"))).deleteAll(db)
             for (position, id) in ids.enumerated() {
-                let etag = try SwipletRow.fetchOne(db, key: id)?.etag ?? ""
-                try SwipletRow(id: id, position: position, etag: etag).save(db)
+                let repository = try SwipletRow.fetchOne(db, key: id)?.repository ?? ""
+                try SwipletRow(id: id, position: position, repository: repository).save(db)
             }
         }
     }
 
-    static func etag(of id: String) throws -> String {
-        try database.read { db in
-            try SwipletRow.fetchOne(db, key: id)?.etag ?? ""
-        }
-    }
-
-    static func setETag(_ etag: String, of id: String) throws {
+    static func setRepository(_ repository: String, of id: String) throws {
         try database.write { db in
             let position = try SwipletRow.fetchOne(db, key: id)?.position ?? nextPosition(of: SwipletRow.self, in: db)
-            try SwipletRow(id: id, position: position, etag: etag).save(db)
+            try SwipletRow(id: id, position: position, repository: repository).save(db)
         }
     }
 
@@ -76,14 +72,14 @@ enum SwipletDatabase {
             try RepositoryRow.order(Column("position")).fetchAll(db).map { row in
                 let swiplets = try RepositorySwipletRow.filter(Column("repository") == row.url).order(Column("position")).fetchAll(db)
                 return Repository(
-                    url: row.url, name: row.name, localizedNames: row.localizedNames,
-                    icon: row.iconSymbol.map { RepositorySwiplet.Icon(color: row.iconColor, symbol: $0) }, image: row.image, etag: row.etag,
+                    url: row.url, name: row.name, localizedNames: row.localizedNames ?? [:],
+                    icon: row.iconSymbol.map { SwipletIcon(color: row.iconColor, symbol: $0) }, image: row.image, etag: row.etag,
                     swiplets: swiplets.map { swiplet in
                         RepositorySwiplet(
                             id: swiplet.id, name: swiplet.name, localizedNames: swiplet.localizedNames, description: swiplet.description,
-                            version: swiplet.version, versionCode: swiplet.versionCode,
-                            icon: swiplet.iconSymbol.map { RepositorySwiplet.Icon(color: swiplet.iconColor, symbol: $0) }, url: swiplet.url,
-                            sha256: swiplet.sha256)
+                            version: swiplet.version, versionCode: swiplet.versionCode, minimumAPILevel: swiplet.minimumAPILevel,
+                            minimumIOSVersion: swiplet.minimumIOSVersion, icon: SwipletIcon(color: swiplet.iconColor, symbol: swiplet.iconSymbol),
+                            url: swiplet.url, checksum: swiplet.sha256)
                     })
             }
         }
@@ -101,7 +97,8 @@ enum SwipletDatabase {
                 try RepositorySwipletRow(
                     repository: repository.url, position: position, id: swiplet.id, name: swiplet.name, localizedNames: swiplet.localizedNames,
                     description: swiplet.description, version: swiplet.version, versionCode: swiplet.versionCode,
-                    iconColor: swiplet.icon?.color, iconSymbol: swiplet.icon?.symbol, url: swiplet.url, sha256: swiplet.sha256
+                    minimumAPILevel: swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion,
+                    iconColor: swiplet.icon.color, iconSymbol: swiplet.icon.symbol, url: swiplet.url, sha256: swiplet.checksum
                 ).insert(db)
             }
         }

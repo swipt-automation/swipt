@@ -7,7 +7,7 @@ struct NewSwipletView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isPickingFile = false
     @State private var isImporting = false
-    @State private var isImported = false
+    @State private var preview: SwipletPreview?
     @State private var alert: AlertState?
 
     private let swiplets = SwipletStore.shared
@@ -23,7 +23,7 @@ struct NewSwipletView: View {
             Section("Repository") {
                 ForEach(swiplets.repositories) { repository in
                     NavigationLink {
-                        RepositoryView(url: repository.url, isImported: $isImported)
+                        RepositoryView(url: repository.url)
                     } label: {
                         Label {
                             Text(verbatim: repository.title)
@@ -52,7 +52,7 @@ struct NewSwipletView: View {
                     Label("Import from File", systemImage: "doc.badge.plus")
                 }
                 NavigationLink {
-                    ImportFromURLView(isImported: $isImported)
+                    ImportFromURLView(preview: $preview)
                 } label: {
                     Label("Import from URL", systemImage: "link.badge.plus")
                 }
@@ -79,9 +79,9 @@ struct NewSwipletView: View {
                 alert = AlertState(String(localized: "Can’t Open the File"), error: error)
             }
         }
-        .onChange(of: isImported) {
-            if isImported {
-                dismiss()
+        .sheet(item: $preview) { preview in
+            NavigationStackCompat {
+                OpenSwipletView(preview: preview) { dismiss() }
             }
         }
         .alert($alert)
@@ -91,10 +91,9 @@ struct NewSwipletView: View {
         isImporting = true
         Task {
             do {
-                try await SwipletStore.shared.importSwiplet(from: file)
-                isImported = true
+                preview = try await SwipletStore.shared.open(file)
             } catch {
-                alert = AlertState(String(localized: "Can’t Import the Swiplet"), error: error)
+                alert = AlertState(String(localized: "Can’t Open the Swiplet"), error: error)
             }
             isImporting = false
         }
@@ -103,7 +102,7 @@ struct NewSwipletView: View {
 
 @available(iOS 17.4, *)
 private struct ImportFromURLView: View {
-    @Binding var isImported: Bool
+    @Binding var preview: SwipletPreview?
 
     @State private var url = ""
     @State private var isImporting = false
@@ -139,10 +138,9 @@ private struct ImportFromURLView: View {
         isImporting = true
         Task {
             do {
-                try await SwipletStore.shared.importSwiplet(downloadingFrom: url)
-                isImported = true
+                preview = try await SwipletStore.shared.open(downloadingFrom: url)
             } catch {
-                alert = AlertState(String(localized: "Can’t Import the Swiplet"), error: error)
+                alert = AlertState(String(localized: "Can’t Open the Swiplet"), error: error)
             }
             isImporting = false
         }

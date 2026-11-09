@@ -3,7 +3,6 @@ package libSwipt
 import (
 	"context"
 	"net/netip"
-	"strings"
 	"sync"
 	"time"
 
@@ -32,7 +31,7 @@ type TailscaleStatus struct {
 	LoginName string
 	Tailnet   string
 	DNSName   string
-	Addresses string
+	Addresses StringIterator
 }
 
 type TailscaleHandler interface {
@@ -197,7 +196,7 @@ func (t *Tailscale) report(generation uint64, status tailscale.Status) {
 		LoginName: status.LoginName,
 		Tailnet:   status.Tailnet,
 		DNSName:   status.DNSName,
-		Addresses: strings.Join(common.Map(status.Addresses, netip.Addr.String), "\n"),
+		Addresses: newIterator(common.Map(status.Addresses, netip.Addr.String)),
 	})
 }
 

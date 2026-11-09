@@ -58,14 +58,11 @@ func ReadArchive(reader *zip.Reader) (Archive, error) {
 	has := func(entry string) bool {
 		return slices.ContainsFunc(archive.Files, func(file ArchiveFile) bool { return file.Name == path.Join(SourceFolder, entry) })
 	}
-	extension := manifest.Service || len(manifest.Actions) > 0
 	switch {
-	case manifest.Interface && !has(InterfaceFile):
-		return Archive{}, E.New("the manifest declares an interface, but the archive has no ", path.Join(SourceFolder, InterfaceFile))
-	case extension && !has(ExtensionFile):
+	case !has(InterfaceFile):
+		return Archive{}, E.New("the archive has no ", path.Join(SourceFolder, InterfaceFile))
+	case (manifest.Service || len(manifest.Actions) > 0) && !has(ExtensionFile):
 		return Archive{}, E.New("the manifest declares a service or actions, but the archive has no ", path.Join(SourceFolder, ExtensionFile))
-	case !manifest.Interface && !extension:
-		return Archive{}, E.New("the manifest declares neither an interface nor a service or actions")
 	}
 	archive.Manifest = manifest
 	return archive, nil

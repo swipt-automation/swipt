@@ -11,6 +11,7 @@ import "C"
 import (
 	"encoding/json"
 	"runtime/cgo"
+	"unsafe"
 
 	"github.com/swipt-automation/swipt/internal/automation"
 )
@@ -34,12 +35,52 @@ func swiptGraphicsCancelled(handle C.uintptr_t) C.bool {
 	return C.bool(scopeOf(handle).call.Context().Err() != nil)
 }
 
-//export swiptGraphicsAuthorize
-func swiptGraphicsAuthorize(handle C.uintptr_t, path *C.char, write C.bool) *C.char {
-	if err := scopeOf(handle).call.Authorize(C.GoString(path), bool(write)); err != nil {
+//export swiptGraphicsReadFile
+func swiptGraphicsReadFile(handle C.uintptr_t, root, path *C.char) C.swipt_graphics_file {
+	data, err := scopeOf(handle).call.ReadFile(C.GoString(root), C.GoString(path))
+	if err != nil {
+		return C.swipt_graphics_file{failure: C.CString(automation.FailureOf(err))}
+	}
+	return C.swipt_graphics_file{bytes: C.CBytes(data), length: C.size_t(len(data))}
+}
+
+//export swiptGraphicsWriteFile
+func swiptGraphicsWriteFile(handle C.uintptr_t, root, path *C.char, bytes unsafe.Pointer, length C.size_t) *C.char {
+	if err := scopeOf(handle).call.WriteFile(C.GoString(root), C.GoString(path), unsafe.Slice((*byte)(bytes), length)); err != nil {
 		return C.CString(automation.FailureOf(err))
 	}
 	return nil
+}
+
+//export swiptGraphicsDirectory
+func swiptGraphicsDirectory(handle C.uintptr_t, root, path *C.char, create C.bool) C.swipt_graphics_directory {
+	directory, err := scopeOf(handle).call.Directory(C.GoString(root), C.GoString(path), bool(create))
+	if err != nil {
+		return C.swipt_graphics_directory{failure: C.CString(automation.FailureOf(err))}
+	}
+	return C.swipt_graphics_directory{path: C.CString(directory)}
+}
+
+//export swiptGraphicsStageFile
+func swiptGraphicsStageFile(handle C.uintptr_t, root, path *C.char) C.swipt_graphics_staged_file {
+	staged, err := scopeOf(handle).call.StageFile(C.GoString(root), C.GoString(path))
+	if err != nil {
+		return C.swipt_graphics_staged_file{failure: C.CString(automation.FailureOf(err))}
+	}
+	return C.swipt_graphics_staged_file{file: C.uintptr_t(cgo.NewHandle(staged)), path: C.CString(staged.Path())}
+}
+
+//export swiptGraphicsCommitFile
+func swiptGraphicsCommitFile(file C.uintptr_t) *C.char {
+	if err := cgo.Handle(file).Value().(*automation.StagedFile).Commit(); err != nil {
+		return C.CString(automation.FailureOf(err))
+	}
+	return nil
+}
+
+//export swiptGraphicsDiscardFile
+func swiptGraphicsDiscardFile(file C.uintptr_t) {
+	cgo.Handle(file).Value().(*automation.StagedFile).Discard()
 }
 
 //export swiptGraphicsScreenshot

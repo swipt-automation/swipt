@@ -35,6 +35,12 @@ const (
 	DeviceErrorLoopbackAddress  = int32(device.ProblemLoopbackAddress)
 )
 
+const (
+	PasscodeTypePIN          = int32(device.PasscodePIN)
+	PasscodeTypeNumeric      = int32(device.PasscodeNumeric)
+	PasscodeTypeAlphanumeric = int32(device.PasscodeAlphanumeric)
+)
+
 type DeviceOptions struct {
 	RemotePairingPort         int32
 	DiskImageDirectory        string

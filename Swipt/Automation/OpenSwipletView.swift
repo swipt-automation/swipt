@@ -35,6 +35,7 @@ struct SwipletOpener: ViewModifier {
 @available(iOS 17.4, *)
 struct OpenSwipletView: View {
     let preview: SwipletPreview
+    var onImported: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
     @State private var isImporting = false
@@ -103,6 +104,7 @@ struct OpenSwipletView: View {
         Task {
             do {
                 try await swiplets.importSwiplet(preview)
+                onImported()
                 dismiss()
             } catch {
                 alert = AlertState(String(localized: "Can’t Import the Swiplet"), error: error)

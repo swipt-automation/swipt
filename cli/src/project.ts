@@ -107,14 +107,15 @@ export function loadProject(root) {
       ),
     );
   }
-  for (const field of ["description", "updateURL"]) {
-    if (config[field] !== undefined && typeof config[field] !== "string") {
-      throw new Error(
-        tr('"{field}" in package.json must be a string', {
-          field: `swiplet.${field}`,
-        }),
-      );
-    }
+  if (
+    config.description !== undefined &&
+    typeof config.description !== "string"
+  ) {
+    throw new Error(
+      tr('"{field}" in package.json must be a string', {
+        field: "swiplet.description",
+      }),
+    );
   }
   if (
     config.versionCode !== undefined &&
@@ -163,8 +164,13 @@ export function loadProject(root) {
       ),
     );
   }
-  const entry = (name) =>
-    config[name] === undefined ? undefined : path.resolve(root, config[name]);
+  if (typeof config.app !== "string" || config.app === "") {
+    throw new Error(
+      tr('"{field}" in package.json must be a string', {
+        field: "swiplet.app",
+      }),
+    );
+  }
   return {
     root,
     manifest,
@@ -173,8 +179,11 @@ export function loadProject(root) {
     apiLevel,
     minimumIOSVersion,
     apiDirectory: path.dirname(apiManifest),
-    app: entry("app"),
-    extension: entry("extension"),
+    app: path.resolve(root, config.app),
+    extension:
+      config.extension === undefined
+        ? undefined
+        : path.resolve(root, config.extension),
   };
 }
 
@@ -254,55 +263,48 @@ async function bundle(project) {
       sources,
     });
   }
-  if (project.app) {
-    const result = await build({
-      entryPoints: [project.app],
-      bundle: true,
-      format: "cjs",
-      platform: "neutral",
-      mainFields: ["react-native", "browser", "module", "main"],
-      conditions: ["react-native"],
-      resolveExtensions: [
-        ".ios.tsx",
-        ".ios.ts",
-        ".native.tsx",
-        ".native.ts",
-        ".tsx",
-        ".ts",
-        ".ios.jsx",
-        ".ios.js",
-        ".native.js",
-        ".jsx",
-        ".js",
-        ".json",
-      ],
-      jsx: "automatic",
-      target: "es2020",
-      define: { "process.env.NODE_ENV": '"production"', __DEV__: "false" },
-      external: appModules,
-      write: false,
-      metafile: true,
-      logLevel: "silent",
-      plugins: [
-        ...(project.extension ? [typeImport(project.extension)] : []),
-        metro(project.root, { assets: out.assets }),
-      ],
-    });
-    out.metafiles.push(result.metafile);
-    const scoped = await transformAsync(result.outputFiles[0].text, {
-      babelrc: false,
-      configFile: false,
-      sourceType: "script",
-      compact: false,
-      plugins: [require.resolve("@babel/plugin-transform-block-scoping")],
-    });
-    out.app = scoped.code;
-  }
-  if (out.app === "" && out.extension === "") {
-    throw new Error(
-      tr('package.json names neither "swiplet.app" nor "swiplet.extension"'),
-    );
-  }
+  const result = await build({
+    entryPoints: [project.app],
+    bundle: true,
+    format: "cjs",
+    platform: "neutral",
+    mainFields: ["react-native", "browser", "module", "main"],
+    conditions: ["react-native"],
+    resolveExtensions: [
+      ".ios.tsx",
+      ".ios.ts",
+      ".native.tsx",
+      ".native.ts",
+      ".tsx",
+      ".ts",
+      ".ios.jsx",
+      ".ios.js",
+      ".native.js",
+      ".jsx",
+      ".js",
+      ".json",
+    ],
+    jsx: "automatic",
+    target: "es2020",
+    define: { "process.env.NODE_ENV": '"production"', __DEV__: "false" },
+    external: appModules,
+    write: false,
+    metafile: true,
+    logLevel: "silent",
+    plugins: [
+      ...(project.extension ? [typeImport(project.extension)] : []),
+      metro(project.root, { assets: out.assets }),
+    ],
+  });
+  out.metafiles.push(result.metafile);
+  const scoped = await transformAsync(result.outputFiles[0].text, {
+    babelrc: false,
+    configFile: false,
+    sourceType: "script",
+    compact: false,
+    plugins: [require.resolve("@babel/plugin-transform-block-scoping")],
+  });
+  out.app = scoped.code;
   return out;
 }
 
@@ -611,17 +613,15 @@ function swipletManifest(project, output) {
     ...(project.manifest.version ? { version: project.manifest.version } : {}),
     ...(config.versionCode ? { versionCode: config.versionCode } : {}),
     ...(config.icon ? { icon: config.icon } : {}),
-    ...(config.updateURL ? { updateURL: config.updateURL } : {}),
     minimumAPILevel: config.minimumAPILevel ?? project.apiLevel,
     minimumIOSVersion: config.minimumIOSVersion ?? project.minimumIOSVersion,
-    ...(output.app ? { interface: true } : {}),
     ...(service ? { service } : {}),
     ...(actions.length > 0 ? { actions } : {}),
   };
 }
 
 const sourceFiles = (output) => ({
-  ...(output.app ? { "app.js": output.app } : {}),
+  "app.js": output.app,
   ...(output.extension ? { "extension.js": output.extension } : {}),
 });
 

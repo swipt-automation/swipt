@@ -1,4 +1,5 @@
 import Foundation
+import LibSwipt
 import Perception
 
 @Perceptible
@@ -57,7 +58,7 @@ final class DeveloperSettings {
     }
 
     var cloudflareMode: CloudflareMode {
-        didSet { store.set(cloudflareMode, for: Key.cloudflareMode) }
+        didSet { store.set(cloudflareMode.rawValue, for: Key.cloudflareMode) }
     }
 
     var cloudflareAccount: String {
@@ -116,7 +117,7 @@ final class DeveloperSettings {
         localAuthenticates = store.value(Bool.self, for: Key.localAuthenticates) ?? false
         isCloudflareEnabled = store.value(Bool.self, for: Key.cloudflareEnabled) ?? false
         cloudflarePath = store.value(String.self, for: Key.cloudflarePath) ?? "/"
-        cloudflareMode = store.value(CloudflareMode.self, for: Key.cloudflareMode) ?? .quickTunnel
+        cloudflareMode = store.value(Int32.self, for: Key.cloudflareMode).flatMap(CloudflareMode.init(rawValue:)) ?? .quickTunnel
         cloudflareAccount = store.value(String.self, for: Key.cloudflareAccount) ?? ""
         cloudflareAccountName = store.value(String.self, for: Key.cloudflareAccountName) ?? ""
         cloudflareZone = store.value(String.self, for: Key.cloudflareZone) ?? ""
@@ -167,9 +168,24 @@ final class DeveloperSettings {
     }
 }
 
-enum CloudflareMode: Int32, Codable {
-    case quickTunnel = 0
-    case tunnel = 1
+enum CloudflareMode: RawRepresentable {
+    case quickTunnel
+    case tunnel
+
+    init?(rawValue: Int32) {
+        switch rawValue {
+        case LibSwiptCloudflareModeQuickTunnel: self = .quickTunnel
+        case LibSwiptCloudflareModeTunnel: self = .tunnel
+        default: return nil
+        }
+    }
+
+    var rawValue: Int32 {
+        switch self {
+        case .quickTunnel: LibSwiptCloudflareModeQuickTunnel
+        case .tunnel: LibSwiptCloudflareModeTunnel
+        }
+    }
 
     var name: String {
         switch self {

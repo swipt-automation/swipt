@@ -77,7 +77,7 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
     NSError *creating = nil;
     AVAssetWriter *writer = [[AVAssetWriter alloc] initWithURL:target fileType:mov ? AVFileTypeQuickTimeMovie : AVFileTypeMPEG4 error:&creating];
     if (writer == nil) {
-        SWFailCause(error, SWErrorNameGeneric, creating, @"graphics: create %@", target.lastPathComponent);
+        SWFailCause(error, SWErrorNameGeneric, creating, @"graphics: create the video");
         return NO;
     }
     AVAssetWriterInput *input = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:@{
@@ -233,16 +233,7 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
     return [SWImageNode nodeWithRecording:self time:MIN(MAX(time, 0), _duration)];
 }
 
-- (BOOL)exportTo:(NSURL *)target token:(SWCancelToken *)token error:(NSError **)error {
-    NSString *extension = target.pathExtension.lowercaseString;
-    if (![extension isEqualToString:@"mov"] && ![extension isEqualToString:@"mp4"]) {
-        SWFail(error, SWErrorNameType, @"graphics: export to a .mov or .mp4 file");
-        return NO;
-    }
-    if (![NSFileManager.defaultManager createDirectoryAtURL:target.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:error]) {
-        return NO;
-    }
-    [NSFileManager.defaultManager removeItemAtURL:target error:nil];
+- (BOOL)exportTo:(NSURL *)target mov:(BOOL)mov token:(SWCancelToken *)token error:(NSError **)error {
     double step = 1000 / SWExportFrameRate;
     NSMutableArray<NSNumber *> *times = [NSMutableArray array];
     for (NSInteger index = 0; index * step <= _duration; index++) {
@@ -252,7 +243,7 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
         SWRaster *raster = [[self nodeAt:time] raster:token error:failure];
         return raster == nil ? nil : SWRasterResized(raster, raster.width & ~1, raster.height & ~1, failure);
     };
-    return SWExportMovie(target, [extension isEqualToString:@"mov"], times, frame, token, error);
+    return SWExportMovie(target, mov, times, frame, token, error);
 }
 
 - (NSString *)info {

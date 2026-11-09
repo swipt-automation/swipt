@@ -54,17 +54,12 @@
 }
 
 + (instancetype)startInDirectory:(NSURL *)directory stream:(SWScreenStream *)stream token:(SWCancelToken *)token error:(NSError **)error {
-    if ([NSFileManager.defaultManager fileExistsAtPath:directory.path]) {
-        NSArray *existing = [NSFileManager.defaultManager contentsOfDirectoryAtPath:directory.path error:error];
-        if (existing == nil) {
-            return nil;
-        }
-        if (existing.count > 0) {
-            SWFail(error, SWErrorNameState, @"graphics: %@ is not empty", directory.lastPathComponent);
-            return nil;
-        }
+    NSArray *existing = [NSFileManager.defaultManager contentsOfDirectoryAtPath:directory.path error:error];
+    if (existing == nil) {
+        return nil;
     }
-    if (![NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES attributes:nil error:error]) {
+    if (existing.count > 0) {
+        SWFail(error, SWErrorNameState, @"graphics: %@ is not empty", directory.lastPathComponent);
         return nil;
     }
     if (stream.closed) {

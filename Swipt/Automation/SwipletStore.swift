@@ -26,16 +26,13 @@ final class SwipletStore {
     private(set) var actions: [String: [SwipletAction]] = [:]
     private(set) var withServices: Set<String> = []
     private(set) var services: [String: SwipletService] = [:]
-    private(set) var updatable: Set<String> = []
     private(set) var outdated: Set<String> = []
-    private(set) var updates: [String: SwipletUpdate] = [:]
     private(set) var updating: Set<String> = []
     private(set) var downloadProgress: [String: SwipletDownloadProgress] = [:]
     private(set) var repositories: [Repository] = []
-    @PerceptionIgnored private var manifests: [String: LibSwiptSwipletManifest] = [:]
+    private(set) var repositoryURLs: [String: String] = [:]
+    private var manifests: [String: LibSwiptSwipletManifest] = [:]
     @PerceptionIgnored private var repositoriesChecked: [String: Date] = [:]
-    private var checked: [String: Date] = [:]
-    @PerceptionIgnored private var incompatibleUpdates: [String: String] = [:]
 
     private init() {
         var stored: [Repository] = []
@@ -67,12 +64,14 @@ final class SwipletStore {
         versions = manifests.mapValues(\.version)
         outdated = Set(swiplets.filter(\.needsUpdate).map(\.id_))
         do {
-            let stored = try SwipletDatabase.swipletIDs()
-            let added = swiplets.map(\.id_).filter { !stored.contains($0) }
-            ids = stored.filter { directories[$0] != nil } + added.sorted { (titles[$0] ?? $0).localizedStandardCompare(titles[$1] ?? $1) == .orderedAscending }
-            if ids != stored {
+            let stored = try SwipletDatabase.swiplets()
+            let storedIDs = stored.map(\.id)
+            let added = swiplets.map(\.id_).filter { !storedIDs.contains($0) }
+            ids = storedIDs.filter { directories[$0] != nil } + added.sorted { (titles[$0] ?? $0).localizedStandardCompare(titles[$1] ?? $1) == .orderedAscending }
+            if ids != storedIDs {
                 try SwipletDatabase.setSwipletIDs(ids)
             }
+            repositoryURLs = Dictionary(uniqueKeysWithValues: stored.filter { directories[$0.id] != nil && !$0.repository.isEmpty }.map { ($0.id, $0.repository) })
         } catch {
             AppDirectory.logger.error("load the swiplet order: \(error, privacy: .public)")
         }
@@ -85,15 +84,13 @@ final class SwipletStore {
             return SwipletEntry(url: entry, modified: modified)
         }
         actions = manifests.mapValues { manifest in
-            (0..<manifest.actionCount()).map { index in
+            (manifest.actions()?.toArray() ?? []).map { action in
                 SwipletAction(
-                    name: manifest.actionName(index), title: manifest.actionTitle(index), description: manifest.actionDescription(index),
-                    shortcuts: manifest.actionExposed(index, caller: LibSwiptCallerShortcuts))
+                    name: action.name, title: action.title, description: action.summary, shortcuts: action.exposed(LibSwiptCallerShortcuts))
             }
         }
         withServices = Set(manifests.filter { $0.value.service && !outdated.contains($0.key) }.keys)
         services = Dictionary(uniqueKeysWithValues: withServices.map { ($0, Platform.shared.serviceState(of: $0)) })
-        updatable = Set(manifests.filter { !$0.value.version.isEmpty && !$0.value.updateURL.isEmpty }.keys)
     }
 
     func reorder(_ ids: [String]) {
@@ -142,38 +139,26 @@ final class SwipletStore {
     }
 
     @available(iOS 17.4, *)
-    func importSwiplet(from picked: URL) async throws {
-        defer { reload() }
-        let id = try await Platform.shared.installSwiplet(picked: picked)
-        try SwipletDatabase.setETag("", of: id)
-    }
-
-    @available(iOS 17.4, *)
-    func importSwiplet(downloadingFrom link: String) async throws {
-        let link = link.trimmingCharacters(in: .whitespacesAndNewlines)
-        let download = try await Self.download(link)
-        defer {
-            Self.discard(download.file)
-            reload()
-        }
-        let id = try await Platform.shared.installSwiplet(download.file)
-        try SwipletDatabase.setETag(download.updateURL == link ? download.etag : "", of: id)
-    }
-
-    @available(iOS 17.4, *)
     func open(_ picked: URL) async throws -> SwipletPreview {
         let file = try Self.temporaryFile()
         do {
             try await Task.detached(priority: .userInitiated) {
                 try picked.withPickedFile { try FileManager.default.copyItem(at: $0, to: file) }
             }.value
-            guard let manifest = try Self.manifest(of: file) else { throw MessageError(String(localized: "The file is not a swiplet.")) }
-            let title = Self.preferredName(manifest)
-            return SwipletPreview(
-                file: file, id: manifest.id_, title: title.isEmpty ? manifest.id_ : title, version: manifest.version,
-                icon: SwipletIcon(color: manifest.color, symbol: manifest.symbol))
+            return try Self.preview(of: file)
         } catch {
             Self.discard(file)
+            throw error
+        }
+    }
+
+    @available(iOS 17.4, *)
+    func open(downloadingFrom link: String) async throws -> SwipletPreview {
+        let download = try await Self.download(link.trimmingCharacters(in: .whitespacesAndNewlines))
+        do {
+            return try Self.preview(of: download.file)
+        } catch {
+            Self.discard(download.file)
             throw error
         }
     }
@@ -185,7 +170,7 @@ final class SwipletStore {
             reload()
         }
         let id = try await Platform.shared.installSwiplet(preview.file)
-        try SwipletDatabase.setETag("", of: id)
+        try SwipletDatabase.setRepository("", of: id)
     }
 
     func discard(_ preview: SwipletPreview) {
@@ -196,18 +181,26 @@ final class SwipletStore {
         repositories.first { $0.url == url }
     }
 
+    var updates: [SwipletUpdate] {
+        ids.compactMap(update(of:))
+    }
+
+    func update(of id: String) -> SwipletUpdate? {
+        guard let url = repositoryURLs[id], let repository = repository(url), let swiplet = repository.swiplets.first(where: { $0.id == id }),
+            let local = manifests[id]
+        else { return nil }
+        let isNewer = swiplet.versionCode > 0 ? swiplet.versionCode > local.versionCode : !swiplet.version.isEmpty && swiplet.version != local.version
+        guard isNewer, Platform.shared.isSwipletCompatible(swiplet) else { return nil }
+        return SwipletUpdate(repository: repository, swiplet: swiplet)
+    }
+
     @available(iOS 17.4, *)
     func addRepository(_ link: String) async throws {
         let link = link.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !repositories.contains(where: { $0.url == link }), !Repository.isOfficial(link) else {
             throw MessageError(String(localized: "The repository is already added."))
         }
-        let fetched = try await Self.fetch(link, etag: "", source: true)
-        let index = try JSONDecoder().decode(SourceIndex.self, from: fetched.data)
-        let image = await Self.image(index.image, relativeTo: link)
-        let repository = Repository(
-            url: link, name: index.name ?? Self.repositoryName(of: link), localizedNames: index.localizedNames, icon: index.icon, image: image,
-            etag: fetched.etag, swiplets: index.swiplets)
+        guard let repository = try await Self.fetchRepository(link, etag: "") else { return }
         try SwipletDatabase.save(repository)
         repositories.append(repository)
         repositoriesChecked[link] = .now
@@ -225,29 +218,15 @@ final class SwipletStore {
 
     @available(iOS 17.4, *)
     func refreshRepository(_ url: String, force: Bool) async throws {
-        guard let index = repositories.firstIndex(where: { $0.url == url }) else { return }
+        guard let stored = repository(url) else { return }
         if !force, let last = repositoriesChecked[url], Date.now.timeIntervalSince(last) < Self.updateInterval {
             return
         }
-        let fetched = try await Self.fetch(url, etag: repositories[index].etag, source: true)
+        let fetched = try await Self.fetchRepository(url, etag: stored.etag)
         repositoriesChecked[url] = .now
-        guard !fetched.notModified else { return }
-        let listed = try JSONDecoder().decode(SourceIndex.self, from: fetched.data)
-        let image = await Self.image(listed.image, relativeTo: url)
-        guard let current = repositories.firstIndex(where: { $0.url == url }) else { return }
-        let repository = Repository(
-            url: url, name: listed.name ?? Self.repositoryName(of: url), localizedNames: listed.localizedNames, icon: listed.icon, image: image,
-            etag: fetched.etag, swiplets: listed.swiplets)
-        try SwipletDatabase.save(repository)
-        repositories[current] = repository
-    }
-
-    func hasNewer(_ swiplet: RepositorySwiplet) -> Bool {
-        guard let local = manifests[swiplet.id] else { return false }
-        if swiplet.versionCode > 0, local.versionCode > 0 {
-            return swiplet.versionCode > local.versionCode
-        }
-        return !swiplet.version.isEmpty && swiplet.version != local.version
+        guard let fetched, let index = repositories.firstIndex(where: { $0.url == url }) else { return }
+        try SwipletDatabase.save(fetched)
+        repositories[index] = fetched
     }
 
     @available(iOS 17.4, *)
@@ -257,68 +236,28 @@ final class SwipletStore {
             updating.remove(swiplet.id)
             reload()
         }
-        guard let link = URL(string: swiplet.url, relativeTo: URL(string: repository.url))?.absoluteString else {
-            throw MessageError(String(localized: "The repository has no URL for the swiplet."))
-        }
-        let download = try await self.download(swiplet.id, from: link, sha256: swiplet.sha256)
+        let download = try await self.download(swiplet.id, from: swiplet.url, checksum: swiplet.checksum)
         defer { Self.discard(download.file) }
         guard download.id == swiplet.id else { throw MessageError(String(localized: "The repository sent a different swiplet.")) }
         let id = try await Platform.shared.installSwiplet(download.file)
-        try SwipletDatabase.setETag(download.etag, of: id)
-        forgetUpdate(of: id)
+        try SwipletDatabase.setRepository(repository.url, of: id)
     }
 
     @available(iOS 17.4, *)
-    func checkForUpdates(of ids: [String]) async {
-        for id in ids where updatable.contains(id) {
-            if let last = checked[id], Date.now.timeIntervalSince(last) < Self.updateInterval {
-                continue
-            }
-            _ = try? await checkForUpdate(of: id)
+    func refreshRepositories() async {
+        for repository in repositories {
+            try? await refreshRepository(repository.url, force: false)
         }
-    }
-
-    @available(iOS 17.4, *)
-    @discardableResult
-    func checkForUpdate(of id: String) async throws -> Bool {
-        checked[id] = .now
-        guard let local = manifests[id], !local.version.isEmpty, !local.updateURL.isEmpty else { return false }
-        let incompatible = incompatibleUpdates[id]
-        let fetched = try await Self.fetchManifest(local.updateURL, etag: incompatible ?? SwipletDatabase.etag(of: id))
-        guard let remote = fetched.manifest?.value, Self.isNewer(remote, than: local) else {
-            if !fetched.etag.isEmpty, fetched.etag != incompatible {
-                try SwipletDatabase.setETag(fetched.etag, of: id)
-            }
-            return false
-        }
-        guard remote.id_ == id else { throw MessageError(String(localized: "The update is a different swiplet.")) }
-        do {
-            try Platform.shared.checkSwipletCompatible(remote)
-        } catch is SwiptOutdatedError, is IOSOutdatedError {
-            incompatibleUpdates[id] = fetched.etag
-            return false
-        }
-        incompatibleUpdates[id] = nil
-        updates[id] = SwipletUpdate(id: id, version: remote.version)
-        return true
     }
 
     @available(iOS 17.4, *)
     func applyUpdates(_ ids: [String]) async throws {
-        let ids = ids.filter { !updating.contains($0) }
-        updating.formUnion(ids)
+        let pending = ids.filter { !updating.contains($0) }.compactMap(update(of:))
+        updating.formUnion(pending.map(\.swiplet.id))
         var failure: (any Error)?
-        for id in ids {
-            defer { updating.remove(id) }
-            guard updates[id] != nil, let link = manifests[id]?.updateURL else { continue }
+        for update in pending {
             do {
-                let download = try await self.download(id, from: link)
-                defer { Self.discard(download.file) }
-                guard download.id == id else { throw MessageError(String(localized: "The update is a different swiplet.")) }
-                _ = try await Platform.shared.installSwiplet(download.file)
-                try SwipletDatabase.setETag(download.etag, of: id)
-                updates[id] = nil
-                reload()
+                try await install(update.swiplet, from: update.repository)
             } catch {
                 failure = failure ?? error
             }
@@ -329,9 +268,9 @@ final class SwipletStore {
     }
 
     @available(iOS 17.4, *)
-    private func download(_ id: String, from link: String, sha256: String = "") async throws -> SwipletDownload {
+    private func download(_ id: String, from link: String, checksum: String) async throws -> SwipletDownload {
         let (progress, continuation) = AsyncStream.makeStream(of: SwipletDownloadProgress.self, bufferingPolicy: .bufferingNewest(1))
-        async let download = Self.download(link, sha256: sha256, progress: continuation)
+        async let download = Self.download(link, checksum: checksum, progress: continuation)
         for await received in progress {
             downloadProgress[id] = received
         }
@@ -339,52 +278,33 @@ final class SwipletStore {
         return try await download
     }
 
-    nonisolated private static let updateInterval: TimeInterval = 60 * 60
+    nonisolated static let updateInterval: TimeInterval = 60 * 60
 
-    nonisolated private static func repositoryName(of link: String) -> String {
-        guard let components = URLComponents(string: link), let host = components.host else { return link }
-        let path = (components.path as NSString).deletingLastPathComponent
-        return path == "/" || path.isEmpty ? host : host + path
-    }
-
-    nonisolated private static func image(_ link: String?, relativeTo base: String) async -> Data? {
-        guard let link, let url = URL(string: link, relativeTo: URL(string: base))?.absoluteString else { return nil }
-        return try? await fetch(url, etag: "", source: false).data
-    }
-
-    nonisolated private static func fetch(_ link: String, etag: String, source: Bool) async throws -> Fetched {
+    nonisolated private static func fetchRepository(_ url: String, etag: String) async throws -> Repository? {
         let downloader = UncheckedSendable(value: LibSwiptNewSwipletDownloader()!)
         return try await withTaskCancellationHandler {
             try await blocking {
-                let fetched = try downloader.value.fetch(link, etag: etag, asSource: source)
-                return Fetched(etag: fetched.entityTag, notModified: fetched.notModified, data: fetched.data ?? Data())
+                let fetched = try downloader.value.fetchRepository(url, etag: etag)
+                guard !fetched.notModified else { return nil }
+                return Repository(
+                    url: url, name: fetched.name, localizedNames: fetched.localizedNames()?.toDictionary() ?? [:],
+                    icon: fetched.icon.map { SwipletIcon(color: $0.color.isEmpty ? nil : $0.color, symbol: $0.symbol) }, image: fetched.image,
+                    etag: fetched.entityTag,
+                    swiplets: (fetched.swiplets()?.toArray() ?? []).map { swiplet in
+                        RepositorySwiplet(
+                            id: swiplet.id_, name: swiplet.name, localizedNames: swiplet.localizedNames()?.toDictionary() ?? [:],
+                            description: swiplet.summary, version: swiplet.version, versionCode: swiplet.versionCode,
+                            minimumAPILevel: swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion,
+                            icon: SwipletIcon(color: swiplet.color, symbol: swiplet.symbol), url: swiplet.url, checksum: swiplet.checksum)
+                    })
             }
         } onCancel: {
             downloader.value.cancel()
         }
-    }
-
-    nonisolated private static func fetchManifest(_ link: String, etag: String) async throws -> FetchedManifest {
-        let downloader = UncheckedSendable(value: LibSwiptNewSwipletDownloader()!)
-        return try await withTaskCancellationHandler {
-            try await blocking {
-                let fetched = try downloader.value.fetchManifest(link, etag: etag)
-                return FetchedManifest(etag: fetched.entityTag, manifest: fetched.manifest.map { UncheckedSendable(value: $0) })
-            }
-        } onCancel: {
-            downloader.value.cancel()
-        }
-    }
-
-    nonisolated private static func isNewer(_ remote: LibSwiptSwipletManifest, than local: LibSwiptSwipletManifest) -> Bool {
-        if remote.versionCode > 0, local.versionCode > 0 {
-            return remote.versionCode > local.versionCode
-        }
-        return !remote.version.isEmpty && remote.version != local.version
     }
 
     nonisolated private static func download(
-        _ link: String, sha256: String = "", progress: AsyncStream<SwipletDownloadProgress>.Continuation? = nil
+        _ link: String, checksum: String = "", progress: AsyncStream<SwipletDownloadProgress>.Continuation? = nil
     ) async throws -> SwipletDownload {
         defer { progress?.finish() }
         let file = try temporaryFile()
@@ -393,9 +313,10 @@ final class SwipletStore {
         do {
             return try await withTaskCancellationHandler {
                 try await blocking {
-                    let download = try downloader.value.download(link, destination: file.path, checksum: sha256, handler: handler)
-                    let declared = (try? manifest(of: file))?.updateURL ?? ""
-                    return SwipletDownload(file: file, etag: download.entityTag, id: download.id_, updateURL: declared)
+                    var error: NSError?
+                    let id = downloader.value.download(link, destination: file.path, checksum: checksum, handler: handler, error: &error)
+                    if let error { throw error }
+                    return SwipletDownload(file: file, id: id)
                 }
             } onCancel: {
                 downloader.value.cancel()
@@ -406,11 +327,15 @@ final class SwipletStore {
         }
     }
 
-    nonisolated private static func manifest(of file: URL) throws -> LibSwiptSwipletManifest? {
+    nonisolated private static func preview(of file: URL) throws -> SwipletPreview {
         var error: NSError?
         let manifest = LibSwiptReadSwipletManifest(file.path, &error)
         if let error { throw error }
-        return manifest
+        guard let manifest else { throw MessageError(String(localized: "The file is not a swiplet.")) }
+        let title = preferredName(manifest)
+        return SwipletPreview(
+            file: file, id: manifest.id_, title: title.isEmpty ? manifest.id_ : title, version: manifest.version,
+            icon: SwipletIcon(color: manifest.color, symbol: manifest.symbol))
     }
 
     nonisolated private static func discard(_ file: URL) {
@@ -438,28 +363,12 @@ final class SwipletStore {
         return localized[preferred] ?? name
     }
 
-    nonisolated private static func preferredName(_ names: LibSwiptSwipletManifest) -> String {
-        var localized: [String: String] = [:]
-        var name = ""
-        for index in 0..<names.len() {
-            let language = names.language(index)
-            if language.isEmpty {
-                name = names.name(index)
-            } else {
-                localized[language] = names.name(index)
-            }
-        }
-        return preferredName(name, localized: localized)
-    }
-
-    private func forgetUpdate(of id: String) {
-        updates[id] = nil
-        checked[id] = nil
+    nonisolated private static func preferredName(_ manifest: LibSwiptSwipletManifest) -> String {
+        preferredName(manifest.name, localized: manifest.localizedNames()?.toDictionary() ?? [:])
     }
 
     func remove(_ id: String) async throws {
         defer { reload() }
-        forgetUpdate(of: id)
         try await Platform.shared.removeSwiplet(id)
     }
 }
@@ -477,8 +386,8 @@ nonisolated struct SwipletAction: Hashable, Sendable {
 }
 
 nonisolated struct SwipletUpdate: Sendable {
-    let id: String
-    let version: String
+    let repository: Repository
+    let swiplet: RepositorySwiplet
 }
 
 nonisolated struct SwipletDownloadProgress: Equatable, Sendable {
@@ -528,13 +437,13 @@ nonisolated struct Repository: Identifiable, Sendable {
 
     static let official = Repository(
         url: Bundle.main.object(forInfoDictionaryKey: "SwiptChannel") as? String == "stable" ? stableURL : nightlyURL,
-        name: String(localized: "Official Swiplets"), localizedNames: nil, icon: RepositorySwiplet.Icon(color: nil, symbol: "checkmark.seal.fill"),
+        name: String(localized: "Official Swiplets"), localizedNames: [:], icon: SwipletIcon(color: nil, symbol: "checkmark.seal.fill"),
         image: nil, etag: "", swiplets: [])
 
     let url: String
     let name: String
-    let localizedNames: [String: String]?
-    let icon: RepositorySwiplet.Icon?
+    let localizedNames: [String: String]
+    let icon: SwipletIcon?
     let image: Data?
     let etag: String
     let swiplets: [RepositorySwiplet]
@@ -548,97 +457,38 @@ nonisolated struct Repository: Identifiable, Sendable {
     }
 
     var title: String {
-        SwipletStore.preferredName(name, localized: localizedNames ?? [:])
+        SwipletStore.preferredName(name, localized: localizedNames)
     }
 
     var swipletIcon: SwipletIcon {
-        var shown = icon.map { SwipletIcon(color: $0.color, symbol: $0.symbol) } ?? .default
+        var shown = icon ?? .default
         shown.image = image.flatMap(UIImage.init(data:))
         return shown
     }
 }
 
-nonisolated struct RepositorySwiplet: Decodable, Identifiable, Sendable {
-    struct Icon: Decodable, Sendable {
-        let color: String?
-        let symbol: String
-    }
-
+nonisolated struct RepositorySwiplet: Identifiable, Sendable {
     let id: String
     let name: String
     let localizedNames: [String: String]
     let description: String
     let version: String
     let versionCode: Int64
-    let icon: Icon?
+    let minimumAPILevel: Int64
+    let minimumIOSVersion: String
+    let icon: SwipletIcon
     let url: String
-    let sha256: String
-
-    private enum CodingKeys: String, CodingKey {
-        case id, name, localizedNames, description, version, versionCode, icon, url, sha256
-    }
+    let checksum: String
 
     var title: String {
-        SwipletStore.preferredName(name, localized: localizedNames)
+        let title = SwipletStore.preferredName(name, localized: localizedNames)
+        return title.isEmpty ? id : title
     }
-
-    var swipletIcon: SwipletIcon {
-        icon.map { SwipletIcon(color: $0.color, symbol: $0.symbol) } ?? .default
-    }
-
-    init(
-        id: String, name: String, localizedNames: [String: String], description: String, version: String, versionCode: Int64, icon: Icon?,
-        url: String, sha256: String
-    ) {
-        self.id = id
-        self.name = name
-        self.localizedNames = localizedNames
-        self.description = description
-        self.version = version
-        self.versionCode = versionCode
-        self.icon = icon
-        self.url = url
-        self.sha256 = sha256
-    }
-
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        name = try container.decodeIfPresent(String.self, forKey: .name) ?? id
-        localizedNames = try container.decodeIfPresent([String: String].self, forKey: .localizedNames) ?? [:]
-        description = try container.decodeIfPresent(String.self, forKey: .description) ?? ""
-        version = try container.decodeIfPresent(String.self, forKey: .version) ?? ""
-        versionCode = try container.decodeIfPresent(Int64.self, forKey: .versionCode) ?? 0
-        icon = try? container.decodeIfPresent(Icon.self, forKey: .icon)
-        url = try container.decodeIfPresent(String.self, forKey: .url) ?? ""
-        sha256 = try container.decodeIfPresent(String.self, forKey: .sha256) ?? ""
-    }
-}
-
-nonisolated private struct SourceIndex: Decodable {
-    let name: String?
-    let localizedNames: [String: String]?
-    let icon: RepositorySwiplet.Icon?
-    let image: String?
-    let swiplets: [RepositorySwiplet]
-}
-
-nonisolated private struct Fetched: Sendable {
-    let etag: String
-    let notModified: Bool
-    let data: Data
-}
-
-nonisolated private struct FetchedManifest: Sendable {
-    let etag: String
-    let manifest: UncheckedSendable<LibSwiptSwipletManifest>?
 }
 
 nonisolated private struct SwipletDownload: Sendable {
     let file: URL
-    let etag: String
     let id: String
-    let updateURL: String
 }
 
 nonisolated private final class SwipletDownloadEvents: NSObject, LibSwiptSwipletDownloadHandlerProtocol, @unchecked Sendable {

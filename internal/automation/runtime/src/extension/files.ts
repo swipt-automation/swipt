@@ -37,14 +37,14 @@ const rootPaths: Record<Root, () => string> = {
 
 const rootPath = (root: Root): string => rootPaths[root]().replace(/\/+$/, "");
 
-const at = (handle: FileHandle | DirectoryHandle): Location =>
+export const locationOf = (handle: FileHandle | DirectoryHandle): Location =>
   locations.get(handle)!;
 
 export const fileLocation = (handle: unknown): Location | undefined =>
-  handle instanceof FileHandle ? at(handle) : undefined;
+  handle instanceof FileHandle ? locationOf(handle) : undefined;
 
-export const pathOf = (handle: FileHandle | DirectoryHandle): string => {
-  const location = at(handle);
+const pathOf = (handle: FileHandle | DirectoryHandle): string => {
+  const location = locationOf(handle);
   return location.path === ""
     ? rootPath(location.root)
     : `${rootPath(location.root)}/${location.path}`;
@@ -92,7 +92,7 @@ export class DirectoryHandle {
   }
 
   get uri(): string {
-    return uriOf(at(this), true);
+    return uriOf(locationOf(this), true);
   }
 
   get name(): string {
@@ -100,25 +100,25 @@ export class DirectoryHandle {
   }
 
   file(path: string): FileHandle {
-    return new FileHandle(token, child(at(this), path));
+    return new FileHandle(token, child(locationOf(this), path));
   }
 
   directory(path: string): DirectoryHandle {
-    return new DirectoryHandle(token, child(at(this), path));
+    return new DirectoryHandle(token, child(locationOf(this), path));
   }
 
   async exists(): Promise<boolean> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     return (await call<Stat | null>("stat", root, path))?.kind === "directory";
   }
 
   async create(): Promise<void> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     await call("mkdir", root, path);
   }
 
   async list(): Promise<(FileHandle | DirectoryHandle)[]> {
-    const location = at(this);
+    const location = locationOf(this);
     const entries = await call<{ name: string; directory: boolean }[]>(
       "list",
       location.root,
@@ -132,7 +132,7 @@ export class DirectoryHandle {
   }
 
   async delete(): Promise<void> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     await call("remove", root, path);
   }
 
@@ -149,15 +149,15 @@ export class FileHandle {
   }
 
   get uri(): string {
-    return uriOf(at(this), false);
+    return uriOf(locationOf(this), false);
   }
 
   get name(): string {
-    return nameOf(at(this).path);
+    return nameOf(locationOf(this).path);
   }
 
   async stat(): Promise<{ size: number; modified: number } | null> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     const info = await call<Stat | null>("stat", root, path);
     return info?.kind === "file"
       ? { size: info.size, modified: info.modified }
@@ -165,7 +165,7 @@ export class FileHandle {
   }
 
   async bytes(): Promise<Uint8Array> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     return call<Uint8Array>("read", root, path);
   }
 
@@ -174,14 +174,14 @@ export class FileHandle {
   }
 
   stream(): ReadableStream<Uint8Array> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     return nativeReadable(native.openFile(root, path));
   }
 
   async write(
     data: string | BufferSource | Blob | ReadableStream<BufferSource>,
   ): Promise<void> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     if (!(data instanceof ReadableStream)) {
       await call("write", root, path, native.put(await bytesOf(data)));
       return;
@@ -199,19 +199,19 @@ export class FileHandle {
   }
 
   async copy(to: FileHandle): Promise<void> {
-    const from = at(this);
-    const target = at(handleOf(to, "the destination"));
+    const from = locationOf(this);
+    const target = locationOf(handleOf(to, "the destination"));
     await call("copy", from.root, from.path, target.root, target.path);
   }
 
   async move(to: FileHandle): Promise<void> {
-    const from = at(this);
-    const target = at(handleOf(to, "the destination"));
+    const from = locationOf(this);
+    const target = locationOf(handleOf(to, "the destination"));
     await call("move", from.root, from.path, target.root, target.path);
   }
 
   async delete(): Promise<void> {
-    const { root, path } = at(this);
+    const { root, path } = locationOf(this);
     await call("remove", root, path);
   }
 

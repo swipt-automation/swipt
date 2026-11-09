@@ -27,12 +27,24 @@ import (
 
 var ErrTerminated = E.New("jsc: the script was terminated")
 
+type Frame struct {
+	Function string `json:"function"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Column   int    `json:"column"`
+}
+
 type Exception struct {
+	Name    string
 	Message string
+	Stack   []Frame
 }
 
 func (e *Exception) Error() string {
-	return e.Message
+	if e.Name == "" {
+		return e.Message
+	}
+	return e.Name + ": " + e.Message
 }
 
 type Function func(arguments []Value) (any, error)
@@ -122,7 +134,14 @@ func output(cmd *C.jsc_command) (string, error) {
 		return "", ErrTerminated
 	}
 	if cmd.exception {
-		return "", &Exception{Message: out}
+		defer C.free(unsafe.Pointer(cmd.frames))
+		return "", &Exception{
+			Name:    goString(cmd.exception_name),
+			Message: out,
+			Stack: common.Map(unsafe.Slice(cmd.frames, int(cmd.frame_count)), func(frame C.jsc_frame) Frame {
+				return Frame{Function: goString(frame.function), File: goString(frame.file), Line: int(frame.line), Column: int(frame.column)}
+			}),
+		}
 	}
 	return out, nil
 }
@@ -137,10 +156,10 @@ func (c *Context) TerminateOn(ctx context.Context) (stop func() bool) {
 	})
 }
 
-func (c *Context) SetDescriber(describer Value) {
-	cmd := command(C.JSC_SET_DESCRIBER)
+func (c *Context) SetHooks(describer, framer Value) {
+	cmd := command(C.JSC_SET_HOOKS)
 	defer C.free(unsafe.Pointer(cmd))
-	cmd.value = describer.ref
+	cmd.value, cmd.object = describer.ref, framer.ref
 	c.submit(cmd)
 }
 

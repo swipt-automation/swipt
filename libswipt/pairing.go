@@ -3,10 +3,7 @@ package libSwipt
 import (
 	"context"
 	"errors"
-	"maps"
-	"slices"
 
-	"github.com/sagernet/sing/common"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/coredevice/pairing"
 )
@@ -57,12 +54,12 @@ func (r *PairingResponder) ServiceType() string { return pairing.ServiceType }
 
 func (r *PairingResponder) ServiceName() string { return r.responder.ServiceName() }
 
-func (r *PairingResponder) TXTRecord() *TXTRecord {
-	entries := r.responder.TXTRecord()
-	keys := slices.Sorted(maps.Keys(entries))
-	return &TXTRecord{keys: keys, values: common.Map(keys, func(key string) string {
-		return entries[key]
-	})}
+func (r *PairingResponder) TXTRecord() TXTRecordEntryIterator {
+	var entries []*TXTRecordEntry
+	for key, value := range r.responder.TXTRecord() {
+		entries = append(entries, &TXTRecordEntry{Key: key, Value: value})
+	}
+	return newIterator(entries)
 }
 
 func (r *PairingResponder) Start() {
@@ -104,16 +101,10 @@ func parsePairingFile(data []byte) (pairingFile, error) {
 	return pairingFile{remote: remote}, err
 }
 
-type TXTRecord struct {
-	keys   []string
-	values []string
+type TXTRecordEntry struct {
+	Key   string
+	Value string
 }
-
-func (t *TXTRecord) Len() int32 { return int32(len(t.keys)) }
-
-func (t *TXTRecord) Key(index int32) string { return t.keys[index] }
-
-func (t *TXTRecord) Value(index int32) string { return t.values[index] }
 
 type PairingRecordInfo struct {
 	DeviceName      string

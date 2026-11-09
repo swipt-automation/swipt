@@ -3,7 +3,6 @@
 #import "SWCall.h"
 
 #import "SWError.h"
-#import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWScreenRecording.h"
 
@@ -75,14 +74,6 @@ id SWCallExecute(SWCall *call, NSError **error) {
         return nil;
     }
     return object;
-}
-
-- (NSURL *)authorized:(NSString *)path write:(BOOL)write error:(NSError **)error {
-    if (path == nil) {
-        SWFail(error, SWErrorNameType, @"graphics: the call needs a path");
-        return nil;
-    }
-    return [_context authorize:path write:write error:error] ? [NSURL fileURLWithPath:path] : nil;
 }
 
 @end

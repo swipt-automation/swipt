@@ -17,6 +17,6 @@ extern NSString *const SWRecordingManifest;
 - (void)pixelSizeAt:(double)time width:(NSInteger *)width height:(NSInteger *)height;
 - (SWRaster *)rasterAt:(double)time token:(SWCancelToken *)token error:(NSError **)error;
 - (SWImageNode *)nodeAt:(double)time;
-- (BOOL)exportTo:(NSURL *)target token:(SWCancelToken *)token error:(NSError **)error;
+- (BOOL)exportTo:(NSURL *)target mov:(BOOL)mov token:(SWCancelToken *)token error:(NSError **)error;
 - (NSString *)info;
 @end

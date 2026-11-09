@@ -52,12 +52,7 @@ nonisolated final class SwipletWeb: SwiptHostWeb, @unchecked Sendable {
     }
 
     func compression(format: String, mode: String) throws -> [String] {
-        var failure: NSError?
-        let ids = web.compression(format, mode: mode, error: &failure)
-        if let failure {
-            throw failure
-        }
-        return ids.split(separator: "\n").map(String.init)
+        try web.compression(format, mode: mode).toArray()
     }
 
     func random(_ length: Int) throws -> Data {

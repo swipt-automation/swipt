@@ -3,7 +3,6 @@ package libSwipt
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
@@ -30,7 +29,7 @@ const (
 type PlatformOptions struct {
 	SwipletDirectory      string
 	SwipletCacheDirectory string
-	Languages             string
+	Languages             StringIterator
 	OSVersion             string
 	AppBundleID           string
 	AppVersion            string
@@ -76,7 +75,7 @@ func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOption
 		Device:     p.device.connection.Phone(),
 		Directory:  options.SwipletDirectory,
 		Caches:     options.SwipletCacheDirectory,
-		Languages:  strings.Fields(options.Languages),
+		Languages:  iteratorToArray[string](options.Languages),
 		OSVersion:  options.OSVersion,
 		LogFactory: p.logFactory,
 		Dialog:     p.dialog,

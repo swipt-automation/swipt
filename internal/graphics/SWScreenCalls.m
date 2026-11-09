@@ -99,7 +99,7 @@ BOOL SWCallScreenFrames(SWCall *call, NSError **error) {
 
 id SWCallScreenRecord(SWCall *call, NSError **error) {
     SWScreenStream *stream = SWStreamOf(call, error);
-    NSURL *directory = stream == nil ? nil : [call authorized:[call.arguments string:@"path"] write:YES error:error];
+    NSURL *directory = stream == nil ? nil : [call.context directoryAtRoot:[call.arguments string:@"root"] path:[call.arguments string:@"path"] create:YES error:error];
     if (directory == nil) {
         return nil;
     }
@@ -117,7 +117,7 @@ id SWCallRecordingStop(SWCall *call, NSError **error) {
 }
 
 id SWCallRecordingOpen(SWCall *call, NSError **error) {
-    NSURL *directory = [call authorized:[call.arguments string:@"path"] write:NO error:error];
+    NSURL *directory = [call.context directoryAtRoot:[call.arguments string:@"root"] path:[call.arguments string:@"path"] create:NO error:error];
     if (directory == nil) {
         return nil;
     }
@@ -127,9 +127,22 @@ id SWCallRecordingOpen(SWCall *call, NSError **error) {
 
 id SWCallRecordingExport(SWCall *call, NSError **error) {
     SWScreenRecording *recording = [call recording:error];
-    NSURL *target = recording == nil ? nil : [call authorized:[call.arguments string:@"path"] write:YES error:error];
-    if (target == nil) {
+    if (recording == nil) {
         return nil;
     }
-    return [recording exportTo:target token:call.token error:error] ? @{} : nil;
+    NSString *path = [call.arguments string:@"path"];
+    NSString *extension = path.pathExtension.lowercaseString;
+    if (![extension isEqualToString:@"mov"] && ![extension isEqualToString:@"mp4"]) {
+        SWFail(error, SWErrorNameType, @"graphics: export to a .mov or .mp4 file");
+        return nil;
+    }
+    SWGoFile *file = [call.context stageFileAtRoot:[call.arguments string:@"root"] path:path error:error];
+    if (file == nil) {
+        return nil;
+    }
+    if (![recording exportTo:file.url mov:[extension isEqualToString:@"mov"] token:call.token error:error]) {
+        [file discard];
+        return nil;
+    }
+    return [file commit:error] ? @{} : nil;
 }

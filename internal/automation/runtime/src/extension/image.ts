@@ -14,7 +14,7 @@ import type {
 
 import { invoke } from "./async";
 import { DOMException } from "./errors";
-import { fileOf, pathOf } from "./files";
+import { fileOf, locationOf } from "./files";
 import { native, type GraphicsNative } from "./native";
 import { check, optionsOf, signalOf, type Options } from "./options";
 
@@ -541,8 +541,9 @@ export class RasterImage implements RasterImageInterface {
   ) {
     const { format, quality } = optionsOf(options, ["format", "quality"]);
     const handle = fileOf(file, "the file");
-    const path = pathOf(handle);
-    const extension = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+    const extension = handle.name
+      .slice(handle.name.lastIndexOf(".") + 1)
+      .toLowerCase();
     const chosen =
       format === undefined
         ? ((
@@ -554,7 +555,7 @@ export class RasterImage implements RasterImageInterface {
         : formatOf(format);
     await run(
       "save",
-      { path, format: chosen, quality: qualityOf(quality) },
+      { ...locationOf(handle), format: chosen, quality: qualityOf(quality) },
       [handleOf(this)],
       signalOf(options),
     );
@@ -782,7 +783,7 @@ export const decode = (
   if (data instanceof Uint8Array) {
     objects.push(data);
   } else {
-    args.path = pathOf(fileOf(data, "the data"));
+    Object.assign(args, locationOf(fileOf(data, "the data")));
   }
   return imageResult(run("decode", args, objects, signalOf(options)));
 };

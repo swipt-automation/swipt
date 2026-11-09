@@ -6,8 +6,8 @@ final class BackgroundSettings {
     static let shared = BackgroundSettings()
 
     private enum Key {
-        static let isEnabled = "serverRunsInBackground"
-        static let mode = "serverBackgroundMode"
+        static let isEnabled = "runsInBackground"
+        static let mode = "backgroundMode"
     }
 
     var isEnabled: Bool {

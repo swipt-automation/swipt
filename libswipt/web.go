@@ -3,7 +3,6 @@ package libSwipt
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 
 	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/jsc"
@@ -71,12 +70,12 @@ func (w *SwipletWeb) OpenFile(root, path string) string {
 	return w.session.OpenFile(root, path)
 }
 
-func (w *SwipletWeb) Compression(format, mode string) (string, error) {
+func (w *SwipletWeb) Compression(format, mode string) (StringIterator, error) {
 	ids, err := w.session.Compression(format, mode)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return strings.Join(ids, "\n"), nil
+	return newIterator(ids), nil
 }
 
 func (w *SwipletWeb) Random(length int32) (*SwipletWebValue, error) {

@@ -4,6 +4,7 @@
 #import "SWCall.h"
 #import "SWEngine.h"
 #import "SWError.h"
+#import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWJSON.h"
 #import "SWRaster.h"
@@ -20,20 +21,12 @@ id SWCallDecode(SWCall *call, NSError **error) {
     if ([call.objects.firstObject isKindOfClass:NSData.class]) {
         data = call.objects.firstObject;
     } else if (path != nil) {
-        NSURL *url = [call authorized:path write:NO error:error];
-        if (url == nil) {
-            return nil;
-        }
-        if (![NSFileManager.defaultManager fileExistsAtPath:path]) {
-            SWFail(error, SWErrorNameNotFound, @"there is no file at %@", path);
-            return nil;
-        }
-        data = [NSData dataWithContentsOfURL:url options:0 error:error];
+        data = [call.context readRoot:[arguments string:@"root"] path:path error:error];
         if (data == nil) {
             return nil;
         }
         if (scale == nil) {
-            NSString *name = url.lastPathComponent;
+            NSString *name = path.lastPathComponent;
             NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:@"@(\\d+(?:\\.\\d+)?)x\\.[^.]+$" options:0 error:nil];
             NSTextCheckingResult *match = [expression firstMatchInString:name options:0 range:NSMakeRange(0, name.length)];
             if (match != nil) {
@@ -64,14 +57,10 @@ id SWCallEncode(SWCall *call, NSError **error) {
 
 id SWCallSave(SWCall *call, NSError **error) {
     NSData *data = SWEncodeFirstImage(call, error);
-    NSURL *url = data == nil ? nil : [call authorized:[call.arguments string:@"path"] write:YES error:error];
-    if (url == nil) {
+    if (data == nil) {
         return nil;
     }
-    if (![NSFileManager.defaultManager createDirectoryAtURL:url.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:error]) {
-        return nil;
-    }
-    return [data writeToURL:url options:NSDataWritingAtomic error:error] ? @{} : nil;
+    return [call.context writeData:data root:[call.arguments string:@"root"] path:[call.arguments string:@"path"] error:error] ? @{} : nil;
 }
 
 id SWCallPixel(SWCall *call, NSError **error) {

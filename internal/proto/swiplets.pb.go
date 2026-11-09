@@ -236,7 +236,6 @@ type Swiplet struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	HasUi         bool                   `protobuf:"varint,4,opt,name=has_ui,json=hasUi,proto3" json:"has_ui,omitempty"`
 	HasService    bool                   `protobuf:"varint,5,opt,name=has_service,json=hasService,proto3" json:"has_service,omitempty"`
 	Service       *ServiceState          `protobuf:"bytes,6,opt,name=service,proto3" json:"service,omitempty"`
 	Actions       []*SwipletAction       `protobuf:"bytes,7,rep,name=actions,proto3" json:"actions,omitempty"`
@@ -293,13 +292,6 @@ func (x *Swiplet) GetVersion() string {
 		return x.Version
 	}
 	return ""
-}
-
-func (x *Swiplet) GetHasUi() bool {
-	if x != nil {
-		return x.HasUi
-	}
-	return false
 }
 
 func (x *Swiplet) GetHasService() bool {
@@ -1333,12 +1325,11 @@ const file_swiplets_proto_rawDesc = "" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12,\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x14.swipt.ServiceStatusR\x06status\x12(\n" +
 	"\x05error\x18\x03 \x01(\v2\x12.swipt.ScriptErrorR\x05error\x120\n" +
-	"\x05since\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\"\xe0\x01\n" +
+	"\x05since\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\"\xc9\x01\n" +
 	"\aSwiplet\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\x12\x15\n" +
-	"\x06has_ui\x18\x04 \x01(\bR\x05hasUi\x12\x1f\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12\x1f\n" +
 	"\vhas_service\x18\x05 \x01(\bR\n" +
 	"hasService\x12-\n" +
 	"\aservice\x18\x06 \x01(\v2\x13.swipt.ServiceStateR\aservice\x12.\n" +

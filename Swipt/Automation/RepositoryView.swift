@@ -4,7 +4,6 @@ import SwiftUI
 @available(iOS 17.4, *)
 struct RepositoryView: View {
     let url: String
-    @Binding var isImported: Bool
 
     @State private var isLoaded = false
     @State private var alert: AlertState?
@@ -51,7 +50,7 @@ struct RepositoryView: View {
 
     private func row(_ swiplet: RepositorySwiplet, in repository: Repository) -> some View {
         HStack(spacing: 12) {
-            SwipletIconImage(icon: swiplet.swipletIcon, size: 40)
+            SwipletIconImage(icon: swiplet.icon, size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: swiplet.title)
                     .lineLimit(1)
@@ -62,7 +61,8 @@ struct RepositoryView: View {
                         .lineLimit(2)
                 }
                 if !swiplet.version.isEmpty {
-                    SwipletVersionChange(installed: swiplets.hasNewer(swiplet) ? swiplets.versions[swiplet.id] ?? "" : "", available: swiplet.version)
+                    let isUpdatable = swiplets.update(of: swiplet.id)?.repository.url == repository.url
+                    SwipletVersionChange(installed: isUpdatable ? swiplets.versions[swiplet.id] ?? "" : "", available: swiplet.version)
                 }
             }
             Spacer()
@@ -74,11 +74,11 @@ struct RepositoryView: View {
     private func trailing(_ swiplet: RepositorySwiplet, in repository: Repository) -> some View {
         if swiplets.updating.contains(swiplet.id) {
             SwipletDownloadIndicator(progress: swiplets.downloadProgress[swiplet.id])
-        } else if !swiplets.ids.contains(swiplet.id) {
+        } else if swiplets.repositoryURLs[swiplet.id] != repository.url {
             Button("Add") { install(swiplet, from: repository) }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
-        } else if swiplets.hasNewer(swiplet) {
+        } else if swiplets.update(of: swiplet.id) != nil {
             Button("Update") { install(swiplet, from: repository) }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
@@ -92,7 +92,6 @@ struct RepositoryView: View {
         Task {
             do {
                 try await swiplets.install(swiplet, from: repository)
-                isImported = true
             } catch {
                 alert = AlertState(String(localized: "Can’t Add the Swiplet"), error: error)
             }

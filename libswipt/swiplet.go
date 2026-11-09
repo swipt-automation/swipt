@@ -7,11 +7,11 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/automation"
 )
@@ -30,49 +30,58 @@ func LoadSwipletIcon(directory string) *SwipletIcon {
 	return &SwipletIcon{Color: icon.Color, Symbol: icon.Symbol}
 }
 
-type SwipletManifest struct {
-	ID          string
-	Color       string
-	Symbol      string
-	Version     string
-	VersionCode int64
-	UpdateURL   string
-	Service     bool
-	languages   []string
-	names       []string
-	actions     []automation.ActionInfo
-	manifest    automation.Manifest
+type LocalizedName struct {
+	Language string
+	Name     string
 }
 
-func (m *SwipletManifest) Len() int32 { return int32(len(m.languages)) }
+func newLocalizedNames(names map[string]string) []*LocalizedName {
+	var localized []*LocalizedName
+	for language, name := range names {
+		localized = append(localized, &LocalizedName{Language: language, Name: name})
+	}
+	return localized
+}
 
-func (m *SwipletManifest) Language(index int32) string { return m.languages[index] }
+type SwipletAction struct {
+	Name    string
+	Title   string
+	Summary string
+	expose  []automation.Caller
+}
 
-func (m *SwipletManifest) Name(index int32) string { return m.names[index] }
+func (a *SwipletAction) Exposed(caller string) bool {
+	return slices.Contains(a.expose, automation.Caller(caller))
+}
 
-func (m *SwipletManifest) ActionCount() int32 { return int32(len(m.actions)) }
+type SwipletManifest struct {
+	ID             string
+	Name           string
+	Color          string
+	Symbol         string
+	Version        string
+	VersionCode    int64
+	Service        bool
+	localizedNames []*LocalizedName
+	actions        []*SwipletAction
+}
 
-func (m *SwipletManifest) ActionName(index int32) string { return m.actions[index].Name }
+func (m *SwipletManifest) LocalizedNames() LocalizedNameIterator {
+	return newIterator(m.localizedNames)
+}
 
-func (m *SwipletManifest) ActionTitle(index int32) string { return m.actions[index].Title }
-
-func (m *SwipletManifest) ActionDescription(index int32) string { return m.actions[index].Description }
-
-func (m *SwipletManifest) ActionExposed(index int32, caller string) bool {
-	return slices.Contains(m.actions[index].Expose, automation.Caller(caller))
+func (m *SwipletManifest) Actions() SwipletActionIterator {
+	return newIterator(m.actions)
 }
 
 func newSwipletManifest(manifest automation.Manifest) *SwipletManifest {
-	out := &SwipletManifest{
-		ID: manifest.ID, Color: manifest.Icon.Color, Symbol: manifest.Icon.Symbol, Version: manifest.Version,
-		VersionCode: manifest.VersionCode, UpdateURL: manifest.UpdateURL, Service: manifest.Service,
-		languages: []string{""}, names: []string{manifest.Name}, actions: manifest.Actions, manifest: manifest,
+	return &SwipletManifest{
+		ID: manifest.ID, Name: manifest.Name, Color: manifest.Icon.Color, Symbol: manifest.Icon.Symbol, Version: manifest.Version,
+		VersionCode: manifest.VersionCode, Service: manifest.Service, localizedNames: newLocalizedNames(manifest.LocalizedNames),
+		actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *SwipletAction {
+			return &SwipletAction{Name: action.Name, Title: action.Title, Summary: action.Description, expose: action.Expose}
+		}),
 	}
-	for _, language := range slices.Sorted(maps.Keys(manifest.LocalizedNames)) {
-		out.languages = append(out.languages, language)
-		out.names = append(out.names, manifest.LocalizedNames[language])
-	}
-	return out
 }
 
 func ReadSwipletManifest(file string) (*SwipletManifest, error) {
@@ -105,27 +114,17 @@ type SwipletInfo struct {
 	NeedsUpdate bool
 }
 
-type SwipletList struct {
-	items []*SwipletInfo
-}
-
-func (l *SwipletList) Len() int32 { return int32(len(l.items)) }
-
-func (l *SwipletList) Get(index int32) *SwipletInfo { return l.items[index] }
-
-func (p *Platform) Swiplets() (*SwipletList, error) {
+func (p *Platform) Swiplets() (SwipletInfoIterator, error) {
 	swiplets, err := p.host.Swiplets()
 	if err != nil {
 		return nil, err
 	}
-	list := &SwipletList{}
-	for _, swiplet := range swiplets {
-		list.items = append(list.items, &SwipletInfo{
+	return newIterator(common.Map(swiplets, func(swiplet automation.Swiplet) *SwipletInfo {
+		return &SwipletInfo{
 			ID: swiplet.ID, Directory: swiplet.Directory, Manifest: newSwipletManifest(swiplet.Manifest),
 			NeedsUpdate: errors.Is(p.host.Compatible(swiplet.Manifest), automation.ErrSwipletOutdated),
-		})
-	}
-	return list, nil
+		}
+	})), nil
 }
 
 type SwipletInstall struct {
@@ -141,8 +140,8 @@ func (p *Platform) InstallSwiplet(file string) *SwipletInstall {
 	return newSwipletInstall(id, err)
 }
 
-func (p *Platform) CheckSwipletCompatible(manifest *SwipletManifest) *SwipletInstall {
-	return newSwipletInstall(manifest.ID, p.host.Compatible(manifest.manifest))
+func (p *Platform) SwipletCompatible(minimumAPILevel int64, minimumIOSVersion string) bool {
+	return p.host.Compatible(automation.Manifest{MinimumAPILevel: minimumAPILevel, MinimumIOSVersion: minimumIOSVersion}) == nil
 }
 
 func newSwipletInstall(id string, err error) *SwipletInstall {

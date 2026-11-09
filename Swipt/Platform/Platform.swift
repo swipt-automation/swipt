@@ -78,7 +78,7 @@ final class Platform {
         let options = LibSwiptPlatformOptions()
         options.swipletDirectory = SwipletStore.directory.path
         options.swipletCacheDirectory = SwipletStore.caches.path
-        options.languages = Locale.preferredLanguages.joined(separator: "\n")
+        options.languages = Locale.preferredLanguages.toStringIterator()
         let version = ProcessInfo.processInfo.operatingSystemVersion
         options.osVersion = "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
         options.appBundleID = Bundle.main.bundleIdentifier ?? ""
@@ -245,8 +245,7 @@ final class Platform {
     }
 
     func swiplets() throws -> [LibSwiptSwipletInfo] {
-        let list = try core.swiplets()
-        return (0..<list.len()).compactMap { list.get($0) }
+        try core.swiplets().toArray()
     }
 
     func installSwiplet(_ file: URL) async throws -> String {
@@ -255,14 +254,8 @@ final class Platform {
         return try Self.result(of: installed.value)
     }
 
-    func installSwiplet(picked file: URL) async throws -> String {
-        let box = UncheckedSendable(value: core)
-        let installed = try await blocking { try file.withPickedFile { UncheckedSendable(value: box.value.installSwiplet($0.path)!) } }
-        return try Self.result(of: installed.value)
-    }
-
-    func checkSwipletCompatible(_ manifest: LibSwiptSwipletManifest) throws {
-        _ = try Self.result(of: core.checkSwipletCompatible(manifest)!)
+    func isSwipletCompatible(_ swiplet: RepositorySwiplet) -> Bool {
+        core.swipletCompatible(swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion)
     }
 
     private static func result(of installed: LibSwiptSwipletInstall) throws -> String {

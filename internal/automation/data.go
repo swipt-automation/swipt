@@ -176,15 +176,14 @@ func (r *fileRoot) read(name string) ([]byte, error) {
 	return data, nil
 }
 
-type FileWriter struct {
-	*os.File
+type StagedFile struct {
 	root      *fileRoot
 	directory *os.Root
 	name      string
 	temporary string
 }
 
-func (r *fileRoot) create(name string) (*FileWriter, error) {
+func (r *fileRoot) stage(name string) (*StagedFile, error) {
 	if r.readOnly {
 		return nil, r.readOnlyError()
 	}
@@ -199,28 +198,58 @@ func (r *fileRoot) create(name string) (*FileWriter, error) {
 	if err != nil {
 		return nil, r.error(parent, err)
 	}
-	temporary := ".write-" + rand.Text()
-	file, err := directory.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	return &StagedFile{root: r, directory: directory, name: name, temporary: ".write-" + rand.Text()}, nil
+}
+
+func (s *StagedFile) Path() string {
+	return filepath.Join(s.directory.Name(), s.temporary)
+}
+
+func (s *StagedFile) Commit() error {
+	err := s.directory.Rename(s.temporary, filepath.Base(s.name))
 	if err != nil {
-		_ = directory.Close()
+		_ = s.directory.Remove(s.temporary)
+	}
+	_ = s.directory.Close()
+	if err != nil {
+		return s.root.error(s.name, err)
+	}
+	return nil
+}
+
+func (s *StagedFile) Discard() {
+	_ = s.directory.Remove(s.temporary)
+	_ = s.directory.Close()
+}
+
+type FileWriter struct {
+	*os.File
+	*StagedFile
+}
+
+func (r *fileRoot) create(name string) (*FileWriter, error) {
+	staged, err := r.stage(name)
+	if err != nil {
+		return nil, err
+	}
+	file, err := staged.directory.OpenFile(staged.temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		staged.Discard()
 		return nil, r.error(name, err)
 	}
-	return &FileWriter{File: file, root: r, directory: directory, name: name, temporary: temporary}, nil
+	return &FileWriter{File: file, StagedFile: staged}, nil
 }
 
 func (w *FileWriter) Finish(abort error) error {
 	err := w.File.Close()
-	if abort == nil && err == nil {
-		err = w.directory.Rename(w.temporary, filepath.Base(w.name))
-	}
 	if abort != nil || err != nil {
-		_ = w.directory.Remove(w.temporary)
+		w.Discard()
+		if err != nil {
+			return w.root.error(w.name, err)
+		}
+		return nil
 	}
-	_ = w.directory.Close()
-	if err != nil {
-		return w.root.error(w.name, err)
-	}
-	return nil
+	return w.Commit()
 }
 
 func (r *fileRoot) write(name string, data []byte) error {

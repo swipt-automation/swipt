@@ -29,6 +29,7 @@ struct jsc_runtime {
 	JSContextGroupRef group;
 	JSGlobalContextRef context;
 	JSValueRef describer;
+	JSValueRef framer;
 	jsc_set_time_limit set_limit;
 	uint64_t run;
 	_Atomic uint64_t cancelled;
@@ -52,7 +53,7 @@ static JSStringRef jsc_take_string(jsc_text *text) {
 // The UTF-8 conversion stops at a lone surrogate (WebKit 21bb1f66,
 // Source/JavaScriptCore/API/JSStringRef.cpp:89; WebKit 21bb1f66,
 // Source/WTF/wtf/unicode/UTF8Conversion.cpp:92).
-static void jsc_copy_out(jsc_command *cmd, JSStringRef text) {
+static jsc_text jsc_text_of(JSStringRef text) {
 	size_t length = JSStringGetLength(text);
 	size_t capacity = JSStringGetMaximumUTF8CStringSize(text);
 	uint8_t *utf8 = malloc(capacity);
@@ -62,15 +63,15 @@ static void jsc_copy_out(jsc_command *cmd, JSStringRef text) {
 		units += (utf8[index] & 0xC0) != 0x80;
 		units += utf8[index] >= 0xF0;
 	}
-	if (units == length) {
-		cmd->out = (jsc_text){.data = utf8, .length = size};
-	} else {
+	jsc_text out = {.data = utf8, .length = size};
+	if (units != length) {
 		free(utf8);
 		JSChar *utf16 = malloc(sizeof(JSChar) * length);
 		memcpy(utf16, JSStringGetCharactersPtr(text), sizeof(JSChar) * length);
-		cmd->out = (jsc_text){.data = utf16, .length = length, .wide = true};
+		out = (jsc_text){.data = utf16, .length = length, .wide = true};
 	}
 	JSStringRelease(text);
+	return out;
 }
 
 static JSStringRef jsc_describe_value(jsc_runtime *rt, JSValueRef value) {
@@ -84,12 +85,63 @@ static JSStringRef jsc_describe_value(jsc_runtime *rt, JSValueRef value) {
 	return text != NULL ? text : JSStringCreateWithUTF8CString("");
 }
 
+static JSValueRef jsc_property(JSContextRef ctx, JSValueRef value, const char *name) {
+	if (!JSValueIsObject(ctx, value)) {
+		return NULL;
+	}
+	JSStringRef key = JSStringCreateWithUTF8CString(name);
+	JSValueRef property = JSObjectGetProperty(ctx, (JSObjectRef)value, key, NULL);
+	JSStringRelease(key);
+	return property;
+}
+
+static jsc_text jsc_string_property(JSContextRef ctx, JSValueRef value, const char *name) {
+	JSValueRef property = jsc_property(ctx, value, name);
+	if (property == NULL || !JSValueIsString(ctx, property)) {
+		return (jsc_text){0};
+	}
+	return jsc_text_of(JSValueToStringCopy(ctx, property, NULL));
+}
+
+static double jsc_number_property(JSContextRef ctx, JSValueRef value, const char *name) {
+	JSValueRef property = jsc_property(ctx, value, name);
+	return property != NULL && JSValueIsNumber(ctx, property) ? JSValueToNumber(ctx, property, NULL) : 0;
+}
+
+static void jsc_capture(jsc_runtime *rt, jsc_command *cmd, JSValueRef exception) {
+	JSContextRef ctx = rt->context;
+	cmd->exception = true;
+	cmd->exception_name = jsc_string_property(ctx, exception, "name");
+	cmd->out = jsc_string_property(ctx, exception, "message");
+	if (cmd->out.data == NULL) {
+		cmd->out = jsc_text_of(jsc_describe_value(rt, exception));
+	}
+	if (rt->framer == NULL || !JSValueIsObject(ctx, exception)) {
+		return;
+	}
+	JSValueRef frames = JSObjectCallAsFunction(ctx, (JSObjectRef)rt->framer, NULL, 1, &exception, NULL);
+	if (frames == NULL || !JSValueIsArray(ctx, frames)) {
+		return;
+	}
+	size_t count = (size_t)jsc_number_property(ctx, frames, "length");
+	cmd->frames = calloc(count, sizeof(jsc_frame));
+	cmd->frame_count = count;
+	for (size_t index = 0; index < count; index++) {
+		JSValueRef frame = JSObjectGetPropertyAtIndex(ctx, (JSObjectRef)frames, (unsigned)index, NULL);
+		cmd->frames[index] = (jsc_frame){
+			.function = jsc_string_property(ctx, frame, "function"),
+			.file = jsc_string_property(ctx, frame, "file"),
+			.line = jsc_number_property(ctx, frame, "line"),
+			.column = jsc_number_property(ctx, frame, "column"),
+		};
+	}
+}
+
 static void jsc_finish(jsc_runtime *rt, jsc_command *cmd, JSValueRef result, JSValueRef exception) {
 	if (rt->terminated) {
 		cmd->terminated = true;
 	} else if (exception != NULL) {
-		cmd->exception = true;
-		jsc_copy_out(cmd, jsc_describe_value(rt, exception));
+		jsc_capture(rt, cmd, exception);
 	} else if (result != NULL) {
 		JSValueProtect(rt->context, result);
 		cmd->result = result;
@@ -98,7 +150,7 @@ static void jsc_finish(jsc_runtime *rt, jsc_command *cmd, JSValueRef result, JSV
 
 static void jsc_finish_text(jsc_runtime *rt, jsc_command *cmd, JSStringRef text, JSValueRef exception) {
 	if (text != NULL) {
-		jsc_copy_out(cmd, text);
+		cmd->out = jsc_text_of(text);
 	}
 	jsc_finish(rt, cmd, NULL, exception);
 }
@@ -245,8 +297,9 @@ static void jsc_execute(jsc_runtime *rt, jsc_command *cmd) {
 		cmd->run = ++rt->run;
 		jsc_recover(rt);
 		break;
-	case JSC_SET_DESCRIBER:
+	case JSC_SET_HOOKS:
 		rt->describer = cmd->value;
+		rt->framer = cmd->object;
 		break;
 	case JSC_GLOBAL:
 		cmd->result = JSContextGetGlobalObject(ctx);
@@ -308,7 +361,7 @@ static void jsc_execute(jsc_runtime *rt, jsc_command *cmd) {
 		jsc_finish_text(rt, cmd, JSValueToStringCopy(ctx, cmd->value, &exception), exception);
 		break;
 	case JSC_DESCRIBE:
-		jsc_copy_out(cmd, jsc_describe_value(rt, cmd->value));
+		cmd->out = jsc_text_of(jsc_describe_value(rt, cmd->value));
 		break;
 	case JSC_IS_FUNCTION:
 		cmd->flag = JSValueIsObject(ctx, cmd->value) && JSObjectIsFunction(ctx, (JSObjectRef)cmd->value);

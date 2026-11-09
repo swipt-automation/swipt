@@ -163,7 +163,7 @@ nonisolated struct TailscaleStatus: Equatable, Sendable {
         loginName = status.loginName
         tailnet = status.tailnet
         dnsName = status.dnsName
-        addresses = status.addresses.split(separator: "\n").map(String.init)
+        addresses = status.addresses?.toArray() ?? []
     }
 }
 

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,11 +28,6 @@ var (
 	errReset     = E.New("a reset of the JavaScript state interrupted the call")
 	errSession   = E.New("the JavaScript session ended")
 	errUnsettled = E.New("the script awaits a promise that nothing can settle")
-)
-
-var (
-	exceptionName  = regexp.MustCompile(`^((?:[^:\n]*: )*)([A-Z][A-Za-z]*Error): `)
-	exceptionFrame = regexp.MustCompile(`^ {4}at (?:(.*) \((.+):(\d+):(\d+)\)|(.+):(\d+):(\d+))$`)
 )
 
 type TimeLimitError struct {
@@ -74,33 +68,15 @@ func ScriptFailure(err error) (*Failure, bool) {
 	if failure, isFailure := errors.AsType[*Failure](err); isFailure {
 		return failure, true
 	}
-	if _, isException := errors.AsType[*jsc.Exception](err); isException {
-		text, trace, _ := strings.Cut(Message(err), "\n    at ")
-		failure := &Failure{Name: "Error", Message: text}
-		if match := exceptionName.FindStringSubmatch(text); match != nil {
-			failure.Name, failure.Message = match[2], match[1]+text[len(match[0]):]
-		}
-		if trace != "" {
-			for line := range strings.SplitSeq("    at "+trace, "\n") {
-				match := exceptionFrame.FindStringSubmatch(line)
-				if match == nil {
-					continue
-				}
-				frame := Frame{Function: match[1], File: match[2] + match[5]}
-				frame.Line, _ = strconv.Atoi(match[3] + match[6])
-				frame.Column, _ = strconv.Atoi(match[4] + match[7])
-				failure.Stack = append(failure.Stack, frame)
-			}
+	if exception, isException := errors.AsType[*jsc.Exception](err); isException {
+		failure := &Failure{Name: exception.Name, Message: exception.Message, Stack: exception.Stack}
+		if failure.Name == "" {
+			failure.Name = "Error"
 		}
 		return failure, true
 	}
-	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		return &Failure{Name: "TimeoutError", Message: Message(err)}, true
-	case E.IsMulti(err, errReset, errSession):
-		return &Failure{Name: "AbortError", Message: Message(err)}, true
-	case errors.Is(err, errUnsettled):
-		return &Failure{Name: "Error", Message: Message(err)}, true
+	if E.IsMulti(err, context.DeadlineExceeded, errReset, errSession, errUnsettled) {
+		return &Failure{Name: failureName(err), Message: Message(err)}, true
 	}
 	return nil, false
 }
@@ -290,7 +266,7 @@ func (e *engine) serve() {
 			break
 		}
 		if _, thrown := errors.AsType[*jsc.Exception](err); thrown {
-			e.log(log.LevelError, "uncaught in a timer: "+err.Error())
+			e.log(log.LevelError, "uncaught in a timer: "+failureOf(err).Describe())
 		} else if err != nil && !errors.Is(err, jsc.ErrTerminated) {
 			e.log(log.LevelError, err.Error())
 		}

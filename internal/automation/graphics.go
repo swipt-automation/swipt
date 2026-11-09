@@ -5,16 +5,12 @@ package automation
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io/fs"
-	"os"
 	"path/filepath"
-	"slices"
-	"strconv"
 	"sync/atomic"
+	"syscall"
 	"time"
 
-	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/jsc"
 )
@@ -67,45 +63,56 @@ func (c *GraphicsCall) Screenshot() ([]byte, float64, error) {
 	return data, scale, err
 }
 
-func (c *GraphicsCall) Authorize(name string, write bool) error {
-	e := c.call.engine
-	roots, where := []string{filepath.Join(e.swiplet.Directory, DataFolder), e.caches}, "the data or cache directory"
-	if !write {
-		roots, where = append(roots, filepath.Join(e.swiplet.Directory, AssetsFolder)), "the data, cache or assets directory"
-	}
-	resolved, err := resolvePath(filepath.Clean(name))
+func (c *GraphicsCall) ReadFile(kind, name string) ([]byte, error) {
+	at, err := c.call.engine.fileLocation(kind, name)
 	if err != nil {
-		return E.Cause(err, "graphics: resolve ", strconv.Quote(name))
+		return nil, err
 	}
-	if filepath.IsAbs(name) {
-		for _, root := range common.FilterNotDefault(roots) {
-			base, err := resolvePath(root)
-			if err != nil {
-				continue
-			}
-			if relative, err := filepath.Rel(base, resolved); err == nil && relative != "." && filepath.IsLocal(relative) {
-				return nil
-			}
-		}
-	}
-	return E.Cause1(ErrNotAllowed, E.New("graphics: ", strconv.Quote(name), " is outside ", where))
+	defer at.root.Close()
+	return at.root.read(at.name)
 }
 
-func resolvePath(name string) (string, error) {
-	var missing []string
-	for {
-		resolved, err := filepath.EvalSymlinks(name)
-		if err == nil {
-			slices.Reverse(missing)
-			return filepath.Join(append([]string{resolved}, missing...)...), nil
-		}
-		parent := filepath.Dir(name)
-		if _, statErr := os.Lstat(name); statErr == nil || !errors.Is(err, fs.ErrNotExist) || parent == name {
+func (c *GraphicsCall) WriteFile(kind, name string, data []byte) error {
+	at, err := c.call.engine.fileLocation(kind, name)
+	if err != nil {
+		return err
+	}
+	defer at.root.Close()
+	return at.root.write(at.name, data)
+}
+
+func (c *GraphicsCall) StageFile(kind, name string) (*StagedFile, error) {
+	at, err := c.call.engine.fileLocation(kind, name)
+	if err != nil {
+		return nil, err
+	}
+	defer at.root.Close()
+	return at.root.stage(at.name)
+}
+
+func (c *GraphicsCall) Directory(kind, name string, create bool) (string, error) {
+	at, err := c.call.engine.fileLocation(kind, name)
+	if err != nil {
+		return "", err
+	}
+	defer at.root.Close()
+	if create {
+		if err = at.root.mkdir(at.name); err != nil {
 			return "", err
 		}
-		missing = append(missing, filepath.Base(name))
-		name = parent
+	} else {
+		info, found, err := at.root.stat(at.name)
+		if err != nil {
+			return "", err
+		}
+		if !found {
+			return "", FileNotFound(at.root.where, at.name)
+		}
+		if !info.Directory {
+			return "", at.root.error(at.name, &fs.PathError{Op: "open", Path: at.name, Err: syscall.ENOTDIR})
+		}
 	}
+	return filepath.Join(at.root.root.Name(), at.name), nil
 }
 
 func (e *engine) installGraphics(native jsc.Value) {

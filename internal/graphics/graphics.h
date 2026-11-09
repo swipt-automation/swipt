@@ -13,6 +13,23 @@ typedef struct {
 } swipt_graphics_screenshot;
 
 typedef struct {
+    void *bytes;
+    size_t length;
+    char *failure;
+} swipt_graphics_file;
+
+typedef struct {
+    char *path;
+    char *failure;
+} swipt_graphics_directory;
+
+typedef struct {
+    uintptr_t file;
+    char *path;
+    char *failure;
+} swipt_graphics_staged_file;
+
+typedef struct {
     uintptr_t stream;
     int64_t width;
     int64_t height;

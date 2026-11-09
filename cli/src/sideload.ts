@@ -1374,9 +1374,9 @@ async function savePreferences(device, id, preferences) {
 
 const setUpAutoUnlock = (device, id, passcode) =>
   savePreferences(device, id, {
-    serverAutoUnlocks: true,
-    serverAutoUnlockPasscodeType: passcodeTypes.indexOf(passcode.type),
-    serverAutoUnlockPasscode: passcode.passcode,
+    autoUnlocks: true,
+    autoUnlockPasscodeType: passcodeTypes.indexOf(passcode.type),
+    autoUnlockPasscode: passcode.passcode,
     autoUnlockSetUp: true,
   });
 
@@ -1396,7 +1396,7 @@ async function savedPasscode(device, id) {
       [
         "-json",
         database,
-        "SELECT name, CAST(data AS TEXT) AS value FROM preferences WHERE name LIKE 'serverAutoUnlock%'",
+        "SELECT name, CAST(data AS TEXT) AS value FROM preferences WHERE name LIKE 'autoUnlock%'",
       ],
       { encoding: "utf8" },
     );
@@ -1406,10 +1406,10 @@ async function savedPasscode(device, id) {
         JSON.parse(value),
       ]),
     );
-    return saved.serverAutoUnlocks && saved.serverAutoUnlockPasscode
+    return saved.autoUnlocks && saved.autoUnlockPasscode
       ? {
-          passcode: saved.serverAutoUnlockPasscode,
-          type: passcodeTypes[saved.serverAutoUnlockPasscodeType ?? 0],
+          passcode: saved.autoUnlockPasscode,
+          type: passcodeTypes[saved.autoUnlockPasscodeType ?? 0],
         }
       : undefined;
   } finally {

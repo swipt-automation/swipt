@@ -12,7 +12,7 @@ typedef enum {
 	JSC_CREATE,
 	JSC_DESTROY,
 	JSC_BEGIN,
-	JSC_SET_DESCRIBER,
+	JSC_SET_HOOKS,
 	JSC_GLOBAL,
 	JSC_NEW_OBJECT,
 	JSC_NEW_STRING,
@@ -39,6 +39,13 @@ typedef struct {
 	bool wide;
 } jsc_text;
 
+typedef struct {
+	jsc_text function;
+	jsc_text file;
+	double line;
+	double column;
+} jsc_frame;
+
 typedef void (*jsc_native)(JSGlobalContextRef context, int32_t command, JSValueRef value, uint64_t argument);
 
 typedef struct {
@@ -56,6 +63,9 @@ typedef struct {
 
 	JSValueRef result;
 	jsc_text out;
+	jsc_text exception_name;
+	jsc_frame *frames;
+	size_t frame_count;
 	uint8_t *data;
 	size_t data_length;
 	double number;

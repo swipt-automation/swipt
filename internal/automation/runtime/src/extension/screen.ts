@@ -8,7 +8,7 @@ import type {
 
 import { stream } from "./async";
 import { DOMException } from "./errors";
-import { directoryOf, fileOf, pathOf } from "./files";
+import { directoryOf, fileOf, locationOf } from "./files";
 import {
   adoptOptional,
   finite,
@@ -88,7 +88,7 @@ export class ScreenStream implements ScreenStreamInterface {
   ): Promise<RecordingSession> {
     const result = await run<{ session: number }>(
       "screen.record",
-      { path: pathOf(directoryOf(directory, "the directory")) },
+      { ...locationOf(directoryOf(directory, "the directory")) },
       [streams.get(this)!],
       signalOf(check(options, [])),
     );
@@ -134,7 +134,7 @@ export class ScreenRecording implements ScreenRecordingInterface {
   async export(file: unknown, options?: Options): Promise<void> {
     await run(
       "recording.export",
-      { path: pathOf(fileOf(file, "the file")) },
+      { ...locationOf(fileOf(file, "the file")) },
       [recordings.get(this)!],
       signalOf(check(options, [])),
     );
@@ -184,7 +184,7 @@ export const openRecording = async (
 ): Promise<ScreenRecording> => {
   const result = await run<{ recording: number }>(
     "recording.open",
-    { path: pathOf(directoryOf(directory, "the directory")) },
+    { ...locationOf(directoryOf(directory, "the directory")) },
     [],
     signalOf(check(options, [])),
   );

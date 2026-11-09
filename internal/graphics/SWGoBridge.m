@@ -16,6 +16,12 @@ static NSError *SWTakeFailure(char *failure) {
     return error;
 }
 
+static NSURL *SWTakeFileURL(char *path, BOOL directory) {
+    NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path] isDirectory:directory];
+    free(path);
+    return url;
+}
+
 @implementation SWGoObject
 
 - (instancetype)initWithHandle:(uintptr_t)handle {
@@ -32,19 +38,69 @@ static NSError *SWTakeFailure(char *failure) {
 
 @end
 
+@interface SWGoFile ()
+@property (nonatomic, readwrite) NSURL *url;
+@end
+
+@implementation SWGoFile
+
+- (BOOL)commit:(NSError **)error {
+    char *failure = swiptGraphicsCommitFile(self.handle);
+    if (failure == NULL) {
+        return YES;
+    }
+    SWFailWith(error, SWTakeFailure(failure));
+    return NO;
+}
+
+- (void)discard {
+    swiptGraphicsDiscardFile(self.handle);
+}
+
+@end
+
 @implementation SWCallContext
 
 - (BOOL)cancelled {
     return swiptGraphicsCancelled(self.handle);
 }
 
-- (BOOL)authorize:(NSString *)path write:(BOOL)write error:(NSError **)error {
-    char *failure = swiptGraphicsAuthorize(self.handle, SWCString(path), write);
+- (NSData *)readRoot:(NSString *)root path:(NSString *)path error:(NSError **)error {
+    swipt_graphics_file file = swiptGraphicsReadFile(self.handle, SWCString(root), SWCString(path));
+    if (file.failure != NULL) {
+        SWFailWith(error, SWTakeFailure(file.failure));
+        return nil;
+    }
+    return [NSData dataWithBytesNoCopy:file.bytes length:file.length freeWhenDone:YES];
+}
+
+- (BOOL)writeData:(NSData *)data root:(NSString *)root path:(NSString *)path error:(NSError **)error {
+    char *failure = swiptGraphicsWriteFile(self.handle, SWCString(root), SWCString(path), (void *)data.bytes, data.length);
     if (failure == NULL) {
         return YES;
     }
     SWFailWith(error, SWTakeFailure(failure));
     return NO;
+}
+
+- (NSURL *)directoryAtRoot:(NSString *)root path:(NSString *)path create:(BOOL)create error:(NSError **)error {
+    swipt_graphics_directory directory = swiptGraphicsDirectory(self.handle, SWCString(root), SWCString(path), create);
+    if (directory.failure != NULL) {
+        SWFailWith(error, SWTakeFailure(directory.failure));
+        return nil;
+    }
+    return SWTakeFileURL(directory.path, YES);
+}
+
+- (SWGoFile *)stageFileAtRoot:(NSString *)root path:(NSString *)path error:(NSError **)error {
+    swipt_graphics_staged_file staged = swiptGraphicsStageFile(self.handle, SWCString(root), SWCString(path));
+    if (staged.failure != NULL) {
+        SWFailWith(error, SWTakeFailure(staged.failure));
+        return nil;
+    }
+    SWGoFile *file = [[SWGoFile alloc] initWithHandle:staged.file];
+    file.url = SWTakeFileURL(staged.path, NO);
+    return file;
 }
 
 - (NSData *)screenshotWithScale:(double *)scale error:(NSError **)error {

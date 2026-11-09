@@ -73,7 +73,7 @@ func serviceStateOf(state automation.ServiceState) *proto.ServiceState {
 func (s *swipletService) swipletOf(swiplet automation.Swiplet) *proto.Swiplet {
 	manifest := swiplet.Manifest
 	out := &proto.Swiplet{
-		Id: swiplet.ID, Title: manifest.Name, Version: manifest.Version, HasUi: manifest.Interface, HasService: manifest.Service,
+		Id: swiplet.ID, Title: manifest.Name, Version: manifest.Version, HasService: manifest.Service,
 		Actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *proto.SwipletAction {
 			return &proto.SwipletAction{
 				Name: action.Name, Title: action.Title, Description: action.Description,

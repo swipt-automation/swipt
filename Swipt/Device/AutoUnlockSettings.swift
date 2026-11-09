@@ -1,4 +1,5 @@
 import Foundation
+import LibSwipt
 import Perception
 import SwiftUI
 
@@ -7,9 +8,9 @@ final class AutoUnlockSettings {
     static let shared = AutoUnlockSettings()
 
     private enum Key {
-        static let isEnabled = "serverAutoUnlocks"
-        static let passcodeType = "serverAutoUnlockPasscodeType"
-        static let passcode = "serverAutoUnlockPasscode"
+        static let isEnabled = "autoUnlocks"
+        static let passcodeType = "autoUnlockPasscodeType"
+        static let passcode = "autoUnlockPasscode"
         static let isSetUp = "autoUnlockSetUp"
     }
 
@@ -18,7 +19,7 @@ final class AutoUnlockSettings {
     }
 
     var passcodeType: PasscodeType {
-        didSet { store.set(passcodeType, for: Key.passcodeType) }
+        didSet { store.set(passcodeType.rawValue, for: Key.passcodeType) }
     }
 
     var passcode: String {
@@ -33,7 +34,7 @@ final class AutoUnlockSettings {
 
     init() {
         isEnabled = store.value(Bool.self, for: Key.isEnabled) ?? false
-        passcodeType = store.value(PasscodeType.self, for: Key.passcodeType) ?? .pin
+        passcodeType = store.value(Int32.self, for: Key.passcodeType).flatMap(PasscodeType.init(rawValue:)) ?? .pin
         passcode = store.value(String.self, for: Key.passcode) ?? ""
         isSetUp = store.value(Bool.self, for: Key.isSetUp) ?? false
     }
@@ -45,10 +46,27 @@ final class AutoUnlockSettings {
     }
 }
 
-enum PasscodeType: Int32, Codable, CaseIterable {
-    case pin = 0
-    case numeric = 1
-    case alphanumeric = 2
+enum PasscodeType: RawRepresentable, CaseIterable {
+    case pin
+    case numeric
+    case alphanumeric
+
+    init?(rawValue: Int32) {
+        switch rawValue {
+        case LibSwiptPasscodeTypePIN: self = .pin
+        case LibSwiptPasscodeTypeNumeric: self = .numeric
+        case LibSwiptPasscodeTypeAlphanumeric: self = .alphanumeric
+        default: return nil
+        }
+    }
+
+    var rawValue: Int32 {
+        switch self {
+        case .pin: LibSwiptPasscodeTypePIN
+        case .numeric: LibSwiptPasscodeTypeNumeric
+        case .alphanumeric: LibSwiptPasscodeTypeAlphanumeric
+        }
+    }
 
     var title: Text {
         switch self {

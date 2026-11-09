@@ -33,28 +33,14 @@ enum AppDatabase {
     private static func load() throws -> DatabaseQueue {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let database = try DatabaseQueue(path: url.path)
-        let expected = try DatabaseQueue()
-        try migrator.migrate(expected)
-        do {
-            try migrator.migrate(database)
-        } catch {
-            AppDirectory.logger.error("migrate \(url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
-        }
-        if try database.read(schema) != expected.read(schema) {
-            AppDirectory.logger.error("erase \(url.lastPathComponent, privacy: .public) saved with a different schema")
-            try database.erase()
-            try migrator.migrate(database)
-        }
+        try migrator.migrate(database)
         return database
-    }
-
-    private nonisolated static func schema(_ db: Database) throws -> [String] {
-        try String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND name != 'grdb_migrations' ORDER BY name")
     }
 
     private static let migrator: DatabaseMigrator = {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("0.1.0", migrate: createTables)
+        migrator.registerMigration("0.1.0-1", migrate: migrate0_1_0_1)
         return migrator
     }()
 
@@ -92,6 +78,29 @@ enum AppDatabase {
             t.column("url", .text).notNull()
             t.column("sha256", .text).notNull()
             t.primaryKey(["repository", "id"])
+        }
+    }
+
+    private nonisolated static func migrate0_1_0_1(_ db: Database) throws {
+        try db.alter(table: "swiplets") { t in
+            t.drop(column: "etag")
+            t.add(column: "repository", .text).notNull().defaults(to: "")
+        }
+        try db.execute(sql: "DELETE FROM repositorySwiplets")
+        try db.execute(sql: "UPDATE repositories SET etag = ''")
+        try db.alter(table: "repositorySwiplets") { t in
+            t.add(column: "minimumAPILevel", .integer).notNull().defaults(to: 1)
+            t.add(column: "minimumIOSVersion", .text).notNull().defaults(to: "")
+        }
+        for (oldName, name) in [
+            ("serverRunsInBackground", "runsInBackground"),
+            ("serverBackgroundMode", "backgroundMode"),
+            ("serverAutoUnlocks", "autoUnlocks"),
+            ("serverAutoUnlockPasscodeType", "autoUnlockPasscodeType"),
+            ("serverAutoUnlockPasscode", "autoUnlockPasscode"),
+        ] {
+            try db.execute(sql: "UPDATE OR IGNORE preferences SET name = ? WHERE name = ?", arguments: [name, oldName])
+            try db.execute(sql: "DELETE FROM preferences WHERE name = ?", arguments: [oldName])
         }
     }
 }

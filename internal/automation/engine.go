@@ -115,9 +115,10 @@ type subscription struct {
 }
 
 type hooks struct {
-	settle, deliver, end, describe jsc.Value
-	load, call, start, abort       jsc.Value
-	repl, launch                   jsc.Value
+	settle, deliver, end     jsc.Value
+	describe, frames         jsc.Value
+	load, call, start, abort jsc.Value
+	repl, launch             jsc.Value
 }
 
 type entry struct {
@@ -338,7 +339,7 @@ func (h *Host) newEngine(swiplet Swiplet, dialog Dialog, logger log.ContextLogge
 	}
 	defer installed.Release()
 	for name, slot := range map[string]*jsc.Value{
-		"settle": &e.hooks.settle, "deliver": &e.hooks.deliver, "end": &e.hooks.end, "describe": &e.hooks.describe,
+		"settle": &e.hooks.settle, "deliver": &e.hooks.deliver, "end": &e.hooks.end, "describe": &e.hooks.describe, "frames": &e.hooks.frames,
 		"load": &e.hooks.load, "call": &e.hooks.call, "start": &e.hooks.start, "abort": &e.hooks.abort,
 		"repl": &e.hooks.repl, "launch": &e.hooks.launch,
 	} {
@@ -346,7 +347,7 @@ func (h *Host) newEngine(swiplet Swiplet, dialog Dialog, logger log.ContextLogge
 			return nil, err
 		}
 	}
-	e.context.SetDescriber(e.hooks.describe)
+	e.context.SetHooks(e.hooks.describe, e.hooks.frames)
 	e.context.SetUnhandledRejection(func(arguments []jsc.Value) (any, error) {
 		e.log(log.LevelError, "a promise was rejected with nothing to handle it: "+arguments[1].Describe())
 		return nil, nil

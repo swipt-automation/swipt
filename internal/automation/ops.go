@@ -16,6 +16,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/jsc"
 )
 
 type operation struct {
@@ -183,39 +184,41 @@ func Message(err error) string {
 	return message
 }
 
+type failureKind struct {
+	name   string
+	errors []error
+}
+
+var failureKinds = []failureKind{
+	{"UnavailableError", []error{device.ErrUnavailable, device.ErrDisconnected, device.ErrLocked, device.ErrStalled, device.ErrNotAnswering, accessibility.ErrStalled}},
+	{"TimeoutError", []error{context.DeadlineExceeded, device.ErrTimeout}},
+	{"AbortError", []error{context.Canceled, ErrDismissed, errReset, errSession}},
+	{"TypeError", []error{ErrInvalid, errNetwork}},
+	{"NotFoundError", []error{ErrNotFound, device.ErrNotFound, accessibility.ErrGone}},
+	{"NotAllowedError", []error{ErrNotAllowed}},
+}
+
+func failureName(err error) string {
+	if scripted, isScripted := errors.AsType[*Failure](err); isScripted && scripted.Name != "" {
+		return scripted.Name
+	}
+	for _, kind := range failureKinds {
+		if E.IsMulti(err, kind.errors...) {
+			return kind.name
+		}
+	}
+	return "Error"
+}
+
 func FailureOf(err error) string {
-	type failure struct {
+	data, _ := json.Marshal(struct {
 		Name    string `json:"name"`
 		Message string `json:"message"`
-	}
-	out := failure{Name: "Error", Message: Message(err)}
-	scripted, isScripted := errors.AsType[*Failure](err)
-	switch {
-	case isScripted && scripted.Name != "":
-		out.Name = scripted.Name
-	case E.IsMulti(err, device.ErrDisconnected, device.ErrUnavailable, device.ErrLocked, device.ErrStalled, device.ErrNotAnswering, accessibility.ErrStalled):
-		out.Name = "UnavailableError"
-	case E.IsMulti(err, context.DeadlineExceeded, device.ErrTimeout):
-		out.Name = "TimeoutError"
-	case errors.Is(err, ErrDismissed), E.IsCanceled(err):
-		out.Name = "AbortError"
-	case E.IsMulti(err, ErrInvalid, errNetwork):
-		out.Name = "TypeError"
-	case E.IsMulti(err, ErrNotFound, device.ErrNotFound, accessibility.ErrGone):
-		out.Name = "NotFoundError"
-	case errors.Is(err, ErrNotAllowed):
-		out.Name = "NotAllowedError"
-	}
-	data, _ := json.Marshal(out)
+	}{failureName(err), Message(err)})
 	return string(data)
 }
 
-type Frame struct {
-	Function string `json:"function"`
-	File     string `json:"file"`
-	Line     int    `json:"line"`
-	Column   int    `json:"column"`
-}
+type Frame = jsc.Frame
 
 type Failure struct {
 	Name    string  `json:"name"`
@@ -250,19 +253,8 @@ func (f *Failure) Describe() string {
 }
 
 func (f *Failure) Is(target error) bool {
-	switch f.Name {
-	case "AbortError":
-		return target == context.Canceled
-	case "TypeError":
-		return target == ErrInvalid
-	case "NotFoundError":
-		return target == ErrNotFound
-	case "NotAllowedError":
-		return target == ErrNotAllowed
-	case "UnavailableError":
-		return target == device.ErrUnavailable
-	}
-	return false
+	index := slices.IndexFunc(failureKinds, func(kind failureKind) bool { return kind.name == f.Name })
+	return index >= 0 && target == failureKinds[index].errors[0]
 }
 
 func failureError(text string) error {

@@ -59,10 +59,8 @@ final class PairingSession {
             self?.fail(DeviceProblem(kind: .pairing, message: Self.publishingMessage(errorCode)))
         }
         var txt: [String: String] = [:]
-        if let record = responder.txtRecord() {
-            for index in 0..<record.len() {
-                txt[record.key(index)] = record.value(index)
-            }
+        for entry in responder.txtRecord()?.toArray() ?? [] {
+            txt[entry.key] = entry.value
         }
         let published = advertiser.start(
             name: responder.serviceName(), type: responder.serviceType(), port: Int(responder.port()), txt: txt)

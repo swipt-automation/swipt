@@ -29,13 +29,10 @@ type Manifest struct {
 	Version           string
 	VersionCode       int64
 	Icon              Icon
-	UpdateURL         string
 	MinimumAPILevel   int64
 	MinimumIOSVersion string
-	Interface         bool
 	Service           bool
 	Actions           []ActionInfo
-	fields            map[string]json.RawMessage
 }
 
 type manifestFields struct {
@@ -46,19 +43,13 @@ type manifestFields struct {
 	Version           string            `json:"version"`
 	VersionCode       int64             `json:"versionCode"`
 	Icon              Icon              `json:"icon"`
-	UpdateURL         string            `json:"updateURL"`
 	MinimumAPILevel   int64             `json:"minimumAPILevel"`
 	MinimumIOSVersion json.Number       `json:"minimumIOSVersion"`
-	Interface         bool              `json:"interface"`
 	Service           bool              `json:"service"`
 	Actions           []ActionInfo      `json:"actions"`
 }
 
 func ParseManifest(data []byte) (Manifest, error) {
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil {
-		return Manifest{}, E.Cause(err, "read ", ManifestFile)
-	}
 	known := manifestFields{Icon: DefaultIcon, MinimumAPILevel: 1}
 	if err := json.Unmarshal(data, &known); err != nil {
 		return Manifest{}, E.Cause(err, "read ", ManifestFile)
@@ -76,41 +67,9 @@ func ParseManifest(data []byte) (Manifest, error) {
 	}
 	return Manifest{
 		ID: known.ID, Name: known.Name, LocalizedNames: known.LocalizedNames, Description: known.Description, Version: known.Version,
-		VersionCode: known.VersionCode, Icon: known.Icon, UpdateURL: known.UpdateURL, MinimumAPILevel: known.MinimumAPILevel,
-		MinimumIOSVersion: minimumIOSVersion, Interface: known.Interface, Service: known.Service, Actions: known.Actions, fields: fields,
+		VersionCode: known.VersionCode, Icon: known.Icon, MinimumAPILevel: known.MinimumAPILevel,
+		MinimumIOSVersion: minimumIOSVersion, Service: known.Service, Actions: known.Actions,
 	}, nil
-}
-
-func EncodeManifest(manifest Manifest) ([]byte, error) {
-	out := make(map[string]any, len(manifest.fields)+10)
-	for key, value := range manifest.fields {
-		out[key] = value
-	}
-	set := func(key string, value any, present bool) {
-		if present {
-			out[key] = value
-		} else {
-			delete(out, key)
-		}
-	}
-	for key, value := range map[string]string{
-		"id": manifest.ID, "name": manifest.Name, "description": manifest.Description, "version": manifest.Version, "updateURL": manifest.UpdateURL,
-	} {
-		set(key, value, value != "")
-	}
-	set("versionCode", manifest.VersionCode, manifest.VersionCode > 0)
-	set("minimumAPILevel", manifest.MinimumAPILevel, manifest.MinimumAPILevel > 0)
-	set("minimumIOSVersion", json.Number(manifest.MinimumIOSVersion), manifest.MinimumIOSVersion != "")
-	set("localizedNames", manifest.LocalizedNames, len(manifest.LocalizedNames) > 0)
-	set("icon", manifest.Icon, manifest.Icon != DefaultIcon)
-	set("interface", true, manifest.Interface)
-	set("service", true, manifest.Service)
-	set("actions", manifest.Actions, len(manifest.Actions) > 0)
-	data, err := json.MarshalIndent(out, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	return append(data, '\n'), nil
 }
 
 func LoadManifest(directory string) (Manifest, error) {

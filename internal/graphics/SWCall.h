@@ -18,7 +18,6 @@
 - (instancetype)initWithMethod:(NSString *)method arguments:(SWArguments *)arguments objects:(NSArray *)objects;
 - (SWImageNode *)image:(NSUInteger)index error:(NSError **)error;
 - (SWScreenRecording *)recording:(NSError **)error;
-- (NSURL *)authorized:(NSString *)path write:(BOOL)write error:(NSError **)error;
 @end
 
 typedef id (*SWCallFunction)(SWCall *call, NSError **error);

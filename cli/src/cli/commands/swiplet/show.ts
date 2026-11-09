@@ -20,9 +20,6 @@ const showSwiplet = (context) =>
       throw notInstalled(context.args[0]);
     }
     console.log(swiplet.id, JSON.stringify(swiplet.title), swiplet.version);
-    if (swiplet.hasUi) {
-      console.log(tr("ui: yes"));
-    }
     if (swiplet.service) {
       console.log(
         tr("service: {status}", {

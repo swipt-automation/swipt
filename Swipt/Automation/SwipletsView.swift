@@ -3,6 +3,7 @@ import SwiftUI
 
 @available(iOS 17.4, *)
 struct SwipletsView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isAddingSwiplet = false
     @State private var isShowingUpdates = false
     @State private var swipletToDelete: String?
@@ -65,7 +66,12 @@ struct SwipletsView: View {
             .onChange(of: swiplets.interfaces) {
                 SwipletHost.shared.prepare(swiplets.interfaces)
             }
-            .task { await swiplets.checkForUpdates(of: swiplets.ids) }
+            .task(id: scenePhase == .active) {
+                guard scenePhase == .active else { return }
+                repeat {
+                    await swiplets.refreshRepositories()
+                } while (try? await Task.sleep(for: .seconds(SwipletStore.updateInterval))) != nil
+            }
             .alert(
                 "Delete “\(swipletToDelete.map { swiplets.titles[$0] ?? $0 } ?? "")”?",
                 isPresented: Binding(get: { swipletToDelete != nil }, set: { if !$0 { swipletToDelete = nil } })
@@ -109,31 +115,16 @@ struct SwipletsView: View {
     }
 
     private func swipletRow(_ name: String) -> some View {
-        let service = swiplets.withServices.contains(name) ? swiplets.service(of: name) : nil
-        let interface = swiplets.interfaces[name]
-        return Group {
+        Button {
             if swiplets.outdated.contains(name) {
-                Button {
-                    outdatedSwiplet = name
-                } label: {
-                    swipletLabel(name)
-                }
-                .tint(.primary)
-            } else if let interface {
-                Button {
-                    SwipletPresentation.open(name: name, entry: interface)
-                } label: {
-                    swipletLabel(name)
-                }
-                .tint(.primary)
-            } else if let service {
-                Toggle(isOn: Binding(get: { service.enabled }, set: { setService(name, enabled: $0) })) {
-                    swipletLabel(name)
-                }
-            } else {
-                swipletLabel(name)
+                outdatedSwiplet = name
+            } else if let entry = swiplets.interfaces[name] {
+                SwipletPresentation.open(name: name, entry: entry)
             }
+        } label: {
+            swipletLabel(name)
         }
+        .tint(.primary)
         .swipeActions(edge: .trailing) {
             Button {
                 swipletToDelete = name
@@ -153,9 +144,9 @@ struct SwipletsView: View {
             } label: {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
-            if swiplets.updates[name] == nil, swiplets.updatable.contains(name) {
+            if swiplets.update(of: name) == nil, let repository = swiplets.repositoryURLs[name], swiplets.repository(repository) != nil {
                 Button {
-                    checkForUpdate(name)
+                    checkForUpdate(name, in: repository)
                 } label: {
                     Label("Check for Updates…", systemImage: "arrow.clockwise")
                 }
@@ -173,17 +164,6 @@ struct SwipletsView: View {
             SwipletIconImage(icon: swiplets.icons[name] ?? .default, size: 40)
             Text(verbatim: swiplets.titles[name] ?? name)
                 .lineLimit(1)
-        }
-    }
-
-    private func setService(_ name: String, enabled: Bool) {
-        Task {
-            do {
-                try await swiplets.setServiceEnabled(name, enabled)
-            } catch {
-                let title = swiplets.titles[name] ?? name
-                alert = AlertState(enabled ? String(localized: "Can’t Turn On “\(title)”") : String(localized: "Can’t Turn Off “\(title)”"), error: error)
-            }
         }
     }
 
@@ -208,11 +188,11 @@ struct SwipletsView: View {
         }
     }
 
-    private func checkForUpdate(_ name: String) {
+    private func checkForUpdate(_ name: String, in repository: String) {
         Task {
             do {
-                let found = try await swiplets.checkForUpdate(of: name)
-                if !found {
+                try await swiplets.refreshRepository(repository, force: true)
+                if swiplets.update(of: name) == nil {
                     alert = AlertState(title: String(localized: "You’re Up to Date"))
                 }
             } catch {
@@ -231,14 +211,14 @@ struct SwipletUpdatesView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            let pending = swiplets.ids.compactMap { swiplets.updates[$0] }
+            let pending = swiplets.updates
             Form {
                 Section {
-                    Button("Update All") { apply(pending.map(\.id)) }
-                        .disabled(pending.contains { swiplets.updating.contains($0.id) })
+                    Button("Update All") { apply(pending.map(\.swiplet.id)) }
+                        .disabled(pending.contains { swiplets.updating.contains($0.swiplet.id) })
                 }
                 Section("Updatable Swiplets") {
-                    ForEach(pending, id: \.id, content: row)
+                    ForEach(pending, id: \.swiplet.id, content: row)
                 }
             }
             .navigationTitle("Updates")
@@ -259,19 +239,19 @@ struct SwipletUpdatesView: View {
 
     private func row(_ update: SwipletUpdate) -> some View {
         HStack(spacing: 12) {
-            SwipletIconImage(icon: swiplets.icons[update.id] ?? .default, size: 40)
+            SwipletIconImage(icon: swiplets.icons[update.swiplet.id] ?? .default, size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: swiplets.titles[update.id] ?? update.id)
+                Text(verbatim: swiplets.titles[update.swiplet.id] ?? update.swiplet.id)
                     .lineLimit(1)
-                if !update.version.isEmpty {
-                    SwipletVersionChange(installed: swiplets.versions[update.id] ?? "", available: update.version)
+                if !update.swiplet.version.isEmpty {
+                    SwipletVersionChange(installed: swiplets.versions[update.swiplet.id] ?? "", available: update.swiplet.version)
                 }
             }
             Spacer()
-            if swiplets.updating.contains(update.id) {
-                SwipletDownloadIndicator(progress: swiplets.downloadProgress[update.id])
+            if swiplets.updating.contains(update.swiplet.id) {
+                SwipletDownloadIndicator(progress: swiplets.downloadProgress[update.swiplet.id])
             } else {
-                Button("Update") { apply([update.id]) }
+                Button("Update") { apply([update.swiplet.id]) }
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
             }
