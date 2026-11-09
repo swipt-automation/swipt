@@ -70,6 +70,7 @@ func newConn(s *Connection, session context.Context, device *coredevice.Device, 
 	c.darwin.access.Unlock()
 	go c.watchScreenViewing(received, func() { unsubscribe(); unwatch() }, relayDone)
 	go c.ax.run()
+	c.front.start()
 	go func() { _, _ = c.lockState.recent(ctx) }()
 	return c
 }

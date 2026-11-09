@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
 	"github.com/swipt-automation/swipt/internal/coredevice/instruments"
@@ -24,7 +24,6 @@ import (
 const (
 	appStatesBacklog = 250 * time.Millisecond
 	recentFront      = 250 * time.Millisecond
-	trackingLinger   = 10 * time.Second
 )
 
 // SpringBoard posted SubstantialTransition as the app in front changed, also
@@ -49,9 +48,24 @@ const (
 	roleService = "/runningboardd"
 )
 
+// The relay of the device's log sent nothing for 12 to 25 s after the device
+// connected and then what had been logged since, while the activity trace tap
+// sent the role changes 7 to 40 ms after them but kept DTServiceHub at 5.7 %
+// of a core and diagnosticd at 1.5 %, against 0.2 % each with the relay
+// (iPad17,1 and iPhone18,2, iPadOS and iOS 27.3 24C5037i). So the tap stands
+// in until the relay's first entry, and a role change no later than the last
+// one taken for its app is one the other stream gave.
+const rolePredicate = `process == "runningboardd" AND eventMessage CONTAINS "Set darwin role to: "`
+
+type roleEntry struct {
+	continuous uint64
+	at         time.Time
+	message    string
+}
+
 type focalApp struct {
 	bundleID string
-	since    time.Time
+	since    uint64
 }
 
 type ForegroundApp struct {
@@ -78,15 +92,18 @@ type foreground struct {
 	next      int
 	stop      context.CancelFunc
 	stopped   chan struct{}
-	linger    *time.Timer
 	bundles   map[string]string
 	listed    map[string]bool
 	unlisted  map[string]bool
 	paths     map[uint64]string
 	focal     map[uint64]focalApp
+	roles     map[uint64]uint64
+	shown     map[uint64]string
+	shownAt   time.Time
 	wake      chan struct{}
 	following atomic.Bool
 	reading   atomic.Bool
+	again     atomic.Bool
 
 	infoAccess sync.Mutex
 	info       *instruments.DeviceInfo
@@ -96,7 +113,7 @@ type foreground struct {
 func newForeground(c *conn) *foreground {
 	return &foreground{
 		conn: c, listeners: make(map[int]func(ForegroundApp)), paths: make(map[uint64]string), focal: make(map[uint64]focalApp),
-		wake: make(chan struct{}, 1),
+		roles: make(map[uint64]uint64), wake: make(chan struct{}, 1),
 	}
 }
 
@@ -158,18 +175,33 @@ func (f *foreground) readShown(ctx context.Context) (frontApplication, map[uint6
 			shown[process.PID] = process.BundleID
 		}
 	}
+	// Both apps hold foregroundRunning while one replaces the other, so an app
+	// that came to hold it since the last read is taken as the front.
+	candidates := shown
+	if asked.After(f.shownAt) {
+		fresh := make(map[uint64]string)
+		for pid, bundleID := range shown {
+			if _, held := f.shown[pid]; !held {
+				fresh[pid] = bundleID
+			}
+		}
+		if len(fresh) > 0 {
+			candidates = fresh
+		}
+		f.shown, f.shownAt = shown, asked
+	}
 	f.access.Unlock()
 	front := frontApplication{pid: springboard, bundleID: springboardBundleID, at: asked, via: "processes"}
-	if bundleID, kept := shown[current.pid]; kept {
+	if bundleID, kept := candidates[current.pid]; kept {
 		front.pid, front.bundleID = current.pid, bundleID
 	} else {
-		for pid, bundleID := range shown {
+		for pid, bundleID := range candidates {
 			if front.bundleID == springboardBundleID || pid < front.pid {
 				front.pid, front.bundleID = pid, bundleID
 			}
 		}
 	}
-	f.conn.connection.trace(asked, "frontmost", front.bundleID+" pid "+strconv.FormatUint(front.pid, 10), time.Since(asked))
+	f.conn.connection.trace(asked, "frontmost", front.bundleID+" pid "+strconv.FormatUint(front.pid, 10)+" of "+strings.Join(slices.Sorted(maps.Values(shown)), ", "), time.Since(asked))
 	return front, shown, nil
 }
 
@@ -236,37 +268,22 @@ func (f *foreground) watch(listener func(ForegroundApp)) (cancel func()) {
 	f.next++
 	id := f.next
 	f.listeners[id] = listener
-	if f.linger != nil {
-		f.linger.Stop()
-		f.linger = nil
-	}
-	if f.stop == nil {
-		ctx, stop := context.WithCancel(f.conn.ctx)
-		f.stop, f.stopped = stop, make(chan struct{})
-		go f.track(ctx, f.stopped)
-	}
 	f.access.Unlock()
-	var once sync.Once
 	return func() {
-		once.Do(func() {
-			f.access.Lock()
-			defer f.access.Unlock()
-			delete(f.listeners, id)
-			if len(f.listeners) > 0 || f.stop == nil {
-				return
-			}
-			var linger *time.Timer
-			linger = time.AfterFunc(trackingLinger, func() {
-				f.access.Lock()
-				defer f.access.Unlock()
-				if f.linger == linger && len(f.listeners) == 0 && f.stop != nil {
-					f.stop()
-					f.stop, f.tracked, f.linger = nil, false, nil
-				}
-			})
-			f.linger = linger
-		})
+		f.access.Lock()
+		delete(f.listeners, id)
+		f.access.Unlock()
 	}
+}
+
+// The tracking starts as the device connects and lasts as long, so it is
+// live by the time anything asks for the front.
+func (f *foreground) start() {
+	ctx, stop := context.WithCancel(f.conn.ctx)
+	f.access.Lock()
+	f.stop, f.stopped = stop, make(chan struct{})
+	f.access.Unlock()
+	go f.track(ctx, f.stopped)
 }
 
 func (f *foreground) acted() {
@@ -326,23 +343,42 @@ func (f *foreground) track(ctx context.Context, stopped chan struct{}) {
 				f.launched(state)
 			}
 			f.poke()
+			f.refresh(ctx)
 		case <-pushesDone:
 			f.conn.logger.Debug("watch app states: ", states.Err())
 			pushes, pushesDone = nil, nil
 		case <-notified:
 			f.poke()
-			if !f.following.Load() && f.reading.CompareAndSwap(false, true) {
-				go func() {
-					defer f.reading.Store(false)
-					if _, err := f.read(ctx); err != nil && ctx.Err() == nil {
-						f.conn.logger.Debug(E.Cause(err, "read the frontmost application"))
-					}
-				}()
-			}
+			f.refresh(ctx)
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+// refresh reads the front again for an event until the roles are followed,
+// and once more after a read during which another event came.
+func (f *foreground) refresh(ctx context.Context) {
+	if f.following.Load() {
+		return
+	}
+	f.again.Store(true)
+	if !f.reading.CompareAndSwap(false, true) {
+		return
+	}
+	go func() {
+		for {
+			for f.again.Swap(false) && !f.following.Load() {
+				if _, err := f.read(ctx); err != nil && ctx.Err() == nil {
+					f.conn.logger.Debug(E.Cause(err, "read the frontmost application"))
+				}
+			}
+			f.reading.Store(false)
+			if !f.again.Load() || f.following.Load() || !f.reading.CompareAndSwap(false, true) {
+				return
+			}
+		}
+	}()
 }
 
 func (f *foreground) confirm(ctx context.Context) {
@@ -372,51 +408,133 @@ func (f *foreground) follow(ctx context.Context) {
 }
 
 func (f *foreground) followRoles(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	tap, err := instruments.DialLogStream(ctx, ctx, f.conn.device, rolePredicate)
+	if err != nil {
+		f.conn.logger.Debug(E.Cause(err, "tap the roles"))
+	}
+	var clock *instruments.DeviceClock
+	var tapReady <-chan struct{}
+	var tapEntries <-chan instruments.LogEntry
+	var tapDone <-chan struct{}
+	if tap != nil {
+		tapReady, tapEntries, tapDone = tap.Ready(), tap.Entries(), tap.Done()
+	}
+	closeTap := func() {
+		if tap == nil {
+			return
+		}
+		if known := tap.Clock(); known != nil {
+			clock = known
+		}
+		tap.Close()
+		tap, tapReady, tapEntries, tapDone = nil, nil, nil, nil
+	}
+	defer closeTap()
 	processes, err := apps.Processes(ctx, f.conn.device)
 	if err != nil {
 		return err
 	}
-	service := common.Find(processes, func(it apps.Process) bool { return strings.HasSuffix(it.Executable, roleService) })
-	if service.PID == 0 {
+	service := slices.IndexFunc(processes, func(it apps.Process) bool { return strings.HasSuffix(it.Executable, roleService) })
+	if service < 0 {
 		return E.New("runningboardd is not running")
 	}
-	stream, err := ostrace.Dial(ctx, f.conn.device, service.PID)
+	relay, err := ostrace.Dial(ctx, f.conn.device, processes[service].PID)
 	if err != nil {
 		return err
 	}
-	stop := context.AfterFunc(ctx, func() { stream.Close() })
-	defer stop()
-	defer stream.Close()
+	context.AfterFunc(ctx, func() { relay.Close() })
+	relayed, relayFailed := make(chan ostrace.Entry, 64), make(chan error, 1)
+	go func() {
+		for {
+			entry, err := relay.Next()
+			if err != nil {
+				relayFailed <- err
+				return
+			}
+			select {
+			case relayed <- entry:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	fromRelay := func(entry ostrace.Entry) roleEntry {
+		at := time.Now()
+		if clock != nil {
+			at = clock.Time(entry.Continuous)
+		}
+		return roleEntry{continuous: entry.Continuous, at: at, message: entry.Message}
+	}
 	defer f.following.Store(false)
 	for {
-		entry, err := stream.Next()
-		if err != nil {
-			return err
-		}
 		if !f.following.Load() {
-			front, shown, err := f.readShown(ctx)
-			if err != nil {
+			select {
+			case <-tapReady:
+				if err = f.seed(ctx); err != nil {
+					return err
+				}
+			case entry := <-relayed:
+				closeTap()
+				if err = f.seed(ctx); err != nil {
+					return err
+				}
+				f.role(ctx, fromRelay(entry))
+			case <-tapDone:
+				f.conn.logger.Debug(E.Cause(tap.Err(), "tap the roles"))
+				closeTap()
+			case err = <-relayFailed:
 				return err
+			case <-ctx.Done():
+				return ctx.Err()
 			}
-			// The roles set before the first entry are lost, so every app the
-			// processes show in front holds it, in no known order, until its
-			// role changes.
-			f.access.Lock()
-			clear(f.focal)
-			for pid, bundleID := range shown {
-				f.focal[pid] = focalApp{bundleID: bundleID}
-			}
-			f.access.Unlock()
-			f.saw(front)
-			f.conn.connection.trace(entry.At, "roles", "live with "+strconv.Itoa(len(shown))+" apps in front, "+front.bundleID+" pid "+strconv.FormatUint(front.pid, 10)+" first", time.Since(entry.At))
-			f.following.Store(true)
+			continue
 		}
-		f.role(ctx, entry)
+		select {
+		case entry := <-tapEntries:
+			f.role(ctx, roleEntry{continuous: entry.Continuous, at: entry.At, message: entry.Message})
+		case entry := <-relayed:
+			if tap != nil {
+				closeTap()
+				f.conn.connection.trace(time.Now(), "roles", "the relay caught up; the tap closed", 0)
+			}
+			f.role(ctx, fromRelay(entry))
+		case <-tapDone:
+			f.conn.logger.Debug(E.Cause(tap.Err(), "tap the roles"))
+			closeTap()
+			f.following.Store(false)
+		case err = <-relayFailed:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 
-func (f *foreground) role(ctx context.Context, entry ostrace.Entry) {
-	head, found := strings.CutPrefix(entry.Message, "[app<")
+// The roles set before the streams started are unknown, so every app the
+// processes show in front holds it, in no known order, until its role
+// changes.
+func (f *foreground) seed(ctx context.Context) error {
+	front, shown, err := f.readShown(ctx)
+	if err != nil {
+		return err
+	}
+	f.access.Lock()
+	clear(f.focal)
+	clear(f.roles)
+	for pid, bundleID := range shown {
+		f.focal[pid] = focalApp{bundleID: bundleID}
+	}
+	f.access.Unlock()
+	f.saw(front)
+	f.conn.connection.trace(front.at, "roles", "live with "+strconv.Itoa(len(shown))+" apps in front, "+front.bundleID+" pid "+strconv.FormatUint(front.pid, 10)+" first", time.Since(front.at))
+	f.following.Store(true)
+	return nil
+}
+
+func (f *foreground) role(ctx context.Context, entry roleEntry) {
+	head, found := strings.CutPrefix(entry.message, "[app<")
 	head, role, changed := strings.Cut(head, roleChange)
 	end := strings.IndexAny(head, "(>")
 	_, pidText, numbered := strings.Cut(head, ">:")
@@ -424,7 +542,14 @@ func (f *foreground) role(ctx context.Context, entry ostrace.Entry) {
 	if !found || !changed || !numbered || end <= 0 || err != nil {
 		return
 	}
-	at, bundleID := entry.At, head[:end]
+	f.access.Lock()
+	if entry.continuous <= f.roles[pid] {
+		f.access.Unlock()
+		return
+	}
+	f.roles[pid] = entry.continuous
+	f.access.Unlock()
+	at, bundleID := entry.at, head[:end]
 	f.conn.connection.trace(at, "role", bundleID+" pid "+pidText+" "+role, time.Since(at))
 	if role == focalRole {
 		if err = f.relist(ctx, bundleID); err != nil {
@@ -435,17 +560,17 @@ func (f *foreground) role(ctx context.Context, entry ostrace.Entry) {
 	}
 	f.access.Lock()
 	if role == focalRole {
-		f.focal[pid] = focalApp{bundleID: bundleID, since: at}
+		f.focal[pid] = focalApp{bundleID: bundleID, since: entry.continuous}
 	} else {
 		delete(f.focal, pid)
 	}
 	front := frontApplication{bundleID: springboardBundleID, at: at, via: "role"}
-	var latest time.Time
+	var latest uint64
 	for it, app := range f.focal {
 		if !f.listed[app.bundleID] {
 			continue
 		}
-		if front.pid == 0 || app.since.After(latest) || app.since.Equal(latest) && it == f.current.pid {
+		if front.pid == 0 || app.since > latest || app.since == latest && it == f.current.pid {
 			latest, front.pid, front.bundleID = app.since, it, app.bundleID
 		}
 	}
@@ -518,6 +643,7 @@ func (f *foreground) record(state instruments.AppState) (launched bool) {
 	if state.State == "Terminated" {
 		delete(f.paths, state.PID)
 		delete(f.focal, state.PID)
+		delete(f.roles, state.PID)
 		return false
 	}
 	if state.Path != "" {
@@ -567,10 +693,6 @@ func (f *foreground) close() {
 	f.access.Lock()
 	stop, stopped := f.stop, f.stopped
 	f.stop = nil
-	if f.linger != nil {
-		f.linger.Stop()
-		f.linger = nil
-	}
 	f.access.Unlock()
 	if stop != nil {
 		stop()

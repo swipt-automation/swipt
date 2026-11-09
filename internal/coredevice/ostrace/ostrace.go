@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice"
@@ -22,9 +21,13 @@ import (
 // length, and a record of a 129-byte header, the NUL-terminated filename, the
 // image name and the message, both sized in the header with their NUL
 // (pymobiledevice3 eed1fde, pymobiledevice3/services/os_trace.py:131-203,
-// 224, 337-380). The shim sent nothing for 12 to 30 s after the reply and
-// dropped what was logged meanwhile, then wrote entries in 16 KB writes, and
-// each entry at once from then on (iPad17,1, iPadOS 27.3 24C5037i).
+// 224, 337-380). Every stream started as the device connected sent nothing
+// for 12 to 25 s, for one process or all, with or without the historical and
+// debug flags, and then all of them began at once, while a stream started
+// again later in the connection sent at once (iPad17,1, iPadOS 27.3
+// 24C5037i). The first writes, of 16 KB, held what had been logged since the
+// stream started, and each entry came at once from then on (iPhone18,2, iOS
+// 27.3 24C5037i).
 const (
 	serviceName  = "com.apple.os_trace_relay.shim.remote"
 	streamFlags  = 0x4
@@ -32,10 +35,14 @@ const (
 	maxRecord    = 1 << 20
 )
 
+// Continuous is the mach continuous time the entry was logged at; the time at
+// 55 and 63 is when diagnosticd framed the record (24C5037i diagnosticd
+// 0x100005454, 0x100005540, 0x100005568), and Continuous matched the activity
+// trace tap's time for the same entry (iPhone18,2, iOS 27.3 24C5037i).
 type Entry struct {
-	PID     uint64
-	At      time.Time
-	Message string
+	PID        uint64
+	Continuous uint64
+	Message    string
 }
 
 type Stream struct {
@@ -122,8 +129,8 @@ func parse(record []byte) (Entry, error) {
 		return Entry{}, E.New("ostrace: record of ", len(record), " bytes is shorter than its header")
 	}
 	entry := Entry{
-		PID: uint64(binary.LittleEndian.Uint32(record[9:])),
-		At:  time.Unix(int64(binary.LittleEndian.Uint32(record[55:])), int64(binary.LittleEndian.Uint32(record[63:]))*int64(time.Microsecond)),
+		PID:        uint64(binary.LittleEndian.Uint32(record[9:])),
+		Continuous: binary.LittleEndian.Uint64(record[75:]),
 	}
 	imageLength := int(binary.LittleEndian.Uint16(record[107:]))
 	messageLength := int(binary.LittleEndian.Uint16(record[109:]))

@@ -20,6 +20,7 @@ const (
 	maxFragmentSize    = 128 << 10
 	maxFragmentCount   = 1024
 	messageOK          = 0
+	messageData        = 1
 	messageDispatch    = 2
 	messageObject      = 3
 	messageError       = 4
@@ -204,8 +205,13 @@ func decodeMessage(body []byte) (byte, any, []any, error) {
 	if err != nil {
 		return 0, nil, nil, err
 	}
+	// A DATA message carries raw bytes, which a tap streams its records in
+	// (pymobiledevice3 9537c0a, pymobiledevice3/dtx/channel.py:49, 184;
+	// pymobiledevice3/services/dvt/instruments/tap.py:32-34).
 	var payload any
-	if data := body[payloadHeaderSize+int(auxSize):]; len(data) != 0 {
+	if data := body[payloadHeaderSize+int(auxSize):]; kind == messageData {
+		payload = append([]byte(nil), data...)
+	} else if len(data) != 0 {
 		payload, err = UnmarshalArchive(data)
 		if err != nil {
 			return 0, nil, nil, E.Cause(err, "decode message payload")
