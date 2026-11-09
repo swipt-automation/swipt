@@ -22,11 +22,12 @@ final class BackgroundSettings {
 
     init() {
         isEnabled = store.value(Bool.self, for: Key.isEnabled) ?? true
-        mode = store.value(BackgroundMode.self, for: Key.mode) ?? .audio
+        let mode = store.value(BackgroundMode.self, for: Key.mode) ?? .system
+        self.mode = mode == .system && !BackgroundAssertion.isSupported ? .location : mode
     }
 }
 
 enum BackgroundMode: String, Codable {
+    case system
     case location
-    case audio
 }

@@ -210,6 +210,15 @@ extension View {
         onChange(of: value, initial: initial) { action($1) }
         #endif
     }
+
+    @ViewBuilder
+    func selectionDisabledCompat(_ isDisabled: Bool) -> some View {
+        if #available(iOS 17, macOS 14, *) {
+            selectionDisabled(isDisabled)
+        } else {
+            disabled(isDisabled)
+        }
+    }
 }
 
 extension View {

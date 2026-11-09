@@ -23,6 +23,16 @@ final class Platform {
     private var calls = 0
 
     @PerceptionIgnored private let core: LibSwiptPlatform
+    @PerceptionIgnored private lazy var assertion: BackgroundAssertion = {
+        let assertion = BackgroundAssertion()
+        assertion.onActiveChange = { [weak self] in
+            self?.updateIdleTimer()
+        }
+        assertion.onFailure = { error in
+            ErrorAlert.shared.report(String(localized: "Couldn’t Run in the Background"), error: error)
+        }
+        return assertion
+    }()
     @PerceptionIgnored private lazy var location: BackgroundLocation = {
         let location = BackgroundLocation()
         location.onUpdatingChange = { [weak self] in
@@ -42,16 +52,6 @@ final class Platform {
                     ]))
         }
         return location
-    }()
-    @PerceptionIgnored private lazy var audio: BackgroundAudio = {
-        let audio = BackgroundAudio()
-        audio.onPlayingChange = { [weak self] in
-            self?.updateIdleTimer()
-        }
-        audio.onFailure = { error in
-            ErrorAlert.shared.report(String(localized: "Couldn’t Run in the Background"), error: error)
-        }
-        return audio
     }()
 
     private var cloudflareTunnel: LibSwiptCloudflareTunnel?
@@ -371,15 +371,15 @@ final class Platform {
         }
         wasActive = active
         let mode = active && background.isEnabled ? background.mode : nil
+        if mode == .system {
+            assertion.start()
+        } else {
+            assertion.stop()
+        }
         if mode == .location {
             location.start()
         } else {
             location.stop()
-        }
-        if mode == .audio {
-            audio.start()
-        } else {
-            audio.stop()
         }
         updateIdleTimer()
         device.setBrowsing(active)
@@ -395,7 +395,7 @@ final class Platform {
     }
 
     private func updateIdleTimer() {
-        UIApplication.shared.isIdleTimerDisabled = !keepingAwake.isEmpty || isActive && !location.isUpdating && !audio.isPlaying
+        UIApplication.shared.isIdleTimerDisabled = !keepingAwake.isEmpty || isActive && !assertion.isActive && !location.isUpdating
     }
 
     private func apiFailed(_ message: String) {

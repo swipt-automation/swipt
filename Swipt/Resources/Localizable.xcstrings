@@ -3357,310 +3357,6 @@
         }
       }
     },
-    "Audio Service" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خدمة الصوت"
-          }
-        },
-        "bg" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Услуга за аудио"
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "অডিও পরিষেবা"
-          }
-        },
-        "ca" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servei d’àudio"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvuková služba"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lydtjeneste"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audiodienst"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Υπηρεσία ήχου"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servicio de audio"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servicio de audio"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Äänipalvelulla"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Service audio"
-          }
-        },
-        "fr-CA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Service audio"
-          }
-        },
-        "gu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ઑડિયો સેવા"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "שירות שמע"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ऑडियो सेवा"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usluga zvuka"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hangszolgáltatás"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Layanan Audio"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servizio audio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "オーディオサービス"
-          }
-        },
-        "kk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Аудио қызметі"
-          }
-        },
-        "kn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ಆಡಿಯೋ ಸೇವೆ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "오디오 서비스"
-          }
-        },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garso paslauga"
-          }
-        },
-        "ml" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ഓഡിയോ സർവീസ്"
-          }
-        },
-        "mr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ऑडिओ सेवा"
-          }
-        },
-        "ms" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perkhidmatan Audio"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lydtjeneste"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audiodienst"
-          }
-        },
-        "or" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ଅଡିଓ ସେବା"
-          }
-        },
-        "pa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ਆਡੀਓ ਸੇਵਾ"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usługa audio"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serviço de Áudio"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serviço de áudio"
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serviciu audio"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Аудиослужба"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvuková služba"
-          }
-        },
-        "sl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvočna storitev"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ljudtjänst"
-          }
-        },
-        "ta" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ஆடியோ சேவை"
-          }
-        },
-        "te" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ఆడియో సర్వీస్"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "บริการเสียง"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ses Servisi"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Служба аудіо"
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آڈیو سروس"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dịch vụ âm thanh"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音訊服務"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音频服务"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音訊服務"
-          }
-        }
-      }
-    },
     "Authentication" : {
       "localizations" : {
         "ar" : {
@@ -21343,6 +21039,310 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開發者模式已關閉"
+          }
+        }
+      }
+    },
+    "Developer Service" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "خدمة المطور"
+          }
+        },
+        "bg" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Услуга за разработчици"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডেভেলপার পরিষেবা"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Servei de desenvolupador"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vývojářská služba"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Udviklertjeneste"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entwicklerdienst"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Υπηρεσία προγραμματιστή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Servicio de desarrollador"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Servicio de desarrollador"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kehittäjäpalvelulla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Service de développeur"
+          }
+        },
+        "fr-CA" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Service de développeur"
+          }
+        },
+        "gu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ડેવલપર સેવા"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שירות מפתחים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डेवलपर सेवा"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usluga za programere"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fejlesztői szolgáltatás"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Layanan Pengembang"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Servizio per sviluppatori"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "デベロッパサービス"
+          }
+        },
+        "kk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Әзірлеуші қызметі"
+          }
+        },
+        "kn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ಡೆವಲಪರ್ ಸೇವೆ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "개발자 서비스"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kūrėjo paslauga"
+          }
+        },
+        "ml" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ഡെവലപ്പർ സർവീസ്"
+          }
+        },
+        "mr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डेव्हलपर सेवा"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Perkhidmatan Pembangun"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Utviklertjeneste"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ontwikkelaarsdienst"
+          }
+        },
+        "or" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ଡେଭଲପର୍ ସେବା"
+          }
+        },
+        "pa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ਡਿਵੈਲਪਰ ਸੇਵਾ"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usługa deweloperska"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Serviço de Desenvolvedor"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Serviço de programador"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Serviciu pentru dezvoltatori"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Служба разработчика"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vývojárska služba"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Storitev za razvijalce"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Utvecklartjänst"
+          }
+        },
+        "ta" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "டெவலப்பர் சேவை"
+          }
+        },
+        "te" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "డెవలపర్ సర్వీస్"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บริการนักพัฒนา"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geliştirici Servisi"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Служба розробника"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ڈیولپر سروس"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dịch vụ nhà phát triển"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開發者服務"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "开发者服务"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開發者服務"
           }
         }
       }
@@ -44273,6 +44273,310 @@
         }
       }
     },
+    "Requires iOS 27.2." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتطلب نظام iOS 27.2."
+          }
+        },
+        "bg" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Изисква iOS 27.2."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 প্রয়োজন।"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Requereix l’iOS 27.2."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vyžaduje iOS 27.2."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kræver iOS 27.2."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erfordert iOS 27.2."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Απαιτεί iOS 27.2."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Requiere iOS 27.2."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Requiere iOS 27.2."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vaatii iOS 27.2:n."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nécessite iOS 27.2."
+          }
+        },
+        "fr-CA" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nécessite iOS 27.2."
+          }
+        },
+        "gu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 જરૂરી છે."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נדרש iOS 27.2."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 आवश्यक है।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zahtijeva iOS 27.2."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 verziót igényel."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Memerlukan iOS 27.2."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Richiede iOS 27.2."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2が必要です。"
+          }
+        },
+        "kk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 қажет."
+          }
+        },
+        "kn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 ಅಗತ್ಯವಿದೆ."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2가 필요합니다."
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reikia „iOS 27.2”."
+          }
+        },
+        "ml" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 ആവശ്യമാണ്."
+          }
+        },
+        "mr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 आवश्यक आहे."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Memerlukan iOS 27.2."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Krever iOS 27.2."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vereist iOS 27.2."
+          }
+        },
+        "or" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 ଆବଶ୍ୟକ।"
+          }
+        },
+        "pa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 ਲੋੜੀਂਦਾ ਹੈ।"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wymaga systemu iOS 27.2."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Requer o iOS 27.2."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Requer o iOS 27.2."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Necesită iOS 27.2."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Требуется iOS 27.2."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vyžaduje iOS 27.2."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zahteva različico iOS 27.2."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kräver iOS 27.2."
+          }
+        },
+        "ta" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 தேவை."
+          }
+        },
+        "te" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 అవసరం."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ต้องใช้ iOS 27.2"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 27.2 gerekir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Потрібна iOS 27.2."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "‏iOS 27.2 درکار ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yêu cầu iOS 27.2."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "需要 iOS 27.2。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "需要 iOS 27.2。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "需要 iOS 27.2。"
+          }
+        }
+      }
+    },
     "Restart" : {
       "localizations" : {
         "ar" : {
@@ -56757,6 +57061,310 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "儲存庫傳回了另一個 Swiplet。"
+          }
+        }
+      }
+    },
+    "The status bar shows that location is in use." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يشير شريط الحالة إلى أن الموقع قيد الاستخدام."
+          }
+        },
+        "bg" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Лентата на състоянието показва, че се използва местоположение."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্ট্যাটাস বারে দেখা যায় যে লোকেশন ব্যবহার করা হচ্ছে।"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barra d’estat indica que s’està utilitzant la ubicació."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stavový řádek ukazuje, že se používá poloha."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statuslinjen viser, at lokaliteten bruges."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In der Statusleiste wird angezeigt, dass der Standort verwendet wird."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Η γραμμή κατάστασης δείχνει ότι χρησιμοποιείται η τοποθεσία."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barra de estado indica que se está usando la localización."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barra de estado indica que se está usando la ubicación."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tilapalkissa näkyy, että sijaintia käytetään."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barre d’état indique que la localisation est utilisée."
+          }
+        },
+        "fr-CA" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barre d’état indique que la localisation est utilisée."
+          }
+        },
+        "gu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "સ્ટેટસ બારમાં દેખાય છે કે સ્થાનનો ઉપયોગ થઈ રહ્યો છે."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שורת המצב מציינת שהמיקום נמצא בשימוש."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्टेटस बार में दिखता है कि लोकेशन का उपयोग हो रहा है।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statusna traka prikazuje da se upotrebljava lokacija."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Az állapotsor jelzi, hogy a helymeghatározás használatban van."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bar status menunjukkan bahwa lokasi sedang digunakan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La barra di stato indica che la posizione è in uso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位置情報が使用中であることがステータスバーに表示されます。"
+          }
+        },
+        "kk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Күй жолағында орналасудың пайдаланылып жатқаны көрсетіледі."
+          }
+        },
+        "kn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ಸ್ಥಳ ಬಳಕೆಯಲ್ಲಿದೆ ಎಂದು ಸ್ಟೇಟಸ್ ಬಾರ್‌ನಲ್ಲಿ ತೋರಿಸಲಾಗುತ್ತದೆ."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "상태 막대에 위치 사용 중 표시가 나타납니다."
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Būsenos juostoje rodoma, kad naudojama vietovė."
+          }
+        },
+        "ml" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ലൊക്കേഷൻ ഉപയോഗത്തിലാണെന്ന് സ്റ്റാറ്റസ് ബാറിൽ കാണിക്കുന്നു."
+          }
+        },
+        "mr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्टेटस बारमध्ये स्थान वापरले जात असल्याचे दिसते."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bar status menunjukkan bahawa lokasi sedang digunakan."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statuslinjen viser at posisjonen er i bruk."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In de statusbalk is te zien dat de locatie wordt gebruikt."
+          }
+        },
+        "or" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ଷ୍ଟାଟସ୍ ବାର୍‌ରେ ଦେଖାଯାଏ ଯେ ଲୋକେଶନ୍ ବ୍ୟବହାର କରାଯାଉଛି।"
+          }
+        },
+        "pa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ਸਟੇਟਸ ਬਾਰ ਵਿੱਚ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ ਕਿ ਟਿਕਾਣੇ ਦੀ ਵਰਤੋਂ ਹੋ ਰਹੀ ਹੈ।"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Na pasku statusu widać, że lokalizacja jest używana."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A barra de status indica que a localização está em uso."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A barra de estado indica que a localização está a ser usada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bara de stare arată că localizarea este utilizată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В строке состояния отображается, что используется геопозиция."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stavový riadok zobrazuje, že sa používa poloha."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vrstica stanja prikazuje, da se uporablja lokacija."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statusfältet visar att platsen används."
+          }
+        },
+        "ta" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "நிலைப் பட்டியில் இருப்பிடம் பயன்பாட்டில் உள்ளது எனக் காட்டப்படும்."
+          }
+        },
+        "te" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "లొకేషన్ ఉపయోగంలో ఉందని స్టేటస్ బార్‌లో కనిపిస్తుంది."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แถบสถานะจะแสดงว่ากำลังใช้ตำแหน่งที่ตั้งอยู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Durum çubuğu konumun kullanıldığını gösterir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "У рядку стану показано, що використовується локація."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اسٹیٹس بار میں دکھایا جاتا ہے کہ مقام استعمال ہو رہا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thanh trạng thái cho biết vị trí đang được sử dụng."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "會在狀態列提示正在使用位置。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "会在状态栏提示正在使用位置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "會在狀態列提示正在使用位置。"
           }
         }
       }
