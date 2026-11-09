@@ -9,7 +9,7 @@
   },
   "type": "module",
   "bin": {
-    "swipt": "./dist/swipt.js"
+    "swipt": "./dist/bin/swipt.js"
   },
   "exports": {
     "./*": {

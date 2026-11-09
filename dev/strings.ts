@@ -5,7 +5,7 @@ import { parseSync, traverse } from "@babel/core";
 
 function collectStrings(cli) {
   const keys = new Set<string>();
-  for (const name of fs.globSync("src/*.ts", { cwd: cli })) {
+  for (const name of fs.globSync("src/**/*.ts", { cwd: cli })) {
     const file = path.join(cli, name);
     traverse(
       parseSync(fs.readFileSync(file, "utf8"), {
