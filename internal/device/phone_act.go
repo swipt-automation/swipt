@@ -407,7 +407,7 @@ func (p *Phone) requireScreen(ctx context.Context, c *conn) error {
 }
 
 func (p *Phone) TapPoint(ctx context.Context, at Point, count int) error {
-	return p.act(ctx, action{name: "tap " + pointText(at), unlocked: true, input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
+	return p.act(ctx, action{name: "tap " + pointText(at), input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
 		if err := geometry.check(at); err != nil {
 			return err
 		}
@@ -418,7 +418,7 @@ func (p *Phone) TapPoint(ctx context.Context, at Point, count int) error {
 }
 
 func (p *Phone) Touch(ctx context.Context, fingers [][]TouchSample) error {
-	return p.act(ctx, action{name: "touch", unlocked: true, input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
+	return p.act(ctx, action{name: "touch", input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
 		if err := checkFingers(geometry, fingers); err != nil {
 			return err
 		}
@@ -429,7 +429,7 @@ func (p *Phone) Touch(ctx context.Context, fingers [][]TouchSample) error {
 }
 
 func (p *Phone) Pinch(ctx context.Context, center Point, scale float64, duration time.Duration) error {
-	return p.act(ctx, action{name: "pinch", unlocked: true, input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
+	return p.act(ctx, action{name: "pinch", input: func(ctx context.Context, c *conn, geometry phoneGeometry) error {
 		fingers, err := pinchPath(geometry, center, scale, duration)
 		if err != nil {
 			return err
@@ -445,7 +445,7 @@ func (p *Phone) Key(ctx context.Context, combo string) error {
 	if err != nil {
 		return E.Cause1(ErrInvalid, err)
 	}
-	return p.act(ctx, action{name: "key " + combo, unlocked: true, input: func(ctx context.Context, c *conn, _ phoneGeometry) error {
+	return p.act(ctx, action{name: "key " + combo, input: func(ctx context.Context, c *conn, _ phoneGeometry) error {
 		return p.gesture(ctx, c, func(input *hid.Client) error {
 			return pressKeys(ctx, input, usages)
 		})
