@@ -193,20 +193,18 @@ async function installApp(context) {
       inputs: [...toolchain, ...flags],
       product: info,
     },
-    () =>
-      run("make", ["build_ios"], {
-        XCODEBUILD_FLAGS: [
-          ...flags,
-          `CURRENT_PROJECT_VERSION=${Math.floor(Date.now() / 1000)}`,
-        ].join(" "),
-      }),
+    () => run("make", ["build_ios"], { XCODEBUILD_FLAGS: flags.join(" ") }),
   );
-  const stamp = Number(
+  const version = Number(
     capture("plutil", "-extract", "CFBundleVersion", "raw", "-o", "-", info),
   );
-  await installAndOpen(context, { device, id: bundleId, current }, app, stamp, {
-    passcode,
-  });
+  await installAndOpen(
+    context,
+    { device, id: bundleId, current },
+    app,
+    version,
+    { passcode },
+  );
 }
 
 const commands = [

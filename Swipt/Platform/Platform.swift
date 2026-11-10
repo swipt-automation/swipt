@@ -517,7 +517,7 @@ final class Platform {
     }
 
     nonisolated private static let tailscaleDirectory: URL = {
-        var directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var directory = AppDirectory.support
             .appendingPathComponent("Tailscale", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

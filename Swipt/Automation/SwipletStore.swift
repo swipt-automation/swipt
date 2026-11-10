@@ -13,7 +13,7 @@ extension UTType {
 @Perceptible
 final class SwipletStore {
     static let shared = SwipletStore()
-    nonisolated static let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    nonisolated static let directory = AppDirectory.support
         .appendingPathComponent("Swiplets", isDirectory: true)
     nonisolated static let caches = AppDirectory.caches.appendingPathComponent("Swiplets", isDirectory: true)
 

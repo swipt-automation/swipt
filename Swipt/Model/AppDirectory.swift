@@ -3,6 +3,8 @@ import os
 
 nonisolated enum AppDirectory {
     static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Swipt", category: "storage")
+    static let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    static let pairingRecord = support.appendingPathComponent("PairingRecord.plist")
 
     #if os(macOS)
     static let group = FileManager.default.containerURL(
@@ -32,6 +34,15 @@ nonisolated enum AppDirectory {
             size += Int64((try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey]).totalFileAllocatedSize) ?? 0)
         }
         return size
+    }
+
+    static func reset() throws {
+        try FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
+        for item in try FileManager.default.contentsOfDirectory(at: support, includingPropertiesForKeys: nil)
+        where item.lastPathComponent != pairingRecord.lastPathComponent {
+            try FileManager.default.removeItem(at: item)
+        }
+        try clearCaches()
     }
 
     static func clearCaches() throws {

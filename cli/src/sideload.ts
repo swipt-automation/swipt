@@ -771,7 +771,7 @@ async function askPasscode(context) {
   const type = await select<string | null>(
     {
       message: tr(
-        "Set up auto-unlock? Swipt can then unlock this device by itself",
+        "Set up auto-unlock? Swipt can then unlock this device by itself.",
       ),
       theme: selectTheme,
       choices: [
@@ -968,24 +968,59 @@ async function deploy(
     const signing = device.virtual
       ? undefined
       : await signingPeriod(device, id, team);
-    if (
-      installed >= release.build &&
-      (signing === undefined || !expiresSoon(signing))
-    ) {
-      const parameters = {
-        build: buildText(current),
-        device: device.name,
-        release: release.tag,
-        releaseBuild: release.build,
-      };
+    const parameters = {
+      build: buildText(current),
+      device: device.name,
+      release: release.tag,
+      releaseBuild: release.build,
+    };
+    const asks =
+      !updateOnly &&
+      !context.options.force &&
+      installed > release.build &&
+      interactive(context);
+    if (installed >= release.build && !asks) {
       console.log(
         installed === release.build
           ? tr("{build} on {device} is already {release}", parameters)
           : tr(
-              "{build} on {device} is newer than {release} ({releaseBuild})",
+              "{build} on {device} is later than {release} ({releaseBuild})",
               parameters,
             ),
       );
+    }
+    const versions = {
+      device: device.name,
+      version: `${current.version} (${current.bundleVersion})`,
+      releaseVersion: `${release.version} (${release.build})`,
+    };
+    const replaces = asks
+      ? await select(
+          {
+            message:
+              release.tag === "nightly"
+                ? tr(
+                    "Downgrade Swipt on {device} from {version} to {releaseVersion}? Swipt resets its data when the earlier version can't read it.",
+                    versions,
+                  )
+                : tr(
+                    "Downgrade Swipt on {device} from nightly {version} to stable {releaseVersion}? Swipt resets its data when the earlier version can't read it.",
+                    versions,
+                  ),
+            theme: selectTheme,
+            choices: [
+              { name: tr("Downgrade"), value: true },
+              { name: tr("No Thanks"), value: false },
+            ],
+          },
+          { output: process.stderr, signal: context.signal },
+        )
+      : !updateOnly && context.options.force;
+    if (
+      !replaces &&
+      installed >= release.build &&
+      (signing === undefined || !expiresSoon(signing))
+    ) {
       if (signing !== undefined) {
         console.log(
           tr("its signing expires {expiration}", {
@@ -1023,16 +1058,11 @@ async function deploy(
       });
       return;
     }
-    if (installed > release.build && updateOnly) {
+    if (!replaces && installed > release.build) {
       throw new Error(
         tr(
-          '{build} on {device} needs new signing, but {release} ({releaseBuild}) is older; use --nightly, or downgrade with "swipt sideload install"',
-          {
-            build: buildText(current),
-            device: device.name,
-            release: release.tag,
-            releaseBuild: release.build,
-          },
+          '{build} on {device} needs new signing, but {release} ({releaseBuild}) is earlier; use --nightly, or downgrade with "swipt sideload install --force"',
+          parameters,
         ),
       );
     }
@@ -1142,11 +1172,9 @@ export async function installAndOpen(
   }
   const parameters = { build: buildText(result), device: device.name };
   console.log(
-    current === undefined
-      ? tr("{build} is installed on {device}", parameters)
-      : Number(current.bundleVersion) === build
-        ? tr("{build} is re-signed on {device}", parameters)
-        : tr("{build} is updated on {device}", parameters),
+    current !== undefined && Number(current.bundleVersion) < build
+      ? tr("{build} is updated on {device}", parameters)
+      : tr("{build} is installed on {device}", parameters),
   );
   if (!device.virtual) {
     console.log(

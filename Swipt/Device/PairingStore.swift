@@ -12,9 +12,6 @@ struct PairedDevice {
 final class PairingStore {
     static let shared = PairingStore()
 
-    private static let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("PairingRecord.plist")
-
     private(set) var record: Data?
     private(set) var device: PairedDevice?
     private(set) var revision = 0
@@ -24,7 +21,7 @@ final class PairingStore {
     init() {
         let record: Data
         do {
-            record = try Data(contentsOf: Self.url)
+            record = try Data(contentsOf: AppDirectory.pairingRecord)
         } catch CocoaError.fileReadNoSuchFile {
             return
         } catch {
@@ -36,7 +33,7 @@ final class PairingStore {
             self.record = record
         } catch {
             AppDirectory.logger.error("remove unreadable pairing record: \(error, privacy: .public)")
-            try? FileManager.default.removeItem(at: Self.url)
+            try? FileManager.default.removeItem(at: AppDirectory.pairingRecord)
         }
     }
 
@@ -50,7 +47,7 @@ final class PairingStore {
     }
 
     func clear() {
-        try? FileManager.default.removeItem(at: Self.url)
+        try? FileManager.default.removeItem(at: AppDirectory.pairingRecord)
         record = nil
         device = nil
         revision += 1
@@ -58,7 +55,7 @@ final class PairingStore {
 
     func save(_ record: Data) throws {
         let device = try Self.check(record)
-        var url = Self.url
+        var url = AppDirectory.pairingRecord
         try record.write(to: url, options: .atomic)
         var values = URLResourceValues()
         values.isExcludedFromBackup = true

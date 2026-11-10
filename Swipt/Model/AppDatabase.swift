@@ -5,7 +5,7 @@ import os
 enum AppDatabase {
     private static let url: URL = {
         #if os(iOS)
-        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let directory = AppDirectory.support
         #else
         let directory = AppDirectory.group
         #endif
@@ -20,9 +20,7 @@ enum AppDatabase {
                 return try load()
             } catch let error as DatabaseError where error.resultCode == .SQLITE_CORRUPT || error.resultCode == .SQLITE_NOTADB {
                 AppDirectory.logger.error("reset \(url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
-                for path in [url.path, url.path + "-journal", url.path + "-wal", url.path + "-shm"] where FileManager.default.fileExists(atPath: path) {
-                    try FileManager.default.removeItem(atPath: path)
-                }
+                try remove()
                 return try load()
             }
         } catch {
@@ -32,9 +30,22 @@ enum AppDatabase {
 
     private static func load() throws -> DatabaseQueue {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let database = try DatabaseQueue(path: url.path)
+        var database = try DatabaseQueue(path: url.path)
+        if try database.read(migrator.hasBeenSuperseded) {
+            AppDirectory.logger.error("reset the data of a newer Swipt")
+            try database.close()
+            try remove()
+            try AppDirectory.reset()
+            database = try DatabaseQueue(path: url.path)
+        }
         try migrator.migrate(database)
         return database
+    }
+
+    private static func remove() throws {
+        for path in [url.path, url.path + "-journal", url.path + "-wal", url.path + "-shm"] where FileManager.default.fileExists(atPath: path) {
+            try FileManager.default.removeItem(atPath: path)
+        }
     }
 
     private static let migrator: DatabaseMigrator = {

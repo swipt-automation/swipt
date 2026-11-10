@@ -358,7 +358,9 @@ async function probe(url, signal) {
     const info = await open(device).system.getInfo({}, { signal });
     return {
       cells: [
-        `${info.appVersion} (${info.appBuild})`,
+        info.appBuild === ""
+          ? info.appVersion
+          : `${info.appVersion} (${info.appBuild})`,
         connectionText(info.deviceConnection),
       ],
     };

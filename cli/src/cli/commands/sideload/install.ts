@@ -10,6 +10,10 @@ export const install = defineCommand({
   options: {
     ...passcodeOptions(tr("set up auto-unlock with this passcode")),
     ...nightlyOption,
+    force: {
+      type: "boolean",
+      help: tr("install over the same or a later build"),
+    },
     ...setupOptions,
   },
   run: sideload.install,

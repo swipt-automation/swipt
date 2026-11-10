@@ -125,8 +125,8 @@ func Run(ctx context.Context, options Options) error {
 	var stopOnce sync.Once
 	server := api.New(api.Options{
 		Device: connection, Swiplets: swiplets, Logs: options.Logs, Logger: options.Logs.NewLogger("api"),
-		AppVersion: options.Version, AppBuild: "macOS",
-		Shutdown: func() { stopOnce.Do(func() { close(stop) }) },
+		AppVersion: options.Version,
+		Shutdown:   func() { stopOnce.Do(func() { close(stop) }) },
 	})
 	advertisement, err := dnssd.Advertise(ctx, Name(), discovery.ServiceType, uint16(stored.Port), nil)
 	if err != nil {
