@@ -80,13 +80,10 @@ struct LoopbackSetupView: View {
 
     private static let localDevVPN = URL(string: "localdevvpn://")!
     private static let localDevVPNStore = URL(string: "https://apps.apple.com/app/id6755608044")!
-    private static let singBox = URL(string: "sing-box://")!
-    private static let singBoxStore = URL(string: "https://apps.apple.com/app/id6785326793")!
-    private static let profile = Bundle.main.url(forResource: "LocalDevVPN", withExtension: "bpf")!
 
+    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var hasLocalDevVPN = false
-    @State private var hasSingBox = false
 
     private let device = Platform.shared.device
 
@@ -96,53 +93,28 @@ struct LoopbackSetupView: View {
             device.usesCellular ? Text("Unsupported Network") : Text("Loopback VPN"),
             description: device.usesCellular
                 ? Text("Swipt only stops working on cellular data, due to Apple’s restrictions on developer services.")
-                : Text("Swipt needs a loopback VPN to connect to developer services. LocalDevVPN or sing-box is recommended.")
+                : Text("Swipt needs a loopback VPN to connect to developer services.")
         ) {
-            if !device.usesCellular {
-                VStack(spacing: 24) {
-                    Divider()
-                    VStack(spacing: 12) {
-                        if hasLocalDevVPN {
-                            SetupPrimaryButton(title: Text("Open LocalDevVPN")) { UIApplication.shared.open(Self.localDevVPN) }
-                        } else {
-                            SetupPrimaryButton(title: Text("Get LocalDevVPN")) { UIApplication.shared.open(Self.localDevVPNStore) }
-                        }
-                    }
-                    Divider()
-                    VStack(spacing: 12) {
-                        if hasSingBox {
-                            SetupPrimaryButton(title: Text("Open sing-box")) { UIApplication.shared.open(Self.singBox) }
-                            SetupSecondaryButton(title: Text("Import example profile into sing-box"), action: shareProfile)
-                        } else {
-                            SetupPrimaryButton(title: Text("Get sing-box")) { UIApplication.shared.open(Self.singBoxStore) }
-                        }
-                    }
-                }
-                .frame(maxWidth: 480)
-                .padding(.top, 8)
-            }
         } actions: {
+            if !device.usesCellular {
+                if hasLocalDevVPN {
+                    SetupPrimaryButton(title: Text("Open LocalDevVPN")) { openURL(Self.localDevVPN) }
+                } else {
+                    SetupPrimaryButton(title: Text("Get LocalDevVPN")) { openURL(Self.localDevVPNStore) }
+                }
+                SetupSecondaryButton(title: Text("More Options…")) {
+                    openURL(URL(string: "https://swipt.io/\(Bundle.main.preferredLocalizations.first ?? "en")/docs/setup")!)
+                }
+            }
         }
         .onChangeCompat(of: scenePhase == .active, initial: true) { active in
             guard active else { return }
             hasLocalDevVPN = UIApplication.shared.canOpenURL(Self.localDevVPN)
-            hasSingBox = UIApplication.shared.canOpenURL(Self.singBox)
         }
         .onChangeCompat(of: device.tunnelFound == true, initial: true) { found in
             if found {
                 next()
             }
         }
-    }
-
-    private func shareProfile() {
-        guard let top = topViewController() else { return }
-        let controller = UIActivityViewController(activityItems: [Self.profile], applicationActivities: nil)
-        if let popover = controller.popoverPresentationController {
-            popover.sourceView = top.view
-            popover.sourceRect = CGRect(origin: CGPoint(x: top.view.bounds.midX, y: top.view.bounds.midY), size: .zero)
-            popover.permittedArrowDirections = []
-        }
-        top.present(controller, animated: true)
     }
 }

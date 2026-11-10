@@ -28,7 +28,6 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>localdevvpn</string>
-		<string>sing-box</string>
 	</array>
 	<key>NSBonjourServices</key>
 	<array>

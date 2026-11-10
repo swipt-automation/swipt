@@ -24423,310 +24423,6 @@
         }
       }
     },
-    "Get sing-box" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الحصول على sing-box"
-          }
-        },
-        "bg" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Изтегли sing-box"
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ডাউনলোড করুন"
-          }
-        },
-        "ca" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtén sing-box"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Získat sing-box"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hent sing-box"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box laden"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Λήψη του sing-box"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtener sing-box"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtener sing-box"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hanki sing-box"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtenir sing-box"
-          }
-        },
-        "fr-CA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtenir sing-box"
-          }
-        },
-        "gu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box મેળવો"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "הורדת sing-box"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box पाएँ"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preuzmi sing-box"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box beszerzése"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dapatkan sing-box"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ottieni sing-box"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxを入手"
-          }
-        },
-        "kk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box қолданбасын алу"
-          }
-        },
-        "kn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ಪಡೆಯಿರಿ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box 받기"
-          }
-        },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atsisiųsti „sing-box”"
-          }
-        },
-        "ml" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box നേടൂ"
-          }
-        },
-        "mr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box मिळवा"
-          }
-        },
-        "ms" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dapatkan sing-box"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hent sing-box"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Download sing-box"
-          }
-        },
-        "or" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ପାଆନ୍ତୁ"
-          }
-        },
-        "pa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ਪ੍ਰਾਪਤ ਕਰੋ"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pobierz aplikację sing-box"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obter sing-box"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obter sing-box"
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obțineți sing-box"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Загрузить sing-box"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stiahnuť sing-box"
-          }
-        },
-        "sl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pridobi aplikacijo sing-box"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hämta sing-box"
-          }
-        },
-        "ta" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxஐப் பெறு"
-          }
-        },
-        "te" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxను పొందండి"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "รับ sing-box"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box’ı İndir"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Отримати sing-box"
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "‏sing-box حاصل کریں"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tải sing-box"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取得 sing-box"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "获取 sing-box"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取得 sing-box"
-          }
-        }
-      }
-    },
     "Go to Settings › Privacy & Security › Developer Mode." : {
       "localizations" : {
         "ar" : {
@@ -26553,310 +26249,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "輸入配對檔案⋯"
-          }
-        }
-      }
-    },
-    "Import example profile into sing-box" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استيراد ملف تعريف نموذجي إلى sing-box"
-          }
-        },
-        "bg" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Импортирай примерен профил в sing-box"
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box-এ নমুনা প্রোফাইল ইমপোর্ট করুন"
-          }
-        },
-        "ca" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa el perfil d’exemple a sing-box"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importovat ukázkový profil do aplikace sing-box"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer eksempelprofil i sing-box"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beispielprofil in sing-box importieren"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Εισαγωγή δείγματος προφίλ στο sing-box"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar perfil de ejemplo en sing-box"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar perfil de ejemplo en sing-box"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tuo esimerkkiprofiili sing-boxiin"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer le profil d’exemple dans sing-box"
-          }
-        },
-        "fr-CA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer le profil d’exemple dans sing-box"
-          }
-        },
-        "gu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxમાં ઉદાહરણ પ્રોફાઇલ ઇંપોર્ટ કરો"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ייבוא פרופיל לדוגמה אל sing-box"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box में उदाहरण प्रोफ़ाइल इंपोर्ट करें"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importiraj primjer profila u sing-box"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Példaprofil importálása a sing-boxba"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impor profil contoh ke sing-box"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa profilo di esempio in sing-box"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サンプルプロファイルをsing-boxに読み込む"
-          }
-        },
-        "kk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Үлгі профильді sing-box қолданбасына импорттау"
-          }
-        },
-        "kn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ಉದಾಹರಣೆ ಪ್ರೊಫೈಲ್ ಅನ್ನು sing-box ಆ್ಯಪ್‌ಗೆ ಇಂಪೋರ್ಟ್ ಮಾಡಿ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box로 예제 프로파일 가져오기"
-          }
-        },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importuoti pavyzdinį profilį į programą „sing-box”"
-          }
-        },
-        "ml" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ഉദാഹരണ പ്രൊഫൈൽ sing-box-ലേക്ക് ഇംപോർട്ട് ചെയ്യൂ"
-          }
-        },
-        "mr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box मध्ये उदाहरण प्रोफाइल इंपोर्ट करा"
-          }
-        },
-        "ms" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import profil contoh ke dalam sing-box"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importer eksempelprofil i sing-box"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importeer voorbeeldprofiel in sing-box"
-          }
-        },
-        "or" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ରେ ଉଦାହରଣ ପ୍ରୋଫାଇଲ୍ ଇମ୍ପୋର୍ଟ୍ କରନ୍ତୁ"
-          }
-        },
-        "pa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ਵਿੱਚ ਉਦਾਹਰਨ ਪ੍ਰੋਫ਼ਾਈਲ ਇੰਪੋਰਟ ਕਰੋ"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importuj przykładowy profil do aplikacji sing-box"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar Perfil de Exemplo no sing-box"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar perfil de exemplo para o sing-box"
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importați profilul exemplu în sing-box"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Импортировать пример профиля в sing-box"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importovať vzorový profil do apky sing-box"
-          }
-        },
-        "sl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uvozi vzorčni profil v aplikacijo sing-box"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importera exempelprofil till sing-box"
-          }
-        },
-        "ta" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "மாதிரிச் சுயவிவரத்தை sing-boxஇல் இம்போர்ட் செய்"
-          }
-        },
-        "te" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ఉదాహరణ ప్రొఫైల్‌ను sing-boxలోకి ఇంపోర్ట్ చేయండి"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "นำเข้าโปรไฟล์ตัวอย่างลงใน sing-box"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Örnek profili sing-box’a aktar"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Імпортувати зразок профілю в sing-box"
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نمونہ پروفائل sing-box میں امپورٹ کریں"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhập hồ sơ mẫu vào sing-box"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "將範例設定檔輸入至 sing-box"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将示例配置导入 sing-box"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "將範例設定檔輸入 sing-box"
           }
         }
       }
@@ -32065,6 +31457,310 @@
         }
       }
     },
+    "More Options…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المزيد من الخيارات…"
+          }
+        },
+        "bg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Още опции…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "আরও বিকল্প…"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Més opcions…"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Další možnosti…"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere muligheder…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Optionen …"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Περισσότερες επιλογές…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más opciones…"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más opciones…"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisää vaihtoehtoja…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus d’options…"
+          }
+        },
+        "fr-CA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus d’options…"
+          }
+        },
+        "gu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "વધુ વિકલ્પો…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "אפשרויות נוספות…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "और विकल्प…"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Više opcija…"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "További lehetőségek…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opsi Lainnya…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altre opzioni…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他の方法…"
+          }
+        },
+        "kk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қосымша опциялар…"
+          }
+        },
+        "kn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ಇನ್ನಷ್ಟು ಆಯ್ಕೆಗಳು…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 많은 방법…"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daugiau parinkčių…"
+          }
+        },
+        "ml" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "കൂടുതൽ ഓപ്ഷനുകൾ…"
+          }
+        },
+        "mr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अधिक पर्याय…"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagi Pilihan…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere alternativer…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meer opties…"
+          }
+        },
+        "or" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ଅଧିକ ବିକଳ୍ପ…"
+          }
+        },
+        "pa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ਹੋਰ ਵਿਕਲਪ…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Więcej opcji…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais Opções…"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais opções…"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mai multe opțiuni…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Больше вариантов…"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ďalšie možnosti…"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Več možnosti …"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fler alternativ…"
+          }
+        },
+        "ta" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "மேலும் விருப்பங்கள்…"
+          }
+        },
+        "te" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "మరిన్ని ఆప్షన్‌లు…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ตัวเลือกเพิ่มเติม…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daha Fazla Seçenek…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Більше варіантів…"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مزید اختیارات…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm tùy chọn…"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多方式⋯"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多方式…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多方式⋯"
+          }
+        }
+      }
+    },
     "Name" : {
       "localizations" : {
         "ar" : {
@@ -36621,310 +36317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打開設定"
-          }
-        }
-      }
-    },
-    "Open sing-box" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فتح sing-box"
-          }
-        },
-        "bg" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Отвори sing-box"
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box খুলুন"
-          }
-        },
-        "ca" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obre sing-box"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otevřít sing-box"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åbn sing-box"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box öffnen"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Άνοιγμα του sing-box"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir sing-box"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir sing-box"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avaa sing-box"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir sing-box"
-          }
-        },
-        "fr-CA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir sing-box"
-          }
-        },
-        "gu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ખોલો"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "פתיחת sing-box"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box खोलें"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otvori sing-box"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box megnyitása"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buka sing-box"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri sing-box"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxを開く"
-          }
-        },
-        "kk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box қолданбасын ашу"
-          }
-        },
-        "kn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ತೆರೆಯಿರಿ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box 열기"
-          }
-        },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atidaryti „sing-box”"
-          }
-        },
-        "ml" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box തുറക്കൂ"
-          }
-        },
-        "mr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box उघडा"
-          }
-        },
-        "ms" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buka sing-box"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne sing-box"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open sing-box"
-          }
-        },
-        "or" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ଖୋଲନ୍ତୁ"
-          }
-        },
-        "pa" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box ਖੋਲ੍ਹੋ"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otwórz aplikację sing-box"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir sing-box"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir sing-box"
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deschideți sing-box"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть sing-box"
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Otvoriť sing-box"
-          }
-        },
-        "sl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Odpri aplikacijo sing-box"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öppna sing-box"
-          }
-        },
-        "ta" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxஐத் திற"
-          }
-        },
-        "te" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-boxను తెరవండి"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "เปิด sing-box"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sing-box’ı Aç"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Відкрити sing-box"
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "‏sing-box کھولیں"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mở sing-box"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開啟 sing-box"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开 sing-box"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打開 sing-box"
           }
         }
       }
@@ -51593,306 +50985,306 @@
         }
       }
     },
-    "Swipt needs a loopback VPN to connect to developer services. LocalDevVPN or sing-box is recommended." : {
+    "Swipt needs a loopback VPN to connect to developer services." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج Swipt إلى شبكة VPN للاسترجاع للاتصال بخدمات المطور. يوصى باستخدام LocalDevVPN أو sing-box."
+            "value" : "يحتاج Swipt إلى شبكة VPN للاسترجاع للاتصال بخدمات المطور."
           }
         },
         "bg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt се нуждае от loopback VPN, за да се свързва с услугите за разработчици. Препоръчва се LocalDevVPN или sing-box."
+            "value" : "Swipt се нуждае от loopback VPN, за да се свързва с услугите за разработчици."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ডেভেলপার পরিষেবাগুলির সাথে কানেক্ট করতে Swipt-এর জন্য একটি লুপব্যাক VPN প্রয়োজন। LocalDevVPN বা sing-box ব্যবহার করার পরামর্শ দেওয়া হচ্ছে।"
+            "value" : "ডেভেলপার পরিষেবাগুলির সাথে কানেক্ট করতে Swipt-এর জন্য একটি লুপব্যাক VPN প্রয়োজন।"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L’app Swipt necessita una VPN de bucle local per connectar-se als serveis de desenvolupador. Es recomana utilitzar LocalDevVPN o sing-box."
+            "value" : "L’app Swipt necessita una VPN de bucle local per connectar-se als serveis de desenvolupador."
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aby se aplikace Swipt mohla připojit k vývojářským službám, potřebuje VPN se zpětnou smyčkou. Doporučujeme LocalDevVPN nebo sing-box."
+            "value" : "Aby se aplikace Swipt mohla připojit k vývojářským službám, potřebuje VPN se zpětnou smyčkou."
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt skal bruge et loopback-VPN for at oprette forbindelse til udviklertjenester. LocalDevVPN eller sing-box anbefales."
+            "value" : "Swipt skal bruge et loopback-VPN for at oprette forbindelse til udviklertjenester."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt benötigt ein Loopback-VPN, um sich mit den Entwicklerdiensten zu verbinden. Empfohlen wird LocalDevVPN oder sing-box."
+            "value" : "Swipt benötigt ein Loopback-VPN, um sich mit den Entwicklerdiensten zu verbinden."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Το Swipt χρειάζεται ένα VPN loopback για να συνδεθεί στις υπηρεσίες προγραμματιστή. Συνιστάται το LocalDevVPN ή το sing-box."
+            "value" : "Το Swipt χρειάζεται ένα VPN loopback για να συνδεθεί στις υπηρεσίες προγραμματιστή."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt necesita una VPN de bucle invertido para conectarse a los servicios de desarrollador. Se recomienda LocalDevVPN o sing-box."
+            "value" : "Swipt necesita una VPN de bucle invertido para conectarse a los servicios de desarrollador."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt necesita una VPN loopback para conectarse a los servicios de desarrollador. Se recomienda LocalDevVPN o sing-box."
+            "value" : "Swipt necesita una VPN loopback para conectarse a los servicios de desarrollador."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt tarvitsee loopback-VPN:n, jotta se voi muodostaa yhteyden kehittäjäpalveluihin. LocalDevVPN:ää tai sing-boxia suositellaan."
+            "value" : "Swipt tarvitsee loopback-VPN:n, jotta se voi muodostaa yhteyden kehittäjäpalveluihin."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt a besoin d’un VPN de bouclage pour se connecter aux services de développeur. LocalDevVPN ou sing-box est recommandé."
+            "value" : "Swipt a besoin d’un VPN de bouclage pour se connecter aux services de développeur."
           }
         },
         "fr-CA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L’app Swipt a besoin d’un VPN de bouclage pour se connecter aux services de développeur. LocalDevVPN ou sing-box est recommandé."
+            "value" : "L’app Swipt a besoin d’un VPN de bouclage pour se connecter aux services de développeur."
           }
         },
         "gu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ડેવલપર સેવાઓ સાથે કનેક્ટ થવા માટે Swiptને લૂપબૅક VPNની જરૂર છે. LocalDevVPN અથવા sing-boxનો ઉપયોગ કરવાની ભલામણ કરવામાં આવે છે."
+            "value" : "ડેવલપર સેવાઓ સાથે કનેક્ટ થવા માટે Swiptને લૂપબૅક VPNની જરૂર છે."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "כדי להתחבר לשירותי המפתחים, Swipt זקוק ל-VPN מסוג לולאה חוזרת. מומלץ להשתמש ב-LocalDevVPN או ב-sing-box."
+            "value" : "כדי להתחבר לשירותי המפתחים, Swipt זקוק ל-VPN מסוג לולאה חוזרת."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "डेवलपर सेवाओं से कनेक्ट होने के लिए Swipt को लूपबैक VPN की ज़रूरत है। LocalDevVPN या sing-box इस्तेमाल करने का सुझाव दिया जाता है।"
+            "value" : "डेवलपर सेवाओं से कनेक्ट होने के लिए Swipt को लूपबैक VPN की ज़रूरत है।"
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplikaciji Swipt potreban je VPN povratne petlje za povezivanje s uslugama za programere. Preporučuje se LocalDevVPN ili sing-box."
+            "value" : "Aplikaciji Swipt potreban je VPN povratne petlje za povezivanje s uslugama za programere."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A Swipt appnak visszacsatolási VPN-re van szüksége a fejlesztői szolgáltatásokhoz való csatlakozáshoz. A LocalDevVPN vagy a sing-box használata javasolt."
+            "value" : "A Swipt appnak visszacsatolási VPN-re van szüksége a fejlesztői szolgáltatásokhoz való csatlakozáshoz."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt memerlukan VPN loopback agar dapat terhubung ke layanan pengembang. Disarankan menggunakan LocalDevVPN atau sing-box."
+            "value" : "Swipt memerlukan VPN loopback agar dapat terhubung ke layanan pengembang."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt ha bisogno di una VPN di loopback per connettersi ai servizi per sviluppatori. Si consiglia di usare LocalDevVPN o sing-box."
+            "value" : "Swipt ha bisogno di una VPN di loopback per connettersi ai servizi per sviluppatori."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "デベロッパサービスに接続するには、SwiptにループバックVPNが必要です。LocalDevVPNまたはsing-boxをおすすめします。"
+            "value" : "デベロッパサービスに接続するには、SwiptにループバックVPNが必要です。"
           }
         },
         "kk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Әзірлеуші қызметтеріне қосылу үшін Swipt қолданбасына loopback VPN қажет. LocalDevVPN немесе sing-box ұсынылады."
+            "value" : "Әзірлеуші қызметтеріне қосылу үшін Swipt қолданбасына loopback VPN қажет."
           }
         },
         "kn" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ಡೆವಲಪರ್ ಸೇವೆಗಳಿಗೆ ಕನೆಕ್ಟ್ ಆಗಲು Swipt ಆ್ಯಪ್‌ಗೆ ಲೂಪ್‌ಬ್ಯಾಕ್ VPN ಅಗತ್ಯವಿದೆ. LocalDevVPN ಅಥವಾ sing-box ಬಳಸುವಂತೆ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ."
+            "value" : "ಡೆವಲಪರ್ ಸೇವೆಗಳಿಗೆ ಕನೆಕ್ಟ್ ಆಗಲು Swipt ಆ್ಯಪ್‌ಗೆ ಲೂಪ್‌ಬ್ಯಾಕ್ VPN ಅಗತ್ಯವಿದೆ."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "개발자 서비스에 연결하려면 Swipt에 루프백 VPN이 필요합니다. LocalDevVPN 또는 sing-box를 권장합니다."
+            "value" : "개발자 서비스에 연결하려면 Swipt에 루프백 VPN이 필요합니다."
           }
         },
         "lt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Programai „Swipt” reikia grįžtamojo ryšio VPN, kad galėtų prisijungti prie kūrėjo paslaugų. Rekomenduojama naudoti „LocalDevVPN” arba „sing-box”."
+            "value" : "Programai „Swipt” reikia grįžtamojo ryšio VPN, kad galėtų prisijungti prie kūrėjo paslaugų."
           }
         },
         "ml" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ഡെവലപ്പർ സർവീസുകളിലേക്ക് കണക്റ്റ് ചെയ്യാൻ Swipt-ന് ഒരു ലൂപ്പ്ബാക്ക് VPN ആവശ്യമാണ്. LocalDevVPN അല്ലെങ്കിൽ sing-box ശുപാർശ ചെയ്യുന്നു."
+            "value" : "ഡെവലപ്പർ സർവീസുകളിലേക്ക് കണക്റ്റ് ചെയ്യാൻ Swipt-ന് ഒരു ലൂപ്പ്ബാക്ക് VPN ആവശ്യമാണ്."
           }
         },
         "mr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "डेव्हलपर सेवांशी कनेक्ट होण्यासाठी Swipt ला लूपबॅक VPN ची आवश्यकता आहे. LocalDevVPN किंवा sing-box वापरण्याची शिफारस केली जाते."
+            "value" : "डेव्हलपर सेवांशी कनेक्ट होण्यासाठी Swipt ला लूपबॅक VPN ची आवश्यकता आहे."
           }
         },
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt memerlukan VPN gelung balik untuk menyambung ke perkhidmatan pembangun. LocalDevVPN atau sing-box disyorkan."
+            "value" : "Swipt memerlukan VPN gelung balik untuk menyambung ke perkhidmatan pembangun."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt trenger en loopback-VPN for å koble til utviklertjenester. LocalDevVPN eller sing-box anbefales."
+            "value" : "Swipt trenger en loopback-VPN for å koble til utviklertjenester."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt heeft een loopback-VPN nodig om verbinding te maken met ontwikkelaarsdiensten. LocalDevVPN of sing-box wordt aanbevolen."
+            "value" : "Swipt heeft een loopback-VPN nodig om verbinding te maken met ontwikkelaarsdiensten."
           }
         },
         "or" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ଡେଭଲପର୍ ସେବା ସହ ସଂଯୋଗ କରିବା ପାଇଁ Swipt କୁ ଲୁପ୍‌ବ୍ୟାକ୍ VPN ଆବଶ୍ୟକ। LocalDevVPN କିମ୍ବା sing-box ବ୍ୟବହାର କରିବାକୁ ସୁପାରିଶ କରାଯାଏ।"
+            "value" : "ଡେଭଲପର୍ ସେବା ସହ ସଂଯୋଗ କରିବା ପାଇଁ Swipt କୁ ଲୁପ୍‌ବ୍ୟାକ୍ VPN ଆବଶ୍ୟକ।"
           }
         },
         "pa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ਡਿਵੈਲਪਰ ਸੇਵਾਵਾਂ ਨਾਲ ਕਨੈਕਟ ਕਰਨ ਲਈ Swipt ਨੂੰ ਲੂਪਬੈਕ VPN ਦੀ ਲੋੜ ਹੈ। LocalDevVPN ਜਾਂ sing-box ਵਰਤਣ ਦੀ ਸਿਫ਼ਾਰਸ਼ ਕੀਤੀ ਜਾਂਦੀ ਹੈ।"
+            "value" : "ਡਿਵੈਲਪਰ ਸੇਵਾਵਾਂ ਨਾਲ ਕਨੈਕਟ ਕਰਨ ਲਈ Swipt ਨੂੰ ਲੂਪਬੈਕ VPN ਦੀ ਲੋੜ ਹੈ।"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplikacja Swipt potrzebuje VPN pętli zwrotnej, aby łączyć się z usługami deweloperskimi. Zalecana jest aplikacja LocalDevVPN lub sing-box."
+            "value" : "Aplikacja Swipt potrzebuje VPN pętli zwrotnej, aby łączyć się z usługami deweloperskimi."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O Swipt precisa de uma VPN de loopback para se conectar aos serviços de desenvolvedor. Recomendamos o LocalDevVPN ou o sing-box."
+            "value" : "O Swipt precisa de uma VPN de loopback para se conectar aos serviços de desenvolvedor."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O Swipt precisa de uma VPN de loopback para se ligar aos serviços de programador. Recomenda‑se o LocalDevVPN ou o sing-box."
+            "value" : "O Swipt precisa de uma VPN de loopback para se ligar aos serviços de programador."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplicația Swipt are nevoie de un VPN de loopback pentru a se conecta la serviciile pentru dezvoltatori. Se recomandă LocalDevVPN sau sing-box."
+            "value" : "Aplicația Swipt are nevoie de un VPN de loopback pentru a se conecta la serviciile pentru dezvoltatori."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Для подключения к службам разработчика приложению Swipt нужен петлевой VPN. Рекомендуется LocalDevVPN или sing-box."
+            "value" : "Для подключения к службам разработчика приложению Swipt нужен петлевой VPN."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apka Swipt potrebuje na pripojenie k vývojárskym službám loopback VPN. Odporúča sa LocalDevVPN alebo sing-box."
+            "value" : "Apka Swipt potrebuje na pripojenie k vývojárskym službám loopback VPN."
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplikacija Swipt za povezavo s storitvami za razvijalce potrebuje VPN povratne zanke. Priporočamo aplikacijo LocalDevVPN ali sing-box."
+            "value" : "Aplikacija Swipt za povezavo s storitvami za razvijalce potrebuje VPN povratne zanke."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt behöver ett loopback-VPN för att ansluta till utvecklartjänster. LocalDevVPN eller sing-box rekommenderas."
+            "value" : "Swipt behöver ett loopback-VPN för att ansluta till utvecklartjänster."
           }
         },
         "ta" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "டெவலப்பர் சேவைகளுடன் இணைய Swiptக்கு லூப்பேக் VPN தேவை. LocalDevVPN அல்லது sing-box பரிந்துரைக்கப்படுகிறது."
+            "value" : "டெவலப்பர் சேவைகளுடன் இணைய Swiptக்கு லூப்பேக் VPN தேவை."
           }
         },
         "te" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "డెవలపర్ సర్వీస్‌లకు కనెక్ట్ కావడానికి Swiptకు లూప్‌బ్యాక్ VPN అవసరం. LocalDevVPN లేదా sing-boxను ఉపయోగించడం సిఫార్సు చేయబడుతుంది."
+            "value" : "డెవలపర్ సర్వీస్‌లకు కనెక్ట్ కావడానికి Swiptకు లూప్‌బ్యాక్ VPN అవసరం."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt ต้องใช้ VPN ลูปแบ็คเพื่อเชื่อมต่อกับบริการนักพัฒนา แนะนำให้ใช้ LocalDevVPN หรือ sing-box"
+            "value" : "Swipt ต้องใช้ VPN ลูปแบ็คเพื่อเชื่อมต่อกับบริการนักพัฒนา"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt’in geliştirici servislerine bağlanabilmesi için bir geri döngü VPN’i gerekir. LocalDevVPN veya sing-box önerilir."
+            "value" : "Swipt’in geliştirici servislerine bağlanabilmesi için bir geri döngü VPN’i gerekir."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Програмі Swipt потрібен VPN зворотної петлі, щоб підключатися до служб розробника. Рекомендовано LocalDevVPN або sing-box."
+            "value" : "Програмі Swipt потрібен VPN зворотної петлі, щоб підключатися до служб розробника."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ڈیولپر سروسز سے کنکٹ ہونے کے لیے Swipt کو لوپ بیک VPN درکار ہے۔ LocalDevVPN یا sing-box استعمال کرنے کی تجویز دی جاتی ہے۔"
+            "value" : "ڈیولپر سروسز سے کنکٹ ہونے کے لیے Swipt کو لوپ بیک VPN درکار ہے۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt cần một VPN loopback để kết nối với các dịch vụ nhà phát triển. Bạn nên dùng LocalDevVPN hoặc sing-box."
+            "value" : "Swipt cần một VPN loopback để kết nối với các dịch vụ nhà phát triển."
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt 需要回繞 VPN 才能連線至開發者服務。建議使用 LocalDevVPN 或 sing-box。"
+            "value" : "Swipt 需要回繞 VPN 才能連線至開發者服務。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt 需要环回 VPN 才能连接开发者服务。推荐使用 LocalDevVPN 或 sing-box。"
+            "value" : "Swipt 需要环回 VPN 才能连接开发者服务。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipt 需要回送 VPN 才能連線至開發者服務。建議使用 LocalDevVPN 或 sing-box。"
+            "value" : "Swipt 需要回送 VPN 才能連線至開發者服務。"
           }
         }
       }
