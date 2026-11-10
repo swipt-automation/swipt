@@ -58,10 +58,14 @@ NSString *const SWScreenModeCoreDevice = @"coreDevice";
     [SWScreenCapture.shared removeListener:identifier];
 }
 
-- (void)addRecording:(SWRecordingSession *)recording {
+- (BOOL)addRecording:(SWRecordingSession *)recording {
     [_lock lock];
-    [_recordings addObject:recording];
+    BOOL added = !_closed;
+    if (added) {
+        [_recordings addObject:recording];
+    }
     [_lock unlock];
+    return added;
 }
 
 - (void)removeRecording:(SWRecordingSession *)recording {

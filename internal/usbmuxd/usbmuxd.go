@@ -46,7 +46,7 @@ func open(ctx context.Context, message map[string]any) (net.Conn, map[string]any
 	return conn, reply, nil
 }
 
-func request(ctx context.Context, conn net.Conn, message map[string]any) (map[string]any, error) {
+func request(ctx context.Context, conn net.Conn, message map[string]any) (result map[string]any, err error) {
 	message["ProgName"] = progName
 	message["ClientVersionString"] = progName
 	body, err := plist.Marshal(message, plist.XMLFormat)
@@ -54,7 +54,11 @@ func request(ctx context.Context, conn net.Conn, message map[string]any) (map[st
 		return nil, err
 	}
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
-	defer stop()
+	defer func() {
+		if !stop() {
+			result, err = nil, ctx.Err()
+		}
+	}()
 	var frame bytes.Buffer
 	_ = binary.Write(&frame, binary.LittleEndian, header{Length: uint32(16 + len(body)), Version: protocolVersion, Type: messagePlist, Tag: 1})
 	frame.Write(body)
@@ -72,7 +76,6 @@ func request(ctx context.Context, conn net.Conn, message map[string]any) (map[st
 	if _, err = io.ReadFull(conn, payload); err != nil {
 		return nil, E.Cause(err, "usbmuxd: read ", message["MessageType"])
 	}
-	var result map[string]any
 	if _, err = plist.Unmarshal(payload, &result); err != nil {
 		return nil, E.Cause(err, "usbmuxd: decode ", message["MessageType"])
 	}

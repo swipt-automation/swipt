@@ -44,6 +44,7 @@ final class LocalHostName {
             DNSServiceRefDeallocate(reference)
         }
         reference = nil
+        name = nil
     }
 
     private static func localAddresses() -> [String] {

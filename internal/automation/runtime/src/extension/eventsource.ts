@@ -84,6 +84,12 @@ export const EventSource = defineInterface(
           "SyntaxError",
         );
       }
+      if (parsed.username !== "" || parsed.password !== "") {
+        throw new DOMException(
+          "an EventSource URL can't include credentials",
+          "SyntaxError",
+        );
+      }
       this.#url = parsed.href;
       this.#withCredentials = init!.withCredentials!;
       this.#connection = connection;

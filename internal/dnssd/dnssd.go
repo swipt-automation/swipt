@@ -94,7 +94,6 @@ func Advertise(ctx context.Context, name string, serviceType string, port uint16
 		return nil, E.Cause(err, "dnssd: connect")
 	}
 	a.handle = cgo.NewHandle(a)
-	go a.pump()
 	cName, cType := C.CString(name), C.CString(serviceType)
 	defer C.free(unsafe.Pointer(cName))
 	defer C.free(unsafe.Pointer(cType))
@@ -105,6 +104,7 @@ func Advertise(ctx context.Context, name string, serviceType string, port uint16
 	}
 	var ref C.DNSServiceRef
 	err := check(C.swipt_dnssd_register(a.ref, &ref, cName, cType, C.uint16_t(port), C.uint16_t(len(record)), recordPointer, C.uintptr_t(a.handle)))
+	go a.pump()
 	if err == nil {
 		select {
 		case err = <-a.registered:

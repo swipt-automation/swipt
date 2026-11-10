@@ -198,7 +198,7 @@ type lockStateReader struct {
 
 func (r *lockStateReader) recent(ctx context.Context) (bool, error) {
 	r.access.Lock()
-	if !r.watching && r.owner != nil {
+	if !r.watching && r.owner != nil && r.owner.ctx.Err() == nil {
 		changed, relayed, cancel := r.owner.darwin.watch()
 		r.watching, r.relayed, r.unwatch = true, relayed, cancel
 		go func() {
@@ -306,7 +306,7 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.Passcod
 	}()
 	go func() {
 		defer close(accessibilityDialed)
-		accessibilityErr = t.conn.ax.do(ctx, false, 0, func(context.Context, *accessibility.RemoteClient) error { return nil })
+		accessibilityErr = t.conn.ax.do(transportContext, false, 0, func(context.Context, *accessibility.RemoteClient) error { return nil })
 	}()
 	defer func() {
 		cancelTransports()

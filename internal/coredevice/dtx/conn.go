@@ -159,17 +159,22 @@ func (c *Conn) Notify(ctx context.Context, channel int32, selector string, args 
 }
 
 func (c *Conn) Receive(ctx context.Context) (Event, error) {
+	var item queuedEvent
 	select {
-	case item := <-c.events:
-		c.access.Lock()
-		c.eventBytes -= item.size
-		c.access.Unlock()
-		return item.event, nil
+	case item = <-c.events:
 	case <-ctx.Done():
 		return Event{}, ctx.Err()
 	case <-c.done:
-		return Event{}, c.Err()
+		select {
+		case item = <-c.events:
+		default:
+			return Event{}, c.Err()
+		}
 	}
+	c.access.Lock()
+	c.eventBytes -= item.size
+	c.access.Unlock()
+	return item.event, nil
 }
 
 func (c *Conn) Close() error {

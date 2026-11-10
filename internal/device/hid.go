@@ -184,11 +184,7 @@ func (q *hidQueue) acquire(ctx context.Context, c *conn) (*hidGrant, error) {
 		return grant, nil
 	case <-ctx.Done():
 	}
-	select {
-	case <-grant.ready:
-		grant.release()
-	default:
-	}
+	grant.release()
 	return nil, E.Cause(ctx.Err(), "wait for the device's input")
 }
 

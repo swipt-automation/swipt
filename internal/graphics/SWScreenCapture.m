@@ -82,10 +82,12 @@ static const NSInteger SWPacketHeaderSize = 13;
         BOOL changed = ![mode isEqualToString:_mode] || maximumBitrate != _maximumBitrate;
         _mode = mode;
         _maximumBitrate = maximumBitrate;
-        [_state unlock];
         if (changed) {
-            [source configureMode:mode maximumBitrate:maximumBitrate];
+            dispatch_async(_queue, ^{
+                [source configureMode:mode maximumBitrate:maximumBitrate];
+            });
         }
+        [_state unlock];
         return YES;
     }
     _opening = YES;
@@ -118,10 +120,12 @@ static const NSInteger SWPacketHeaderSize = 13;
     BOOL changed = ![merged isEqualToString:_mode] || mergedBitrate != _maximumBitrate;
     _mode = merged;
     _maximumBitrate = mergedBitrate;
-    [_state unlock];
     if (changed) {
-        [opened configureMode:merged maximumBitrate:mergedBitrate];
+        dispatch_async(_queue, ^{
+            [opened configureMode:merged maximumBitrate:mergedBitrate];
+        });
     }
+    [_state unlock];
     return YES;
 }
 
@@ -130,7 +134,6 @@ static const NSInteger SWPacketHeaderSize = 13;
     [_streams removeObjectIdenticalTo:stream];
     [_state broadcast];
     SWGoScreenStream *closing = nil;
-    SWGoScreenStream *configuring = nil;
     NSString *mode = nil;
     uint64_t maximumBitrate = 0;
     if (_streams.count == 0) {
@@ -140,14 +143,16 @@ static const NSInteger SWPacketHeaderSize = 13;
     } else if (_source != nil) {
         [self mergedMode:&mode maximumBitrate:&maximumBitrate];
         if (![mode isEqualToString:_mode] || maximumBitrate != _maximumBitrate) {
-            configuring = _source;
+            SWGoScreenStream *configuring = _source;
             _mode = mode;
             _maximumBitrate = maximumBitrate;
+            dispatch_async(_queue, ^{
+                [configuring configureMode:mode maximumBitrate:maximumBitrate];
+            });
         }
     }
     [_state unlock];
     [closing close];
-    [configuring configureMode:mode maximumBitrate:maximumBitrate];
 }
 
 - (void)requestKeyFrame {

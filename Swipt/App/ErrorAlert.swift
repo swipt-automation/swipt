@@ -61,7 +61,7 @@ final class ErrorAlert {
     @discardableResult
     private func enqueue(_ alert: AlertState) -> Bool {
         guard !([self.alert].compactMap(\.self) + queued).contains(where: { $0.title == alert.title && $0.message == alert.message }) else { return false }
-        if self.alert == nil {
+        if self.alert == nil, queued.isEmpty {
             self.alert = alert
         } else {
             queued.append(alert)

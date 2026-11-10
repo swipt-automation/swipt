@@ -40,6 +40,7 @@ export function invoke<T>(
       return;
     }
     const id = nextID();
+    const encoded = JSON.stringify(args);
     const release =
       signal === undefined
         ? () => {}
@@ -51,7 +52,7 @@ export function invoke<T>(
       release,
       site,
     });
-    native.start(id, name, JSON.stringify(args));
+    native.start(id, name, encoded);
   });
 }
 
@@ -147,6 +148,9 @@ export function stream<T>(
         if (id !== undefined) {
           return;
         }
+        const encoded = JSON.stringify(
+          typeof args === "function" ? args() : args,
+        );
         id = nextID();
         subscriptions.set(id, {
           push: (value) => {
@@ -175,11 +179,12 @@ export function stream<T>(
           },
         });
         signal?.addEventListener("abort", abort);
-        native.subscribe(
-          id,
-          kind,
-          JSON.stringify(typeof args === "function" ? args() : args),
-        );
+        try {
+          native.subscribe(id, kind, encoded);
+        } catch (error) {
+          finish();
+          throw error;
+        }
       };
       return {
         next(): Promise<IteratorResult<T>> {
@@ -205,7 +210,10 @@ export function stream<T>(
         },
         return(): Promise<IteratorResult<T>> {
           buffered = [];
+          const current = waiter;
+          waiter = undefined;
           finish();
+          current?.resolve({ value: undefined, done: true });
           return Promise.resolve({ value: undefined, done: true });
         },
       };

@@ -249,7 +249,12 @@ func sqliteOperation(ctx context.Context, call *operation) (any, error) {
 	if len(call.args) != 1 {
 		return nil, E.Cause1(ErrInvalid, E.New("takes 1 argument, not ", len(call.args)))
 	}
-	return call.engine.host.SQLite(ctx, call.engine, call.engine.dataOwner(), call.args[0])
+	e := call.engine
+	value, err := e.host.SQLite(ctx, e, e.dataOwner(), call.args[0])
+	if e.ctx.Err() != nil {
+		e.host.CloseDatabases(e, "")
+	}
+	return value, err
 }
 
 func (h *Host) SQLite(ctx context.Context, client any, swiplet string, request []byte) (any, error) {

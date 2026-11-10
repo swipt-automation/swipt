@@ -166,7 +166,7 @@ func (d *diskImages) update(ctx context.Context, images *imagemounter.Client, st
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		return &Error{Problem: ProblemDiskImage, Err: E.Cause(err, "replace the Developer Disk Image ", status.Build, " with ", available)}
+		d.logger.Warn(E.Cause(err, "replace the Developer Disk Image ", status.Build, " with ", available))
 	}
 	d.replaced = true
 	d.relisted = true

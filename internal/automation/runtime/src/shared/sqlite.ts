@@ -205,6 +205,7 @@ const ignore = () => {};
 export function createSQLite(bridge: SQLiteBridge) {
   const connections = new Set<Connection>();
   const owners = new WeakMap<object, Connection>();
+  let closed = false;
 
   const finalizedByHost = (error: unknown) =>
     error instanceof Error &&
@@ -219,6 +220,9 @@ export function createSQLite(bridge: SQLiteBridge) {
     constructor(handle: number) {
       this.handle = handle;
       connections.add(this);
+      if (closed) {
+        this.discard();
+      }
     }
 
     get open(): number {
@@ -1077,15 +1081,17 @@ export function createSQLite(bridge: SQLiteBridge) {
       throw new TypeError("the listener is not a function");
     }
     listeners.add(listener);
-    stop ??= bridge.subscribe((event) => {
-      for (const current of [...listeners]) {
-        try {
-          current(event);
-        } catch (error) {
-          console.error("a database change listener threw", error);
+    if (!closed) {
+      stop ??= bridge.subscribe((event) => {
+        for (const current of [...listeners]) {
+          try {
+            current(event);
+          } catch (error) {
+            console.error("a database change listener threw", error);
+          }
         }
-      }
-    });
+      });
+    }
     let removed = false;
     return {
       remove() {
@@ -1173,16 +1179,21 @@ export function createSQLite(bridge: SQLiteBridge) {
     #databaseSync(): SQLiteDatabase {
       if (this.#database === null) {
         const database = openDatabaseSync(this.#name);
-        database.withTransactionSync(() => {
-          const version =
-            database.getFirstSync<{ user_version: number }>(
-              "PRAGMA user_version",
-            )?.user_version ?? 0;
-          database.execSync(storageSchema);
-          if (version < 1) {
-            database.execSync("PRAGMA user_version = 1");
-          }
-        });
+        try {
+          database.withTransactionSync(() => {
+            const version =
+              database.getFirstSync<{ user_version: number }>(
+                "PRAGMA user_version",
+              )?.user_version ?? 0;
+            database.execSync(storageSchema);
+            if (version < 1) {
+              database.execSync("PRAGMA user_version = 1");
+            }
+          });
+        } catch (error) {
+          database.closeSync();
+          throw error;
+        }
         this.#database = database;
       }
       return this.#database;
@@ -1195,18 +1206,23 @@ export function createSQLite(bridge: SQLiteBridge) {
       this.#opening ??= (async () => {
         try {
           const database = await openDatabaseAsync(this.#name);
-          await database.withTransactionAsync(async () => {
-            const version =
-              (
-                await database.getFirstAsync<{ user_version: number }>(
-                  "PRAGMA user_version",
-                )
-              )?.user_version ?? 0;
-            await database.execAsync(storageSchema);
-            if (version < 1) {
-              await database.execAsync("PRAGMA user_version = 1");
-            }
-          });
+          try {
+            await database.withTransactionAsync(async () => {
+              const version =
+                (
+                  await database.getFirstAsync<{ user_version: number }>(
+                    "PRAGMA user_version",
+                  )
+                )?.user_version ?? 0;
+              await database.execAsync(storageSchema);
+              if (version < 1) {
+                await database.execAsync("PRAGMA user_version = 1");
+              }
+            });
+          } catch (error) {
+            await database.closeAsync();
+            throw error;
+          }
           this.#database = database;
           return database;
         } finally {
@@ -1566,6 +1582,7 @@ export function createSQLite(bridge: SQLiteBridge) {
   });
 
   const close = () => {
+    closed = true;
     for (const connection of [...connections]) {
       connection.discard();
     }

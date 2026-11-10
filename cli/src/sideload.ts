@@ -11,6 +11,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 
 import password from "@inquirer/password";
@@ -1625,6 +1626,7 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
               throw error;
             }
             update(tr("waiting for {device}", { device: device.name }));
+            await sleep(1_000, undefined, { signal: context.signal });
           }
         }
         try {

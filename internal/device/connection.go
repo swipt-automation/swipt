@@ -253,16 +253,14 @@ func (s *Connection) release() {
 	var timer *time.Timer
 	timer = time.AfterFunc(s.options.IdleTimeout, func() {
 		s.access.Lock()
+		defer s.access.Unlock()
 		if s.idle != timer {
-			s.access.Unlock()
 			return
 		}
 		s.idle = nil
-		end := s.endSession
-		s.access.Unlock()
-		if end != nil {
+		if s.endSession != nil {
 			s.logger.Debug("nothing uses the device connection; disconnecting")
-			end()
+			s.endSession()
 		}
 	})
 	s.idle = timer
@@ -419,14 +417,11 @@ func (s *Connection) stopped(err error) {
 	s.notifier.close(last)
 }
 
-func (s *Connection) setState(state State, err error) {
-	s.access.Lock()
+func (s *Connection) setStateLocked(state State, err error) {
 	if s.state == state && errors.Is(err, s.stateErr) && errors.Is(s.stateErr, err) {
-		s.access.Unlock()
 		return
 	}
 	s.state, s.stateErr = state, err
-	s.access.Unlock()
 	if err != nil {
 		s.logger.Info("state: ", state, ", ", ProblemOf(err), ": ", err)
 	} else {
@@ -504,7 +499,9 @@ func (s *Connection) serveSession(session context.Context) {
 		case <-s.retry:
 		default:
 		}
-		s.setState(StateConnecting, lastErr)
+		s.access.Lock()
+		s.setStateLocked(StateConnecting, lastErr)
+		s.access.Unlock()
 		var connected time.Time
 		err := func() error {
 			ctx, cancel := context.WithCancelCause(session)
@@ -551,6 +548,7 @@ func (s *Connection) serveSession(session context.Context) {
 		s.attemptErr = err
 		s.failedAttempts++
 		s.wakeWaitersLocked()
+		s.setStateLocked(StateConnecting, err)
 		s.access.Unlock()
 		if !connected.IsZero() && time.Since(connected) >= stableConnection {
 			failures = 0
@@ -561,7 +559,9 @@ func (s *Connection) serveSession(session context.Context) {
 		failures++
 	}
 	if s.ctx.Err() == nil {
-		s.setState(StateStopped, nil)
+		s.access.Lock()
+		s.setStateLocked(StateStopped, nil)
+		s.access.Unlock()
 	}
 }
 
@@ -580,8 +580,8 @@ func (s *Connection) fail(err error) {
 	s.failure = err
 	s.failedAt = time.Now()
 	s.wakeWaitersLocked()
+	s.setStateLocked(StateFailed, err)
 	s.access.Unlock()
-	s.setState(StateFailed, err)
 }
 
 func (s *Connection) wait(session context.Context, delay time.Duration) bool {
@@ -618,7 +618,9 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	if current, ok := version.Parse(info.OSVersion); ok && !current.AtLeast(version.Version{17, 4}) {
 		return newError(ProblemUnsupported, "iOS ", info.OSVersion, " cannot share its screen; it needs iOS 17.4 or later")
 	}
-	s.setState(StatePreparing, nil)
+	s.access.Lock()
+	s.setStateLocked(StatePreparing, nil)
+	s.access.Unlock()
 	err := s.images.prepare(session, device)
 	if err != nil {
 		return lostOr(device, err)
@@ -712,19 +714,17 @@ func lostOr(device *coredevice.Device, err error) error {
 
 func (s *Connection) setRunning() {
 	s.access.Lock()
-	problem := s.videoProblem
+	s.setStateLocked(StateRunning, s.videoProblem)
 	s.access.Unlock()
-	s.setState(StateRunning, problem)
 }
 
 func (s *Connection) setVideoProblem(err error) {
 	s.access.Lock()
+	defer s.access.Unlock()
 	changed := (err == nil) != (s.videoProblem == nil)
 	s.videoProblem = err
-	running := s.state == StateRunning
-	s.access.Unlock()
-	if running && (changed || err != nil) {
-		s.setState(StateRunning, err)
+	if s.state == StateRunning && (changed || err != nil) {
+		s.setStateLocked(StateRunning, err)
 	}
 }
 
@@ -733,6 +733,7 @@ func (s *Connection) attach(session context.Context, device *coredevice.Device, 
 	s.access.Lock()
 	s.attached = c
 	s.attemptErr = nil
+	s.videoProblem = nil
 	s.wakeWaitersLocked()
 	s.access.Unlock()
 	go s.input.prepareTouches(c)

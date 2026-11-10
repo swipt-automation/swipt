@@ -31,7 +31,11 @@ struct SetupView: View {
                                     }
                                 }
                             case .autoUnlock:
-                                AutoUnlockSetupView {}
+                                AutoUnlockSetupView {
+                                    if path.last == .autoUnlock, device.tunnelFound == false {
+                                        path.append(.loopback)
+                                    }
+                                }
                             }
                         }
                         .navigationBarBackButtonHidden(true)

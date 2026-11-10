@@ -47,6 +47,7 @@
 - (void)invalidate {
     [self closeSession];
     _waitingForKeyframe = YES;
+    _clock = [SWRTPClock new];
 }
 
 - (BOOL)makeSession:(CMVideoFormatDescriptionRef)format {
@@ -104,18 +105,16 @@
     if (unit.hasParameterSets && ![self adoptParameterSets:unit]) {
         return YES;
     }
-    if (_waitingForKeyframe) {
-        if (!unit.isKeyframe) {
-            return YES;
-        }
-        _waitingForKeyframe = NO;
+    if (_waitingForKeyframe && !unit.isKeyframe) {
+        return YES;
     }
     if (_session == NULL && _format != NULL && ![self makeSession:_format]) {
         return YES;
     }
     if (_session == NULL || _format == NULL) {
-        return NO;
+        return YES;
     }
+    _waitingForKeyframe = NO;
     CMSampleBufferRef sample = SWHEVCSample(unit, _format, [_clock time:unit.rtpTimestamp], kCMTimeInvalid);
     if (sample == NULL) {
         return NO;

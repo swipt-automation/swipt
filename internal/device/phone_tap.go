@@ -60,13 +60,8 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 	if err != nil {
 		return err
 	}
-	grant, err := p.connection.input.acquire(ctx, c)
-	if err != nil {
-		return err
-	}
-	defer grant.release()
 	started := time.Now()
-	s := &axSession{phone: p, conn: c, geometry: geometry, grant: grant, settled: started.Add(animationLimit)}
+	s := &axSession{phone: p, conn: c, geometry: geometry, settled: started.Add(animationLimit)}
 	var deadline time.Time
 	if timeout >= 0 {
 		deadline = started.Add(timeout)
@@ -75,6 +70,9 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 	var waited string
 	for attempt := 1; ; attempt++ {
 		var pending string
+		if s.grant, err = p.connection.input.acquire(ctx, c); err != nil {
+			return err
+		}
 		err = c.ax.do(ctx, true, 0, func(ctx context.Context, client *accessibility.RemoteClient) error {
 			s.client = client
 			node, err := p.element(c, ref)
@@ -89,6 +87,7 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 			s.target.Point = at
 			return act(ctx, s, node, at)
 		})
+		s.grant.release()
 		if errors.Is(err, ErrNotAnswering) {
 			pending, err = err.Error(), nil
 		}

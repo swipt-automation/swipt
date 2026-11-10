@@ -81,6 +81,8 @@ final class RemotePairingBrowser {
             isReady = true
         case .failed where isReady:
             retry()
+        case .failed:
+            cancelBrowsing()
         default:
             break
         }

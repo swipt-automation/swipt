@@ -109,14 +109,14 @@ static AVAssetTrack *SWFirstVideoTrack(AVURLAsset *asset, NSError **error) {
     BOOL reusable = _current != nil && _current.time <= seconds && seconds - _current.time < 2;
     if (!reusable) {
         [_reader cancelReading];
+        _current = nil;
+        _pending = nil;
         AVAssetReader *reader = [self openAt:seconds error:error];
         if (reader == nil) {
             return nil;
         }
         _reader = reader;
         _output = (AVAssetReaderTrackOutput *)reader.outputs.firstObject;
-        _current = nil;
-        _pending = nil;
     }
     if (_pending != nil && _pending.time <= seconds) {
         _current = _pending;
@@ -134,6 +134,12 @@ static AVAssetTrack *SWFirstVideoTrack(AVURLAsset *asset, NSError **error) {
                 _pending = sample;
             }
         }
+    }
+    if (_reader.status == AVAssetReaderStatusFailed) {
+        SWFailCause(error, SWErrorNameGeneric, _reader.error, @"graphics: read the video");
+        _current = nil;
+        _pending = nil;
+        return nil;
     }
     if (_current != nil || _pending != nil) {
         return _current ?: _pending;

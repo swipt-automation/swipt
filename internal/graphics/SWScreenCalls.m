@@ -45,6 +45,10 @@ id SWCallScreenOpen(SWCall *call, NSError **error) {
     if (stream == nil) {
         return nil;
     }
+    if ([call.token failIfCancelled:error]) {
+        [stream close];
+        return nil;
+    }
     [call.engine trackStream:stream];
     return @{@"stream": @([call.engine registerObject:stream])};
 }
@@ -113,7 +117,7 @@ id SWCallRecordingStop(SWCall *call, NSError **error) {
         SWFail(error, SWErrorNameType, @"graphics: stop needs a RecordingSession");
         return nil;
     }
-    return [session stop:call.token error:error] ? @{} : nil;
+    return [session stop:error] ? @{} : nil;
 }
 
 id SWCallRecordingOpen(SWCall *call, NSError **error) {

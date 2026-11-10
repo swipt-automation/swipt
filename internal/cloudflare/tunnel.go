@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -191,10 +192,24 @@ func (t *Tunnel) route(ctx context.Context) {
 	if state == nil || routed {
 		return
 	}
-	err := t.account.routeTunnel(ctx, state.ID, t.hostname)
-	if err != nil {
-		t.fail(err)
-		return
+	for attempt := 0; ; attempt++ {
+		err := t.account.routeTunnel(ctx, state.ID, t.hostname)
+		if err == nil {
+			break
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		if _, unanswered := errors.AsType[*url.Error](err); !unanswered {
+			t.fail(err)
+			return
+		}
+		t.logger.Warn(err)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(min(time.Second<<min(attempt, 6), maxRetryDelay)):
+		}
 	}
 	t.access.Lock()
 	if t.state == state {

@@ -165,12 +165,10 @@ final class SwipletStore {
 
     @available(iOS 17.4, *)
     func importSwiplet(_ preview: SwipletPreview) async throws {
-        defer {
-            Self.discard(preview.file)
-            reload()
-        }
+        defer { reload() }
         let id = try await Platform.shared.installSwiplet(preview.file)
         try SwipletDatabase.setRepository("", of: id)
+        Self.discard(preview.file)
     }
 
     func discard(_ preview: SwipletPreview) {

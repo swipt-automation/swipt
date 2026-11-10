@@ -158,6 +158,9 @@ func dialTunnel(ctx context.Context, proxy *url.URL, address string, config *tls
 		_ = conn.Close()
 		return nil, E.New("the proxy answered the tunnel with ", response.Status)
 	}
+	if !stop() {
+		return nil, ctx.Err()
+	}
 	return bufferedConn{Conn: conn, reader: reader}, nil
 }
 

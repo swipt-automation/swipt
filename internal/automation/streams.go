@@ -45,6 +45,10 @@ func (e *engine) addResource(it *resource) string {
 	defer e.access.Unlock()
 	e.resourceSequence++
 	id := "r" + strconv.Itoa(e.resourceSequence)
+	if e.ctx.Err() != nil {
+		go it.close(context.Cause(e.ctx))
+		return id
+	}
 	e.resources[id] = it
 	if it.interrupt != nil {
 		e.interrupts[id] = it.interrupt

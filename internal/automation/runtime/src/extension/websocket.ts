@@ -177,6 +177,7 @@ export const WebSocket = defineInterface(
       }
       if (this.#state !== CONNECTING) {
         native.release(opened.socket);
+        this.#finish(1006, "", false, this.#connecting.signal.reason);
         return;
       }
       this.#socket = opened.socket;

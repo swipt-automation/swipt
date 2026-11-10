@@ -82,22 +82,19 @@ func (w *axWorker) do(ctx context.Context, action bool, gen uint64, run func(ctx
 }
 
 func (w *axWorker) read(ctx context.Context, key string, run axRun) (any, error) {
-	w.access.Lock()
-	index := slices.IndexFunc(w.queue, func(job *axJob) bool { return job.key == key && !job.started })
-	var job *axJob
-	if index >= 0 {
-		job = w.queue[index]
-		job.interest++
-		w.access.Unlock()
-	} else {
-		w.access.Unlock()
-		job = w.enqueue(&axJob{ctx: w.conn.ctx, key: key, interest: 1, run: run, done: make(chan struct{})})
-	}
-	return w.await(ctx, job)
+	return w.await(ctx, w.enqueue(&axJob{ctx: w.conn.ctx, key: key, interest: 1, run: run, done: make(chan struct{})}))
 }
 
 func (w *axWorker) enqueue(job *axJob) *axJob {
 	w.access.Lock()
+	if job.key != "" {
+		if index := slices.IndexFunc(w.queue, func(it *axJob) bool { return it.key == job.key && !it.started }); index >= 0 {
+			queued := w.queue[index]
+			queued.interest++
+			w.access.Unlock()
+			return queued
+		}
+	}
 	w.queue = append(w.queue, job)
 	w.access.Unlock()
 	select {
@@ -158,7 +155,7 @@ func (w *axWorker) next() *axJob {
 		case <-w.wake:
 		case <-idle:
 			w.access.Lock()
-			held = w.holds > 0 || len(w.queue) > 0
+			held = w.holds > 0 || len(w.queue) > 0 || time.Since(w.used) < axIdle
 			w.access.Unlock()
 			if !held {
 				w.logger.Debug("closing the accessibility connection, idle for ", axIdle)

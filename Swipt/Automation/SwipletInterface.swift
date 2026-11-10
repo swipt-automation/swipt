@@ -111,6 +111,7 @@ private final class SwipletRuntime: SwiptHostDelegate {
     var broken = false
     private var terminated = false
     private var dialogs: [String: Task<DialogAnswer, any Error>] = [:]
+    private var calls: [String: Task<String, any Error>] = [:]
 
     init(swiplet: String, entry: SwipletEntry, delegate: ExpoReactNativeFactoryDelegate) {
         self.swiplet = swiplet
@@ -139,8 +140,15 @@ private final class SwipletRuntime: SwiptHostDelegate {
         factory.rootViewFactory.reactHost = nil
     }
 
-    func call(action: String, input: String) async throws -> String {
-        try await Platform.shared.callAction(swiplet, action: action, input: input, caller: LibSwiptCallerApp, dialogs: .app)
+    func call(_ id: String, action: String, input: String) async throws -> String {
+        let call = Task { try await Platform.shared.callAction(swiplet, action: action, input: input, caller: LibSwiptCallerApp, dialogs: .app) }
+        calls[id] = call
+        defer { calls[id] = nil }
+        return try await call.value
+    }
+
+    func cancelCall(_ id: String) {
+        calls[id]?.cancel()
     }
 
     func setServiceEnabled(_ enabled: Bool) async throws {

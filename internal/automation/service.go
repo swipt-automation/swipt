@@ -51,6 +51,9 @@ type runner struct {
 	ctx        context.Context
 	cancel     context.CancelCauseFunc
 	executions sync.WaitGroup
+	calls      context.Context
+	endCalls   context.CancelCauseFunc
+	suspended  chan struct{}
 	retry      chan struct{}
 
 	access      sync.Mutex
@@ -75,15 +78,18 @@ type logWatcher struct {
 
 func (r *runner) enter(ctx context.Context) (context.Context, Swiplet, func(), error) {
 	h := r.host
-	swiplet, err := h.Swiplet(r.id)
-	if err == nil {
-		err = h.Compatible(swiplet.Manifest)
-	}
-	if err != nil {
-		return nil, Swiplet{}, nil, err
-	}
 	h.access.Lock()
-	current := h.runners[r.id] == r
+	for h.runners[r.id] == r && r.suspended != nil {
+		suspended := r.suspended
+		h.access.Unlock()
+		select {
+		case <-suspended:
+		case <-ctx.Done():
+			return nil, Swiplet{}, nil, ctx.Err()
+		}
+		h.access.Lock()
+	}
+	current, calls := h.runners[r.id] == r, r.calls
 	if current {
 		r.executions.Add(1)
 	}
@@ -91,13 +97,45 @@ func (r *runner) enter(ctx context.Context) (context.Context, Swiplet, func(), e
 	if !current {
 		return nil, Swiplet{}, nil, E.Cause1(ErrNotFound, E.New("there is no swiplet ", strconv.Quote(r.id)))
 	}
+	swiplet, err := h.Swiplet(r.id)
+	if err == nil {
+		err = h.Compatible(swiplet.Manifest)
+	}
+	if err != nil {
+		r.executions.Done()
+		return nil, Swiplet{}, nil, err
+	}
 	ctx, cancel := context.WithCancelCause(ctx)
-	stop := context.AfterFunc(r.ctx, func() { cancel(context.Cause(r.ctx)) })
+	stop := context.AfterFunc(calls, func() { cancel(context.Cause(calls)) })
 	return ctx, swiplet, func() {
 		stop()
 		cancel(nil)
 		r.executions.Done()
 	}, nil
+}
+
+func (r *runner) suspend(cause error) (resume func()) {
+	h := r.host
+	suspended := make(chan struct{})
+	h.access.Lock()
+	r.suspended = suspended
+	h.access.Unlock()
+	r.access.Lock()
+	r.stopLocked()
+	done := r.done
+	r.access.Unlock()
+	if done != nil {
+		<-done
+	}
+	r.endCalls(cause)
+	r.executions.Wait()
+	return func() {
+		h.access.Lock()
+		r.calls, r.endCalls = context.WithCancelCause(r.ctx)
+		r.suspended = nil
+		h.access.Unlock()
+		close(suspended)
+	}
 }
 
 func (r *runner) end() {

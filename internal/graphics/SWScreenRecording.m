@@ -124,7 +124,9 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
                 break;
             }
             while (!input.isReadyForMoreMediaData && failure == nil) {
-                if (![token failIfCancelled:&failure]) {
+                if (writer.status != AVAssetWriterStatusWriting) {
+                    SWFailCause(&failure, SWErrorNameGeneric, writer.error, @"graphics: write the video");
+                } else if (![token failIfCancelled:&failure]) {
                     usleep(2000);
                 }
             }
@@ -134,6 +136,7 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
         }
     }
     if (failure != nil) {
+        [writer cancelWriting];
         SWFailWith(error, failure);
         return NO;
     }

@@ -15,6 +15,7 @@ final class BackgroundLocation: NSObject {
 
     private let manager = CLLocationManager()
     private var isWanted = false
+    private var isDenialReported = false
 
     override init() {
         authorization = manager.authorizationStatus
@@ -37,13 +38,19 @@ final class BackgroundLocation: NSObject {
         case .authorizedWhenInUse, .authorizedAlways:
             startUpdating()
         default:
-            onDenied?()
+            reportDenial()
         }
     }
 
     func stop() {
         isWanted = false
         stopUpdating()
+    }
+
+    private func reportDenial() {
+        guard !isDenialReported else { return }
+        isDenialReported = true
+        onDenied?()
     }
 
     private func startUpdating() {
@@ -66,11 +73,12 @@ extension BackgroundLocation: CLLocationManagerDelegate {
         authorization = manager.authorizationStatus
         switch authorization {
         case .authorizedWhenInUse, .authorizedAlways:
+            isDenialReported = false
             startUpdating()
         default:
             stopUpdating()
             if isWanted, isDenied {
-                onDenied?()
+                reportDenial()
             }
         }
     }

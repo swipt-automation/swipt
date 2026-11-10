@@ -105,6 +105,7 @@ final class ServiceResolver {
             }, context)
         guard error == kDNSServiceErr_NoError, let serviceReference else {
             Self.logger.error("Address query failed: \(error)")
+            addressHost = nil
             return
         }
         addressReference = serviceReference
@@ -113,6 +114,7 @@ final class ServiceResolver {
             Self.logger.error("Address query dispatch failed: \(dispatchError)")
             DNSServiceRefDeallocate(serviceReference)
             addressReference = nil
+            addressHost = nil
         }
     }
 

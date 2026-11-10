@@ -31,8 +31,12 @@ final class BonjourAdvertiser {
                 }, context)
         }
         guard error == kDNSServiceErr_NoError, let serviceReference else { return error }
+        let dispatchError = DNSServiceSetDispatchQueue(serviceReference, .main)
+        guard dispatchError == kDNSServiceErr_NoError else {
+            DNSServiceRefDeallocate(serviceReference)
+            return dispatchError
+        }
         reference = serviceReference
-        DNSServiceSetDispatchQueue(serviceReference, .main)
         return error
     }
 

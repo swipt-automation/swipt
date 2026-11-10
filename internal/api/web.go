@@ -370,7 +370,7 @@ func (r *webSocketBodyReader) Read(buffer []byte) (int, error) {
 		messageType, payload, err := r.conn.Read(r.ctx)
 		if err != nil {
 			r.cancel()
-			return 0, io.EOF
+			return 0, err
 		}
 		if messageType != websocket.MessageBinary {
 			return 0, E.New("unexpected non-binary websocket message")

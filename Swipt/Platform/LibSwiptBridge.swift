@@ -187,14 +187,18 @@ nonisolated final class TailscaleEvents: NSObject, LibSwiptTailscaleHandlerProto
 }
 
 nonisolated final class ActionEvents: NSObject, LibSwiptActionObserverProtocol, @unchecked Sendable {
-    private let deliverRequest: @Sendable (String) -> Void
+    private let deliverDialog: @Sendable (Int64, String?) -> Void
 
-    init(request deliverRequest: @escaping @Sendable (String) -> Void) {
-        self.deliverRequest = deliverRequest
+    init(dialog deliverDialog: @escaping @Sendable (Int64, String?) -> Void) {
+        self.deliverDialog = deliverDialog
     }
 
-    func onRequest(_ request: String?) {
-        deliverRequest(request ?? "")
+    func onDialog(_ dialogID: Int64, request: String?) {
+        deliverDialog(dialogID, request ?? "")
+    }
+
+    func onDialogWithdrawn(_ dialogID: Int64) {
+        deliverDialog(dialogID, nil)
     }
 }
 

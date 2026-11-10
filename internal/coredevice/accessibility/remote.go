@@ -176,10 +176,10 @@ func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed fu
 	// AXAuditDevicesAppRemoteServer drops processDataFromHost: data until
 	// clientNeedsAccessibility: true, which also starts pushing the cached tree
 	// (24A446 AccessibilityAudit 0x24fe0b45c, 0x24fe0b5e4..0x24fe0b61c).
-	c.enabled = true
 	if err = dtxConn.Notify(owner, 0, "clientNeedsAccessibility:", true); err != nil {
 		return nil, E.Cause(err, "accessibility: notify clientNeedsAccessibility:")
 	}
+	c.enabled = true
 	if err = context.Cause(operation); err != nil {
 		return nil, err
 	}

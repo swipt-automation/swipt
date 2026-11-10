@@ -248,7 +248,7 @@ func (h *Host) execute(ctx context.Context, swiplet Swiplet, dialog Dialog, logs
 	if err != nil {
 		return nil, err
 	}
-	if running != nil {
+	if running != nil && ctx.Err() == nil {
 		running()
 	}
 	return e.run(ctx)

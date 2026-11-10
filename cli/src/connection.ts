@@ -201,7 +201,11 @@ async function discover(signal, stored, until?) {
       changed = true;
     } else {
       const current = parseURL(stored[name]);
-      if (current.token === "" && current.url !== it.url) {
+      if (
+        current.token === "" &&
+        current.url !== it.url &&
+        new URL(current.url).hostname.endsWith(".local")
+      ) {
         stored[name] = it.url;
         changed = true;
       }

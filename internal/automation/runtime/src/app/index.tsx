@@ -51,11 +51,12 @@ interface Props {
 }
 
 interface SwiptHost {
-  call(action: string, input: string): Promise<string>;
+  call(id: string, action: string, input: string): Promise<string>;
+  cancelCall(id: string): Promise<void>;
   setServiceEnabled(enabled: boolean): Promise<void>;
   searchPlaces(query: string): Promise<string>;
   presentDialog(id: string, request: string): Promise<string | null>;
-  withdrawDialog(id: string): void;
+  withdrawDialog(id: string): Promise<void>;
   mounted(surface: string): void;
   exit(): void;
   preferredLocalizations(localizations: string[]): string[];
@@ -216,6 +217,8 @@ const preferredLocalizations = (localizations: readonly string[]): string[] => {
   return host.preferredLocalizations([...localizations]);
 };
 
+let lastCall = 0;
+
 function interfaceModule(props: Props) {
   service = serviceOf(props.service);
   const subscribe = (listener: () => void) => {
@@ -224,16 +227,27 @@ function interfaceModule(props: Props) {
       serviceListeners.delete(listener);
     };
   };
-  const call = (
+  const call = async (
     action: string,
     input: unknown,
-    options: { signal?: AbortSignal } = {},
-  ): Promise<unknown> =>
-    untilAborted(options.signal, () =>
-      host
-        .call(action, JSON.stringify(input === undefined ? null : input))
-        .then((value) => (value ? JSON.parse(value) : undefined)),
-    );
+    { signal }: { signal?: AbortSignal } = {},
+  ): Promise<unknown> => {
+    const id = String(++lastCall);
+    const cancel = () => void host.cancelCall(id).catch(() => {});
+    signal?.addEventListener("abort", cancel, { once: true });
+    try {
+      const value = await untilAborted(signal, () =>
+        host.call(
+          id,
+          action,
+          JSON.stringify(input === undefined ? null : input),
+        ),
+      );
+      return value ? JSON.parse(value) : undefined;
+    } finally {
+      signal?.removeEventListener("abort", cancel);
+    }
+  };
   const calls = new Proxy({} as Record<string, unknown>, {
     get: (_, action) =>
       typeof action !== "string" || action === "then"
@@ -263,7 +277,7 @@ const appIntents = createAppIntents(
     signal?: AbortSignal,
   ): Promise<T> => {
     const id = String(++lastDialog);
-    const withdraw = () => host.withdrawDialog(id);
+    const withdraw = () => void host.withdrawDialog(id).catch(() => {});
     signal?.addEventListener("abort", withdraw, { once: true });
     try {
       const answer = await untilAborted(signal, () =>

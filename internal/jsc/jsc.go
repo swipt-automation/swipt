@@ -151,9 +151,18 @@ func (c *Context) TerminateOn(ctx context.Context) (stop func() bool) {
 	defer C.free(unsafe.Pointer(cmd))
 	c.submit(cmd)
 	run := cmd.run
-	return context.AfterFunc(ctx, func() {
+	cancelled := make(chan struct{})
+	stopCancel := context.AfterFunc(ctx, func() {
 		C.jsc_cancel(c.runtime, run)
+		close(cancelled)
 	})
+	return func() bool {
+		if stopCancel() {
+			return true
+		}
+		<-cancelled
+		return false
+	}
 }
 
 func (c *Context) SetHooks(describer, framer Value) {

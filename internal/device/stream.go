@@ -108,10 +108,12 @@ func (m *streamManager) discard(a *conn, stream *display.Stream) error {
 	return stream.Close()
 }
 
-func (m *streamManager) retire(stream *deviceStream) {
+func (m *streamManager) retire(stream *deviceStream) (retired bool) {
 	m.access.Lock()
+	retired = stream.closed
 	m.retireLocked(stream)
 	m.access.Unlock()
+	return
 }
 
 func (m *streamManager) retireLocked(stream *deviceStream) {

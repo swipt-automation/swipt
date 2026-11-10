@@ -70,7 +70,9 @@ type Platform struct {
 func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOptions *DeviceOptions, deviceHandler DeviceHandler) *Platform {
 	p := &Platform{logFactory: newLogFactory(), handler: handler, app: options.AppBundleID, appVersion: options.AppVersion, appBuild: options.AppBuild, dialogs: make(map[int64]chan dialogAnswer)}
 	p.device = newDevice(deviceOptions, deviceHandler, p.logFactory)
-	p.dialog = automation.Dialog{App: p.app, InApp: true, Ask: p.ask, Backdrop: handler.OnBackdrop, Active: handler.AppActive}
+	p.dialog = automation.Dialog{App: p.app, InApp: true, Backdrop: handler.OnBackdrop, Active: handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
+		return p.ask(ctx, request, handler.OnDialog, handler.OnDialogWithdrawn)
+	}}
 	p.host = automation.New(automation.Options{
 		Device:     p.device.connection.Phone(),
 		Directory:  options.SwipletDirectory,
@@ -127,9 +129,8 @@ func unixMilli(at time.Time) int64 {
 }
 
 type ActionCall struct {
-	cancel  context.CancelFunc
-	run     func() (string, error)
-	answers chan dialogAnswer
+	cancel context.CancelFunc
+	run    func() (string, error)
 }
 
 type dialogAnswer struct {
@@ -149,54 +150,26 @@ func (a dialogAnswer) result() (string, error) {
 }
 
 type ActionObserver interface {
-	OnRequest(request string)
+	OnDialog(dialogID int64, request string)
+	OnDialogWithdrawn(dialogID int64)
 }
 
 func (p *Platform) NewActionCall(swiplet, action, input, caller string, observer ActionObserver, showsInApp bool) *ActionCall {
 	ctx, cancel := context.WithCancel(context.Background())
-	call := &ActionCall{cancel: cancel, answers: make(chan dialogAnswer, 1)}
 	dialog := automation.Dialog{App: p.app, InApp: showsInApp, Backdrop: p.handler.OnBackdrop, Active: p.handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
-		observer.OnRequest(request)
-		select {
-		case answer := <-call.answers:
-			return answer.result()
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
+		return p.ask(ctx, request, observer.OnDialog, observer.OnDialogWithdrawn)
 	}}
-	call.run = func() (string, error) {
+	return &ActionCall{cancel: cancel, run: func() (string, error) {
 		output, err := p.host.Call(ctx, automation.CallRequest{
 			Swiplet: swiplet, Action: action, Input: json.RawMessage(input), Caller: automation.Caller(caller), Dialog: dialog,
 		})
 		return string(output), err
-	}
-	return call
+	}}
 }
 
 func (c *ActionCall) Run() (string, error) {
 	defer c.cancel()
 	return c.run()
-}
-
-func (c *ActionCall) Answer(answer string) {
-	select {
-	case c.answers <- dialogAnswer{text: answer}:
-	default:
-	}
-}
-
-func (c *ActionCall) Fail(message string) {
-	select {
-	case c.answers <- dialogAnswer{failure: message}:
-	default:
-	}
-}
-
-func (c *ActionCall) Dismiss() {
-	select {
-	case c.answers <- dialogAnswer{dismissed: true}:
-	default:
-	}
 }
 
 func (c *ActionCall) Cancel() {
@@ -226,20 +199,20 @@ func (p *Platform) ServiceState(swiplet string) *ServiceState {
 	return &ServiceState{Enabled: state.Enabled, Status: string(state.Status), Error: state.Error, Since: unixMilli(state.Since)}
 }
 
-func (p *Platform) ask(ctx context.Context, request string) (string, error) {
+func (p *Platform) ask(ctx context.Context, request string, present func(dialogID int64, request string), withdraw func(dialogID int64)) (string, error) {
 	answers := make(chan dialogAnswer, 1)
 	p.dialogAccess.Lock()
 	p.lastDialog++
 	id := p.lastDialog
 	p.dialogs[id] = answers
 	p.dialogAccess.Unlock()
-	p.handler.OnDialog(id, request)
+	present(id, request)
 	select {
 	case answer := <-answers:
 		return answer.result()
 	case <-ctx.Done():
 		if p.takeDialog(id) != nil {
-			p.handler.OnDialogWithdrawn(id)
+			withdraw(id)
 		}
 		return "", ctx.Err()
 	}

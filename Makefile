@@ -70,7 +70,7 @@ fmt:
 lint:
 	golangci-lint run ./...
 	! grep -n 'localizedDescription' internal/graphics/*.m | grep -v '^internal/graphics/SWError.m'
-	! grep -nE '[eE]rror:nil' internal/graphics/*.m | grep -vE 'removeItemAtURL|regularExpressionWithPattern|NSJSONSerialization|stop:nil'
+	! grep -nE '[eE]rror:nil' internal/graphics/*.m | grep -vE 'removeItemAtURL|regularExpressionWithPattern|NSJSONSerialization'
 
 lint_install:
 	go install -v github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest

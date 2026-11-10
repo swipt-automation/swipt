@@ -222,6 +222,8 @@ func (d *Device) Done() <-chan struct{} {
 
 func (d *Device) Closed() bool {
 	select {
+	case <-d.done:
+		return true
 	case <-d.tunnel.Done():
 		return true
 	default:

@@ -184,7 +184,7 @@ final class Platform {
     func callAction(_ swiplet: String, action: String, input: String, caller: String, dialogs: DialogHost) async throws -> String {
         calls += 1
         defer { calls -= 1 }
-        let (requests, delivery) = AsyncStream<String>.makeStream()
+        let (requests, delivery) = AsyncStream<(Int64, String?)>.makeStream()
         defer { delivery.finish() }
         let present: DialogPresenter
         switch dialogs {
@@ -194,27 +194,42 @@ final class Platform {
             present = presenter
         }
         let showsInApp = if case .app = dialogs { true } else { false }
-        let events = ActionEvents { delivery.yield($0) }
-        let call = UncheckedSendable(value: core.newActionCall(swiplet, action: action, input: input, caller: caller, observer: events, showsInApp: showsInApp)!)
+        let events = ActionEvents { delivery.yield(($0, $1)) }
+        let box = UncheckedSendable(value: core)
+        let call = UncheckedSendable(value: box.value.newActionCall(swiplet, action: action, input: input, caller: caller, observer: events, showsInApp: showsInApp)!)
         let presenting = Task {
-            for await request in requests {
+            var presentations: [Int64: Task<Void, Never>] = [:]
+            var last: Task<Void, Never>?
+            for await (dialogID, request) in requests {
+                guard let request else {
+                    presentations.removeValue(forKey: dialogID)?.cancel()
+                    continue
+                }
                 let decoded: DialogRequest
                 do {
                     decoded = try JSONDecoder().decode(DialogRequest.self, from: Data(request.utf8))
                 } catch {
-                    call.value.fail(String(describing: error))
+                    box.value.failDialog(dialogID, message: String(describing: error))
                     continue
                 }
-                do {
-                    let answer = try await present(decoded)
-                    call.value.answer(answer.json)
-                } catch {
-                    guard !Task.isCancelled else { return }
-                    if !(error is CancellationError) {
-                        Self.logger.notice("Present the dialog: \(error, privacy: .public)")
+                let presentation = Task { [last] in
+                    await last?.value
+                    do {
+                        try Task.checkCancellation()
+                        let answer = try await present(decoded)
+                        box.value.answerDialog(dialogID, answer: answer.json)
+                    } catch {
+                        if !(error is CancellationError) {
+                            Self.logger.notice("Present the dialog: \(error, privacy: .public)")
+                        }
+                        box.value.dismissDialog(dialogID)
                     }
-                    call.value.dismiss()
                 }
+                presentations[dialogID] = presentation
+                last = presentation
+            }
+            for presentation in presentations.values {
+                presentation.cancel()
             }
         }
         defer { presenting.cancel() }
@@ -549,7 +564,10 @@ final class Platform {
                 try box.value.setEnabled(isEnabled)
             } catch {
                 let message = error.localizedDescription
-                DispatchQueue.main.async { self?.handleTailscaleError(message) }
+                DispatchQueue.main.async {
+                    guard let self, generation == self.tailscaleGeneration else { return }
+                    self.handleTailscaleError(message)
+                }
                 return
             }
             DispatchQueue.main.async {

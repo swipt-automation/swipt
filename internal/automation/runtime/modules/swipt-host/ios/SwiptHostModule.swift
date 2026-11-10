@@ -22,7 +22,8 @@ public protocol SwiptHostWeb: AnyObject, Sendable {
 @MainActor
 public protocol SwiptHostDelegate: AnyObject, Sendable {
   nonisolated var swiplet: String { get }
-  func call(action: String, input: String) async throws -> String
+  func call(_ id: String, action: String, input: String) async throws -> String
+  func cancelCall(_ id: String)
   func setServiceEnabled(_ enabled: Bool) async throws
   func searchPlaces(_ query: String) async throws -> String
   func presentDialog(_ id: String, request: String) async throws -> String?
@@ -224,8 +225,13 @@ public final class SwiptHostModule: Module {
       }
     }
 
-    AsyncFunction("call") { @MainActor (action: String, input: String) async throws -> String in
-      try await self.host().call(action: action, input: input)
+    AsyncFunction("call") { @MainActor (id: String, action: String, input: String) async throws -> String in
+      try await self.host().call(id, action: action, input: input)
+    }
+
+    AsyncFunction("cancelCall") { @MainActor (id: String) async in
+      guard let delegate = self.delegate() else { return }
+      delegate.cancelCall(id)
     }
 
     AsyncFunction("setServiceEnabled") { @MainActor (enabled: Bool) async throws in
@@ -240,11 +246,9 @@ public final class SwiptHostModule: Module {
       try await self.host().presentDialog(id, request: request)
     }
 
-    Function("withdrawDialog") { (id: String) in
+    AsyncFunction("withdrawDialog") { @MainActor (id: String) async in
       guard let delegate = self.delegate() else { return }
-      Task { @MainActor in
-        delegate.withdrawDialog(id)
-      }
+      delegate.withdrawDialog(id)
     }
 
     Function("mounted") { (surface: String) in

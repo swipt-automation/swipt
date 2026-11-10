@@ -1394,6 +1394,12 @@ async function transmit(
     }
     throw error;
   }
+  if (signal.aborted) {
+    if (fetched.body !== "") {
+      native.release(fetched.body);
+    }
+    throw signal.reason;
+  }
   const list = (fetched.headers ?? []).map(
     ([name, value]): [string, string] => [name.toLowerCase(), value],
   );

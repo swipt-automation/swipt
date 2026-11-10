@@ -22,7 +22,7 @@ extern NSString *const SWScreenModeCoreDevice;
 - (void)requestKeyFrame;
 - (NSInteger)addUnitListener:(void (^)(SWAccessUnit *unit))listener;
 - (void)removeListener:(NSInteger)identifier;
-- (void)addRecording:(SWRecordingSession *)recording;
+- (BOOL)addRecording:(SWRecordingSession *)recording;
 - (void)removeRecording:(SWRecordingSession *)recording;
 - (void)close;
 @end

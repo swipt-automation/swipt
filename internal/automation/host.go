@@ -41,6 +41,8 @@ var (
 
 	errClosed  = E.New("the host closed")
 	errRemoved = E.New("the swiplet was removed")
+	errUpdated = E.New("the swiplet was updated")
+	errCleared = E.New("the data of the swiplet was cleared")
 )
 
 var packageFiles = []string{SourceFolder, AssetsFolder, ManifestFile, IconFile}
@@ -225,6 +227,7 @@ func (h *Host) runner(id string) (*runner, error) {
 		state: ServiceState{Enabled: err == nil, Status: ServiceStopped}, changed: make(chan struct{}), logWatchers: make(map[*logWatcher]struct{}),
 	}
 	r.ctx, r.cancel = context.WithCancelCause(h.ctx)
+	r.calls, r.endCalls = context.WithCancelCause(r.ctx)
 	h.runners[id] = r
 	return r, nil
 }
@@ -298,13 +301,7 @@ func (h *Host) install(contents Archive) error {
 	if err != nil {
 		return err
 	}
-	r.access.Lock()
-	r.stopLocked()
-	previous := r.done
-	r.access.Unlock()
-	if previous != nil {
-		<-previous
-	}
+	defer r.suspend(errUpdated)()
 	err = swap(directory, staging)
 	marker := filepath.Join(directory, serviceFile)
 	_, markerErr := os.Stat(marker)
@@ -388,13 +385,7 @@ func (h *Host) ClearData(id string) error {
 	if err != nil {
 		return err
 	}
-	r.access.Lock()
-	r.stopLocked()
-	previous := r.done
-	r.access.Unlock()
-	if previous != nil {
-		<-previous
-	}
+	defer r.suspend(errCleared)()
 	h.CloseDatabases(nil, id)
 	data := filepath.Join(swiplet.Directory, DataFolder)
 	err = E.Errors(os.RemoveAll(data), os.Mkdir(data, 0o755), h.clearCaches(id))

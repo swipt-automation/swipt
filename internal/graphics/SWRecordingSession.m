@@ -62,10 +62,6 @@
         SWFail(error, SWErrorNameState, @"graphics: %@ is not empty", directory.lastPathComponent);
         return nil;
     }
-    if (stream.closed) {
-        SWFail(error, SWErrorNameState, @"graphics: the screen stream is closed");
-        return nil;
-    }
     SWRecordingSession *session = [self new];
     session->_directory = directory;
     session->_stream = stream;
@@ -80,7 +76,11 @@
     session->_listener = [stream addUnitListener:^(SWAccessUnit *unit) {
         [weakSession append:unit];
     }];
-    [stream addRecording:session];
+    if (![stream addRecording:session]) {
+        [stream removeListener:session->_listener];
+        SWFail(error, SWErrorNameState, @"graphics: the screen stream is closed");
+        return nil;
+    }
     [stream requestKeyFrame];
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:SWScreenFirstFrameLimit];
     while (dispatch_semaphore_wait(session->_began, dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC)) != 0) {
@@ -89,7 +89,7 @@
             failure = SWMakeError(SWErrorNameUnavailable, [NSString stringWithFormat:@"graphics: the screen sent no frame within %ld s; it may be off", (long)SWScreenFirstFrameLimit]);
         }
         if (failure != nil) {
-            [session stop:nil error:nil];
+            [session stop:nil];
             SWFailWith(error, failure);
             return nil;
         }
@@ -174,7 +174,7 @@
     }];
 }
 
-- (BOOL)stop:(SWCancelToken *)token error:(NSError **)error {
+- (BOOL)stop:(NSError **)error {
     [_lock lock];
     if (_stopped) {
         [_lock unlock];
@@ -185,22 +185,25 @@
     SWMovieWriter *writer = _writer;
     _writer = nil;
     [_lock unlock];
+    return [self finishWriter:writer error:error];
+}
+
+- (BOOL)finishWriter:(SWMovieWriter *)writer error:(NSError **)error {
     [_stream removeListener:_listener];
     [_stream removeRecording:self];
     if (writer != nil) {
         [self closeWriter:writer];
     }
-    while (dispatch_group_wait(_finishing, dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC)) != 0) {
-        if ([token failIfCancelled:error]) {
-            return NO;
-        }
-    }
+    dispatch_group_wait(_finishing, DISPATCH_TIME_FOREVER);
     return [self save:error];
 }
 
 - (void)abandon {
     [_lock lock];
     BOOL running = !_stopped;
+    _stopped = YES;
+    SWMovieWriter *writer = _writer;
+    _writer = nil;
     [_lock unlock];
     if (!running) {
         return;
@@ -208,7 +211,7 @@
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
             NSError *failure = nil;
-            if (![self stop:nil error:&failure]) {
+            if (![self finishWriter:writer error:&failure]) {
                 SWReportRecordingFailure(SWErrorMessageOf(failure));
             }
         }
@@ -223,6 +226,10 @@
     NSArray<SWRecordingSegment *> *segments = [_segments copy];
     NSArray<NSString *> *failures = [_failures copy];
     [_lock unlock];
+    if (segments.count == 0 && failures.firstObject != nil) {
+        SWFail(error, SWErrorNameGeneric, @"graphics: %@", failures.firstObject);
+        return NO;
+    }
     if (!hasOrigin || segments.count == 0) {
         SWFail(error, SWErrorNameUnavailable, @"graphics: the recording got no frames; the screen may be off or another app may hold it");
         return NO;

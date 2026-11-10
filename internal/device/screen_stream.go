@@ -232,6 +232,9 @@ func (s *screenStreams) runCapture(ctx context.Context, capture *screenCapture) 
 		s.access.Lock()
 		if s.capture == capture {
 			s.capture = nil
+			if ctx.Err() == nil && s.viewer == nil && len(s.open) > 0 {
+				s.startCaptureLocked()
+			}
 		}
 		s.access.Unlock()
 		capture.cancel()
@@ -259,7 +262,9 @@ func (s *screenStreams) runCapture(ctx context.Context, capture *screenCapture) 
 			restart = capture.restart
 			capture.restart = false
 			s.access.Unlock()
-			s.connection.streams.retire(stream)
+			if s.connection.streams.retire(stream) {
+				restart = true
+			}
 		}
 		if ctx.Err() != nil || s.viewerTaken() {
 			return
@@ -399,9 +404,11 @@ func (s *Connection) startCapture(ctx context.Context, options ScreenStreamOptio
 		MaximumBitrate: options.MaximumBitrate,
 	})
 	if err != nil {
-		m.access.Lock()
-		m.failures++
-		m.access.Unlock()
+		if ctx.Err() == nil {
+			m.access.Lock()
+			m.failures++
+			m.access.Unlock()
+		}
 		return nil, E.Cause(err, "start the device's video")
 	}
 	stream := &deviceStream{ctx: a.owner, device: a.device, stream: video, owner: a}

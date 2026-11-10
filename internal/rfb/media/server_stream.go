@@ -123,6 +123,9 @@ func (s *ServerStream) HandleOffer(message []byte) error {
 	offer, err := parseOffer(message)
 	s.access.Lock()
 	defer s.access.Unlock()
+	if s.closed {
+		return os.ErrClosed
+	}
 	if err != nil {
 		s.logger.Warn(E.Cause(err, "media offer"))
 		return s.config.Send(ErrorMessage(ServerErrorBadConfiguration, 0))

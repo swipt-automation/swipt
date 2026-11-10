@@ -130,6 +130,7 @@ export function sqliteHooks(sqlite: SQLite) {
         database.current?.closeAsync().catch(setError);
         database.current = null;
         setLoading(true);
+        setError(null);
       };
     }, [databaseName, directory, options, onInit]);
     if (error !== null) {

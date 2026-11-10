@@ -165,7 +165,7 @@ func (s *Server) Serve(listener net.Listener, prefix string, credential *Credent
 		ReadHeaderTimeout: headerTimeout,
 	}
 	s.access.Lock()
-	if s.closed {
+	if s.closed || s.draining != nil {
 		s.access.Unlock()
 		return listener.Close()
 	}
@@ -317,7 +317,7 @@ func (s *Server) Close() error {
 	}
 	s.closed = true
 	ended := s.takeSessions()
-	servers := s.servers
+	servers := slices.Clone(s.servers)
 	s.access.Unlock()
 	var err error
 	for _, server := range servers {

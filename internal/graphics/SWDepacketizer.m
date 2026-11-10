@@ -38,6 +38,9 @@
     }
     uint8_t header = payload[2];
     if ((header & 0x80) != 0) {
+        if (_fragment != nil) {
+            unit.damaged = YES;
+        }
         uint8_t start[2] = {(uint8_t)((payload[0] & 0x81) | ((header & 0x3f) << 1)), payload[1]};
         _fragment = [NSMutableData dataWithBytes:start length:2];
         [_fragment appendBytes:payload + 3 length:length - 3];
