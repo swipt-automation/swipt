@@ -282,7 +282,6 @@ export async function attach(context) {
 }
 
 const connectionStates = {
-  [DeviceConnectionState.UNSPECIFIED]: tr("unspecified"),
   [DeviceConnectionState.STOPPED]: tr("stopped"),
   [DeviceConnectionState.CONNECTING]: tr("connecting"),
   [DeviceConnectionState.PREPARING]: tr("preparing"),
@@ -303,21 +302,20 @@ const connectionProblems = {
   [DeviceConnectionProblem.VPN_PEER_ADDRESS_MISSING]: tr(
     "VPN peer address missing",
   ),
-  [DeviceConnectionProblem.OTHER]: tr("other"),
 };
 
 function connectionText(connection) {
-  let text = connectionStates[connection?.state ?? 0];
-  if (
-    connection &&
-    connection.problem !== DeviceConnectionProblem.UNSPECIFIED
-  ) {
-    text += `, ${connectionProblems[connection.problem]}`;
-  }
-  if (connection?.message) {
-    text += `: ${connection.message}`;
-  }
-  return text;
+  return [
+    [
+      connectionStates[connection?.state],
+      connectionProblems[connection?.problem],
+    ]
+      .filter(Boolean)
+      .join(", "),
+    connection?.message,
+  ]
+    .filter(Boolean)
+    .join(": ");
 }
 
 async function onLocalNetwork(host, signal) {

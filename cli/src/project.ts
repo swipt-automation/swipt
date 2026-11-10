@@ -44,6 +44,7 @@ const extensionModules = [
   "@swipt/api/accessibility",
   "@swipt/api/input",
   "@swipt/api/device",
+  "@swipt/api/process",
   "@swipt/api/screen",
   "@swipt/api/image",
   "@swipt/api/app-intents",
@@ -382,6 +383,7 @@ function evaluateExtension(source, availableResult) {
     "@swipt/api/accessibility": loading("accessibility"),
     "@swipt/api/input": loading("input"),
     "@swipt/api/device": loading("device"),
+    "@swipt/api/process": loading("process"),
     "@swipt/api/screen": loading("screen"),
     "@swipt/api/image": loading("image"),
     "@swipt/api/app-intents": loading("appIntents"),
@@ -436,16 +438,16 @@ function evaluateExtension(source, availableResult) {
       },
       SQLiteProvider: () => {
         throw new Error(
-          tr(
-            "SQLiteProvider renders React, so it works only in the swiplet interface.",
-          ),
+          tr("{name} works only in the swiplet interface.", {
+            name: "SQLiteProvider",
+          }),
         );
       },
       useSQLiteContext: () => {
         throw new Error(
-          tr(
-            "useSQLiteContext renders React, so it works only in the swiplet interface.",
-          ),
+          tr("{name} works only in the swiplet interface.", {
+            name: "useSQLiteContext",
+          }),
         );
       },
     },
@@ -592,6 +594,7 @@ function evaluateExtension(source, availableResult) {
         title: action.title,
         ...(action.description ? { description: action.description } : {}),
         ...(expose.length > 0 ? { expose } : {}),
+        ...(typeof action.stream === "function" ? { stream: true } : {}),
         ...(action.input ? { input: schema(name, action.input, "input") } : {}),
         ...(action.output
           ? { output: schema(name, action.output, "output") }

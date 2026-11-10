@@ -222,21 +222,21 @@ func Processes(ctx context.Context, device *coredevice.Device) ([]Process, error
 // idevice sends the signal number with a process token holding only
 // processIdentifier (idevice d32c818,
 // idevice/src/services/core_device/app_service.rs:343-359).
-func Kill(ctx context.Context, device *coredevice.Device, pid uint64) error {
+func Signal(ctx context.Context, device *coredevice.Device, pid uint64, signal syscall.Signal) (running bool, err error) {
 	conn, err := device.DialXPC(ctx, serviceName)
 	if err != nil {
-		return E.Cause(err, "apps: kill process ", pid)
+		return false, E.Cause(err, "apps: signal process ", pid)
 	}
 	defer conn.Close()
 	_, err = coredevice.InvokeFeature(ctx, conn, uuid.NewString(), signalFeature, "", map[string]any{
 		"process": map[string]any{"processIdentifier": int64(pid)},
-		"signal":  int64(syscall.SIGKILL),
+		"signal":  int64(signal),
 	})
 	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && featureError.CausedBy("NSPOSIXErrorDomain", int64(syscall.ESRCH)) {
-		return nil
+		return false, nil
 	}
 	if err != nil {
-		return E.Cause(err, "apps: kill process ", pid)
+		return false, E.Cause(err, "apps: signal process ", pid)
 	}
-	return nil
+	return true, nil
 }

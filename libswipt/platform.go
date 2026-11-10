@@ -152,6 +152,7 @@ func (a dialogAnswer) result() (string, error) {
 type ActionObserver interface {
 	OnDialog(dialogID int64, request string)
 	OnDialogWithdrawn(dialogID int64)
+	OnValue(value string)
 }
 
 func (p *Platform) NewActionCall(swiplet, action, input, caller string, observer ActionObserver, showsInApp bool) *ActionCall {
@@ -162,6 +163,7 @@ func (p *Platform) NewActionCall(swiplet, action, input, caller string, observer
 	return &ActionCall{cancel: cancel, run: func() (string, error) {
 		output, err := p.host.Call(ctx, automation.CallRequest{
 			Swiplet: swiplet, Action: action, Input: json.RawMessage(input), Caller: automation.Caller(caller), Dialog: dialog,
+			Emit: func(value json.RawMessage) { observer.OnValue(string(value)) },
 		})
 		return string(output), err
 	}}

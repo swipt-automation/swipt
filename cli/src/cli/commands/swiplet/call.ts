@@ -44,6 +44,8 @@ const callAction = (context) =>
     )) {
       if (response.part.case === "log") {
         printLog(response.part.value, false);
+      } else if (response.part.case === "value") {
+        console.log(JSON.stringify(toJson(ValueSchema, response.part.value)));
       } else if (response.part.case === "result") {
         result = response.part.value;
       }
@@ -57,7 +59,9 @@ const callAction = (context) =>
     if (result?.outcome.case === "error") {
       throw printScriptError(result.outcome.value);
     }
-    throw new Error("the server sent no result");
+    if (result === undefined) {
+      throw new Error("the server sent no result");
+    }
   });
 
 export const call = defineCommand({

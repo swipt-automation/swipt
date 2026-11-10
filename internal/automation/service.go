@@ -276,7 +276,7 @@ func (r *runner) runService(ctx context.Context, availability <-chan struct{}) e
 		case <-ctx.Done():
 		}
 	}()
-	_, err = r.host.execute(ctx, swiplet, r.host.options.Dialog, r.log, entry{}, func() { r.set(ServiceRunning, nil) })
+	_, err = r.host.execute(ctx, swiplet, r.host.options.Dialog, r.log, nil, entry{}, func() { r.set(ServiceRunning, nil) })
 	return err
 }
 

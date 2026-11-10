@@ -1,4 +1,5 @@
 import dns from "node:dns";
+import { createRequire } from "node:module";
 
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 
@@ -10,6 +11,7 @@ import { SystemService } from "./proto/system_pb";
 const largestMessage = 128 << 20;
 const contentType = "application/grpc-web+proto";
 const webSocketSubprotocol = "grpc-websockets";
+const { apiLevel } = createRequire(import.meta.url)("@swipt/api/package.json");
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -150,6 +152,7 @@ function requestHeaders(connection) {
   const headers: Record<string, string> = {
     "content-type": contentType,
     "x-grpc-web": "1",
+    "swipt-api-level": String(apiLevel),
   };
   if (connection.token !== "") {
     headers.authorization = `Bearer ${connection.token}`;

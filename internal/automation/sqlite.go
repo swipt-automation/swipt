@@ -607,7 +607,7 @@ func copyFile(target *os.File, source string) error {
 	return err
 }
 
-func (h *Host) watchDatabaseChanges(ctx context.Context, swiplet string, publish func(any, error)) {
+func (h *Host) watchDatabaseChanges(ctx context.Context, swiplet string, publish func(any)) {
 	var access sync.Mutex
 	var batch *databaseChangeBatch
 	h.WatchDatabases(ctx, swiplet, func(change DatabaseChange) {
@@ -618,7 +618,7 @@ func (h *Host) watchDatabaseChanges(ctx context.Context, swiplet string, publish
 			return
 		}
 		batch = &databaseChangeBatch{events: []databaseChangeEvent{event}}
-		publish(batch, nil)
+		publish(batch)
 	})
 }
 

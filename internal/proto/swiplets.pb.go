@@ -80,15 +80,14 @@ func (ServiceStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type SwipletAction struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Name               string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title              string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description        string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	ExposedToShortcuts bool                   `protobuf:"varint,4,opt,name=exposed_to_shortcuts,json=exposedToShortcuts,proto3" json:"exposed_to_shortcuts,omitempty"`
-	InputSchema        *structpb.Struct       `protobuf:"bytes,5,opt,name=input_schema,json=inputSchema,proto3" json:"input_schema,omitempty"`
-	OutputSchema       *structpb.Struct       `protobuf:"bytes,6,opt,name=output_schema,json=outputSchema,proto3" json:"output_schema,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	InputSchema   *structpb.Struct       `protobuf:"bytes,5,opt,name=input_schema,json=inputSchema,proto3" json:"input_schema,omitempty"`
+	OutputSchema  *structpb.Struct       `protobuf:"bytes,6,opt,name=output_schema,json=outputSchema,proto3" json:"output_schema,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SwipletAction) Reset() {
@@ -140,13 +139,6 @@ func (x *SwipletAction) GetDescription() string {
 		return x.Description
 	}
 	return ""
-}
-
-func (x *SwipletAction) GetExposedToShortcuts() bool {
-	if x != nil {
-		return x.ExposedToShortcuts
-	}
-	return false
 }
 
 func (x *SwipletAction) GetInputSchema() *structpb.Struct {
@@ -425,6 +417,7 @@ type CallActionResponse struct {
 	//
 	//	*CallActionResponse_Log
 	//	*CallActionResponse_Result
+	//	*CallActionResponse_Value
 	Part          isCallActionResponse_Part `protobuf_oneof:"part"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -485,6 +478,15 @@ func (x *CallActionResponse) GetResult() *ActionResult {
 	return nil
 }
 
+func (x *CallActionResponse) GetValue() *structpb.Value {
+	if x != nil {
+		if x, ok := x.Part.(*CallActionResponse_Value); ok {
+			return x.Value
+		}
+	}
+	return nil
+}
+
 type isCallActionResponse_Part interface {
 	isCallActionResponse_Part()
 }
@@ -497,9 +499,15 @@ type CallActionResponse_Result struct {
 	Result *ActionResult `protobuf:"bytes,2,opt,name=result,proto3,oneof"`
 }
 
+type CallActionResponse_Value struct {
+	Value *structpb.Value `protobuf:"bytes,3,opt,name=value,proto3,oneof"`
+}
+
 func (*CallActionResponse_Log) isCallActionResponse_Part() {}
 
 func (*CallActionResponse_Result) isCallActionResponse_Part() {}
+
+func (*CallActionResponse_Value) isCallActionResponse_Part() {}
 
 type SetServiceEnabledRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1313,14 +1321,13 @@ var File_swiplets_proto protoreflect.FileDescriptor
 
 const file_swiplets_proto_rawDesc = "" +
 	"\n" +
-	"\x0eswiplets.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\fcommon.proto\"\x87\x02\n" +
+	"\x0eswiplets.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\fcommon.proto\"\xdb\x01\n" +
 	"\rSwipletAction\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x120\n" +
-	"\x14exposed_to_shortcuts\x18\x04 \x01(\bR\x12exposedToShortcuts\x12:\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12:\n" +
 	"\finput_schema\x18\x05 \x01(\v2\x17.google.protobuf.StructR\vinputSchema\x12<\n" +
-	"\routput_schema\x18\x06 \x01(\v2\x17.google.protobuf.StructR\foutputSchema\"\xb2\x01\n" +
+	"\routput_schema\x18\x06 \x01(\v2\x17.google.protobuf.StructR\foutputSchemaJ\x04\b\x04\x10\x05\"\xb2\x01\n" +
 	"\fServiceState\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12,\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x14.swipt.ServiceStatusR\x06status\x12(\n" +
@@ -1340,10 +1347,11 @@ const file_swiplets_proto_rawDesc = "" +
 	"\n" +
 	"swiplet_id\x18\x01 \x01(\tR\tswipletId\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12,\n" +
-	"\x05input\x18\x03 \x01(\v2\x16.google.protobuf.ValueR\x05input\"p\n" +
+	"\x05input\x18\x03 \x01(\v2\x16.google.protobuf.ValueR\x05input\"\xa0\x01\n" +
 	"\x12CallActionResponse\x12#\n" +
 	"\x03log\x18\x01 \x01(\v2\x0f.swipt.LogEntryH\x00R\x03log\x12-\n" +
-	"\x06result\x18\x02 \x01(\v2\x13.swipt.ActionResultH\x00R\x06resultB\x06\n" +
+	"\x06result\x18\x02 \x01(\v2\x13.swipt.ActionResultH\x00R\x06result\x12.\n" +
+	"\x05value\x18\x03 \x01(\v2\x16.google.protobuf.ValueH\x00R\x05valueB\x06\n" +
 	"\x04part\"S\n" +
 	"\x18SetServiceEnabledRequest\x12\x1d\n" +
 	"\n" +
@@ -1474,39 +1482,40 @@ var file_swiplets_proto_depIdxs = []int32{
 	25, // 8: swipt.CallActionRequest.input:type_name -> google.protobuf.Value
 	26, // 9: swipt.CallActionResponse.log:type_name -> swipt.LogEntry
 	27, // 10: swipt.CallActionResponse.result:type_name -> swipt.ActionResult
-	2,  // 11: swipt.SetServiceEnabledResponse.service:type_name -> swipt.ServiceState
-	2,  // 12: swipt.WatchServicesResponse.service:type_name -> swipt.ServiceState
-	3,  // 13: swipt.DeploySwipletResponse.swiplet:type_name -> swipt.Swiplet
-	28, // 14: swipt.ListDataFilesResponse.files:type_name -> swipt.FileInfo
-	28, // 15: swipt.ReadDataFileResponse.file:type_name -> swipt.FileInfo
-	29, // 16: swipt.ReadDataFileResponse.chunk:type_name -> swipt.FileChunk
-	18, // 17: swipt.WriteDataFileRequest.header:type_name -> swipt.WriteDataFileHeader
-	28, // 18: swipt.WriteDataFileResponse.file:type_name -> swipt.FileInfo
-	30, // 19: swipt.SwipletService.ListSwiplets:input_type -> google.protobuf.Empty
-	5,  // 20: swipt.SwipletService.CallAction:input_type -> swipt.CallActionRequest
-	7,  // 21: swipt.SwipletService.SetServiceEnabled:input_type -> swipt.SetServiceEnabledRequest
-	9,  // 22: swipt.SwipletService.WatchServices:input_type -> swipt.WatchServicesRequest
-	11, // 23: swipt.SwipletService.DeploySwiplet:input_type -> swipt.DeploySwipletRequest
-	13, // 24: swipt.SwipletService.RemoveSwiplet:input_type -> swipt.RemoveSwipletRequest
-	14, // 25: swipt.SwipletService.ListDataFiles:input_type -> swipt.ListDataFilesRequest
-	16, // 26: swipt.SwipletService.ReadDataFile:input_type -> swipt.ReadDataFileRequest
-	19, // 27: swipt.SwipletService.WriteDataFile:input_type -> swipt.WriteDataFileRequest
-	21, // 28: swipt.SwipletService.RemoveDataFile:input_type -> swipt.RemoveDataFileRequest
-	4,  // 29: swipt.SwipletService.ListSwiplets:output_type -> swipt.ListSwipletsResponse
-	6,  // 30: swipt.SwipletService.CallAction:output_type -> swipt.CallActionResponse
-	8,  // 31: swipt.SwipletService.SetServiceEnabled:output_type -> swipt.SetServiceEnabledResponse
-	10, // 32: swipt.SwipletService.WatchServices:output_type -> swipt.WatchServicesResponse
-	12, // 33: swipt.SwipletService.DeploySwiplet:output_type -> swipt.DeploySwipletResponse
-	30, // 34: swipt.SwipletService.RemoveSwiplet:output_type -> google.protobuf.Empty
-	15, // 35: swipt.SwipletService.ListDataFiles:output_type -> swipt.ListDataFilesResponse
-	17, // 36: swipt.SwipletService.ReadDataFile:output_type -> swipt.ReadDataFileResponse
-	20, // 37: swipt.SwipletService.WriteDataFile:output_type -> swipt.WriteDataFileResponse
-	30, // 38: swipt.SwipletService.RemoveDataFile:output_type -> google.protobuf.Empty
-	29, // [29:39] is the sub-list for method output_type
-	19, // [19:29] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	25, // 11: swipt.CallActionResponse.value:type_name -> google.protobuf.Value
+	2,  // 12: swipt.SetServiceEnabledResponse.service:type_name -> swipt.ServiceState
+	2,  // 13: swipt.WatchServicesResponse.service:type_name -> swipt.ServiceState
+	3,  // 14: swipt.DeploySwipletResponse.swiplet:type_name -> swipt.Swiplet
+	28, // 15: swipt.ListDataFilesResponse.files:type_name -> swipt.FileInfo
+	28, // 16: swipt.ReadDataFileResponse.file:type_name -> swipt.FileInfo
+	29, // 17: swipt.ReadDataFileResponse.chunk:type_name -> swipt.FileChunk
+	18, // 18: swipt.WriteDataFileRequest.header:type_name -> swipt.WriteDataFileHeader
+	28, // 19: swipt.WriteDataFileResponse.file:type_name -> swipt.FileInfo
+	30, // 20: swipt.SwipletService.ListSwiplets:input_type -> google.protobuf.Empty
+	5,  // 21: swipt.SwipletService.CallAction:input_type -> swipt.CallActionRequest
+	7,  // 22: swipt.SwipletService.SetServiceEnabled:input_type -> swipt.SetServiceEnabledRequest
+	9,  // 23: swipt.SwipletService.WatchServices:input_type -> swipt.WatchServicesRequest
+	11, // 24: swipt.SwipletService.DeploySwiplet:input_type -> swipt.DeploySwipletRequest
+	13, // 25: swipt.SwipletService.RemoveSwiplet:input_type -> swipt.RemoveSwipletRequest
+	14, // 26: swipt.SwipletService.ListDataFiles:input_type -> swipt.ListDataFilesRequest
+	16, // 27: swipt.SwipletService.ReadDataFile:input_type -> swipt.ReadDataFileRequest
+	19, // 28: swipt.SwipletService.WriteDataFile:input_type -> swipt.WriteDataFileRequest
+	21, // 29: swipt.SwipletService.RemoveDataFile:input_type -> swipt.RemoveDataFileRequest
+	4,  // 30: swipt.SwipletService.ListSwiplets:output_type -> swipt.ListSwipletsResponse
+	6,  // 31: swipt.SwipletService.CallAction:output_type -> swipt.CallActionResponse
+	8,  // 32: swipt.SwipletService.SetServiceEnabled:output_type -> swipt.SetServiceEnabledResponse
+	10, // 33: swipt.SwipletService.WatchServices:output_type -> swipt.WatchServicesResponse
+	12, // 34: swipt.SwipletService.DeploySwiplet:output_type -> swipt.DeploySwipletResponse
+	30, // 35: swipt.SwipletService.RemoveSwiplet:output_type -> google.protobuf.Empty
+	15, // 36: swipt.SwipletService.ListDataFiles:output_type -> swipt.ListDataFilesResponse
+	17, // 37: swipt.SwipletService.ReadDataFile:output_type -> swipt.ReadDataFileResponse
+	20, // 38: swipt.SwipletService.WriteDataFile:output_type -> swipt.WriteDataFileResponse
+	30, // 39: swipt.SwipletService.RemoveDataFile:output_type -> google.protobuf.Empty
+	30, // [30:40] is the sub-list for method output_type
+	20, // [20:30] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_swiplets_proto_init() }
@@ -1518,6 +1527,7 @@ func file_swiplets_proto_init() {
 	file_swiplets_proto_msgTypes[5].OneofWrappers = []any{
 		(*CallActionResponse_Log)(nil),
 		(*CallActionResponse_Result)(nil),
+		(*CallActionResponse_Value)(nil),
 	}
 	file_swiplets_proto_msgTypes[16].OneofWrappers = []any{
 		(*ReadDataFileResponse_File)(nil),

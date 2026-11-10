@@ -135,13 +135,18 @@ private final class SwipletRuntime: SwiptHostDelegate {
         for dialog in dialogs.values {
             dialog.cancel()
         }
+        for call in calls.values {
+            call.cancel()
+        }
         SwiptHostModule.unbind(self)
         factory.terminateJavaScript()
         factory.rootViewFactory.reactHost = nil
     }
 
-    func call(_ id: String, action: String, input: String) async throws -> String {
-        let call = Task { try await Platform.shared.callAction(swiplet, action: action, input: input, caller: LibSwiptCallerApp, dialogs: .app) }
+    func call(_ id: String, action: String, input: String, value: @escaping @Sendable (String) -> Void) async throws -> String {
+        let call = Task {
+            try await Platform.shared.callAction(swiplet, action: action, input: input, caller: LibSwiptCallerApp, dialogs: .app, value: value)
+        }
         calls[id] = call
         defer { calls[id] = nil }
         return try await call.value
@@ -395,6 +400,7 @@ final class SwipletHost {
                 "dataDirectory": SwipletStore.shared.dataDirectory(of: name)?.absoluteString ?? "",
                 "assetsDirectory": SwipletStore.shared.assetsDirectory(of: name)?.absoluteString ?? "",
                 "cacheDirectory": SwipletStore.cacheDirectory(of: name).absoluteString,
+                "streams": (SwipletStore.shared.actions[name] ?? []).filter(\.stream).map(\.name),
                 "service": [
                     "enabled": service.enabled, "status": service.status.rawValue, "error": service.error,
                     "since": service.since.map { $0.timeIntervalSince1970 * 1000 } ?? 0,

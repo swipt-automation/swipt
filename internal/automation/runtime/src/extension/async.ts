@@ -110,15 +110,17 @@ export function stream<T>(
       const site = new Error();
       let id: string | undefined;
       let buffered: T[] = [];
-      let waiter:
-        | {
-            resolve(result: IteratorResult<T>): void;
-            reject(error: unknown): void;
-          }
-        | undefined;
+      interface Waiter {
+        resolve(result: IteratorResult<T>): void;
+        reject(error: unknown): void;
+      }
+      let waiters: Waiter[] = [];
       let failure: unknown;
       let done = false;
-      const finish = () => {
+      const finish = (
+        settle: (first: Waiter) => void = (first) =>
+          first.resolve({ value: undefined, done: true }),
+      ): boolean => {
         done = true;
         signal?.removeEventListener("abort", abort);
         if (id !== undefined) {
@@ -126,21 +128,22 @@ export function stream<T>(
           native.unsubscribe(id);
           id = undefined;
         }
+        const [first, ...rest] = waiters;
+        waiters = [];
+        if (first !== undefined) {
+          settle(first);
+        }
+        for (const waiter of rest) {
+          waiter.resolve({ value: undefined, done: true });
+        }
+        return first !== undefined;
       };
       const abort = () => {
-        const current = waiter;
-        waiter = undefined;
-        finish();
-        current?.reject(signal!.reason);
+        finish((first) => first.reject(signal!.reason));
       };
       const fail = (error: Error) => {
         error.stack = site.stack;
-        const current = waiter;
-        waiter = undefined;
-        finish();
-        if (current) {
-          current.reject(error);
-        } else {
+        if (!finish((first) => first.reject(error))) {
           failure = error;
         }
       };
@@ -158,10 +161,9 @@ export function stream<T>(
             if (decoded === undefined) {
               return;
             }
+            const waiter = waiters.shift();
             if (waiter) {
-              const current = waiter;
-              waiter = undefined;
-              current.resolve({ value: decoded, done: false });
+              waiter.resolve({ value: decoded, done: false });
             } else if (keep === "latest") {
               buffered = [decoded];
             } else if (buffered.length < backlog) {
@@ -172,15 +174,12 @@ export function stream<T>(
           },
           fail,
           complete: () => {
-            const current = waiter;
-            waiter = undefined;
             finish();
-            current?.resolve({ value: undefined, done: true });
           },
         });
         signal?.addEventListener("abort", abort);
         try {
-          native.subscribe(id, kind, encoded);
+          native.subscribe(id, kind, encoded, keep);
         } catch (error) {
           finish();
           throw error;
@@ -205,15 +204,12 @@ export function stream<T>(
           }
           open();
           return new Promise((resolve, reject) => {
-            waiter = { resolve, reject };
+            waiters.push({ resolve, reject });
           });
         },
         return(): Promise<IteratorResult<T>> {
           buffered = [];
-          const current = waiter;
-          waiter = undefined;
           finish();
-          current?.resolve({ value: undefined, done: true });
           return Promise.resolve({ value: undefined, done: true });
         },
       };

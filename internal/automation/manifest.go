@@ -17,6 +17,7 @@ type ActionInfo struct {
 	Title       string          `json:"title"`
 	Description string          `json:"description,omitempty"`
 	Expose      []Caller        `json:"expose,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
 	Input       json.RawMessage `json:"input,omitempty"`
 	Output      json.RawMessage `json:"output,omitempty"`
 }

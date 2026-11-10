@@ -1,7 +1,7 @@
 {
   "name": "@swipt/api",
   "version": "0.1.0",
-  "apiLevel": 2,
+  "apiLevel": 3,
   "oldestAPILevel": 2,
   "minimumIOSVersion": 17.4,
   "license": "GPL-3.0-or-later",
@@ -35,6 +35,10 @@
     "./device": {
       "types": "./device.d.ts",
       "default": "./device.mjs"
+    },
+    "./process": {
+      "types": "./process.d.ts",
+      "default": "./process.mjs"
     },
     "./screen": {
       "types": "./screen.d.ts",

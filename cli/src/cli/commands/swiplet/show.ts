@@ -29,17 +29,7 @@ const showSwiplet = (context) =>
     }
     for (const action of swiplet.actions) {
       console.log();
-      console.log(
-        action.exposedToShortcuts
-          ? tr("action {name} {title} (Shortcuts)", {
-              name: action.name,
-              title: JSON.stringify(action.title),
-            })
-          : tr("action {name} {title}", {
-              name: action.name,
-              title: JSON.stringify(action.title),
-            }),
-      );
+      console.log(action.name, JSON.stringify(action.title));
       if (action.description !== "") {
         console.log(`  ${action.description}`);
       }

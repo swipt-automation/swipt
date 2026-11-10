@@ -25,7 +25,7 @@ message SwipletAction {
   string name = 1;
   string title = 2;
   string description = 3;
-  bool exposed_to_shortcuts = 4;
+  reserved 4;
   google.protobuf.Struct input_schema = 5;
   google.protobuf.Struct output_schema = 6;
 }
@@ -68,6 +68,7 @@ message CallActionResponse {
   oneof part {
     LogEntry log = 1;
     ActionResult result = 2;
+    google.protobuf.Value value = 3;
   }
 }
 

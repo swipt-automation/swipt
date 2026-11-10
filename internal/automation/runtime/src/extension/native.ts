@@ -16,7 +16,7 @@ export interface Native {
   cancel(id: string): void;
   failure(id: string): string;
   value(id: string): unknown;
-  subscribe(id: string, kind: string, args: string): void;
+  subscribe(id: string, kind: string, args: string, keep: string): void;
   unsubscribe(id: string): void;
   print(level: string, text: string): void;
   put(data: Uint8Array): string;
@@ -24,6 +24,7 @@ export interface Native {
   random(length: number): Uint8Array;
   digest(algorithm: string, data: Uint8Array): Uint8Array;
   finish(failure: string, output: string, id?: string): void;
+  emit(value: string): void;
   show(image: Uint8Array): void;
   match(
     snapshot: string,

@@ -110,6 +110,26 @@ const objectMembers = new Set([
   SyntaxKind.SetAccessor,
 ]);
 
+const literals = new Set([
+  SyntaxKind.ObjectLiteralExpression,
+  SyntaxKind.ArrayLiteralExpression,
+  SyntaxKind.ArrowFunction,
+  SyntaxKind.FunctionExpression,
+  SyntaxKind.StringLiteral,
+  SyntaxKind.NumericLiteral,
+  SyntaxKind.NoSubstitutionTemplateLiteral,
+  SyntaxKind.TemplateExpression,
+  SyntaxKind.TrueKeyword,
+  SyntaxKind.FalseKeyword,
+  SyntaxKind.NullKeyword,
+  SyntaxKind.SpreadElement,
+]);
+
+const names = new Set([
+  SyntaxKind.StringLiteral,
+  SyntaxKind.NoSubstitutionTemplateLiteral,
+]);
+
 const inert = new Set([
   SyntaxKind.ImportDeclaration,
   SyntaxKind.ExportDeclaration,
@@ -197,10 +217,12 @@ class Checker {
   #entries;
   #available;
   #symbols = new Map();
+  #imports = new Set();
   #requirements = new Map();
   #annotations = new Map();
   #facts = [new Map(), new Map()];
   #types = new Map();
+  #annotated = new Map();
 
   constructor(typescript, project, files, problems) {
     this.#project = typescript;
@@ -225,7 +247,7 @@ class Checker {
   check(files) {
     for (const file of files) {
       const source = this.#project.program.getSourceFile(file);
-      const { identifiers, properties } = this.#collect(source);
+      const { identifiers, properties, values } = this.#collect(source);
       const symbols = this.#checker.getSymbolAtLocation(identifiers);
       for (const [index, node] of identifiers.entries()) {
         this.#use(
@@ -237,6 +259,34 @@ class Checker {
       }
       for (const node of properties) {
         this.#use(node, this.#propertySymbol(node));
+      }
+      for (const node of values) {
+        this.#useValue(node);
+      }
+      for (const statement of source.statements) {
+        if (
+          statement.kind !== SyntaxKind.ExportDeclaration ||
+          statement.isTypeOnly
+        ) {
+          continue;
+        }
+        const exported = (statement.exportClause?.elements ?? []).filter(
+          (specifier) => !specifier.isTypeOnly,
+        );
+        if (statement.moduleSpecifier === undefined) {
+          for (const specifier of exported) {
+            const local =
+              this.#checker.getExportSpecifierLocalTargetSymbol(specifier);
+            if (local !== undefined) {
+              this.#useImport(local);
+            }
+          }
+        } else if (
+          exported.length > 0 ||
+          statement.exportClause?.elements === undefined
+        ) {
+          this.#importModule(statement);
+        }
       }
       if (this.#entries.has(file)) {
         for (const statement of source.statements) {
@@ -254,6 +304,7 @@ class Checker {
   #collect(source) {
     const identifiers = [];
     const properties = [];
+    const values = [];
     const visit = (node, checked) => {
       for (const tag of annotationTags(node)) {
         this.#parse(tagText(tag), tag);
@@ -264,6 +315,23 @@ class Checker {
         classes.has(node.parent.parent.kind);
       if (inert.has(node.kind) || (isTypeNode(node) && !extended)) {
         checked = false;
+      }
+      if (checked) {
+        if (
+          node.kind === SyntaxKind.CallExpression ||
+          node.kind === SyntaxKind.NewExpression
+        ) {
+          values.push(
+            ...(node.arguments ?? []).filter(
+              (argument) => !literals.has(argument.kind),
+            ),
+          );
+        } else if (
+          node.kind === SyntaxKind.SpreadAssignment ||
+          node.kind === SyntaxKind.JsxSpreadAttribute
+        ) {
+          values.push(node.expression);
+        }
       }
       if (checked && node.kind === SyntaxKind.Identifier) {
         const { parent } = node;
@@ -288,16 +356,96 @@ class Checker {
           identifiers.push(node);
         }
       }
+      if (
+        checked &&
+        (node.kind === SyntaxKind.StringLiteral ||
+          node.kind === SyntaxKind.NoSubstitutionTemplateLiteral)
+      ) {
+        const { parent } = node;
+        const member =
+          parent.kind === SyntaxKind.ComputedPropertyName
+            ? parent.parent
+            : parent;
+        if (
+          (objectMembers.has(member.kind) &&
+            member.parent.kind === SyntaxKind.ObjectLiteralExpression &&
+            (member.name === node || member.name === parent)) ||
+          (member.kind === SyntaxKind.BindingElement &&
+            member.parent.kind === SyntaxKind.ObjectBindingPattern &&
+            (member.propertyName === node || member.propertyName === parent))
+        ) {
+          properties.push(node);
+        } else if (
+          parent.kind === SyntaxKind.ElementAccessExpression &&
+          parent.argumentExpression === node
+        ) {
+          identifiers.push(node);
+        }
+      }
+      if (
+        checked &&
+        node.kind === SyntaxKind.ObjectLiteralExpression &&
+        node.properties.some(
+          (member) =>
+            member.name?.kind === SyntaxKind.ComputedPropertyName &&
+            !names.has(member.name.expression.kind),
+        )
+      ) {
+        values.push(node);
+      }
       node.forEachChild((child) => visit(child, checked));
     };
     source.forEachChild((child) => visit(child, true));
-    return { identifiers, properties };
+    return { identifiers, properties, values };
   }
 
-  #use(node, symbol) {
+  #useValue(node) {
+    const expected = this.#checker.getContextualType(node);
+    if (expected === undefined) {
+      return;
+    }
+    if (!this.#annotated.has(expected.id)) {
+      const annotated = new Map();
+      for (const candidate of [expected, ...(expected.getTypes?.() ?? [])]) {
+        for (const property of this.#checker.getPropertiesOfType(candidate)) {
+          if (Object.keys(this.#requirementOf(property)).length > 0) {
+            annotated.set(property.name, property);
+          }
+        }
+      }
+      this.#annotated.set(expected.id, [...annotated.values()]);
+    }
+    const annotated = this.#annotated.get(expected.id);
+    const type =
+      annotated.length > 0 ? this.#checker.getTypeAtLocation(node) : undefined;
+    if (type === undefined) {
+      return;
+    }
+    const named = new Set(
+      (node.kind === SyntaxKind.ObjectLiteralExpression
+        ? node.properties
+        : []
+      ).map((member) =>
+        member.name?.kind === SyntaxKind.ComputedPropertyName
+          ? member.name.expression.text
+          : member.name?.text,
+      ),
+    );
+    for (const property of annotated) {
+      if (
+        !named.has(property.name) &&
+        this.#checker.getPropertyOfType(type, property.name) !== undefined
+      ) {
+        this.#use(node, property, property.name);
+      }
+    }
+  }
+
+  #use(node, symbol, name = node.text) {
     if (symbol === undefined) {
       return;
     }
+    this.#useImport(symbol);
     const needed = this.#requirementOf(symbol);
     const missing = Object.keys(needed).filter(
       (name) => !this.#covered(name, needed[name], node),
@@ -307,11 +455,71 @@ class Checker {
       this.#problems.lines.add(
         tr("{location}: {name} needs {requirement}.", {
           location: this.#location(node),
-          name: node.text,
+          name,
           requirement: describe(needed, missing),
         }),
       );
     }
+  }
+
+  #useImport(symbol) {
+    let declaration =
+      symbol.flags & SymbolFlags.Alias
+        ? symbol.declarations?.[0]?.resolve(this.#project)
+        : undefined;
+    while (
+      declaration !== undefined &&
+      declaration.kind !== SyntaxKind.ImportDeclaration
+    ) {
+      declaration = declaration.parent;
+    }
+    if (declaration !== undefined) {
+      this.#importModule(declaration);
+    }
+  }
+
+  #importModule(declaration) {
+    if (this.#imports.has(declaration)) {
+      return;
+    }
+    this.#imports.add(declaration);
+    const name = declaration.moduleSpecifier;
+    const module = this.#checker
+      .getSymbolAtLocation(name)
+      ?.declarations?.[0]?.resolve(this.#project);
+    if (
+      module?.kind !== SyntaxKind.SourceFile ||
+      this.#files.has(module.fileName)
+    ) {
+      return;
+    }
+    const needed = this.#moduleRequirement(module);
+    const missing = Object.keys(needed).filter(
+      (kind) => !requirements[kind].covers(this.#minimum[kind], needed[kind]),
+    );
+    if (missing.length > 0) {
+      this.#problems.lines.add(
+        tr(
+          '{location}: importing {name} needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
+          {
+            location: this.#location(name),
+            name: name.text,
+            requirement: describe(needed, missing),
+          },
+        ),
+      );
+    }
+  }
+
+  #moduleRequirement(source) {
+    const requirement = {};
+    const [first] = source.statements;
+    if (first?.kind === SyntaxKind.ImportDeclaration) {
+      for (const tag of annotationTags(first)) {
+        merge(requirement, this.#parse(tagText(tag), tag));
+      }
+    }
+    return requirement;
   }
 
   #useEntry(name) {
@@ -399,6 +607,9 @@ class Checker {
           );
         }
       }
+      if (external) {
+        merge(requirement, this.#moduleRequirement(sourceFileOf(declaration)));
+      }
       this.#requirements.set(target.id, requirement);
     }
     return this.#requirements.get(target.id);
@@ -423,7 +634,10 @@ class Checker {
   }
 
   #propertySymbol(name) {
-    const member = name.parent;
+    const member =
+      name.parent.kind === SyntaxKind.ComputedPropertyName
+        ? name.parent.parent
+        : name.parent;
     const container = member.parent;
     if (!this.#types.has(container)) {
       this.#types.set(

@@ -33,7 +33,7 @@ var (
 )
 
 var readOperations = []string{
-	"device.info", "device.state", "device.installedApplications", "device.applicationIcon", "device.pasteboard",
+	"device.info", "device.state", "device.installedApplications", "device.applicationIcon", "device.pasteboard", "process.list",
 	"accessibility.snapshot", "accessibility.find", "accessibility.changed",
 }
 
@@ -145,17 +145,17 @@ func graphicsRun(ctx context.Context, call *operation) (any, error) {
 	return graphics.Run(call.engine.graphics, id, &GraphicsCall{ctx: ctx, call: call})
 }
 
-func (e *engine) watchGraphics(ctx context.Context, call *operation, publish func(any, error), ended func(error)) error {
+func watchGraphics(ctx context.Context, call *operation, publish func(any), ended func(error)) error {
 	var id int64
 	if err := call.decode(1, &id); err != nil {
 		return err
 	}
-	graphics := e.host.options.Graphics
+	graphics := call.engine.host.options.Graphics
 	if graphics == nil {
 		return errNoGraphics
 	}
 	go func() {
-		err := graphics.Watch(e.graphics, id, &GraphicsCall{ctx: ctx, call: call}, func(value any) { publish(value, nil) })
+		err := graphics.Watch(call.engine.graphics, id, &GraphicsCall{ctx: ctx, call: call}, publish)
 		if err == nil {
 			err = errStreamEnded
 		}

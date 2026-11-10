@@ -48,6 +48,7 @@ type SwipletAction struct {
 	Name    string
 	Title   string
 	Summary string
+	Stream  bool
 	expose  []automation.Caller
 }
 
@@ -80,7 +81,7 @@ func newSwipletManifest(manifest automation.Manifest) *SwipletManifest {
 		ID: manifest.ID, Name: manifest.Name, Color: manifest.Icon.Color, Symbol: manifest.Icon.Symbol, Version: manifest.Version,
 		VersionCode: manifest.VersionCode, Service: manifest.Service, localizedNames: newLocalizedNames(manifest.LocalizedNames),
 		actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *SwipletAction {
-			return &SwipletAction{Name: action.Name, Title: action.Title, Summary: action.Description, expose: action.Expose}
+			return &SwipletAction{Name: action.Name, Title: action.Title, Summary: action.Description, Stream: action.Stream, expose: action.Expose}
 		}),
 	}
 }

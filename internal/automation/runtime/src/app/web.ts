@@ -163,6 +163,7 @@ export function installWeb(
     setInterval,
     clearTimer: (id) => clearTimeout(id),
     finish: unavailable("finish"),
+    emit: unavailable("emit"),
     show: unavailable("show"),
     match: unavailable("match"),
     preferredLocalizations: unavailable("preferredLocalizations"),

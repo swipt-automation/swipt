@@ -181,7 +181,9 @@ final class Platform {
     }
 
     @available(iOS 17.4, *)
-    func callAction(_ swiplet: String, action: String, input: String, caller: String, dialogs: DialogHost) async throws -> String {
+    func callAction(
+        _ swiplet: String, action: String, input: String, caller: String, dialogs: DialogHost, value: @escaping @Sendable (String) -> Void = { _ in }
+    ) async throws -> String {
         calls += 1
         defer { calls -= 1 }
         let (requests, delivery) = AsyncStream<(Int64, String?)>.makeStream()
@@ -194,7 +196,7 @@ final class Platform {
             present = presenter
         }
         let showsInApp = if case .app = dialogs { true } else { false }
-        let events = ActionEvents { delivery.yield(($0, $1)) }
+        let events = ActionEvents(dialog: { delivery.yield(($0, $1)) }, value: value)
         let box = UncheckedSendable(value: core)
         let call = UncheckedSendable(value: box.value.newActionCall(swiplet, action: action, input: input, caller: caller, observer: events, showsInApp: showsInApp)!)
         let presenting = Task {

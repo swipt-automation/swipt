@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"runtime/debug"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	F "github.com/sagernet/sing/common/format"
 	"github.com/sagernet/sing/common/logger"
+	"github.com/swipt-automation/swipt/api"
 	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/log"
@@ -33,6 +36,9 @@ const (
 	chunkSize         = 256 << 10
 	keepaliveInterval = 30 * time.Second
 	headerTimeout     = 10 * time.Second
+
+	levelHeader      = "swipt-api-level"
+	unversionedLevel = 2
 )
 
 var (
@@ -238,6 +244,22 @@ func (s *Server) authorize(ctx context.Context) (context.Context, func(), error)
 		if !isBearer || !credential.authorized(token) {
 			return nil, nil, errUnauthenticated
 		}
+	}
+	level := int64(unversionedLevel)
+	if values := metadata.ValueFromIncomingContext(ctx, levelHeader); len(values) > 0 {
+		var err error
+		level, err = strconv.ParseInt(values[0], 10, 64)
+		if err != nil {
+			return nil, nil, status.Error(codes.InvalidArgument, F.ToString(levelHeader, " is not an API level: ", values[0]))
+		}
+	}
+	switch {
+	case level > api.Level:
+		return nil, nil, status.Error(codes.FailedPrecondition, F.ToString("the client requires API level ", level,
+			", and this Swipt implements API level ", api.Level))
+	case level < api.OldestLevel:
+		return nil, nil, status.Error(codes.FailedPrecondition, F.ToString("the client is built for API level ", level,
+			", and this Swipt serves clients built for API level ", api.OldestLevel, " or later"))
 	}
 	ctx, cancel := context.WithCancelCause(ctx)
 	s.access.Lock()

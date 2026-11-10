@@ -1,4 +1,4 @@
-import type { Placemark } from "./swiplet";
+import type { Placemark } from "./app-intents";
 
 export declare function searchPlaces(
   query: string,

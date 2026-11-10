@@ -90,6 +90,8 @@ func init() {
 		"crypto.import":                cryptoImport,
 		"crypto.export":                cryptoExport,
 		"sqlite":                       sqliteOperation,
+		"process.list":                 processList,
+		"process.kill":                 processKill,
 	}
 }
 

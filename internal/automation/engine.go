@@ -60,6 +60,7 @@ type CallRequest struct {
 	Caller  Caller
 	Dialog  Dialog
 	Log     func(LogEntry)
+	Emit    func(json.RawMessage)
 }
 
 type completion struct {
@@ -146,6 +147,7 @@ type engine struct {
 	ctx       context.Context
 	cancel    context.CancelCauseFunc
 	graphics  uint64
+	values    func(json.RawMessage)
 
 	completions chan completion
 	wake        chan struct{}
@@ -203,7 +205,7 @@ func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, 
 		return nil, E.Cause1(ErrNotAllowed, E.New("the action ", strconv.Quote(request.Action), " is not exposed to shortcuts"))
 	}
 	started := time.Now()
-	output, err := h.execute(ctx, swiplet, request.Dialog, request.Log, entry{action: request.Action, input: string(input), caller: request.Caller}, nil)
+	output, err := h.execute(ctx, swiplet, request.Dialog, request.Log, request.Emit, entry{action: request.Action, input: string(input), caller: request.Caller}, nil)
 	if err != nil && ctx.Err() == nil {
 		level := log.LevelError
 		if h.deviceLost(err, started) {
@@ -214,7 +216,7 @@ func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, 
 	return output, err
 }
 
-func (h *Host) execute(ctx context.Context, swiplet Swiplet, dialog Dialog, logs func(LogEntry), entry entry, running func()) (json.RawMessage, error) {
+func (h *Host) execute(ctx context.Context, swiplet Swiplet, dialog Dialog, logs func(LogEntry), emit func(json.RawMessage), entry entry, running func()) (json.RawMessage, error) {
 	source, err := os.ReadFile(filepath.Join(swiplet.Directory, SourceFolder, ExtensionFile))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, E.Cause1(ErrNotFound, E.New("the swiplet ", strconv.Quote(swiplet.ID), " has no extension"))
@@ -230,6 +232,7 @@ func (h *Host) execute(ctx context.Context, swiplet Swiplet, dialog Dialog, logs
 		return nil, E.Cause(err, "start JavaScript")
 	}
 	defer e.close()
+	e.values = emit
 	defer context.AfterFunc(ctx, func() {
 		time.AfterFunc(abortGrace, func() { e.cancel(context.Cause(ctx)) })
 	})()
@@ -422,6 +425,7 @@ func (e *engine) natives() map[string]jsc.Function {
 		"random":                 e.random,
 		"digest":                 e.digest,
 		"finish":                 e.finish,
+		"emit":                   e.emit,
 		"show":                   e.show,
 		"match":                  e.match,
 		"preferredLocalizations": e.preferredLocalizations,
@@ -582,17 +586,17 @@ func (e *engine) settle(result completion) error {
 }
 
 func (e *engine) subscribe(arguments []jsc.Value) (any, error) {
-	values, err := texts(arguments, 3)
+	values, err := texts(arguments, 4)
 	if err != nil {
 		return nil, err
 	}
-	id, kind, encoded := values[0], values[1], values[2]
+	id, kind, encoded, keep := values[0], values[1], values[2], values[3]
 	var args []json.RawMessage
 	if err = json.Unmarshal([]byte(encoded), &args); err != nil {
 		return nil, E.Cause(err, "decode the arguments of ", kind)
 	}
 	ctx, cancel := context.WithCancel(e.current.ctx)
-	it := &subscription{cancel: cancel, exec: e.current, queue: kind == "device.applicationEvents" || kind == "sqlite.changes"}
+	it := &subscription{cancel: cancel, exec: e.current, queue: keep == "all"}
 	e.subscriptions[id] = it
 	publish := func(value any, failure error) {
 		it.access.Lock()
@@ -753,6 +757,18 @@ func (e *engine) finish(arguments []jsc.Value) (any, error) {
 		}
 	}
 	exec.finished, exec.failure, exec.output = true, values[0], values[1]
+	return nil, nil
+}
+
+func (e *engine) emit(arguments []jsc.Value) (any, error) {
+	values, err := texts(arguments, 1)
+	if err != nil {
+		return nil, err
+	}
+	if e.values == nil {
+		return nil, E.New("the caller takes no values")
+	}
+	e.values(json.RawMessage(values[0]))
 	return nil, nil
 }
 

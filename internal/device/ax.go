@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/sagernet/sing/common"
@@ -469,7 +470,7 @@ func (w *axWorker) restart(reason string) error {
 func (w *axWorker) kill(ctx context.Context, pid uint64, reason string) error {
 	if pid != 0 {
 		w.logger.Debug("restarting axauditd, as ", reason)
-		if err := apps.Kill(ctx, w.conn.device, pid); err != nil {
+		if _, err := apps.Signal(ctx, w.conn.device, pid, syscall.SIGKILL); err != nil {
 			return err
 		}
 	}

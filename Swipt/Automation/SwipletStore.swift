@@ -86,7 +86,8 @@ final class SwipletStore {
         actions = manifests.mapValues { manifest in
             (manifest.actions()?.toArray() ?? []).map { action in
                 SwipletAction(
-                    name: action.name, title: action.title, description: action.summary, shortcuts: action.exposed(LibSwiptCallerShortcuts))
+                    name: action.name, title: action.title, description: action.summary, shortcuts: action.exposed(LibSwiptCallerShortcuts),
+                    stream: action.stream)
             }
         }
         withServices = Set(manifests.filter { $0.value.service && !outdated.contains($0.key) }.keys)
@@ -381,6 +382,7 @@ nonisolated struct SwipletAction: Hashable, Sendable {
     let title: String
     let description: String
     let shortcuts: Bool
+    let stream: Bool
 }
 
 nonisolated struct SwipletUpdate: Sendable {

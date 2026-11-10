@@ -47,6 +47,7 @@ interface Props {
   dataDirectory: string;
   assetsDirectory: string;
   cacheDirectory: string;
+  streams: string[];
   service: ServiceEvent;
 }
 
@@ -72,6 +73,10 @@ interface SwiptHost {
   addListener(
     event: "sqlite",
     listener: (event: DatabaseChangeEvent) => void,
+  ): EventSubscription;
+  addListener(
+    event: "value",
+    listener: (event: { call: string; value?: string }) => void,
   ): EventSubscription;
 }
 
@@ -218,6 +223,12 @@ const preferredLocalizations = (localizations: readonly string[]): string[] => {
 };
 
 let lastCall = 0;
+const valueBacklog = 1000;
+const valueListeners = new Map<string, (value?: string) => void>();
+
+host.addListener("value", (event) => {
+  valueListeners.get(event.call)?.(event.value);
+});
 
 function interfaceModule(props: Props) {
   service = serviceOf(props.service);
@@ -227,26 +238,108 @@ function interfaceModule(props: Props) {
       serviceListeners.delete(listener);
     };
   };
-  const call = async (
+  const streams = new Set(props.streams);
+  const call = (
     action: string,
     input: unknown,
     { signal }: { signal?: AbortSignal } = {},
-  ): Promise<unknown> => {
+  ): Promise<unknown> | AsyncIterable<unknown> => {
     const id = String(++lastCall);
     const cancel = () => void host.cancelCall(id).catch(() => {});
-    signal?.addEventListener("abort", cancel, { once: true });
-    try {
-      const value = await untilAborted(signal, () =>
-        host.call(
-          id,
-          action,
-          JSON.stringify(input === undefined ? null : input),
-        ),
-      );
-      return value ? JSON.parse(value) : undefined;
-    } finally {
-      signal?.removeEventListener("abort", cancel);
+    const buffered: unknown[] = [];
+    let ended = false;
+    let outcome: { error?: unknown } | undefined;
+    let failure: { error: unknown } | undefined;
+    let finished = false;
+    const waiters: {
+      resolve(result: IteratorResult<unknown>): void;
+      reject(error: unknown): void;
+    }[] = [];
+    const advance = () => {
+      if (failure !== undefined || ended) {
+        valueListeners.delete(id);
+      }
+      while (waiters.length > 0) {
+        if (finished) {
+          waiters.shift()!.resolve({ value: undefined, done: true });
+        } else if (buffered.length > 0) {
+          waiters.shift()!.resolve({ value: buffered.shift(), done: false });
+        } else if (failure !== undefined) {
+          finished = true;
+          waiters.shift()!.reject(failure.error);
+        } else if (ended && outcome !== undefined) {
+          finished = true;
+          if ("error" in outcome) {
+            waiters.shift()!.reject(outcome.error);
+          }
+        } else {
+          return;
+        }
+      }
+    };
+    if (streams.has(action)) {
+      valueListeners.set(id, (value) => {
+        if (value === undefined) {
+          ended = true;
+        } else if (buffered.length < valueBacklog) {
+          buffered.push(JSON.parse(value));
+        } else {
+          failure ??= {
+            error: new Error(
+              `the stream ended with ${valueBacklog} values unread`,
+            ),
+          };
+          cancel();
+        }
+        advance();
+      });
     }
+    signal?.addEventListener("abort", cancel, { once: true });
+    let started = false;
+    const result = untilAborted(signal, async () => {
+      const reply = host.call(id, action, JSON.stringify(input) ?? "null");
+      started = true;
+      return reply;
+    })
+      .then((output) => (output ? JSON.parse(output) : undefined))
+      .finally(() => signal?.removeEventListener("abort", cancel));
+    if (!streams.has(action)) {
+      return result;
+    }
+    result
+      .then(
+        () => {
+          outcome = {};
+        },
+        (error: unknown) => {
+          if (signal?.aborted || !started) {
+            failure ??= { error };
+          }
+          outcome = { error };
+        },
+      )
+      .finally(advance);
+    return {
+      [Symbol.asyncIterator]: (): AsyncIterator<unknown> => ({
+        next: () =>
+          new Promise<IteratorResult<unknown>>((resolve, reject) => {
+            waiters.push({ resolve, reject });
+            advance();
+          }),
+        return: () => {
+          failure ??= {
+            error: Object.assign(new Error("the call was aborted"), {
+              name: "AbortError",
+            }),
+          };
+          buffered.length = 0;
+          finished = true;
+          cancel();
+          advance();
+          return Promise.resolve({ value: undefined, done: true });
+        },
+      }),
+    };
   };
   const calls = new Proxy({} as Record<string, unknown>, {
     get: (_, action) =>

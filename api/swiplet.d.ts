@@ -58,6 +58,21 @@ export declare function defineAction<
     context: ActionContext,
   ): Returned<O, R> | Promise<Returned<O, R>>;
 }): Action<Sent<I>, Jsonify<Awaited<Delivered<O, R>>>>;
+export declare function defineAction<
+  I extends Schema | undefined = undefined,
+  O extends Schema | undefined = undefined,
+  T = void,
+>(definition: {
+  readonly title: string;
+  readonly description?: string;
+  readonly input?: I;
+  readonly output?: O;
+  /** @available apiLevel 3 */
+  stream(
+    input: Received<I>,
+    context: ActionContext,
+  ): AsyncIterable<Returned<O, T>>;
+}): Action<Sent<I>, AsyncIterable<Jsonify<Delivered<O, T>>>>;
 
 export declare function defineExtension<
   Actions extends Record<string, Action<any, any>> = {},
@@ -71,14 +86,23 @@ export declare function defineExtension<
 
 export type ServiceStatus = "starting" | "running" | "stopped" | "failed";
 
+type ActionReturn<Output> = [Output] extends [never]
+  ? Promise<Output>
+  : Output extends AsyncIterable<unknown>
+    ? Output
+    : Promise<Output>;
+
 type ActionCall<A> =
   A extends Action<infer Input, infer Output>
     ? [Input] extends [void]
       ? (
           input?: undefined,
           options?: { signal?: AbortSignal },
-        ) => Promise<Output>
-      : (input: Input, options?: { signal?: AbortSignal }) => Promise<Output>
+        ) => ActionReturn<Output>
+      : (
+          input: Input,
+          options?: { signal?: AbortSignal },
+        ) => ActionReturn<Output>
     : never;
 
 export type ActionCalls<E extends Extension<any, any>> = {

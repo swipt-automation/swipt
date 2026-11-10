@@ -22,7 +22,7 @@ public protocol SwiptHostWeb: AnyObject, Sendable {
 @MainActor
 public protocol SwiptHostDelegate: AnyObject, Sendable {
   nonisolated var swiplet: String { get }
-  func call(_ id: String, action: String, input: String) async throws -> String
+  func call(_ id: String, action: String, input: String, value: @escaping @Sendable (String) -> Void) async throws -> String
   func cancelCall(_ id: String)
   func setServiceEnabled(_ enabled: Bool) async throws
   func searchPlaces(_ query: String) async throws -> String
@@ -133,7 +133,7 @@ public final class SwiptHostModule: Module {
   public func definition() -> ModuleDefinition {
     Name("SwiptHost")
 
-    Events("service", "sqlite")
+    Events("service", "sqlite", "value")
 
     OnCreate {
       Self.lock.lock()
@@ -226,7 +226,10 @@ public final class SwiptHostModule: Module {
     }
 
     AsyncFunction("call") { @MainActor (id: String, action: String, input: String) async throws -> String in
-      try await self.host().call(id, action: action, input: input)
+      defer { self.sendEvent("value", ["call": id]) }
+      return try await self.host().call(id, action: action, input: input) { [weak self] value in
+        self?.sendEvent("value", ["call": id, "value": value])
+      }
     }
 
     AsyncFunction("cancelCall") { @MainActor (id: String) async in

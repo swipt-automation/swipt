@@ -103,10 +103,9 @@ async function developProject(context) {
     }
     if (built.digest === deployed) {
       console.error(
-        tr(
-          "built in {elapsed}; it came out as deployed, so nothing was deployed",
-          { elapsed: elapsed(started) },
-        ),
+        tr("built in {elapsed}; nothing changed", {
+          elapsed: elapsed(started),
+        }),
       );
       return;
     }

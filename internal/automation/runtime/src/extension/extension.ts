@@ -40,7 +40,11 @@ interface ActionDefinition {
   input?: StandardSchema;
   output?: StandardSchema;
   expose?: readonly Caller[];
-  run(input: unknown, context: swiplet.ActionContext): unknown;
+  run?(input: unknown, context: swiplet.ActionContext): unknown;
+  stream?(
+    input: unknown,
+    context: swiplet.ActionContext,
+  ): AsyncIterable<unknown>;
 }
 
 interface ExtensionDefinition {
@@ -51,7 +55,11 @@ interface ExtensionDefinition {
 interface Action {
   readonly input?: StandardSchema;
   readonly output?: StandardSchema;
-  run(input: unknown, context: swiplet.ActionContext): unknown;
+  readonly run?: (input: unknown, context: swiplet.ActionContext) => unknown;
+  readonly stream?: (
+    input: unknown,
+    context: swiplet.ActionContext,
+  ) => AsyncIterable<unknown>;
 }
 
 interface Extension {
@@ -82,7 +90,7 @@ export const defineAction: typeof swiplet.defineAction = (
   if (definition === null || typeof definition !== "object") {
     throw new TypeError("the action definition must be an object");
   }
-  const { title, description, expose = [], run } = definition;
+  const { title, description, expose = [], run, stream } = definition;
   if (typeof title !== "string" || title === "") {
     throw new TypeError("an action needs a title");
   }
@@ -95,14 +103,18 @@ export const defineAction: typeof swiplet.defineAction = (
   ) {
     throw new TypeError(`expose must be an array of ${exposable.join(", ")}`);
   }
-  if (typeof run !== "function") {
-    throw new TypeError("an action needs a run function");
+  if ((typeof run === "function") === (typeof stream === "function")) {
+    throw new TypeError("an action needs either a run or a stream function");
+  }
+  if (stream !== undefined && expose.length > 0) {
+    throw new TypeError("an action that streams can't be exposed");
   }
   const out = Object.freeze({
     title,
     description,
     expose: Object.freeze([...expose]),
     run,
+    stream,
     input: schemaOf(definition.input, "the input"),
     output: schemaOf(definition.output, "the output"),
   });
@@ -142,6 +154,7 @@ interface Modules {
   "@swipt/api/accessibility": typeof import("@swipt/api/accessibility");
   "@swipt/api/input": typeof import("@swipt/api/input");
   "@swipt/api/device": typeof import("@swipt/api/device");
+  "@swipt/api/process": typeof import("@swipt/api/process");
   "@swipt/api/screen": typeof import("@swipt/api/screen");
   "@swipt/api/image": typeof import("@swipt/api/image");
   "@swipt/api/app-intents": typeof import("@swipt/api/app-intents");
@@ -184,6 +197,7 @@ const moduleTable = {
   }),
   "@swipt/api/input": () => ({ __esModule: true, ...chunk("api").input }),
   "@swipt/api/device": () => ({ __esModule: true, ...chunk("api").device }),
+  "@swipt/api/process": () => ({ __esModule: true, ...chunk("api").process }),
   "@swipt/api/screen": () => ({ __esModule: true, ...chunk("api").screen }),
   "@swipt/api/image": () => ({ __esModule: true, ...chunk("api").image }),
   "@swipt/api/app-intents": () => ({ __esModule: true, ...appIntents }),
@@ -272,10 +286,9 @@ const serialize = (value: unknown): string => {
   return json;
 };
 
-const settle = (work: () => unknown) => {
+const settle = (work: () => string | Promise<string>) => {
   Promise.resolve()
     .then(work)
-    .then(serialize)
     .then(
       (json) => native.finish("", json),
       (error) =>
@@ -322,6 +335,7 @@ export const hooks = {
     }
     settle(async () => {
       await run({ signal: controller.signal });
+      return "";
     });
   },
   call(name: string, input: string, caller: Caller): void {
@@ -348,11 +362,24 @@ export const hooks = {
         JSON.parse(input),
         "input",
       );
-      const output = await definition.run(
-        definition.input === undefined && value === null ? undefined : value,
-        context,
+      const argument =
+        definition.input === undefined && value === null ? undefined : value;
+      if (definition.stream !== undefined) {
+        for await (const item of definition.stream(argument, context)) {
+          controller.signal.throwIfAborted();
+          native.emit(
+            serialize(await validate(definition.output, item, "output")),
+          );
+        }
+        return "";
+      }
+      return serialize(
+        await validate(
+          definition.output,
+          await definition.run!(argument, context),
+          "output",
+        ),
       );
-      return validate(definition.output, output, "output");
     });
   },
   abort(): void {

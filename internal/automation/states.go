@@ -16,9 +16,27 @@ import (
 	"github.com/swipt-automation/swipt/internal/device"
 )
 
+type subscriptionFunc func(ctx context.Context, call *operation, publish func(any), ended func(error)) error
+
+var subscriptions map[string]subscriptionFunc
+
+func init() {
+	subscriptions = map[string]subscriptionFunc{
+		"device.state":             watchDeviceState,
+		"device.applicationEvents": watchApplicationEvents,
+		"screen.frames":            watchGraphics,
+		"sqlite.changes":           watchDatabaseChanges,
+		"process.resourceUsage":    watchResourceUsage,
+	}
+}
+
 func (e *engine) watch(ctx context.Context, kind string, args []json.RawMessage, publish func(any, error)) error {
+	watch, found := subscriptions[kind]
+	if !found {
+		return E.Cause1(ErrInvalid, E.New("unknown subscription ", strconv.Quote(kind)))
+	}
 	call := &operation{engine: e, name: kind, args: args}
-	ended := func(err error) {
+	return watch(ctx, call, func(value any) { publish(value, nil) }, func(err error) {
 		if ctx.Err() != nil {
 			return
 		}
@@ -26,56 +44,57 @@ func (e *engine) watch(ctx context.Context, kind string, args []json.RawMessage,
 			err = call.droppedError(err, "while watching "+kind)
 		}
 		publish(nil, err)
+	})
+}
+
+func watchDeviceState(ctx context.Context, call *operation, publish func(any), ended func(error)) error {
+	var name string
+	if err := call.decode(1, &name); err != nil {
+		return err
 	}
-	switch kind {
-	case "device.state":
-		var name string
-		if err := call.decode(1, &name); err != nil {
-			return err
-		}
-		phone, err := call.phone()
-		if err != nil {
-			return err
-		}
-		switch name {
-		case "foreground":
-			go func() {
-				ended(phone.WatchForeground(ctx, func(app string) { publish(app, nil) }))
-			}()
-		case "locked", "display":
-			go func() {
-				ended(phone.WatchState(ctx, name, func(value any) { publish(value, nil) }))
-			}()
-		case "simulatedLocation":
-			go e.host.watchLocation(ctx, func(location any) { publish(location, nil) })
-		default:
-			return E.Cause1(ErrInvalid, E.New("unknown state ", strconv.Quote(name)))
-		}
-		return nil
-	case "screen.frames":
-		return e.watchGraphics(ctx, call, publish, ended)
-	case "sqlite.changes":
-		if err := call.decode(0); err != nil {
-			return err
-		}
-		go e.host.watchDatabaseChanges(ctx, e.dataOwner(), publish)
-		return nil
-	case "device.applicationEvents":
-		if err := call.decode(0); err != nil {
-			return err
-		}
-		phone, err := call.phone()
-		if err != nil {
-			return err
-		}
+	phone, err := call.phone()
+	if err != nil {
+		return err
+	}
+	switch name {
+	case "foreground":
 		go func() {
-			ended(phone.WatchApps(ctx, func(event device.AppEvent) {
-				publish(map[string]any{"type": event.Kind, "bundleId": event.BundleID, "pid": event.PID, "time": event.Time.UnixMilli()}, nil)
-			}))
+			ended(phone.WatchForeground(ctx, func(app string) { publish(app) }))
 		}()
-		return nil
+	case "locked", "display":
+		go func() {
+			ended(phone.WatchState(ctx, name, publish))
+		}()
+	case "simulatedLocation":
+		go call.engine.host.watchLocation(ctx, publish)
+	default:
+		return E.Cause1(ErrInvalid, E.New("unknown state ", strconv.Quote(name)))
 	}
-	return E.Cause1(ErrInvalid, E.New("unknown subscription ", strconv.Quote(kind)))
+	return nil
+}
+
+func watchApplicationEvents(ctx context.Context, call *operation, publish func(any), ended func(error)) error {
+	if err := call.decode(0); err != nil {
+		return err
+	}
+	phone, err := call.phone()
+	if err != nil {
+		return err
+	}
+	go func() {
+		ended(phone.WatchApps(ctx, func(event device.AppEvent) {
+			publish(map[string]any{"type": event.Kind, "bundleId": event.BundleID, "pid": event.PID, "time": event.Time.UnixMilli()})
+		}))
+	}()
+	return nil
+}
+
+func watchDatabaseChanges(ctx context.Context, call *operation, publish func(any), _ func(error)) error {
+	if err := call.decode(0); err != nil {
+		return err
+	}
+	go call.engine.host.watchDatabaseChanges(ctx, call.engine.dataOwner(), publish)
+	return nil
 }
 
 const (

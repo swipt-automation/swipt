@@ -77,8 +77,7 @@ func (s *swipletService) swipletOf(swiplet automation.Swiplet) *proto.Swiplet {
 		Actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *proto.SwipletAction {
 			return &proto.SwipletAction{
 				Name: action.Name, Title: action.Title, Description: action.Description,
-				ExposedToShortcuts: slices.Contains(action.Expose, automation.CallerShortcuts),
-				InputSchema:        schemaOf(action.Input), OutputSchema: schemaOf(action.Output),
+				InputSchema: schemaOf(action.Input), OutputSchema: schemaOf(action.Output),
 			}
 		}),
 	}
@@ -141,65 +140,72 @@ type execution struct {
 	err    error
 }
 
-func relay(ctx context.Context, tag string, run func(logs func(automation.LogEntry)) (json.RawMessage, error), send func(*proto.LogEntry) error) (json.RawMessage, error) {
-	logs := make(chan automation.LogEntry, logBuffer)
-	done := make(chan execution, 1)
-	go func() {
-		output, err := run(func(entry automation.LogEntry) {
-			select {
-			case logs <- entry:
-			default:
-			}
-		})
-		done <- execution{output, err}
-	}()
-	for {
-		select {
-		case entry := <-logs:
-			if err := send(logOf(tag, entry)); err != nil {
-				return nil, err
-			}
-		case result := <-done:
-			for {
-				select {
-				case entry := <-logs:
-					if err := send(logOf(tag, entry)); err != nil {
-						return nil, err
-					}
-					continue
-				default:
-				}
-				return result.output, result.err
-			}
-		case <-ctx.Done():
-			result := <-done
-			return result.output, E.Errors(result.err, context.Cause(ctx))
-		}
-	}
-}
-
 func (s *swipletService) CallAction(request *proto.CallActionRequest, stream grpc.ServerStreamingServer[proto.CallActionResponse]) error {
-	ctx := stream.Context()
+	ctx, cancel := context.WithCancelCause(stream.Context())
+	defer cancel(nil)
 	input, err := inputOf(request.Input)
 	if err != nil {
 		return apiError(err)
 	}
-	output, err := relay(ctx, "swiplet/"+request.SwipletId, func(logs func(automation.LogEntry)) (json.RawMessage, error) {
-		return s.options.Swiplets.Call(ctx, automation.CallRequest{
+	tag := "swiplet/" + request.SwipletId
+	parts := make(chan *proto.CallActionResponse, logBuffer)
+	done := make(chan execution, 1)
+	go func() {
+		output, err := s.options.Swiplets.Call(ctx, automation.CallRequest{
 			Swiplet: request.SwipletId, Action: request.Action, Input: input, Caller: automation.CallerAPI,
-			Dialog: s.options.Dialog, Log: logs,
+			Dialog: s.options.Dialog,
+			Log: func(entry automation.LogEntry) {
+				select {
+				case parts <- &proto.CallActionResponse{Part: &proto.CallActionResponse_Log{Log: logOf(tag, entry)}}:
+				default:
+				}
+			},
+			Emit: func(data json.RawMessage) {
+				value := &structpb.Value{}
+				if err := protojson.Unmarshal(data, value); err != nil {
+					cancel(E.Cause(err, "read the value"))
+					return
+				}
+				select {
+				case parts <- &proto.CallActionResponse{Part: &proto.CallActionResponse_Value{Value: value}}:
+				case <-ctx.Done():
+				}
+			},
 		})
-	}, func(entry *proto.LogEntry) error {
-		return stream.Send(&proto.CallActionResponse{Part: &proto.CallActionResponse_Log{Log: entry}})
-	})
-	if revoked := revocation(ctx); revoked != nil {
+		done <- execution{output, err}
+	}()
+	var result execution
+	for finished := false; !finished; {
+		select {
+		case part := <-parts:
+			if err = stream.Send(part); err != nil {
+				cancel(err)
+				<-done
+				return err
+			}
+		case result = <-done:
+			finished = true
+		}
+	}
+	for len(parts) > 0 {
+		if err = stream.Send(<-parts); err != nil {
+			return err
+		}
+	}
+	if revoked := revocation(stream.Context()); revoked != nil {
 		return revoked
 	}
-	result, err := actionResult(output, err)
+	if cause := context.Cause(ctx); cause != nil && stream.Context().Err() == nil {
+		return apiError(cause)
+	}
+	if result.err == nil && len(result.output) == 0 {
+		return stream.Send(&proto.CallActionResponse{Part: &proto.CallActionResponse_Result{Result: &proto.ActionResult{}}})
+	}
+	actionResult, err := actionResult(result.output, result.err)
 	if err != nil {
 		return err
 	}
-	return stream.Send(&proto.CallActionResponse{Part: &proto.CallActionResponse_Result{Result: result}})
+	return stream.Send(&proto.CallActionResponse{Part: &proto.CallActionResponse_Result{Result: actionResult}})
 }
 
 func (s *swipletService) SetServiceEnabled(ctx context.Context, request *proto.SetServiceEnabledRequest) (*proto.SetServiceEnabledResponse, error) {
