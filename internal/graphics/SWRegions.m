@@ -176,7 +176,13 @@ SWRaster *SWRegionsDifference(SWRaster *first, SWRaster *second, NSInteger thres
 }
 
 NSData *SWRegionsMerged(SWRaster *mask, NSInteger radius, SWCancelToken *token, NSError **error) {
-    SWRaster *merged = radius > 0 ? SWRasterMorphed(mask, radius, YES, error) : mask;
+    SWRaster *merged = mask;
+    if (radius > 0) {
+        SWRaster *padded = [[SWRaster alloc] initWithWidth:mask.width + radius * 2 height:mask.height + radius * 2 channels:1];
+        memset(padded.data, 0, padded.rowBytes * padded.height);
+        [mask copyInto:padded x:radius y:radius];
+        merged = SWRasterMorphed(padded, radius, YES, error);
+    }
     if (merged == nil) {
         return nil;
     }
@@ -190,9 +196,7 @@ NSData *SWRegionsMerged(SWRaster *mask, NSInteger radius, SWCancelToken *token, 
     CGRect *out = rects.mutableBytes;
     for (NSUInteger index = 0; index < count; index++) {
         CGRect rect = SWComponentRect(items[index]);
-        CGFloat width = MAX(CGRectGetWidth(rect) - radius * 2, 1);
-        CGFloat height = MAX(CGRectGetHeight(rect) - radius * 2, 1);
-        out[index] = CGRectMake(CGRectGetMidX(rect) - width / 2, CGRectGetMidY(rect) - height / 2, width, height);
+        out[index] = CGRectMake(CGRectGetMinX(rect), CGRectGetMinY(rect), CGRectGetWidth(rect) - radius * 2, CGRectGetHeight(rect) - radius * 2);
     }
     return rects;
 }

@@ -245,14 +245,14 @@ func newDatabaseStore() databaseStore {
 	return databaseStore{databases: make(map[int]*database), watchers: make(map[*databaseWatcher]struct{})}
 }
 
-func sqliteOperation(_ context.Context, call *operation) (any, error) {
+func sqliteOperation(ctx context.Context, call *operation) (any, error) {
 	if len(call.args) != 1 {
 		return nil, E.Cause1(ErrInvalid, E.New("takes 1 argument, not ", len(call.args)))
 	}
-	return call.engine.host.SQLite(call.engine, call.engine.dataOwner(), call.args[0])
+	return call.engine.host.SQLite(ctx, call.engine, call.engine.dataOwner(), call.args[0])
 }
 
-func (h *Host) SQLite(client any, swiplet string, request []byte) (any, error) {
+func (h *Host) SQLite(ctx context.Context, client any, swiplet string, request []byte) (any, error) {
 	var call databaseRequest
 	if err := json.Unmarshal(request, &call); err != nil {
 		return nil, E.Cause1(ErrInvalid, E.Cause(err, "decode the database request"))
@@ -294,7 +294,7 @@ func (h *Host) SQLite(client any, swiplet string, request []byte) (any, error) {
 		return nil, backupDatabase(db, schemaName(call.Schema), source, schemaName(call.SourceSchema))
 	}
 	db.access.Lock()
-	result, err := db.serve(call)
+	result, err := db.serve(ctx, call)
 	changes := db.takeChanges()
 	db.access.Unlock()
 	h.publishChanges(swiplet, changes)
@@ -640,6 +640,7 @@ func (h *Host) CloseDatabases(client any, swiplet string) {
 	var closing []*database
 	for handle, db := range h.databases.databases {
 		if (client == nil || db.client == client) && (swiplet == "" || db.swiplet == swiplet) {
+			C.sqlite3_interrupt(db.conn)
 			closing = append(closing, db)
 			delete(h.databases.databases, handle)
 		}
@@ -707,10 +708,24 @@ func sqliteFailure(conn *C.sqlite3, code C.int) error {
 	return E.Cause1(ErrInvalid, E.New(message))
 }
 
-func (db *database) serve(call databaseRequest) (any, error) {
+func (db *database) serve(ctx context.Context, call databaseRequest) (any, error) {
 	if db.conn == nil {
 		return nil, errDatabaseClosed
 	}
+	if ctx.Err() != nil {
+		return nil, context.Cause(ctx)
+	}
+	conn := db.conn
+	interrupted := make(chan struct{})
+	stop := context.AfterFunc(ctx, func() {
+		C.sqlite3_interrupt(conn)
+		close(interrupted)
+	})
+	defer func() {
+		if !stop() {
+			<-interrupted
+		}
+	}()
 	switch call.Op {
 	case "exec":
 		return nil, db.exec(call.SQL)

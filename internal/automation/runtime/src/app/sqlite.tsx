@@ -148,35 +148,49 @@ export function sqliteHooks(sqlite: SQLite) {
     );
   }
 
-  const SQLiteProvider = memo(
-    function SQLiteProvider({
-      children,
-      onError,
-      useSuspense = false,
-      ...source
-    }: SQLiteProviderProps) {
-      if (onError != null && useSuspense) {
-        throw new Error(
-          "onError can't be used with useSuspense; use an error boundary instead",
-        );
-      }
-      return useSuspense ? (
-        <SuspenseProvider {...source}>{children}</SuspenseProvider>
-      ) : (
-        <EffectProvider {...source} onError={onError}>
-          {children}
-        </EffectProvider>
+  const useDeepStable = <T,>(value: T): T => {
+    const [stable, setStable] = useState(() => value);
+    if (!deepEqual(stable, value)) {
+      setStable(() => value);
+      return value;
+    }
+    return stable;
+  };
+
+  const SQLiteProvider = memo(function SQLiteProvider({
+    children,
+    onError,
+    useSuspense = false,
+    options,
+    assetSource,
+    ...source
+  }: SQLiteProviderProps) {
+    const stableOptions = useDeepStable(options);
+    const stableAssetSource = useDeepStable(assetSource);
+    if (onError != null && useSuspense) {
+      throw new Error(
+        "onError can't be used with useSuspense; use an error boundary instead",
       );
-    },
-    (previous, next) =>
-      previous.databaseName === next.databaseName &&
-      deepEqual(previous.options, next.options) &&
-      deepEqual(previous.assetSource, next.assetSource) &&
-      previous.directory === next.directory &&
-      previous.onInit === next.onInit &&
-      previous.onError === next.onError &&
-      previous.useSuspense === next.useSuspense,
-  );
+    }
+    return useSuspense ? (
+      <SuspenseProvider
+        {...source}
+        options={stableOptions}
+        assetSource={stableAssetSource}
+      >
+        {children}
+      </SuspenseProvider>
+    ) : (
+      <EffectProvider
+        {...source}
+        options={stableOptions}
+        assetSource={stableAssetSource}
+        onError={onError}
+      >
+        {children}
+      </EffectProvider>
+    );
+  });
 
   const useSQLiteContext = (): SQLiteDatabase => {
     const database = useContext(Context);

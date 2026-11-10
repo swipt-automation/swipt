@@ -457,7 +457,7 @@ func (e *engine) sqlite(arguments []jsc.Value) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return e.host.SQLite(e, e.dataOwner(), []byte(values[0]))
+	return e.host.SQLite(e.current.ctx, e, e.dataOwner(), []byte(values[0]))
 }
 
 func texts(arguments []jsc.Value, count int) ([]string, error) {

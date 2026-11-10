@@ -686,7 +686,7 @@ private struct ValueDialog: View {
     }
 
     private func numberInput(integer: Bool, min: Double?, max: Double?) -> some View {
-        let value = Double(text.replacingOccurrences(of: Locale.current.decimalSeparator ?? ".", with: "."))
+        let value = Double(text.replacingOccurrences(of: Locale.current.decimalSeparator ?? ".", with: ".")).flatMap { $0.isFinite ? $0 : nil }
         let fits = value.map { $0 >= min ?? -.infinity && $0 <= max ?? .infinity } ?? false
         return input(separated: false, spacing: Metrics.inset) {
             VStack(spacing: 8) {

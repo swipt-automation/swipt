@@ -297,6 +297,9 @@ func (r *fileRoot) copyTo(name string, destination *fileRoot, target string) err
 	if r.root == nil {
 		return FileNotFound(r.where, name)
 	}
+	if r.root.Name() == destination.root.Name() && (name == "." || target == name || strings.HasPrefix(target, name+string(filepath.Separator))) {
+		return E.Cause1(ErrInvalid, E.New("cannot copy ", strconv.Quote(filepath.ToSlash(name)), " into itself in ", r.where))
+	}
 	return fs.WalkDir(r.root.FS(), filepath.ToSlash(name), func(current string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return r.error(current, err)
@@ -314,15 +317,15 @@ func (r *fileRoot) copyTo(name string, destination *fileRoot, target string) err
 			return r.error(current, err)
 		}
 		defer in.Close()
-		if err = destination.root.MkdirAll(filepath.Dir(to), 0o755); err != nil {
-			return destination.error(filepath.Dir(to), err)
-		}
-		out, err := destination.root.Create(to)
+		out, err := destination.create(to)
 		if err != nil {
-			return destination.error(to, err)
+			return err
 		}
-		_, err = io.Copy(out, in)
-		return E.Errors(err, out.Close())
+		if _, err = io.Copy(out, in); err != nil {
+			_ = out.Finish(err)
+			return err
+		}
+		return out.Finish(nil)
 	})
 }
 

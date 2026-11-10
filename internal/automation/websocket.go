@@ -99,6 +99,7 @@ func webSocketConnect(ctx context.Context, call *operation) (any, error) {
 		attachCookies(header, cookies)
 	}
 	dialCtx, cancel := context.WithCancelCause(e.ctx)
+	defer cancel(nil)
 	stop := context.AfterFunc(ctx, func() { cancel(context.Cause(ctx)) })
 	conn, response, err := websocket.Dial(dialCtx, address, &websocket.DialOptions{
 		HTTPClient:   client,
@@ -119,7 +120,6 @@ func webSocketConnect(ctx context.Context, call *operation) (any, error) {
 		}
 	}
 	if err != nil {
-		cancel(nil)
 		return nil, networkError(err, "connect to ", address)
 	}
 	conn.SetReadLimit(webSocketReadLimit)

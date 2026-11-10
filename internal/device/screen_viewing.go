@@ -3,6 +3,7 @@ package device
 import (
 	"context"
 	"errors"
+	"regexp"
 	"sync"
 	"time"
 
@@ -166,21 +167,25 @@ func (c *conn) watchScreenViewing(received <-chan Event, stop func(), relayDone 
 	}
 }
 
+const screenViewingLabel = `^DEVICE HUB, .*This device was viewed remotely from Mac$`
+
+var screenViewingBanner = &Selector{predicate: -1, fields: []selectorField{
+	{name: "app", text: &textMatch{text: springboardBundleID, script: -1}},
+	{name: "identifier", text: &textMatch{text: "NotificationShortLookView", script: -1}},
+	{name: "label", text: &textMatch{regular: true, source: screenViewingLabel, flags: "i", pattern: regexp.MustCompile("(?i)" + screenViewingLabel), script: -1}},
+}}
+
 func (c *conn) dismissScreenViewingBanner(ctx context.Context) error {
-	selector, err := ParseSelector([]byte(`{"app":"com.apple.springboard","identifier":"NotificationShortLookView","label":{"$regex":"^DEVICE HUB, .*This device was viewed remotely from Mac$","$flags":"i"}}`))
-	if err != nil {
-		return err
-	}
 	dismissed := false
 	for ctx.Err() == nil {
-		view, _, err := c.connection.phone.Find(ctx, []*Selector{selector}, screenViewingDepth)
+		view, _, err := c.connection.phone.Find(ctx, []*Selector{screenViewingBanner}, screenViewingDepth)
 		if err != nil {
 			return err
 		}
 		if view == nil {
 			continue
 		}
-		banner, err := view.Find("", selector, nil)
+		banner, err := view.Find("", screenViewingBanner, nil)
 		if err != nil {
 			return err
 		}

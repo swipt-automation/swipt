@@ -206,6 +206,9 @@ async function* invokeHTTP(connection, method, input, { signal }) {
 }
 
 async function* invokeWebSocket(connection, method, input, { signal }) {
+  if (signal?.aborted) {
+    throw new RpcError(Code.Canceled, "the call was canceled");
+  }
   const socket = new WebSocket(
     `${connection.webSocketBase}/${method.parent.typeName}/${method.name}`,
     [webSocketSubprotocol],
@@ -232,13 +235,14 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   const opened = new Promise((resolve, reject) => {
     socket.addEventListener("open", resolve, { once: true });
     socket.addEventListener(
-      "error",
+      "close",
       () =>
         reject(
-          new RpcError(
-            Code.Unavailable,
-            `cannot connect to ${connection.webSocketBase}`,
-          ),
+          failure ??
+            new RpcError(
+              Code.Unavailable,
+              `cannot connect to ${connection.webSocketBase}`,
+            ),
         ),
       { once: true },
     );
@@ -288,18 +292,18 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
           .join("")}`,
       ),
     );
-    const sender = (async () => {
+    void (async () => {
       try {
         const body = method.methodKind === "client_streaming" ? input : [input];
         for await (const message of body) {
-          if (closed) {
+          if (closed || failure) {
             return;
           }
           socket.send(
             Buffer.concat([Buffer.from([0]), frame(method.input, message)]),
           );
         }
-        if (!closed) {
+        if (!closed && !failure) {
           socket.send(Buffer.from([1]));
         }
       } catch (error) {
@@ -311,14 +315,13 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
         yield messages.shift();
         continue;
       }
-      if (closed) {
+      if (closed || failure) {
         break;
       }
       await new Promise((resolve) => {
         wake = resolve;
       });
     }
-    await sender;
     if (failure) {
       throw failure;
     }

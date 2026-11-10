@@ -24,6 +24,7 @@ const (
 	preludeLimit         = 32
 	preludeByteLimit     = 64 << 10
 	layoutAnswerInterval = time.Second
+	handshakeTimeout     = time.Minute
 )
 
 type ServerSession struct {
@@ -103,8 +104,10 @@ func (s *ServerSession) Close() error {
 
 func (s *ServerSession) run() {
 	defer s.cancel()
+	_ = s.conn.SetDeadline(time.Now().Add(handshakeTimeout))
 	err := s.handshake()
 	s.server.endHandshake()
+	_ = s.conn.SetDeadline(time.Time{})
 	var held [][]byte
 	if err == nil {
 		held, err = s.prelude()

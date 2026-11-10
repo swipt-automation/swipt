@@ -51,11 +51,18 @@ static BOOL SWAppendFrame(AVAssetWriter *writer, AVAssetWriterInputPixelBufferAd
     uint8_t *base = CVPixelBufferGetBaseAddress(buffer);
     if (base != NULL) {
         size_t rowBytes = CVPixelBufferGetBytesPerRow(buffer);
-        NSInteger rows = MIN(raster.height, (NSInteger)CVPixelBufferGetHeight(buffer));
-        NSInteger columns = MIN(raster.width, (NSInteger)CVPixelBufferGetWidth(buffer));
+        NSInteger width = (NSInteger)CVPixelBufferGetWidth(buffer);
+        NSInteger height = (NSInteger)CVPixelBufferGetHeight(buffer);
+        NSInteger rows = MIN(raster.height, height);
+        NSInteger columns = MIN(raster.width, width);
+        NSInteger left = (width - columns) / 2;
+        NSInteger top = (height - rows) / 2;
+        if (rows != height || columns != width) {
+            memset(base, 0, rowBytes * height);
+        }
         const uint8_t *source = raster.data;
         for (NSInteger row = 0; row < rows; row++) {
-            memcpy(base + row * rowBytes, source + row * raster.rowBytes, columns * 4);
+            memcpy(base + (top + row) * rowBytes + left * 4, source + row * raster.rowBytes, columns * 4);
         }
     }
     CVPixelBufferUnlockBaseAddress(buffer, 0);
@@ -107,6 +114,12 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
             }
             double time = times[index].doubleValue;
             SWRaster *raster = index == 0 ? first : frame(time, &failure);
+            if (raster != nil && (raster.width != first.width || raster.height != first.height)) {
+                double scale = MIN((double)first.width / raster.width, (double)first.height / raster.height);
+                NSInteger width = MIN(MAX(lround(raster.width * scale), 1), first.width);
+                NSInteger height = MIN(MAX(lround(raster.height * scale), 1), first.height);
+                raster = SWRasterResized(raster, width, height, &failure);
+            }
             if (raster == nil) {
                 break;
             }
@@ -157,9 +170,14 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
         SWFailCause(error, SWErrorNameData, failure, @"graphics: read %@", SWRecordingManifest);
         return nil;
     }
+    double duration = SWAsNumber(metadata[@"duration"]).doubleValue;
+    if (!isfinite(duration) || duration < 0) {
+        SWFail(error, SWErrorNameData, @"graphics: %@ has an invalid duration", SWRecordingManifest);
+        return nil;
+    }
     SWScreenRecording *recording = [self new];
     recording->_start = SWAsNumber(metadata[@"start"]).doubleValue;
-    recording->_duration = SWAsNumber(metadata[@"duration"]).doubleValue;
+    recording->_duration = duration;
     NSDictionary *screen = [metadata[@"screen"] isKindOfClass:NSDictionary.class] ? metadata[@"screen"] : @{};
     NSNumber *scale = SWAsNumber(screen[@"scale"]);
     recording->_scale = scale == nil ? 1 : scale.doubleValue;

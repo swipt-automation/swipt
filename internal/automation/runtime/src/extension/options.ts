@@ -36,7 +36,7 @@ export const point = (value: unknown, name: string): [number, number] => {
   if (
     !Array.isArray(value) ||
     value.length !== 2 ||
-    !value.every(Number.isFinite)
+    !Array.from(value).every(Number.isFinite)
   ) {
     throw new TypeError(`${name} must be [x, y] of finite numbers`);
   }

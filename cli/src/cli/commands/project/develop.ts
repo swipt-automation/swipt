@@ -133,6 +133,10 @@ async function developProject(context) {
   };
   const watch = () =>
     new Promise<void>((resolve, reject) => {
+      if (inner.aborted) {
+        resolve();
+        return;
+      }
       let ignore = new Ignorer(root);
       let timer;
       const watcher = fs.watch(root, { recursive: true }, (_, filename) => {
@@ -168,8 +172,7 @@ async function developProject(context) {
       );
     });
   try {
-    await cycle();
-    await Promise.race([watch(), fatal]);
+    await Promise.race([cycle().then(watch), fatal]);
   } finally {
     controller.abort();
     checker.close();

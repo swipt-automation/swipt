@@ -107,7 +107,7 @@ func parseSelector(decoder *json.Decoder) (*Selector, error) {
 }
 
 func (f selectorField) scripted() bool {
-	return f.text != nil && f.text.pattern == nil && f.text.regular || f.relation != nil && f.relation.scripted
+	return f.relation != nil && f.relation.scripted
 }
 
 func parseField(name string, value json.RawMessage) (selectorField, error) {
@@ -164,64 +164,7 @@ func parseText(name string, value json.RawMessage) (*textMatch, error) {
 	if json.Unmarshal(value, &pattern) != nil || pattern.Source == nil {
 		return nil, selectorError(name, " must be a string or a RegExp")
 	}
-	match := &textMatch{regular: true, source: *pattern.Source, flags: pattern.Flags, script: pattern.ID}
-	match.pattern, _ = compileScript(*pattern.Source, pattern.Flags)
-	return match, nil
-}
-
-func compileScript(source, flags string) (*regexp.Regexp, error) {
-	var out strings.Builder
-	var modes strings.Builder
-	for _, flag := range flags {
-		switch flag {
-		case 'i', 'm', 's':
-			modes.WriteRune(flag)
-		case 'g', 'y', 'd', 'u', 'v':
-		default:
-			return nil, E.New("unknown flag ", string(flag))
-		}
-	}
-	if modes.Len() > 0 {
-		out.WriteString("(?" + modes.String() + ")")
-	}
-	runes := []rune(source)
-	for index := 0; index < len(runes); index++ {
-		r := runes[index]
-		if r != '\\' || index+1 >= len(runes) {
-			if r == '[' && index+2 < len(runes) && runes[index+1] == '^' && runes[index+2] == ']' {
-				out.WriteString(`[\x{0}-\x{10FFFF}]`)
-				index += 2
-				continue
-			}
-			out.WriteRune(r)
-			continue
-		}
-		next := runes[index+1]
-		switch {
-		case next == 'u' && index+2 < len(runes) && runes[index+2] == '{':
-			end := slices.Index(runes[index+3:], '}')
-			if end < 0 {
-				return nil, E.New("unterminated code point escape")
-			}
-			out.WriteString(`\x{` + string(runes[index+3:index+3+end]) + `}`)
-			index += 3 + end
-		case next == 'u' && index+5 < len(runes) && common.All(runes[index+2:index+6], isHex):
-			out.WriteString(`\x{` + string(runes[index+2:index+6]) + `}`)
-			index += 5
-		case next == '/':
-			out.WriteRune('/')
-			index++
-		default:
-			out.WriteRune(r)
-			out.WriteRune(next)
-			index++
-		}
-	}
-	return regexp.Compile(out.String())
-}
-
-func isHex(r rune) bool {
-	return r >= '0' && r <= '9' || r >= 'a' && r <= 'f' || r >= 'A' && r <= 'F'
+	return &textMatch{regular: true, source: *pattern.Source, flags: pattern.Flags, script: pattern.ID}, nil
 }
 
 type objectEntry struct {

@@ -3,6 +3,7 @@ package libSwipt
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -247,7 +248,7 @@ func copyFile(writer io.Writer, name string) error {
 }
 
 func (p *Platform) SwipletDatabase(client, swiplet, request string) (string, error) {
-	result, err := p.host.SQLite(client, swiplet, []byte(request))
+	result, err := p.host.SQLite(context.Background(), client, swiplet, []byte(request))
 	if err != nil {
 		return "", err
 	}

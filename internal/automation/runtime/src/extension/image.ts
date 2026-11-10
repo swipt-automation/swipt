@@ -117,7 +117,7 @@ export const pointOf = (value: unknown, name: string): Point => {
   if (
     !Array.isArray(value) ||
     value.length !== 2 ||
-    !value.every(Number.isFinite)
+    !Array.from(value).every(Number.isFinite)
   ) {
     throw new TypeError(`${name} must be [x, y] of finite numbers`);
   }
@@ -128,7 +128,7 @@ export const rectOf = (value: unknown, name: string): Rect => {
   if (
     !Array.isArray(value) ||
     value.length !== 4 ||
-    !value.every(Number.isFinite)
+    !Array.from(value).every(Number.isFinite)
   ) {
     throw new TypeError(
       `${name} must be [x, y, width, height] of finite numbers`,
@@ -172,7 +172,9 @@ const colorOf = (value: unknown, name: string): Color => {
   } else if (
     Array.isArray(value) &&
     value.length === 3 &&
-    value.every((item) => Number.isInteger(item) && item >= 0 && item <= 255)
+    Array.from(value).every(
+      (item) => Number.isInteger(item) && item >= 0 && item <= 255,
+    )
   ) {
     return [value[0], value[1], value[2]];
   }
@@ -222,7 +224,7 @@ export const adoptOptional = (id: unknown): RasterImage | undefined => {
 const strings = (value: unknown, name: string): string[] => {
   if (
     !Array.isArray(value) ||
-    !value.every((item) => typeof item === "string")
+    !Array.from(value).every((item) => typeof item === "string")
   ) {
     throw new TypeError(`${name} must be an array of strings`);
   }

@@ -55,12 +55,19 @@ func (c *Client) request(operation uint64, arguments, payload []byte) ([]byte, e
 	if err != nil {
 		return nil, E.Cause(err, "afc: read")
 	}
-	body := make([]byte, binary.LittleEndian.Uint64(header[8:])-headerLength)
+	length := binary.LittleEndian.Uint64(header[8:])
+	if length < headerLength || length > headerLength+chunkLength {
+		return nil, E.New("afc: invalid packet length ", length)
+	}
+	body := make([]byte, length-headerLength)
 	_, err = io.ReadFull(c.conn, body)
 	if err != nil {
 		return nil, E.Cause(err, "afc: read")
 	}
 	if binary.LittleEndian.Uint64(header[32:]) == operationStatus {
+		if len(body) < 8 {
+			return nil, E.New("afc: short status")
+		}
 		status := binary.LittleEndian.Uint64(body)
 		if status != 0 {
 			return nil, E.New("afc: status ", status)

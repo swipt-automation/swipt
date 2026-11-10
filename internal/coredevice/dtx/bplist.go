@@ -199,6 +199,9 @@ func (d *plistDecoder) parse(offset uint64) (any, error) {
 		}
 		return values, nil
 	case 13:
+		if size > math.MaxUint64/2 {
+			break
+		}
 		refs, err := d.refs(start, size*2)
 		if err != nil {
 			return nil, err

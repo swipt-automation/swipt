@@ -385,7 +385,7 @@ func streamReadAll(ctx context.Context, call *operation) (any, error) {
 	return jsc.Bytes(data), nil
 }
 
-func streamWrite(_ context.Context, call *operation) (any, error) {
+func streamWrite(ctx context.Context, call *operation) (any, error) {
 	var id, key string
 	if err := call.decode(2, &id, &key); err != nil {
 		return nil, err
@@ -402,6 +402,7 @@ func streamWrite(_ context.Context, call *operation) (any, error) {
 	if it.writer == nil {
 		return nil, E.Cause1(ErrInvalid, E.New("the stream ", strconv.Quote(id), " is not writable"))
 	}
+	defer e.releaseOnCancel(ctx, id)()
 	if _, err = it.writer.Write(data); err != nil {
 		if taken, takeErr := e.takeResource(id); takeErr == nil {
 			_ = taken.close(err)
