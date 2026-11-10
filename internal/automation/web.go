@@ -36,7 +36,7 @@ func (h *Host) OpenWeb(id string) (*WebSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	e := &engine{host: h, swiplet: swiplet, caches: h.cacheDirectory(id), blobs: make(map[string][]byte), resources: make(map[string]*resource)}
+	e := &engine{host: h, swiplet: swiplet, caches: h.cacheDirectory(id), blobs: make(map[string][]byte), resources: make(map[string]*resource), interrupts: make(map[string]func(error))}
 	e.ctx, e.cancel = context.WithCancelCause(h.ctx)
 	return &WebSession{engine: e, operations: make(map[string]context.CancelFunc)}, nil
 }
