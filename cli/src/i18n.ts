@@ -61,8 +61,12 @@ const messages =
 
 const pluralRules = new Intl.PluralRules(language);
 
-export function tr(key, values: Record<string, any> = {}) {
-  const message = messages[key] ?? key;
+export function tr(
+  source: string | { one: string; other: string },
+  values: Record<string, any> = {},
+) {
+  const message =
+    messages[typeof source === "string" ? source : source.other] ?? source;
   const text =
     typeof message === "string"
       ? message

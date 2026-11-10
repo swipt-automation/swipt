@@ -41,7 +41,7 @@ export async function devicectl(args, { parse = false } = {}) {
     if (text.includes("4016")) {
       throw new Error(
         tr(
-          "CoreDevice cannot reach the device while its loopback VPN is on; turn off Swipt's VPN on the device, then run this again",
+          "CoreDevice can't reach the device while its loopback VPN is on; turn off Swipt's VPN on the device, then run this again.",
         ),
       );
     }
@@ -165,7 +165,7 @@ async function guests() {
 const guestUDID = /^0000FE01-/;
 
 const reachability = tr(
-  "unlock the device and connect it with USB or the same network as this Mac",
+  "unlock the device and connect it with a USB cable or the same network as this Mac",
 );
 
 const deviceLine = (device) =>
@@ -209,14 +209,14 @@ async function findDevice(context, { required = true, filter }: DeviceQuery) {
   if (paired.length === 0) {
     throw new Error(
       tr(
-        "no iOS device is paired with this Mac; connect one with USB, unlock it, and trust this Mac",
+        "No iPhone or iPad is paired with this Mac; connect one with a USB cable, unlock it, and trust this Mac.",
       ),
     );
   }
   const offline = given && paired.find(named);
   if (matches.length === 0 && offline) {
     throw new Error(
-      tr("{device} is offline; {hint}", {
+      tr("{device} is offline; {hint}.", {
         device: offline.name,
         hint: reachability,
       }),
@@ -224,18 +224,18 @@ async function findDevice(context, { required = true, filter }: DeviceQuery) {
   }
   if (devices.length === 0) {
     throw new Error(
-      `${tr("every paired iOS device is offline; {hint}:", { hint: reachability })}\n${paired.map(deviceLine).join("\n")}`,
+      `${tr("Every paired iPhone and iPad is offline; {hint}:", { hint: reachability })}\n${paired.map(deviceLine).join("\n")}`,
     );
   }
   const reason = !given
-    ? tr("choose a device with -d NAME|UDID")
+    ? tr("Choose a device with -d NAME|UDID")
     : matches.length === 0
-      ? tr("no iOS device is named {name}", { name: given })
-      : tr("more than one iOS device is named {name}; choose one by UDID", {
+      ? tr("No iPhone or iPad is named {name}", { name: given })
+      : tr("More than one iPhone or iPad is named {name}; choose one by UDID", {
           name: given,
         });
   const failure = new Error(
-    `${tr("{reason}; paired iOS devices:", { reason })}\n${paired.map(deviceLine).join("\n")}`,
+    `${tr("{reason}; paired iPhone and iPad devices:", { reason })}\n${paired.map(deviceLine).join("\n")}`,
   );
   if (matches.length === 0) {
     throw failure;

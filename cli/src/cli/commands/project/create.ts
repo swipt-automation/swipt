@@ -118,7 +118,7 @@ const quote = (value) =>
 function createCommand(directory) {
   const root = path.resolve(directory);
   if (fs.existsSync(root) && fs.readdirSync(root).length > 0) {
-    throw new Error(tr("{directory} is not empty", { directory }));
+    throw new Error(tr("{directory} isn't empty.", { directory }));
   }
   for (const [file, template] of Object.entries(templates)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

@@ -31,7 +31,7 @@ function parseDuration(text, option) {
     if (!match) {
       throw new UsageError(
         tr(
-          "invalid argument {value} for {option}: it is a duration such as 30s or 1m30s",
+          "invalid argument {value} for {option}: it's a duration such as 30s or 1m30s",
           { value: JSON.stringify(text), option },
         ),
       );
@@ -48,7 +48,7 @@ function parseCount(text, option) {
   }
   if (!/^\d+$/.test(text) || Number(text) > 0xffffffff) {
     throw new UsageError(
-      tr("invalid argument {value} for {option}: it is a number", {
+      tr("invalid argument {value} for {option}: it's a number", {
         value: JSON.stringify(text),
         option,
       }),

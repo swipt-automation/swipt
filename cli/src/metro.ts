@@ -125,7 +125,7 @@ function requireContext({ types: t, template }) {
       }
     }
     throw call.buildCodeFrameError(
-      tr("argument {index} of require.context must be {expected}", {
+      tr("Argument {index} of require.context must be {expected}", {
         index: index + 1,
         expected,
       }),
@@ -139,7 +139,7 @@ function requireContext({ types: t, template }) {
     if (!t.isRegExpLiteral(node)) {
       throw call.buildCodeFrameError(
         tr(
-          "argument {index} of require.context must be a regular expression literal",
+          "Argument {index} of require.context must be a regular expression literal.",
           { index: index + 1 },
         ),
       );
@@ -176,7 +176,7 @@ function requireContext({ types: t, template }) {
           call,
           1,
           true,
-          tr("a boolean"),
+          tr("a Boolean"),
           (value) => typeof value === "boolean",
         );
         const filter = pattern(call, 2);
@@ -301,7 +301,7 @@ function checkWorklets(root) {
   if (version !== expected) {
     throw new Error(
       tr(
-        "the project has react-native-worklets {version}, but Swipt runs {expected}; install react-native-worklets@{expected} or remove it",
+        "The project has react-native-worklets {version}, but Swipt runs {expected}; install react-native-worklets@{expected} or remove it.",
         { version, expected },
       ),
     );

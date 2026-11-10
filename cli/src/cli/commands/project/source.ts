@@ -17,7 +17,7 @@ function loadSource(root) {
   for (const field of ["name", "image", "url"]) {
     if (config[field] !== undefined && typeof config[field] !== "string") {
       throw new Error(
-        tr('"{field}" in package.json must be a string', {
+        tr('"{field}" in package.json must be a string.', {
           field: `source.${field}`,
         }),
       );
@@ -30,7 +30,9 @@ function loadSource(root) {
     !Object.values(localizedNames).every((name) => typeof name === "string")
   ) {
     throw new Error(
-      tr('"source.localizedNames" in package.json must map languages to names'),
+      tr(
+        '"source.localizedNames" in package.json must map languages to names.',
+      ),
     );
   }
   if (
@@ -41,7 +43,7 @@ function loadSource(root) {
   ) {
     throw new Error(
       tr(
-        '"source.icon" in package.json must have a symbol and may have a color',
+        '"source.icon" in package.json must have a symbol and may have a color.',
       ),
     );
   }
@@ -53,7 +55,7 @@ function loadSource(root) {
       );
     } catch {
       throw new Error(
-        tr('"source.url" in package.json is not an absolute URL'),
+        tr('"source.url" in package.json isn\'t an absolute URL.'),
       );
     }
   }
@@ -78,7 +80,7 @@ function workspaceSwiplets(source) {
       const built = path.join(source.root, directory, "dist", `${id}.swiplet`);
       if (!fs.existsSync(built)) {
         throw new Error(
-          tr("{file} is missing; build {directory} first", {
+          tr("{file} is missing; build {directory} first.", {
             file: path.relative(source.root, built),
             directory,
           }),
@@ -116,7 +118,7 @@ function sourceCommand(root, given) {
   if (files.length === 0) {
     throw new Error(
       tr(
-        "package.json lists no workspaces with swiplets; name the swiplets to list",
+        "package.json lists no workspaces with swiplets; name the swiplets to list.",
       ),
     );
   }

@@ -173,7 +173,7 @@ export class AvailabilityChecker {
           ...(problems.guarding
             ? [
                 tr(
-                  'check these with available(), mark the code that uses them with @available, or raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json',
+                  'Check these with available(), mark the code that uses them with @available, or raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
                 ),
               ]
             : []),
@@ -305,7 +305,7 @@ class Checker {
     if (missing.length > 0) {
       this.#problems.guarding = true;
       this.#problems.lines.add(
-        tr("{location}: {name} needs {requirement}", {
+        tr("{location}: {name} needs {requirement}.", {
           location: this.#location(node),
           name: node.text,
           requirement: describe(needed, missing),
@@ -323,7 +323,7 @@ class Checker {
     if (missing.length > 0) {
       this.#problems.lines.add(
         tr(
-          '{location}: {name} is an entry of the swiplet and needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json',
+          '{location}: {name} is an entry of the swiplet and needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
           {
             location: this.#location(name),
             name: name.text,
@@ -347,13 +347,13 @@ class Checker {
     if (invalid !== undefined) {
       this.#problems.lines.add(
         tr(
-          '{location}: @available has "{entry}"; it takes "apiLevel <level>" and "iOS <version>", separated by commas',
+          '{location}: @available has "{entry}"; it takes "apiLevel <level>" and "iOS <version>", separated by commas.',
           { location: this.#location(node), entry: invalid },
         ),
       );
     } else if (repeated !== undefined) {
       this.#problems.lines.add(
-        tr("{location}: @available names {kind} twice", {
+        tr("{location}: @available names {kind} twice.", {
           location: this.#location(node),
           kind: repeated,
         }),

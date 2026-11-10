@@ -67,13 +67,13 @@ function parseURL(text) {
   try {
     parsed = new URL(text.includes("://") ? text : `http://${text}`);
   } catch {
-    throw new UsageError(tr("{text} is not a URL", { text }));
+    throw new UsageError(tr("{text} isn't a URL.", { text }));
   }
   if (
     parsed.hostname === "" ||
     (parsed.protocol !== "http:" && parsed.protocol !== "https:")
   ) {
-    throw new UsageError(tr("{text} is not an http or https URL", { text }));
+    throw new UsageError(tr("{text} isn't an http or https URL.", { text }));
   }
   let token;
   try {
@@ -236,7 +236,7 @@ export async function attach(context) {
       ).find((it) => sameName(it.name, name));
       if (!found) {
         throw new Error(
-          tr('there is no device {device}; "swipt device list" lists them', {
+          tr('There is no device {device}; "swipt device list" lists them.', {
             device: name,
           }),
         );
@@ -260,13 +260,13 @@ export async function attach(context) {
       }
       throw new Error(
         tr(
-          'there is no device; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL"',
+          'There is no device; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL".',
         ),
       );
     }
     if (names.length > 1) {
       throw new Error(
-        tr("there is more than one device: {devices}; choose one with -d", {
+        tr("There is more than one device: {devices}; choose one with -d", {
           devices: names.join(", "),
         }),
       );
@@ -388,7 +388,7 @@ export async function list({ signal }) {
   if (names.length === 0 && locked.length === 0) {
     console.error(
       tr(
-        'no device publishes Swipt on the local network; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL"',
+        'No device publishes Swipt on the local network; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL".',
       ),
     );
     return;
@@ -444,7 +444,7 @@ export function remove({ args }) {
   const stored = load();
   const name = storedName(stored, label(args[0]));
   if (name === undefined) {
-    throw new Error(tr("there is no device {device}", { device: args[0] }));
+    throw new Error(tr("There is no device {device}.", { device: args[0] }));
   }
   delete stored[name];
   save(stored);

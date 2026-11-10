@@ -156,7 +156,7 @@ const serviceStatuses = {
 };
 
 export const serviceEnabledText = (enabled) =>
-  enabled ? tr("enabled") : tr("disabled");
+  enabled ? tr("turned on") : tr("turned off");
 
 export const serviceStatusText = (status) => serviceStatuses[status];
 

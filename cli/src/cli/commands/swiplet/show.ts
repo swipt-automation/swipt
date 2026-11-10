@@ -7,7 +7,7 @@ const indented = (value) =>
   JSON.stringify(value, null, 2).replaceAll("\n", "\n  ");
 
 const notInstalled = (id) =>
-  new Error(tr("there is no swiplet {id}", { id: JSON.stringify(id) }));
+  new Error(tr("There is no swiplet {id}.", { id: JSON.stringify(id) }));
 
 const showSwiplet = (context) =>
   session(context, async (client) => {

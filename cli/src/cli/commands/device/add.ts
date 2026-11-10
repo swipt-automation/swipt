@@ -6,7 +6,7 @@ export const add = defineCommand({
   name: "add",
   use: "add URL",
   short: tr(
-    "Add a device by its URL; needed when it is remote or requires a token",
+    "Add a device by its URL; needed when it's remote or requires a token",
   ),
   args: [1, 1],
   run: connection.add,

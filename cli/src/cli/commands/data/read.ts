@@ -65,7 +65,15 @@ class FileSink {
 }
 
 const printSaved = (target, count) =>
-  console.error(tr("saved {count} file(s) to {path}", { count, path: target }));
+  console.error(
+    tr(
+      {
+        one: "saved {count} file to {path}",
+        other: "saved {count} files to {path}",
+      },
+      { count, path: target },
+    ),
+  );
 
 const readFile = (target) => (context) =>
   session(context, async (client) => {

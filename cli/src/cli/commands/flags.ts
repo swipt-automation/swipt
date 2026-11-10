@@ -38,17 +38,17 @@ export const nightlyOption: Options = {
 };
 
 export const setupStepOptions: Options = {
-  "no-setup-pair": { type: "boolean", help: tr("do not pair Swipt") },
+  "no-setup-pair": { type: "boolean", help: tr("don't pair Swipt") },
   "no-setup-api": {
     type: "boolean",
-    help: tr("do not publish the API to the local network"),
+    help: tr("don't publish the API to the local network"),
   },
 };
 
 export const setupOptions: Options = {
   "no-setup": {
     type: "boolean",
-    help: tr("do not pair Swipt, trust its developer or publish its API"),
+    help: tr("don't pair Swipt, trust its developer or publish its API"),
   },
   ...setupStepOptions,
 };

@@ -40,7 +40,7 @@ function readScript([first, ...args]) {
   }
   if (args.length > 0) {
     throw new UsageError(
-      tr("{argument} is not a file, and CODE takes no ARG", {
+      tr("{argument} isn't a file, and CODE takes no ARG.", {
         argument: JSON.stringify(first),
       }),
     );

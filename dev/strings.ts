@@ -19,10 +19,14 @@ function collectStrings(cli) {
           if (node.callee.name !== "tr") {
             return;
           }
-          const [key] = node.arguments;
+          const [source] = node.arguments;
+          const key =
+            source?.type === "ObjectExpression"
+              ? source.properties.find((it) => it.key?.name === "other")?.value
+              : source;
           if (key?.type !== "StringLiteral") {
             throw new Error(
-              `${file}:${node.loc.start.line}: tr takes a string literal`,
+              `${file}:${node.loc.start.line}: tr takes a string literal or its plural forms`,
             );
           }
           keys.add(key.value);

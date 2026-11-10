@@ -103,7 +103,7 @@ function resolve(argv) {
       if (help || loose.values.help || current !== root || argv.length === 0) {
         return { trail, help: true };
       }
-      throw new UsageError(tr("a command is missing"));
+      throw new UsageError(tr("A command is missing."));
     }
     const found = current.commands.find((it) => it.name === word);
     if (!found) {
@@ -140,7 +140,7 @@ function resolve(argv) {
     throw new UsageError(
       option === undefined
         ? error.message
-        : tr("{option} is not an option of {command}", {
+        : tr("{option} isn't an option of {command}.", {
             option,
             command: JSON.stringify(trail.map((it) => it.name).join(" ")),
           }),
@@ -157,17 +157,33 @@ function resolve(argv) {
     const [least, most] = command.args;
     throw new UsageError(
       least === most
-        ? tr("accepts {count} arg(s), received {received}", {
-            count: least,
-            received: args.length,
-          })
-        : most === Infinity
-          ? tr("accepts at least {count} arg(s), received {received}", {
+        ? tr(
+            {
+              one: "accepts {count} arg, received {received}",
+              other: "accepts {count} args, received {received}",
+            },
+            {
               count: least,
               received: args.length,
-            })
+            },
+          )
+        : most === Infinity
+          ? tr(
+              {
+                one: "accepts at least {count} arg, received {received}",
+                other: "accepts at least {count} args, received {received}",
+              },
+              {
+                count: least,
+                received: args.length,
+              },
+            )
           : tr(
-              "accepts between {least} and {count} arg(s), received {received}",
+              {
+                one: "accepts between {least} and {count} arg, received {received}",
+                other:
+                  "accepts between {least} and {count} args, received {received}",
+              },
               { least, count: most, received: args.length },
             ),
     );
@@ -197,7 +213,7 @@ function printError(error, target, operation?) {
         break;
       case Code.Unimplemented:
         message = tr(
-          "Swipt at {url} does not have this command; update Swipt",
+          "Swipt at {url} doesn't have this command; update Swipt.",
           { url: target.url },
         );
         break;
@@ -209,7 +225,7 @@ function printError(error, target, operation?) {
     }),
   );
   if (exit === 2) {
-    console.error(tr('run "swipt help" for usage'));
+    console.error(tr('Run "swipt help" for usage.'));
   }
   return exit;
 }

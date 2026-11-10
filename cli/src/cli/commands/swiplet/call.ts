@@ -28,7 +28,7 @@ function readInput(value) {
     return fromJson(ValueSchema, JSON.parse(data));
   } catch (error) {
     throw new UsageError(
-      tr("--input is not JSON: {error}", { error: error.message }),
+      tr("--input isn't JSON: {error}", { error: error.message }),
     );
   }
 }
