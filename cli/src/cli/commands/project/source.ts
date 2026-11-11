@@ -47,6 +47,16 @@ function loadSource(root) {
       ),
     );
   }
+  if (
+    config.icon?.symbolColor !== undefined &&
+    typeof config.icon.symbolColor !== "string"
+  ) {
+    throw new Error(
+      tr('"{field}" in package.json must be a string.', {
+        field: "source.icon.symbolColor",
+      }),
+    );
+  }
   let prefix;
   if (config.url !== undefined) {
     try {
@@ -173,6 +183,9 @@ function sourceCommand(root, given) {
             symbol: source.config.icon.symbol,
             ...(source.config.icon.color
               ? { color: source.config.icon.color }
+              : {}),
+            ...(source.config.icon.symbolColor
+              ? { symbolColor: source.config.icon.symbolColor }
               : {}),
           },
         }

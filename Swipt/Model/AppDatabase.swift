@@ -52,6 +52,7 @@ enum AppDatabase {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("0.1.0", migrate: createTables)
         migrator.registerMigration("0.1.0-1", migrate: migrate0_1_0_1)
+        migrator.registerMigration("0.1.0-2", migrate: migrate0_1_0_2)
         return migrator
     }()
 
@@ -113,5 +114,14 @@ enum AppDatabase {
             try db.execute(sql: "UPDATE OR IGNORE preferences SET name = ? WHERE name = ?", arguments: [name, oldName])
             try db.execute(sql: "DELETE FROM preferences WHERE name = ?", arguments: [oldName])
         }
+    }
+
+    private nonisolated static func migrate0_1_0_2(_ db: Database) throws {
+        for table in ["repositories", "repositorySwiplets"] {
+            try db.alter(table: table) { t in
+                t.add(column: "iconSymbolColor", .text)
+            }
+        }
+        try db.execute(sql: "UPDATE repositories SET etag = ''")
     }
 }

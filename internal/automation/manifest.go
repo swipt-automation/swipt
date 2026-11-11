@@ -55,7 +55,7 @@ func ParseManifest(data []byte) (Manifest, error) {
 	if err := json.Unmarshal(data, &known); err != nil {
 		return Manifest{}, E.Cause(err, "read ", ManifestFile)
 	}
-	if known.Icon.Check() != nil {
+	if known.Icon.Symbol == "" {
 		known.Icon = DefaultIcon
 	}
 	var minimumIOSVersion string

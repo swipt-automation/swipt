@@ -4,30 +4,23 @@ import SwiftUI
 import UIKit
 
 nonisolated struct SwipletIcon: Hashable, Sendable {
-    static let `default` = SwipletIcon(color: "grayBrown", symbol: "square.2.layers.3d.fill")
+    static let `default` = SwipletIcon(color: "brown", symbol: "square.2.layers.3d.fill")
 
     var color: String?
     var symbol: String
+    var symbolColor: String?
     var image: UIImage?
 
     static func load(from swiplet: URL) -> SwipletIcon {
-        var icon = SwipletIcon.default
-        if let loaded = LibSwiptLoadSwipletIcon(swiplet.path) {
-            icon.color = loaded.color
-            icon.symbol = loaded.symbol
-        }
+        var icon = LibSwiptLoadSwipletIcon(swiplet.path).map(SwipletIcon.init) ?? .default
         icon.image = UIImage(contentsOfFile: swiplet.appendingPathComponent(LibSwiptSwipletIconFile).path)
         return icon
     }
 }
 
-@available(iOS 17.4, *)
-@MainActor
-extension SwipletIcon {
-    var gradient: LinearGradient? {
-        guard let color else { return nil }
-        let palette = SwipletIconCatalog.colors.first { $0.id == color } ?? SwipletIconCatalog.colors.first { $0.id == Self.default.color }!
-        return LinearGradient(colors: [palette.top, palette.bottom], startPoint: .top, endPoint: .bottom)
+nonisolated extension SwipletIcon {
+    init(_ icon: LibSwiptSwipletIcon) {
+        self.init(color: icon.color.isEmpty ? nil : icon.color, symbol: icon.symbol, symbolColor: icon.symbolColor.isEmpty ? nil : icon.symbolColor)
     }
 }
 
@@ -44,11 +37,16 @@ struct SwipletIconImage: View {
                 .scaledToFill()
                 .frame(width: size, height: size)
                 .clipShape(shape)
-        } else if let gradient = icon.gradient {
+        } else if let color = icon.color {
             SwipletIconGlyph(symbol: icon.symbol, pointSize: size * 0.6)
-                .foregroundStyle(.white)
+                .foregroundStyle(icon.symbolColor.flatMap(SwipletIconCatalog.color) ?? .white)
                 .frame(width: size, height: size)
-                .background(gradient, in: shape)
+                .background(LinearGradient(colors: [.white.opacity(0.14), .clear], startPoint: .top, endPoint: .bottom), in: shape)
+                .background(SwipletIconCatalog.color(color) ?? .brown, in: shape)
+        } else if let color = icon.symbolColor.flatMap(SwipletIconCatalog.color) {
+            SwipletIconGlyph(symbol: icon.symbol, pointSize: size * 0.6)
+                .foregroundStyle(color)
+                .frame(width: size, height: size)
         } else {
             SwipletIconGlyph(symbol: icon.symbol, pointSize: size * 0.6)
                 .frame(width: size, height: size)

@@ -163,8 +163,7 @@ type RepositorySwiplet struct {
 	VersionCode       int64
 	MinimumAPILevel   int64
 	MinimumIOSVersion string
-	Color             string
-	Symbol            string
+	Icon              *SwipletIcon
 	URL               string
 	Checksum          string
 	localizedNames    []*LocalizedName
@@ -235,7 +234,7 @@ func (d *SwipletDownloader) fetchRepository(link string, etag string) (*Reposito
 	}
 	repository.localizedNames = newLocalizedNames(index.LocalizedNames)
 	if index.Icon != nil && index.Icon.Symbol != "" {
-		repository.Icon = &SwipletIcon{Color: index.Icon.Color, Symbol: index.Icon.Symbol}
+		repository.Icon = newSwipletIcon(*index.Icon)
 	}
 	for position, entry := range index.Swiplets {
 		swiplet, err := newRepositorySwiplet(base, entry)
@@ -271,8 +270,8 @@ func newRepositorySwiplet(base *url.URL, data json.RawMessage) (*RepositorySwipl
 	}
 	return &RepositorySwiplet{
 		ID: manifest.ID, Name: manifest.Name, Summary: manifest.Description, Version: manifest.Version, VersionCode: manifest.VersionCode,
-		MinimumAPILevel: manifest.MinimumAPILevel, MinimumIOSVersion: manifest.MinimumIOSVersion, Color: manifest.Icon.Color,
-		Symbol: manifest.Icon.Symbol, URL: link.String(), Checksum: entry.SHA256, localizedNames: newLocalizedNames(manifest.LocalizedNames),
+		MinimumAPILevel: manifest.MinimumAPILevel, MinimumIOSVersion: manifest.MinimumIOSVersion, Icon: newSwipletIcon(manifest.Icon),
+		URL: link.String(), Checksum: entry.SHA256, localizedNames: newLocalizedNames(manifest.LocalizedNames),
 	}, nil
 }
 

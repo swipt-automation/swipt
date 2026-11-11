@@ -287,14 +287,14 @@ final class SwipletStore {
                 guard !fetched.notModified else { return nil }
                 return Repository(
                     url: url, name: fetched.name, localizedNames: fetched.localizedNames()?.toDictionary() ?? [:],
-                    icon: fetched.icon.map { SwipletIcon(color: $0.color.isEmpty ? nil : $0.color, symbol: $0.symbol) }, image: fetched.image,
+                    icon: fetched.icon.map(SwipletIcon.init), image: fetched.image,
                     etag: fetched.entityTag,
                     swiplets: (fetched.swiplets()?.toArray() ?? []).map { swiplet in
                         RepositorySwiplet(
                             id: swiplet.id_, name: swiplet.name, localizedNames: swiplet.localizedNames()?.toDictionary() ?? [:],
                             description: swiplet.summary, version: swiplet.version, versionCode: swiplet.versionCode,
                             minimumAPILevel: swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion,
-                            icon: SwipletIcon(color: swiplet.color, symbol: swiplet.symbol), url: swiplet.url, checksum: swiplet.checksum)
+                            icon: swiplet.icon.map(SwipletIcon.init) ?? .default, url: swiplet.url, checksum: swiplet.checksum)
                     })
             }
         } onCancel: {
@@ -334,7 +334,7 @@ final class SwipletStore {
         let title = preferredName(manifest)
         return SwipletPreview(
             file: file, id: manifest.id_, title: title.isEmpty ? manifest.id_ : title, version: manifest.version,
-            icon: SwipletIcon(color: manifest.color, symbol: manifest.symbol))
+            icon: manifest.icon.map(SwipletIcon.init) ?? .default)
     }
 
     nonisolated private static func discard(_ file: URL) {
