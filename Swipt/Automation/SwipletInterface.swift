@@ -120,6 +120,7 @@ private final class SwipletRuntime: SwiptHostDelegate {
         factory = ExpoReactNativeFactory(delegate: delegate)
         factory.appContextHandler = { [weak self] appContext in
             SwipletSandbox.replaceModules(in: appContext)
+            appContext.moduleRegistry.register(moduleType: SwipletSwiftUIModule.self, name: nil)
             guard let self else { return }
             SwiptHostModule.bind(appContext, to: self)
         }

@@ -413,6 +413,8 @@ const modules: Record<string, () => unknown> = {
   "@expo/ui/community/segmented-control": () =>
     require("@expo/ui/community/segmented-control"),
   "@expo/ui/community/slider": () => require("@expo/ui/community/slider"),
+  "@swipt/api/swift-ui": () =>
+    exportsOf("@swipt/api/swift-ui", require("./swift-ui")),
 };
 
 const sqliteBridge = (props: Props): SQLiteBridge => ({

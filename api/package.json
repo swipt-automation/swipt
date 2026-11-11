@@ -64,6 +64,10 @@
       "types": "./http.d.ts",
       "default": "./http.mjs"
     },
+    "./swift-ui": {
+      "types": "./swift-ui.d.ts",
+      "default": "./swift-ui.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
