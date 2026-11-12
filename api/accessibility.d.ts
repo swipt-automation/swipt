@@ -1,3 +1,4 @@
+/** @available iOS 26 */
 import type { CallOptions, Point, Rect } from "./index";
 
 export type AccessibilityTrait =

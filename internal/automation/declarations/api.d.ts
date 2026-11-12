@@ -300,6 +300,7 @@ declare module "@swipt/api/file-system" {
 }
 
 declare module "@swipt/api/accessibility" {
+  /** @available iOS 26 */
   import type { CallOptions, Point, Rect } from "@swipt/api";
 
   export type AccessibilityTrait =
