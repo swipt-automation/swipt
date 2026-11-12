@@ -91,26 +91,34 @@ func ConnectLockdown(ctx context.Context, options LockdownOptions) (*Device, err
 		options.Logger = logger.NOP()
 	}
 	dial := options.Dial
+	var session controlSession
 	if dial == nil {
 		dial = func(ctx context.Context, port uint16) (net.Conn, error) {
 			var dialer net.Dialer
 			return dialer.DialContext(ctx, "tcp", netip.AddrPortFrom(options.Address, port).String())
 		}
+		// A connection through usbmuxd needs no heartbeat of its own: USB
+		// needs none, and macOS usbmuxd answers it for the devices it reaches
+		// over the network, which also kept a direct connection with the same
+		// pair record open (iOS 18.6.2 22G100).
+		heartbeat, err := lockdown.StartHeartbeat(ctx, options.Record, dial, options.Logger)
+		if err != nil {
+			return nil, E.Cause(err, "start lockdown heartbeat")
+		}
+		session = heartbeat
 	}
-	identity := handshakeIdentity(options.Record.HostID)
-	return connectLockdown(ctx, options.Record, dial, identity, options.Logger)
-}
-
-func connectLockdown(ctx context.Context, record *lockdown.PairRecord, dial lockdown.Dialer, identity uuid.UUID, logger logger.ContextLogger) (*Device, error) {
-	conn, err := lockdown.DialService(ctx, record, dial, lockdown.CoreDeviceProxy, logger)
+	conn, err := lockdown.DialService(ctx, options.Record, dial, lockdown.CoreDeviceProxy, options.Logger)
+	var tun *tunnel.Tunnel
+	if err == nil {
+		tun, err = tunnel.Open(ctx, conn, tunnelMTU(options.Record.UDID), options.Logger)
+	}
 	if err != nil {
+		if session != nil {
+			session.Close()
+		}
 		return nil, err
 	}
-	tun, err := tunnel.Open(ctx, conn, tunnelMTU(record.UDID), logger)
-	if err != nil {
-		return nil, err
-	}
-	return newDevice(ctx, tun, nil, identity, logger)
+	return newDevice(ctx, tun, session, handshakeIdentity(options.Record.HostID), options.Logger)
 }
 
 // pymobiledevice3 sends a stable host UUID in RSD handshakes

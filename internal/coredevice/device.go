@@ -3,6 +3,7 @@ package coredevice
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/netip"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	"github.com/sagernet/sing/common/logger"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
-	"github.com/swipt-automation/swipt/internal/coredevice/pairing"
 	"github.com/swipt-automation/swipt/internal/coredevice/rsd"
 	"github.com/swipt-automation/swipt/internal/coredevice/tunnel"
 	"github.com/swipt-automation/swipt/internal/coredevice/xpc"
@@ -33,7 +33,7 @@ type DeviceInfo struct {
 
 type Device struct {
 	tunnel    *tunnel.Tunnel
-	session   *pairing.Session
+	session   controlSession
 	rsdConn   *xpc.Conn
 	services  map[string]uint16
 	info      DeviceInfo
@@ -43,7 +43,12 @@ type Device struct {
 	err       error
 }
 
-func newDevice(ctx context.Context, tun *tunnel.Tunnel, session *pairing.Session, identity uuid.UUID, logger logger.ContextLogger) (*Device, error) {
+type controlSession interface {
+	io.Closer
+	Wait() error
+}
+
+func newDevice(ctx context.Context, tun *tunnel.Tunnel, session controlSession, identity uuid.UUID, logger logger.ContextLogger) (*Device, error) {
 	d := &Device{
 		tunnel:  tun,
 		session: session,
@@ -99,7 +104,7 @@ func (d *Device) watch() {
 	if d.session != nil {
 		go func() {
 			err := d.session.Wait()
-			d.fail(E.Cause(err, "remote pairing connection closed"))
+			d.fail(E.Cause(err, "device control connection closed"))
 		}()
 	}
 	go func() {
