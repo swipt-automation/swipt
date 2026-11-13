@@ -32,9 +32,9 @@ type sources struct {
 func nativeSources() sources {
 	deps := filepath.Join(buildDirectory, "deps")
 	return sources{
-		mimalloc: unpack(mimalloc, filepath.Join(deps, "mimalloc"), "--strip-components", "1"),
-		zstd:     unpack(zstd, filepath.Join(deps, "zstd"), "--strip-components", "1"),
-		sqlite:   unpack(sqlite, filepath.Join(deps, "sqlite"), "--strip-components", "1"),
+		mimalloc: unpack(mimalloc, filepath.Join(deps, "mimalloc"), 1),
+		zstd:     unpack(zstd, filepath.Join(deps, "zstd"), 1),
+		sqlite:   unpack(sqlite, filepath.Join(deps, "sqlite"), 1),
 	}
 }
 

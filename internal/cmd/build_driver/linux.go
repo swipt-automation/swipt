@@ -32,7 +32,7 @@ var gccPackages = []string{"libgcc-13-dev_", "libstdc++-13-dev_", "libgcc-s1_"}
 
 func linuxEnvironment(t target) []string {
 	sysroot := linuxSysrootFor(t)
-	webKitDirectory := unpack(webKit[t], filepath.Join(buildDirectory, "webkit", t.String()), "--strip-components", "1", "--exclude", "bun-webkit/bin")
+	webKitDirectory := unpack(webKit[t], filepath.Join(buildDirectory, "webkit", t.String()), 1, "bun-webkit/bin")
 	sources := nativeSources()
 	compiler := []string{"-c", "-O2", "-fPIC", "--target=" + linuxTriples[t.arch], "--sysroot=" + sysroot}
 	native := filepath.Join(buildDirectory, "native", t.String())
@@ -65,7 +65,7 @@ func linuxSysrootFor(t target) string {
 				debData(fetch(source), sysroot)
 				continue
 			}
-			packages := unpack(source, filepath.Join(buildDirectory, "deps", strings.TrimSuffix(path.Base(source.url), ".tar.gz")))
+			packages := unpack(source, filepath.Join(buildDirectory, "deps", strings.TrimSuffix(path.Base(source.url), ".tar.gz")), 0)
 			entries, err := os.ReadDir(packages)
 			if err != nil {
 				log.Fatal(err)

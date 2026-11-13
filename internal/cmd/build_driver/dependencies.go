@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -107,14 +109,18 @@ func fetch(source download) string {
 	return file
 }
 
-func unpack(source download, directory string, arguments ...string) string {
-	return prepare(directory, digest(append([]string{source.sha256}, arguments...)...), func(partial string) {
+func unpack(source download, directory string, strip int, excluded ...string) string {
+	return prepare(directory, digest(append([]string{source.sha256, strconv.Itoa(strip)}, excluded...)...), func(partial string) {
 		archive := fetch(source)
 		if isZip(archive) {
-			unzip(archive, partial)
-		} else {
-			run(exec.Command("tar", append([]string{"-xf", archive, "-C", partial}, arguments...)...))
+			unzip(archive, partial, strip, excluded)
+			return
 		}
+		arguments := []string{"-xf", archive, "-C", partial, "--strip-components", strconv.Itoa(strip)}
+		for _, it := range excluded {
+			arguments = append(arguments, "--exclude", it)
+		}
+		run(exec.Command("tar", arguments...))
 	})
 }
 
@@ -211,17 +217,20 @@ func isZip(file string) bool {
 	return err == nil && string(header) == "PK\x03\x04"
 }
 
-func unzip(file string, directory string) {
+func unzip(file string, directory string, strip int, excluded []string) {
 	reader, err := zip.OpenReader(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer reader.Close()
 	for _, entry := range reader.File {
-		_, name, found := strings.Cut(entry.Name, "/")
-		if !found || name == "" || entry.FileInfo().IsDir() {
+		parts := strings.SplitN(entry.Name, "/", strip+1)
+		if len(parts) <= strip || parts[strip] == "" || entry.FileInfo().IsDir() || slices.ContainsFunc(excluded, func(it string) bool {
+			return strings.HasPrefix(entry.Name, it+"/")
+		}) {
 			continue
 		}
+		name := parts[strip]
 		source, err := entry.Open()
 		if err != nil {
 			log.Fatal(err)

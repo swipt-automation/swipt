@@ -43,9 +43,9 @@ const windowsToolchain = "go1.27.1"
 func windowsEnvironment(t target) []string {
 	architecture := msvcArchitectures[t.arch]
 	sysroot := windowsSysroot(architecture)
-	webKitDirectory := unpack(webKit[t], filepath.Join(buildDirectory, "webkit", t.String()), "--strip-components", "1", "--exclude", "bun-webkit/bin")
+	webKitDirectory := unpack(webKit[t], filepath.Join(buildDirectory, "webkit", t.String()), 1, "bun-webkit/bin")
 	sources := nativeSources()
-	ucrtDirectory := filepath.Join(unpack(ucrt[t.arch], filepath.Join(buildDirectory, "deps", "ucrt-"+t.arch)), "ucrt", architecture.library)
+	ucrtDirectory := filepath.Join(unpack(ucrt[t.arch], filepath.Join(buildDirectory, "deps", "ucrt-"+t.arch), 1), "ucrt", architecture.library)
 	native := filepath.Join(buildDirectory, "native", t.String())
 	if err := os.MkdirAll(native, 0o755); err != nil {
 		log.Fatal(err)
