@@ -3,6 +3,7 @@ import notify
 
 nonisolated enum LocalBacklight {
     private static let displayStatusKey = "com.apple.iokit.hid.displayStatus"
+    private static let blankedScreenKey = "com.apple.springboard.hasBlankedScreen"
     private static let backlight = Backlight()
 
     static var state: Int32 {
@@ -20,10 +21,13 @@ nonisolated enum LocalBacklight {
     }
 
     private static var currentDisplayState: DisplayState? {
-        guard let hidState = state(of: displayStatusKey) else { return nil }
+        guard let hidState = state(of: displayStatusKey), let blanked = state(of: blankedScreenKey) else { return nil }
         if let backlight {
             guard let state = DisplayState(rawValue: backlight.state) else { return nil }
-            return hidState == 0 && state.isOn ? .off : state
+            // When Home woke a display that had just locked, SpringBoard cleared
+            // com.apple.springboard.hasBlankedScreen 0.22 s after the backlight became activeOn,
+            // and took the keys pressed before that as requests to wake (iPhone18,2, iOS 27.3 24C5037i).
+            return (hidState == 0 || blanked != 0) && state.isOn ? .off : state
         }
         return hidState == 0 ? .off : .activeOn
     }

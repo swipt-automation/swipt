@@ -63,7 +63,6 @@ const (
 	attributeIdentifier       = 25
 	attributeIsEnabled        = 27
 	attributeIsValid          = 31
-	attributeIsVisible        = 32
 	attributeLabel            = 33
 	attributeRawElementData   = 60
 	attributeNative           = 63
@@ -73,10 +72,7 @@ const (
 // UIAccessibility native attributes (24A446 UIAccessibility
 // -[NSObject(AXPrivCategory) _iosAccessibilityAttributeValue:] 0x1bb739f00).
 const (
-	nativeActiveKeyboard   = 2076
-	nativeIsFirstResponder = 2198
-	nativeFirstResponder   = 3002
-	nativeClassName        = 5003
+	nativeClassName = 5003
 )
 
 // AX trait bits (24A446 AXRuntime _kAXSelectedTrait 0x18f8773f0,
@@ -90,23 +86,21 @@ const (
 )
 
 type RemoteClient struct {
-	conn                    *dtx.Conn
-	ctx                     context.Context
-	owner                   context.Context
-	cancel                  context.CancelCauseFunc
-	stopContext             func() bool
-	closeOnce               sync.Once
-	closeErr                error
-	enabled                 bool
-	deviceClass             string
-	mu                      sync.Mutex
-	stateMu                 sync.Mutex
-	pending                 []*pendingRead
-	drained                 chan struct{}
-	batchRawElementDisabled bool
-	screenViewing           []translationObject
-	screenViewingPending    chan struct{}
-	pushed                  func(Push)
+	conn                 *dtx.Conn
+	ctx                  context.Context
+	owner                context.Context
+	cancel               context.CancelCauseFunc
+	stopContext          func() bool
+	closeOnce            sync.Once
+	closeErr             error
+	enabled              bool
+	mu                   sync.Mutex
+	stateMu              sync.Mutex
+	pending              []*pendingRead
+	drained              chan struct{}
+	screenViewing        []translationObject
+	screenViewingPending chan struct{}
+	pushed               func(Push)
 }
 
 func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed func(Push)) (_ *RemoteClient, err error) {
@@ -133,7 +127,6 @@ func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed fu
 	operation, cancel := context.WithCancelCause(ctx)
 	c := &RemoteClient{
 		conn: dtxConn, ctx: operation, owner: owner, cancel: cancel,
-		deviceClass:          device.Info().DeviceClass,
 		screenViewingPending: make(chan struct{}, 1),
 		pushed:               pushed,
 	}
@@ -209,248 +202,6 @@ func (c *RemoteClient) Close() error {
 func (c *RemoteClient) CloseCause(cause error) error {
 	c.cancel(cause)
 	return c.Close()
-}
-
-type PasscodeState struct {
-	Ready       bool                `json:"ready"`
-	Reason      string              `json:"reason"`
-	Value       string              `json:"value,omitempty"`
-	Diagnostics PasscodeDiagnostics `json:"diagnostics"`
-}
-
-type PasscodeDiagnostics struct {
-	Stage            string  `json:"stage"`
-	RequestType      uint64  `json:"request_type"`
-	Attribute        uint64  `json:"attribute,omitempty"`
-	NativeAttribute  uint64  `json:"native_attribute,omitempty"`
-	ResponseCode     *uint64 `json:"response_code"`
-	SpringBoard      *bool   `json:"springboard,omitempty"`
-	Candidate        string  `json:"candidate,omitempty"`
-	Enabled          *uint64 `json:"enabled,omitempty"`
-	Valid            *bool   `json:"valid,omitempty"`
-	Visible          *bool   `json:"visible,omitempty"`
-	Traits           *uint64 `json:"traits,omitempty"`
-	Secure           *bool   `json:"secure,omitempty"`
-	FirstResponder   *bool   `json:"first_responder,omitempty"`
-	ResponderMatches *bool   `json:"responder_matches,omitempty"`
-	FrontmostMatches *bool   `json:"frontmost_matches,omitempty"`
-}
-
-func (c *RemoteClient) ReadPasscodeState(ctx context.Context) (PasscodeState, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	var state PasscodeState
-	app, values, _, err := c.readPasscodeApplication(ctx, &state, false)
-	if err != nil || values == nil {
-		return state, err
-	}
-	return c.readPasscodeField(ctx, state, app, values)
-}
-
-func (c *RemoteClient) ReadPasscodePreparation(ctx context.Context) (PasscodeState, *PasscodeLayout, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	var state PasscodeState
-	app, values, raw, err := c.readPasscodeApplication(ctx, &state, true)
-	if err != nil || values == nil {
-		return state, nil, err
-	}
-	state, err = c.readPasscodeField(ctx, state, app, values)
-	if err != nil || state.Ready || state.Diagnostics.Stage == "frontmost_recheck" {
-		return state, nil, err
-	}
-	layout, err := c.readPasscodeLayoutForApp(ctx, app, values, raw)
-	return state, &layout, err
-}
-
-func (c *RemoteClient) readPasscodeQuery(ctx context.Context, state *PasscodeState, stage string, kind uint64, obj *translationObject, attribute, native uint64, params any) (remoteResponse, error) {
-	state.Diagnostics.Stage = stage
-	state.Diagnostics.RequestType = kind
-	state.Diagnostics.Attribute = attribute
-	state.Diagnostics.NativeAttribute = native
-	state.Diagnostics.ResponseCode = nil
-	state.Reason = stage + "_transport_error"
-	response, err := c.query(ctx, kind, obj, attribute, 0, params)
-	if err == nil {
-		state.Diagnostics.ResponseCode = &response.code
-		state.Reason = stage + "_response_error"
-	}
-	return response, err
-}
-
-func (c *RemoteClient) readPasscodeApplication(ctx context.Context, state *PasscodeState, includeFrame bool) (translationObject, map[any]any, layoutRawElement, error) {
-	var raw layoutRawElement
-	appResponse, err := c.readPasscodeQuery(ctx, state, "frontmost", requestFrontmost, nil, 0, 0, map[string]any{"displayId": int64(1)})
-	if err != nil {
-		return translationObject{}, nil, raw, err
-	}
-	if appResponse.code != 0 {
-		return translationObject{}, nil, raw, nil
-	}
-	app, ok := parseTranslation(appResponse.value)
-	if !ok || !app.application {
-		state.Reason = "frontmost_invalid"
-		return translationObject{}, nil, raw, nil
-	}
-	attributes := []any{int64(attributeBundleIdentifier), int64(attributeFocusedElement)}
-	batchRaw := includeFrame && !c.batchRawElementDisabled
-	if includeFrame {
-		attributes = append(attributes, int64(attributeFrame))
-		raw.status = "disabled"
-		if batchRaw {
-			attributes = append(attributes, int64(attributeRawElementData))
-		}
-	}
-	// attributeFocusedElement reads nativeFirstResponder and, only when that is
-	// nil, native 3027 (24A446 AccessibilityPlatformTranslation
-	// 0x24fe4c9e0..0x24fe4ca18).
-	candidate, err := c.readPasscodeQuery(ctx, state, "candidate", requestAttributes, &app, 0, 0, map[string]any{"attributes": attributes})
-	if err != nil {
-		return translationObject{}, nil, raw, err
-	}
-	if batchRaw {
-		code := candidate.code
-		raw.code = &code
-	}
-	if batchRaw && candidate.code != 0 {
-		// The attributes of a batch share one error: an attribute that fails
-		// can set it for the whole batch, or only drop out of it (24A446
-		// AccessibilityPlatformTranslation -[AXPTranslator_iOS
-		// processMultipleAttributeRequest:removeEmptyValue:] 0x24fe47af4,
-		// 0x24fe47b34, 0x24fe47b58).
-		c.batchRawElementDisabled = true
-		raw.status = "response_error"
-		candidate, err = c.readPasscodeQuery(ctx, state, "candidate", requestAttributes, &app, 0, 0, map[string]any{"attributes": attributes[:len(attributes)-1]})
-		if err != nil {
-			return translationObject{}, nil, raw, err
-		}
-	}
-	values, ok := candidate.value.(map[any]any)
-	if candidate.code != 0 {
-		return translationObject{}, nil, raw, nil
-	}
-	if !ok {
-		state.Reason = "app_attributes_invalid"
-		return translationObject{}, nil, raw, nil
-	}
-	springboard := values[uint64(attributeBundleIdentifier)] == "com.apple.springboard"
-	state.Diagnostics.SpringBoard = &springboard
-	if !springboard {
-		state.Reason = "not_springboard"
-		return translationObject{}, nil, raw, nil
-	}
-	if batchRaw && raw.status != "response_error" {
-		value, present := values[uint64(attributeRawElementData)]
-		raw.data = decodeLayoutRawElement(value)
-		switch {
-		case len(raw.data) != 0:
-			raw.status = "valid"
-		case !present || value == nil:
-			raw.status = "missing"
-		default:
-			raw.status = "invalid"
-		}
-		if raw.status != "valid" {
-			c.batchRawElementDisabled = true
-		}
-	}
-	return app, values, raw, nil
-}
-
-func (c *RemoteClient) readPasscodeField(ctx context.Context, state PasscodeState, app translationObject, values map[any]any) (PasscodeState, error) {
-	field, ok := parseTranslation(values[uint64(attributeFocusedElement)])
-	switch {
-	case values[uint64(attributeFocusedElement)] == nil:
-		state.Diagnostics.Candidate = "missing"
-	case !ok:
-		state.Diagnostics.Candidate = "invalid"
-	case field.application:
-		state.Diagnostics.Candidate = "application"
-	case field.pid != app.pid:
-		state.Diagnostics.Candidate = "foreign_process"
-	default:
-		state.Diagnostics.Candidate = "element"
-	}
-	if state.Diagnostics.Candidate != "element" {
-		state.Reason = "candidate_" + state.Diagnostics.Candidate
-		return state, nil
-	}
-	attributes, err := c.readPasscodeQuery(ctx, &state, "field_attributes", requestAttributes, &field, 0, 0, map[string]any{"attributes": []any{
-		int64(attributeIsEnabled), int64(attributeIsValid), int64(attributeIsVisible), int64(attributeTraits), int64(attributeValue),
-	}})
-	if err != nil {
-		return state, err
-	}
-	if attributes.code != 0 {
-		return state, nil
-	}
-	if values, ok := attributes.value.(map[any]any); ok {
-		state.Value = textValue(values[uint64(attributeValue)])
-	}
-	if reason := inspectSecureFieldAttributes(attributes.value, &state.Diagnostics); reason != "" {
-		state.Reason = reason
-		return state, nil
-	}
-	// nativeIsFirstResponder asks the nearest self-or-ancestor UIResponder
-	// (24A446 UIAccessibility 0x1bb73be28, 0x1bb73c5ac).
-	responder, err := c.readPasscodeQuery(ctx, &state, "first_responder", requestAttribute, &field, attributeNative, nativeIsFirstResponder, map[string]any{"parameter": int64(nativeIsFirstResponder)})
-	if err != nil {
-		return state, err
-	}
-	if responder.code != 0 {
-		return state, nil
-	}
-	firstResponder, ok := responder.value.(bool)
-	if !ok {
-		state.Reason = "first_responder_unavailable"
-		return state, nil
-	}
-	state.Diagnostics.FirstResponder = &firstResponder
-	if !firstResponder {
-		state.Reason = "not_first_responder"
-		return state, nil
-	}
-	// A request carries no UI snapshot or version to tie it to another (24A446
-	// AccessibilityPlatformTranslation -[AXPTranslatorRequest encodeWithCoder:]
-	// 0x24fe59010).
-	recheck, err := c.readPasscodeQuery(ctx, &state, "responder_recheck", requestAttribute, &app, attributeNative, nativeFirstResponder, map[string]any{"parameter": int64(nativeFirstResponder)})
-	if err != nil {
-		return state, err
-	}
-	current, ok := parseTranslation(recheck.value)
-	if recheck.code != 0 {
-		return state, nil
-	}
-	if !ok {
-		state.Reason = "responder_recheck_unavailable"
-		return state, nil
-	}
-	responderMatches := field.same(current)
-	state.Diagnostics.ResponderMatches = &responderMatches
-	if !responderMatches {
-		state.Reason = "responder_changed"
-		return state, nil
-	}
-	frontmost, err := c.readPasscodeQuery(ctx, &state, "frontmost_recheck", requestFrontmost, nil, 0, 0, map[string]any{"displayId": int64(1)})
-	if err != nil {
-		return state, err
-	}
-	currentApp, ok := parseTranslation(frontmost.value)
-	if frontmost.code != 0 {
-		return state, nil
-	}
-	if !ok {
-		state.Reason = "frontmost_recheck_unavailable"
-		return state, nil
-	}
-	frontmostMatches := app.same(currentApp)
-	state.Diagnostics.FrontmostMatches = &frontmostMatches
-	state.Ready = frontmostMatches
-	state.Reason = "frontmost_changed"
-	if state.Ready {
-		state.Reason = "ready"
-	}
-	return state, nil
 }
 
 type translationObject struct {
@@ -719,57 +470,6 @@ func (c *RemoteClient) receive(event dtx.Event) error {
 		}
 	}
 	return nil
-}
-
-func inspectSecureFieldAttributes(value any, diagnostics *PasscodeDiagnostics) string {
-	values, ok := value.(map[any]any)
-	if !ok {
-		return "field_attributes_invalid"
-	}
-	attributes := make(map[uint64]any)
-	for key, value := range values {
-		if number, ok := unsigned(key); ok {
-			attributes[number] = value
-		}
-	}
-	enabled, enabledOK := unsigned(attributes[attributeIsEnabled])
-	traits, traitsOK := unsigned(attributes[attributeTraits])
-	valid, validOK := attributes[attributeIsValid].(bool)
-	visible, visibleOK := attributes[attributeIsVisible].(bool)
-	if enabledOK {
-		diagnostics.Enabled = &enabled
-	}
-	if validOK {
-		diagnostics.Valid = &valid
-	}
-	if visibleOK {
-		diagnostics.Visible = &visible
-	}
-	secure := traits&traitSecureTextField != 0
-	if traitsOK {
-		diagnostics.Traits = &traits
-		diagnostics.Secure = &secure
-	}
-	switch {
-	case !enabledOK:
-		return "enabled_unavailable"
-	case enabled != 1:
-		return "not_enabled"
-	case !validOK:
-		return "validity_unavailable"
-	case !valid:
-		return "invalid_field"
-	case !visibleOK:
-		return "visibility_unavailable"
-	case !visible:
-		return "invisible_field"
-	case !traitsOK:
-		return "traits_unavailable"
-	case !secure:
-		return "not_secure"
-	default:
-		return ""
-	}
 }
 
 func unsigned(value any) (uint64, bool) {

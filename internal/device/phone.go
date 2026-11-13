@@ -672,18 +672,27 @@ func (p *Phone) WatchForeground(ctx context.Context, emit func(string)) error {
 	}
 }
 
+func (c *conn) localBacklight() (string, bool) {
+	read := c.connection.options.BacklightState
+	if read == nil {
+		return "", false
+	}
+	switch read() {
+	case 0:
+		return "off", true
+	case 1:
+		return "inactiveOn", true
+	case 2:
+		return "activeOn", true
+	case 3:
+		return "dimmed", true
+	}
+	return "", false
+}
+
 func (c *conn) backlight(ctx context.Context) (string, error) {
-	if read := c.connection.options.BacklightState; read != nil {
-		switch read() {
-		case 0:
-			return "off", nil
-		case 1:
-			return "inactiveOn", nil
-		case 2:
-			return "activeOn", nil
-		case 3:
-			return "dimmed", nil
-		}
+	if state, local := c.localBacklight(); local {
+		return state, nil
 	}
 	state, err := c.display.BacklightState(ctx)
 	if err != nil {

@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -12,11 +13,18 @@ import (
 // observe, such as com.apple.system.config.network_change (iOS 27.2 24B115).
 const notificationProxyService = "com.apple.mobile.notification_proxy.shim.remote"
 
+const (
+	displayStatus  = "com.apple.iokit.hid.displayStatus"
+	blankedScreen  = "com.apple.springboard.hasBlankedScreen"
+	screenDimmed   = "com.apple.springboardservices.eventobserver.internalSBSEventObserverEventDimmed"
+	screenUndimmed = "com.apple.springboardservices.eventobserver.internalSBSEventObserverEventUndimmed"
+)
+
 var stateNotifications = []string{
 	"com.apple.mobile.keybagd.lock_status",
 	"com.apple.springboard.lockstate",
-	"com.apple.springboard.hasBlankedScreen",
-	"com.apple.iokit.hid.displayStatus",
+	blankedScreen,
+	displayStatus,
 }
 
 const (
@@ -30,6 +38,11 @@ type darwinNotifications struct {
 	access   sync.Mutex
 	watchers map[chan struct{}]struct{}
 	active   *notificationRelay
+
+	displayPosted   uint64
+	displayFollowed uint64
+	blanked         bool
+	undimming       bool
 }
 
 type notificationRelay struct {
@@ -124,7 +137,7 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
 	defer stop()
 	defer conn.Close()
-	for _, name := range append(stateNotifications, substantialTransition) {
+	for _, name := range append(stateNotifications, substantialTransition, screenDimmed, screenUndimmed) {
 		if err = conn.Send(map[string]any{"Command": "ObserveNotification", "Name": name}); err != nil {
 			return E.Cause(err, "observe ", name)
 		}
@@ -146,8 +159,27 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 				return context.Canceled
 			}
 			name, _ := message["Name"].(string)
+			// When the display went off, SpringBoard posted EventDimmed 0.03 s after
+			// com.apple.iokit.hid.displayStatus and com.apple.springboard.hasBlankedScreen
+			// up to 1.5 s later. When it came back on, it posted EventUndimmed, then
+			// displayStatus followed, and hasBlankedScreen up to 0.43 s after that;
+			// until then SpringBoard took key presses as requests to wake (iPhone18,2,
+			// iOS 27.3 24C5037i).
+			switch name {
+			case displayStatus:
+				d.displayPosted++
+			case screenDimmed:
+				d.blanked, d.undimming = true, false
+			case screenUndimmed:
+				d.undimming = true
+			case blankedScreen:
+				d.displayFollowed = d.displayPosted
+				if d.undimming {
+					d.blanked, d.undimming = false, false
+				}
+			}
 			d.conn.events.publish(Event{Kind: EventDevice, Name: name})
-			if name != substantialTransition {
+			if slices.Contains(stateNotifications, name) {
 				for signal := range d.watchers {
 					select {
 					case signal <- struct{}{}:
@@ -160,6 +192,12 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 			return E.New("the notification proxy stopped")
 		}
 	}
+}
+
+func (d *darwinNotifications) displayChanges() (posted uint64, unblanked bool) {
+	d.access.Lock()
+	defer d.access.Unlock()
+	return d.displayPosted, d.displayFollowed == d.displayPosted && !d.blanked
 }
 
 func (d *darwinNotifications) close() {

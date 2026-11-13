@@ -2,10 +2,7 @@ package device
 
 import (
 	"context"
-	"encoding/json"
 	"slices"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,7 +10,6 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/logger"
 	"github.com/swipt-automation/swipt/internal/coredevice"
-	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
 )
 
@@ -88,36 +84,8 @@ func (t *deviceUnlockTarget) unlock(parent context.Context) (consumed bool, err 
 			return consumed, err
 		}
 	}
-	state, err := t.prepare(ctx)
-	if err != nil {
+	if err = t.prepare(ctx); err != nil {
 		return true, err
-	}
-	for {
-		count, known := 0, false
-		if t.settings.AutoUnlockPasscodeType == PasscodePIN {
-			count, known = enteredDigits(state.Value, len(t.settings.AutoUnlockPasscode))
-		}
-		if known && count == 0 {
-			break
-		}
-		if !known {
-			count = maxPasscodeLength
-			if t.settings.AutoUnlockPasscodeType == PasscodePIN {
-				count = 6
-			}
-		}
-		if locked, err = t.clear(ctx, count); err != nil || !locked {
-			return true, err
-		}
-		if state, err = t.ready(ctx); err != nil {
-			return true, err
-		}
-		if !state.Ready {
-			return true, E.New("the lock-screen passcode field lost keyboard focus")
-		}
-		if !known {
-			break
-		}
 	}
 	strokes := common.Map([]byte(t.settings.AutoUnlockPasscode), func(character byte) asciiKeystroke {
 		return asciiKeystrokes[character]
@@ -133,6 +101,7 @@ func (t *deviceUnlockTarget) unlock(parent context.Context) (consumed bool, err 
 			return true, err
 		}
 	}
+	t.logger.Debug("unlock passcode typed")
 	var polled time.Time
 	for {
 		if err = sleep(ctx, unlockPoll-time.Since(polled)); err != nil {
@@ -143,30 +112,6 @@ func (t *deviceUnlockTarget) unlock(parent context.Context) (consumed bool, err 
 			return true, err
 		}
 	}
-}
-
-// The fixed-digit PIN field's value was "共6位数，已输入0位" when empty and
-// "共6位数，已输入5位" after five digits (iOS and iPadOS 27.2 24B115, Simplified
-// Chinese).
-func enteredDigits(value string, length int) (int, bool) {
-	var numbers []int
-	for _, field := range strings.FieldsFunc(value, func(r rune) bool { return r < '0' || r > '9' }) {
-		number, err := strconv.Atoi(field)
-		if err != nil {
-			return 0, false
-		}
-		numbers = append(numbers, number)
-	}
-	if len(numbers) != 2 {
-		return 0, false
-	}
-	switch length {
-	case numbers[0]:
-		return numbers[1], numbers[1] < length
-	case numbers[1]:
-		return numbers[0], numbers[0] < length
-	}
-	return 0, false
 }
 
 // SpringBoard posts com.apple.springboard.lockstate when the device locks or
@@ -264,21 +209,17 @@ func (r *lockStateReader) close() error {
 	return err
 }
 
-func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.PasscodeState, error) {
+func (t *deviceUnlockTarget) prepare(ctx context.Context) error {
 	started := time.Now()
 	if err := t.input.ReleaseAll(ctx); err != nil {
-		return accessibility.PasscodeState{}, err
+		return err
 	}
 	if err := t.keys.capsLockKey(ctx, t.input, false); err != nil {
-		return accessibility.PasscodeState{}, err
+		return err
 	}
-	deviceClass := t.conn.device.Info().DeviceClass
-	// Once the display was awake, a backspace from the keyboard opened the
-	// passcode page at once, and a second Home only more than half a second
-	// later (iOS and iPadOS 27.2 24B115).
 	transportContext, cancelTransports := context.WithCancel(ctx)
-	touchesPrepared, keyboardPrepared, accessibilityDialed := make(chan struct{}), make(chan struct{}), make(chan struct{})
-	var touchesErr, keyboardErr, accessibilityErr error
+	touchesPrepared, keyboardPrepared := make(chan struct{}), make(chan struct{})
+	var touchesErr, keyboardErr error
 	go func() {
 		defer close(touchesPrepared)
 		touchesErr = t.input.PrepareTouches(transportContext)
@@ -287,15 +228,10 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.Passcod
 		defer close(keyboardPrepared)
 		keyboardErr = t.input.PrepareKeyboard(transportContext)
 	}()
-	go func() {
-		defer close(accessibilityDialed)
-		accessibilityErr = t.conn.ax.do(transportContext, false, 0, func(context.Context, *accessibility.RemoteClient) error { return nil })
-	}()
 	defer func() {
 		cancelTransports()
 		<-touchesPrepared
 		<-keyboardPrepared
-		<-accessibilityDialed
 	}()
 	join := func(done <-chan struct{}, err *error) error {
 		select {
@@ -305,138 +241,81 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.Passcod
 			return ctx.Err()
 		}
 	}
-	wakeSent, openSent, shortcutTried := false, false, false
+	_, synchronized := t.conn.localBacklight()
+	if !synchronized {
+		if err := t.conn.darwin.waitReady(ctx); err != nil {
+			return E.Cause(err, "observe SpringBoard following the display")
+		}
+	}
+	wakeSent, dark := false, false
+	var darkAt uint64
 	var polled time.Time
-	for first := true; ; first = false {
+	for {
 		if err := sleep(ctx, unlockPoll-time.Since(polled)); err != nil {
-			return accessibility.PasscodeState{}, err
+			return err
 		}
 		polled = time.Now()
-		if !first {
-			if locked, err := t.conn.lockState.locked(ctx, t.conn.device); err != nil || !locked {
-				return accessibility.PasscodeState{}, err
-			}
-		}
-		active, err := t.activeDisplay(ctx)
+		posted, _ := t.conn.darwin.displayChanges()
+		state, err := t.conn.backlight(ctx)
 		if err != nil {
-			return accessibility.PasscodeState{}, err
+			return err
 		}
-		if !active {
-			openSent, shortcutTried = false, false
-			if wakeSent {
-				continue
+		ready := state == "activeOn"
+		if !synchronized {
+			// CoreDevice kept reporting activeOn up to 0.2 s after SpringBoard blanked
+			// the display for a lock, and throughout when Home woke the display before
+			// that (iPhone18,2, iOS 27.3 24C5037i).
+			if !dark && (state == "off" || state == "inactiveOn") {
+				dark, darkAt = true, posted
 			}
-			var wake func() error
-			select {
-			case <-keyboardPrepared:
-				if keyboardErr != nil {
-					return accessibility.PasscodeState{}, keyboardErr
-				}
-				wake = func() error { return t.key(ctx, asciiKeystroke{usage: usageBackspace}) }
-			default:
-				if err = join(touchesPrepared, &touchesErr); err != nil {
-					return accessibility.PasscodeState{}, err
-				}
-				home := hid.ButtonHome
-				home.Hold = 0
-				wake = func() error { return t.input.PressButton(ctx, home) }
-			}
-			if locked, err := t.conn.lockState.locked(ctx, t.conn.device); err != nil || !locked {
-				return accessibility.PasscodeState{}, err
-			}
-			if err = wake(); err != nil {
-				return accessibility.PasscodeState{}, err
-			}
-			wakeSent = true
-			t.logger.Debug("unlock wake after ", time.Since(started))
+			current, unblanked := t.conn.darwin.displayChanges()
+			ready = ready && unblanked && (!dark || current > darkAt)
+		}
+		if ready {
+			break
+		}
+		if wakeSent {
 			continue
 		}
-		wakeSent = false
-		if !openSent {
-			if err = join(keyboardPrepared, &keyboardErr); err != nil {
-				return accessibility.PasscodeState{}, err
+		// Creating the keyboard took 0.38 s, so Home wakes the display
+		// meanwhile: it was active 0.48 s after Home, while creating the
+		// keyboard first and pressing Home then took 0.38 + 0.28 s (iPad17,1,
+		// iPadOS 27.2 24B115, from the iPad's own server).
+		var wake func() error
+		select {
+		case <-keyboardPrepared:
+			if keyboardErr != nil {
+				return keyboardErr
 			}
-			if locked, err := t.conn.lockState.locked(ctx, t.conn.device); err != nil || !locked {
-				return accessibility.PasscodeState{}, err
+			wake = func() error { return t.key(ctx, asciiKeystroke{usage: usageBackspace}) }
+		default:
+			if err = join(touchesPrepared, &touchesErr); err != nil {
+				return err
 			}
-			if err = t.key(ctx, asciiKeystroke{usage: usageBackspace}); err != nil {
-				return accessibility.PasscodeState{}, err
-			}
-			openSent = true
-			t.logger.Debug("unlock first backspace after ", time.Since(started))
-			continue
-		}
-		if err = join(accessibilityDialed, &accessibilityErr); err != nil {
-			return accessibility.PasscodeState{}, E.Cause(err, "read the lock-screen keyboard focus")
-		}
-		state, layout, err := t.preparation(ctx, !shortcutTried)
-		if err != nil {
-			return accessibility.PasscodeState{}, err
-		}
-		if state.Ready {
-			t.logger.Debug("lock-screen keyboard ready after ", time.Since(started))
-			return state, nil
-		}
-		if layout == nil {
-			continue
-		}
-		data, _ := json.Marshal(layout)
-		t.logger.Debug("unlock layout probe after ", time.Since(started), ": ", string(data))
-		point, ok := accessibility.NumericPasscodeShortcutPoint(*layout, deviceClass)
-		if !ok {
-			continue
-		}
-		if err = join(touchesPrepared, &touchesErr); err != nil {
-			return accessibility.PasscodeState{}, err
+			home := hid.ButtonHome
+			home.Hold = 0
+			wake = func() error { return t.input.PressButton(ctx, home) }
 		}
 		if locked, err := t.conn.lockState.locked(ctx, t.conn.device); err != nil || !locked {
-			return accessibility.PasscodeState{}, err
+			return err
 		}
-		err = t.input.Tap(ctx, hid.Touch{X: point.X, Y: point.Y})
-		shortcutTried = true
-		t.logger.Debug("unlock shortcut tap after ", time.Since(started), ", error: ", err)
-		if err != nil {
-			return accessibility.PasscodeState{}, err
+		if err = wake(); err != nil {
+			return err
 		}
+		wakeSent = true
+		t.logger.Debug("unlock wake after ", time.Since(started))
 	}
-}
-
-func (t *deviceUnlockTarget) clear(ctx context.Context, length int) (bool, error) {
-	for range length {
-		locked, err := t.conn.lockState.locked(ctx, t.conn.device)
-		if err != nil || !locked {
-			return false, err
-		}
-		if err = t.key(ctx, asciiKeystroke{usage: usageBackspace}); err != nil {
-			return false, err
-		}
+	if err := join(keyboardPrepared, &keyboardErr); err != nil {
+		return err
 	}
-	return true, nil
-}
-
-func (t *deviceUnlockTarget) ready(ctx context.Context) (accessibility.PasscodeState, error) {
-	active, err := t.activeDisplay(ctx)
-	if err != nil || !active {
-		return accessibility.PasscodeState{}, err
+	if locked, err := t.conn.lockState.locked(ctx, t.conn.device); err != nil || !locked {
+		return err
 	}
-	state, _, err := t.preparation(ctx, false)
-	return state, err
-}
-
-func (t *deviceUnlockTarget) preparation(ctx context.Context, readLayout bool) (accessibility.PasscodeState, *accessibility.PasscodeLayout, error) {
-	var state accessibility.PasscodeState
-	var layout *accessibility.PasscodeLayout
-	err := t.conn.ax.do(ctx, false, 0, func(ctx context.Context, client *accessibility.RemoteClient) (err error) {
-		if readLayout {
-			state, layout, err = client.ReadPasscodePreparation(ctx)
-		} else {
-			state, err = client.ReadPasscodeState(ctx)
-		}
-		return
-	})
-	data, _ := json.Marshal(state)
-	t.logger.Debug("unlock readiness probe: ", string(data), ", error: ", err)
-	return state, layout, err
+	if err := t.key(ctx, asciiKeystroke{usage: usageBackspace}); err != nil {
+		return err
+	}
+	t.logger.Debug("unlock backspace after ", time.Since(started))
+	return nil
 }
 
 func (t *deviceUnlockTarget) wake(ctx context.Context) (consumed, locked bool, err error) {
