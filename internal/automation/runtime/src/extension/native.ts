@@ -3,9 +3,6 @@ import type { Position } from "./format";
 
 export interface Native {
   readonly swiplet: string;
-  readonly languages: string;
-  readonly os: string;
-  readonly osVersion: string;
   readonly dataDirectory: string;
   readonly assetsDirectory: string;
   readonly cacheDirectory: string;
@@ -34,6 +31,7 @@ export interface Native {
     call: (kind: string, id: string, value: string) => string,
   ): { elements?: Raw[]; failure?: string; thrown?: boolean };
   preferredLocalizations(localizations: string): string[];
+  environment(): { osVersion: string; languages: string[] };
   locate(line: number, column: number): Position | undefined;
   sqlite(request: string): unknown;
   encodeText(text: string): Uint8Array;

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"syscall"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice"
@@ -112,10 +111,7 @@ func unreachable(err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
-	if E.IsMulti(err,
-		syscall.ECONNREFUSED, syscall.ETIMEDOUT, syscall.EHOSTUNREACH,
-		syscall.ENETUNREACH, syscall.ENETDOWN, syscall.EHOSTDOWN, syscall.EADDRNOTAVAIL,
-	) {
+	if E.IsMulti(err, unreachableErrors...) {
 		return true
 	}
 	operationError, ok := errors.AsType[*net.OpError](err)

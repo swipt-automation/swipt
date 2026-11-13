@@ -8,7 +8,7 @@ import type {
 } from "@swipt/api/device";
 
 import { invoke, stream } from "./async";
-import { handleOfPath } from "./files";
+import { handleOfURI } from "./files";
 import { imageResult, run } from "./image";
 import { act, check, optionsOf, signalOf, type Options } from "./options";
 
@@ -63,7 +63,7 @@ export const installedApplications = (options?: Options) =>
     signal: signalOf(check(options, [])),
   });
 export const applicationIcon = async (bundleId: string, options?: Options) =>
-  handleOfPath(
+  handleOfURI(
     await invoke<string>("device.applicationIcon", [bundleIdOf(bundleId)], {
       signal: signalOf(check(options, [])),
     }),

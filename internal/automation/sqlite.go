@@ -1,9 +1,10 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
 /*
 #cgo LDFLAGS: -lsqlite3
+#cgo windows CFLAGS: -D_CRT_NONSTDC_NO_DEPRECATE
 
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -56,10 +57,14 @@ static void swipt_free_changes(swipt_changes *changes) {
 }
 
 static int swipt_interrupted(sqlite3 *db) {
+#ifdef __APPLE__
 	if (__builtin_available(iOS 17.2, macOS 14.2, *)) {
 		return sqlite3_is_interrupted(db);
 	}
 	return 0;
+#else
+	return sqlite3_is_interrupted(db);
+#endif
 }
 
 static int swipt_wait(void *context, int count) {
@@ -93,14 +98,20 @@ static int swipt_deserialize(sqlite3 *db, const void *data, sqlite3_int64 size) 
 	return sqlite3_deserialize(db, "main", buffer, size, size, SQLITE_DESERIALIZE_FREEONCLOSE | SQLITE_DESERIALIZE_RESIZEABLE);
 }
 
+#ifdef _WIN32
+static const char swipt_separators[] = "/\\";
+#else
+static const char swipt_separators[] = "/";
+#endif
+
 static int swipt_inside(const char *directory, const char *file) {
 	size_t length = strlen(directory);
-	if (strncmp(file, directory, length) != 0 || file[length] != '/') {
+	if (strncmp(file, directory, length) != 0 || file[length] == '\0' || strchr(swipt_separators, file[length]) == NULL) {
 		return 0;
 	}
 	for (const char *segment = file + length; *segment != '\0';) {
 		segment++;
-		size_t size = strcspn(segment, "/");
+		size_t size = strcspn(segment, swipt_separators);
 		if ((size == 1 && segment[0] == '.') || (size == 2 && segment[0] == '.' && segment[1] == '.')) {
 			return 0;
 		}
@@ -452,7 +463,7 @@ func (h *Host) register(db *database) any {
 	db.handle = h.databases.next
 	h.databases.databases[db.handle] = db
 	h.databases.access.Unlock()
-	return map[string]any{"handle": db.handle, "path": db.path}
+	return map[string]any{"handle": db.handle, "path": filepath.ToSlash(db.path)}
 }
 
 func (db *database) restore(data []byte) error {
@@ -587,7 +598,7 @@ func (h *Host) assetPath(swiplet, asset string) (string, error) {
 	if err != nil {
 		return "", E.Cause1(ErrNotFound, E.New("the swiplet has no assets"))
 	}
-	resolved, err := filepath.EvalSymlinks(location.Path)
+	resolved, err := filepath.EvalSymlinks(filePath(location))
 	if err != nil {
 		return "", E.Cause1(ErrNotFound, E.New("there is no asset ", strconv.Quote(asset)))
 	}
@@ -611,7 +622,7 @@ func (h *Host) watchDatabaseChanges(ctx context.Context, swiplet string, publish
 	var access sync.Mutex
 	var batch *databaseChangeBatch
 	h.WatchDatabases(ctx, swiplet, func(change DatabaseChange) {
-		event := databaseChangeEvent{DatabaseName: change.Database, DatabaseFilePath: change.Path, TableName: change.Table, RowID: change.RowID}
+		event := databaseChangeEvent{DatabaseName: change.Database, DatabaseFilePath: filepath.ToSlash(change.Path), TableName: change.Table, RowID: change.RowID}
 		access.Lock()
 		defer access.Unlock()
 		if batch != nil && batch.add(event) {

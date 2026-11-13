@@ -14,26 +14,11 @@ import "C"
 import (
 	"encoding/json"
 	"runtime/cgo"
-	"sync/atomic"
 	"unsafe"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
-	"github.com/swipt-automation/swipt/internal/log"
 )
-
-type Options struct {
-	Connection        *device.Connection
-	Logger            log.ContextLogger
-	OnRecordingFailed func(message string)
-}
-
-type Graphics struct {
-	options Options
-}
-
-var current atomic.Pointer[Graphics]
 
 func New(options Options) *Graphics {
 	graphics := &Graphics{options: options}

@@ -41,7 +41,6 @@ JSValue *SWJavaScriptBytes(NSData *data) {
     memcpy(storage, data.bytes, count);
     JSObjectRef array = JSObjectMakeTypedArrayWithBytesNoCopy(context.JSGlobalContextRef, kJSTypedArrayTypeUint8Array, storage, count, SWFreeBytes, NULL, NULL);
     if (array == NULL) {
-        free(storage);
         return SWJavaScriptFail(SWMakeError(SWErrorNameGeneric, @"graphics: make the byte array"));
     }
     return [JSValue valueWithJSValueRef:array inContext:context];

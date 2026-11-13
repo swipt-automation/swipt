@@ -6,8 +6,6 @@ import (
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/proto"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -69,9 +67,6 @@ func (s *systemService) GetInfo(context.Context, *emptypb.Empty) (*proto.GetInfo
 }
 
 func (s *systemService) Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
-	if s.options.Shutdown == nil {
-		return nil, status.Error(codes.FailedPrecondition, "this server is not stopped through the API")
-	}
 	s.options.Shutdown()
 	return &emptypb.Empty{}, nil
 }

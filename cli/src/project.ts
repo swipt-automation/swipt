@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
@@ -13,6 +12,7 @@ import { AvailabilityChecker } from "./availability";
 import { tr } from "./i18n";
 import { loadEnvironment, metro } from "./metro";
 import { parseVersion, versionAtLeast } from "./version";
+import { writeZip } from "./zip";
 
 const require = createRequire(import.meta.url);
 
@@ -78,7 +78,7 @@ const storedSuffixes = [
   ".br",
   ".zst",
   ".xz",
-].join(":");
+];
 
 export function loadProject(root) {
   const manifest = JSON.parse(
@@ -666,6 +666,7 @@ export async function buildProject(root, checker?) {
   if (fs.existsSync(path.join(root, "assets"))) {
     fs.cpSync(path.join(root, "assets"), path.join(folder, "assets"), {
       recursive: true,
+      dereference: true,
       filter: (source) => !path.basename(source).startsWith("."),
     });
   }
@@ -686,11 +687,7 @@ export async function buildProject(root, checker?) {
   const archive = path.join(dist, `${manifest.id}.swiplet`);
   fs.rmSync(archive, { force: true });
   fs.rmSync(path.join(dist, `${manifest.id}.zip`), { force: true });
-  execFileSync(
-    "zip",
-    ["-qr", "-n", storedSuffixes, archive, ...fs.readdirSync(folder)],
-    { cwd: folder },
-  );
+  writeZip(archive, folder, storedSuffixes);
   return { id: manifest.id, archive, digest: folderDigest(folder) };
 }
 

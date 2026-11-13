@@ -1,11 +1,10 @@
 #import <CoreVideo/CoreVideo.h>
 #import <Foundation/Foundation.h>
 
-@class SWAccessUnit;
+#include "graphics.h"
 
 @interface SWFrameDecoder : NSObject
-@property (nonatomic, copy) void (^onFrame)(CVPixelBufferRef image, SWAccessUnit *unit);
+@property (nonatomic, copy) void (^onFrame)(CVPixelBufferRef image, double arrival, NSInteger turns);
 
-- (void)invalidate;
-- (BOOL)decode:(SWAccessUnit *)unit;
+- (BOOL)decode:(const swipt_graphics_unit *)unit;
 @end

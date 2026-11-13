@@ -6,12 +6,11 @@
 #import "SWCall.h"
 #import "SWEngine.h"
 #import "SWError.h"
+#import "SWGoBridge.h"
 #import "SWHandles.h"
 #import "SWImageNode.h"
 #import "SWJavaScript.h"
 #import "SWRecognition.h"
-#import "SWRecordingSession.h"
-#import "SWScreenStream.h"
 #import "SWScreenRecording.h"
 
 @implementation SWNative {

@@ -166,13 +166,13 @@ async function installApp(context) {
     () => run("make", ["-o", "runtime", "lib"]),
   );
   build(
-    "server",
+    "driver",
     {
-      paths: [...goSources, "cmd/swipt-server"],
+      paths: [...goSources, "cmd/swipt-driver"],
       inputs: toolchain,
-      product: "build/swipt-server",
+      product: "build/swipt-driver",
     },
-    () => run("make", ["server"]),
+    () => run("make", ["driver"]),
   );
   build(
     "app",

@@ -28,6 +28,15 @@ func PacketOrientation(packet []byte) (uint16, bool) {
 	return (profile & orientationMask) >> orientationShift, true
 }
 
+// ExtensionTurns returns the clockwise quarter turns of the screen that the
+// profile of an RTP header extension from the device carries.
+func ExtensionTurns(profile uint16) int {
+	if profile&appleExtensionMask != appleExtensionProfile {
+		return 0
+	}
+	return orientationTurns[(profile&orientationMask)>>orientationShift]
+}
+
 // SSSession handles a remote video attributes change, including its
 // orientation, only when the address isAppleIDAddress and the connection
 // options have connectingToIOSdevice; otherwise it returns at once
@@ -38,7 +47,6 @@ func PacketOrientation(packet []byte) (uint16, bool) {
 // 21DF7A41-0D38-3DF3-B87A-8A6249686735,
 // -[SSSession remoteVideoClient:remoteVideoAttributesDidChange:] 0x22e521914..0x22e521930).
 func macExtensionProfile(profile uint16) uint16 {
-	orientation := (profile & orientationMask) >> orientationShift
-	turns := orientationTurns[orientation]
+	turns := orientationTurns[(profile&orientationMask)>>orientationShift]
 	return profile&^orientationMask | turnsOrientation[(turns+macTurnsOffset)&3]<<orientationShift
 }

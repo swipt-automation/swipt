@@ -8,9 +8,7 @@
 #import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWJSON.h"
-#import "SWRecordingSession.h"
 #import "SWScreenRecording.h"
-#import "SWScreenStream.h"
 
 id SWCallScreenshot(SWCall *call, NSError **error) {
     double started = SWNowMilliseconds();
@@ -41,7 +39,7 @@ static SWScreenStream *SWStreamOf(SWCall *call, NSError **error) {
 
 id SWCallScreenOpen(SWCall *call, NSError **error) {
     NSNumber *maximumBitrate = [call.arguments number:@"maximumBitrate"];
-    SWScreenStream *stream = [SWScreenStream openWithMode:[call.arguments string:@"mode"] maximumBitrate:(uint64_t)maximumBitrate.unsignedLongLongValue error:error];
+    SWScreenStream *stream = [SWScreenStream openWithContext:call.context owner:call.engine.screens mode:[call.arguments string:@"mode"] maximumBitrate:(uint64_t)maximumBitrate.unsignedLongLongValue error:error];
     if (stream == nil) {
         return nil;
     }
@@ -49,7 +47,6 @@ id SWCallScreenOpen(SWCall *call, NSError **error) {
         [stream close];
         return nil;
     }
-    [call.engine trackStream:stream];
     return @{@"stream": @([call.engine registerObject:stream])};
 }
 
@@ -82,7 +79,7 @@ BOOL SWCallScreenFrames(SWCall *call, NSError **error) {
     NSError *failure = nil;
     while (failure == nil) {
         @autoreleasepool {
-            SWFrame *next = [stream frameAfter:sequence token:call.token sequence:&sequence error:&failure];
+            SWFrame *next = [stream frameAfter:sequence until:NSDate.distantFuture token:call.token sequence:&sequence error:&failure];
             if (next == nil) {
                 break;
             }
@@ -103,11 +100,7 @@ BOOL SWCallScreenFrames(SWCall *call, NSError **error) {
 
 id SWCallScreenRecord(SWCall *call, NSError **error) {
     SWScreenStream *stream = SWStreamOf(call, error);
-    NSURL *directory = stream == nil ? nil : [call.context directoryAtRoot:[call.arguments string:@"root"] path:[call.arguments string:@"path"] create:YES error:error];
-    if (directory == nil) {
-        return nil;
-    }
-    SWRecordingSession *session = [SWRecordingSession startInDirectory:directory stream:stream token:call.token error:error];
+    SWRecordingSession *session = stream == nil ? nil : [stream recordWithContext:call.context root:[call.arguments string:@"root"] path:[call.arguments string:@"path"] error:error];
     return session == nil ? nil : @{@"session": @([call.engine registerObject:session])};
 }
 

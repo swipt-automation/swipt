@@ -66,7 +66,7 @@ func (s State) String() string {
 
 type Observer interface {
 	StateChanged(state State, err error)
-	DeviceConnected(info coredevice.DeviceInfo)
+	EnvironmentChanged(environment Environment)
 	ViewerConnected(session *rfb.ServerSession)
 	ViewerDisconnected(session *rfb.ServerSession, err error)
 	StreamingChanged(active bool)
@@ -146,8 +146,10 @@ type Connection struct {
 	retired   bool
 	sharing   *frontend
 
-	images diskImages
-	info   coredevice.DeviceInfo
+	images   diskImages
+	info     coredevice.DeviceInfo
+	language string
+	timeZone string
 }
 
 func New(options Options) *Connection {
@@ -610,10 +612,25 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	}()
 	info := device.Info()
 	s.logger.Info("device connected: ", info.UDID, ", ", info.ProductType, ", ", info.OSVersion, " (", info.BuildVersion, ")")
+	language, err := device.Language(session)
+	if err != nil {
+		s.logger.Warn(err)
+	}
+	timeZone, err := device.TimeZone(session)
+	if err != nil {
+		s.logger.Warn(err)
+	}
 	s.access.Lock()
 	s.info = info
+	if language != "" {
+		s.language = language
+	}
+	if timeZone != "" {
+		s.timeZone = timeZone
+	}
+	environment := s.environmentLocked()
+	s.notify(func(observer Observer) { observer.EnvironmentChanged(environment) })
 	s.access.Unlock()
-	s.notify(func(observer Observer) { observer.DeviceConnected(info) })
 	s.setModel(info.ProductType)
 	if current, ok := version.Parse(info.OSVersion); ok && !current.AtLeast(version.Version{17, 4}) {
 		return newError(ProblemUnsupported, "iOS ", info.OSVersion, " cannot share its screen; it needs iOS 17.4 or later")
@@ -621,7 +638,7 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	s.access.Lock()
 	s.setStateLocked(StatePreparing, nil)
 	s.access.Unlock()
-	err := s.images.prepare(session, device)
+	err = s.images.prepare(session, device)
 	if err != nil {
 		return lostOr(device, err)
 	}

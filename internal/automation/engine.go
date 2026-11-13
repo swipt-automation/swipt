@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
@@ -17,10 +17,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -317,14 +315,9 @@ func (h *Host) newEngine(swiplet Swiplet, dialog Dialog, logger log.ContextLogge
 	native := e.context.NewObject()
 	defer native.Release()
 	origin := native.SetClock("now")
-	system := runtime.GOOS
-	if system == "darwin" {
-		system = "macos"
-	}
 	properties := map[string]string{
-		"swiplet": swiplet.ID, "dataDirectory": filepath.Join(swiplet.Directory, DataFolder), "languages": strings.Join(h.options.Languages, "\n"),
-		"os": system, "osVersion": h.options.OSVersion,
-		"assetsDirectory": filepath.Join(swiplet.Directory, AssetsFolder), "cacheDirectory": e.caches, "extensionHead": extensionHead,
+		"swiplet": swiplet.ID, "dataDirectory": filepath.ToSlash(filepath.Join(swiplet.Directory, DataFolder)),
+		"assetsDirectory": filepath.ToSlash(filepath.Join(swiplet.Directory, AssetsFolder)), "cacheDirectory": filepath.ToSlash(e.caches), "extensionHead": extensionHead,
 		"timeOrigin": strconv.FormatFloat(float64(origin.UnixMicro())/1000, 'f', -1, 64),
 	}
 	for name, text := range properties {
@@ -429,6 +422,7 @@ func (e *engine) natives() map[string]jsc.Function {
 		"show":                   e.show,
 		"match":                  e.match,
 		"preferredLocalizations": e.preferredLocalizations,
+		"environment":            e.environment,
 		"locate":                 e.locate,
 		"sqlite":                 e.sqlite,
 		"release":                e.release,

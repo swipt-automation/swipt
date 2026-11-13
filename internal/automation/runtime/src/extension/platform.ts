@@ -66,11 +66,14 @@ export const {
 } = timing;
 
 const creating = Symbol("WorkerNavigator");
-export let createNavigator: (languages: readonly string[]) => WorkerNavigator;
+export let createNavigator: (
+  languages: () => readonly string[],
+) => WorkerNavigator;
 
 export const WorkerNavigator = defineInterface(
   class WorkerNavigator {
-    readonly #languages: readonly string[];
+    readonly #languages: () => readonly string[];
+    #frozen: readonly string[] = Object.freeze([]);
 
     static [brand](value: object) {
       return #languages in value;
@@ -80,11 +83,14 @@ export const WorkerNavigator = defineInterface(
       createNavigator = (languages) => new WorkerNavigator(creating, languages);
     }
 
-    constructor(token?: typeof creating, languages: readonly string[] = []) {
+    constructor(
+      token?: typeof creating,
+      languages: () => readonly string[] = () => [],
+    ) {
       if (token !== creating) {
         throw new TypeError("Illegal constructor");
       }
-      this.#languages = Object.freeze([...languages]);
+      this.#languages = languages;
     }
 
     get userAgent(): string {
@@ -92,11 +98,18 @@ export const WorkerNavigator = defineInterface(
     }
 
     get language(): string {
-      return this.#languages[0] ?? "en";
+      return this.#languages()[0] ?? "en";
     }
 
     get languages(): readonly string[] {
-      return this.#languages;
+      const languages = this.#languages();
+      if (
+        languages.length !== this.#frozen.length ||
+        languages.some((language, index) => language !== this.#frozen[index])
+      ) {
+        this.#frozen = Object.freeze([...languages]);
+      }
+      return this.#frozen;
     }
   },
   {},

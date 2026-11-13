@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -58,10 +57,9 @@ func (e *IOSOutdatedError) Error() string {
 
 type Options struct {
 	Device            *device.Phone
+	Environment       func() device.Environment
 	Directory         string
 	Caches            string
-	Languages         []string
-	OSVersion         string
 	LogFactory        *log.Factory
 	Dialog            Dialog
 	Graphics          Graphics
@@ -241,9 +239,10 @@ func (h *Host) Compatible(manifest Manifest) error {
 		return E.Extend(ErrSwipletOutdated, "it is built for API level ", manifest.MinimumAPILevel,
 			", and this Swipt runs swiplets built for API level ", api.OldestLevel, " or later")
 	}
-	if minimum, required := version.Parse(manifest.MinimumIOSVersion); required && runtime.GOOS == "ios" {
-		if current, _ := version.Parse(h.options.OSVersion); !current.AtLeast(minimum) {
-			return &IOSOutdatedError{Minimum: manifest.MinimumIOSVersion, Version: h.options.OSVersion}
+	osVersion := h.options.Environment().OSVersion
+	if minimum, required := version.Parse(manifest.MinimumIOSVersion); required && osVersion != "" {
+		if current, _ := version.Parse(osVersion); !current.AtLeast(minimum) {
+			return &IOSOutdatedError{Minimum: manifest.MinimumIOSVersion, Version: osVersion}
 		}
 	}
 	return nil

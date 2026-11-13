@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
@@ -24,7 +24,19 @@ type appInfo struct {
 }
 
 func fileURL(path string) string {
-	return (&url.URL{Scheme: "file", Path: path}).String()
+	slashed := filepath.ToSlash(path)
+	if !strings.HasPrefix(slashed, "/") {
+		slashed = "/" + slashed
+	}
+	return (&url.URL{Scheme: "file", Path: slashed}).String()
+}
+
+func filePath(location *url.URL) string {
+	path := filepath.FromSlash(location.Path)
+	if trimmed := strings.TrimPrefix(path, string(filepath.Separator)); filepath.VolumeName(trimmed) != "" {
+		return trimmed
+	}
+	return path
 }
 
 func (h *Host) listApps(ctx context.Context, phone *device.Phone) ([]apps.App, error) {

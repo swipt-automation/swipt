@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
@@ -14,7 +14,10 @@ import (
 	"github.com/swipt-automation/swipt/internal/device"
 )
 
-const defaultUsageInterval = time.Second
+const (
+	defaultUsageInterval = time.Second
+	lastSignal           = 31
+)
 
 type resourceUsage struct {
 	Time           int64     `json:"time"`
@@ -101,8 +104,8 @@ func processKill(ctx context.Context, call *operation) (any, error) {
 	if *pid < 0 || *pid != float64(uint64(*pid)) {
 		return nil, E.Cause1(ErrInvalid, E.New("the process ID must be a non-negative integer"))
 	}
-	if *signal < 1 || *signal > float64(syscall.SIGUSR2) || *signal != float64(int(*signal)) {
-		return nil, E.Cause1(ErrInvalid, E.New("the signal must be an integer from 1 to ", int(syscall.SIGUSR2)))
+	if *signal < 1 || *signal > lastSignal || *signal != float64(int(*signal)) {
+		return nil, E.Cause1(ErrInvalid, E.New("the signal must be an integer from 1 to ", lastSignal))
 	}
 	phone, err := call.phone()
 	if err != nil {

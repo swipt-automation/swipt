@@ -1,14 +1,13 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
 import (
 	"context"
 	"encoding/json"
-	"io/fs"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -109,7 +108,7 @@ func (c *GraphicsCall) Directory(kind, name string, create bool) (string, error)
 			return "", FileNotFound(at.root.where, at.name)
 		}
 		if !info.Directory {
-			return "", at.root.error(at.name, &fs.PathError{Op: "open", Path: at.name, Err: syscall.ENOTDIR})
+			return "", E.Cause1(ErrInvalid, E.New(strconv.Quote(filepath.ToSlash(at.name)), " is a file in ", at.root.where))
 		}
 	}
 	return filepath.Join(at.root.root.Name(), at.name), nil

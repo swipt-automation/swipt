@@ -7,15 +7,6 @@ import { defineCommand } from "../../command";
 import { session } from "../../session";
 import { operandCount } from "./operand";
 
-const isLocal = (name) => {
-  const normalized = path.posix.normalize(name);
-  return (
-    !path.posix.isAbsolute(normalized) &&
-    normalized !== ".." &&
-    !normalized.startsWith("../")
-  );
-};
-
 class FileSink {
   declare root: string;
   files = new Map();
@@ -26,12 +17,18 @@ class FileSink {
   }
 
   target(name) {
-    if (!isLocal(name)) {
+    const target = path.resolve(this.root, ...name.split("/"));
+    const relative = path.relative(path.resolve(this.root), target);
+    if (
+      relative === ".." ||
+      relative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relative)
+    ) {
       throw new Error(
         `the server sent the path ${name}, which leaves the output directory`,
       );
     }
-    return path.join(this.root, ...name.split("/"));
+    return target;
   }
 
   begin(name, directory) {

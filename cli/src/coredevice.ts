@@ -1,5 +1,4 @@
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import net from "node:net";
@@ -13,54 +12,15 @@ import { choose, interactive, step } from "./output";
 
 const exec = promisify(execFile);
 
-const xcodeMissing = tr(
-  "Xcode is missing; install it from the App Store, open it once, and select it with xcode-select",
+export const driverHint = tr(
+  'swipt-driver is missing; install it with "npm install -g @swipt/cli --include=optional".',
 );
 
-export async function devicectl(args, { parse = false } = {}) {
-  const output = parse
-    ? path.join(os.tmpdir(), `devicectl-${randomUUID()}.json`)
-    : undefined;
-  try {
-    await exec(
-      "xcrun",
-      ["devicectl", ...args, ...(parse ? ["--json-output", output] : [])],
-      { maxBuffer: Infinity },
-    );
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      throw new Error(xcodeMissing);
-    }
-    if (typeof error.code !== "number") {
-      throw error;
-    }
-    const text = `${error.stdout}${error.stderr}`;
-    if (/^(xcrun|xcode-select): /m.test(text)) {
-      throw new Error(`${xcodeMissing} (${text.trim()})`);
-    }
-    if (text.includes("4016")) {
-      throw new Error(
-        tr(
-          "CoreDevice can't reach the device while its loopback VPN is on; turn off Swipt's VPN on the device, then run this again.",
-        ),
-      );
-    }
-    throw new Error(text.trim() || `devicectl exited with ${error.code}`);
-  }
-  if (!parse) {
-    return undefined;
-  }
-  const parsed = JSON.parse(fs.readFileSync(output, "utf8"));
-  fs.rmSync(output);
-  return parsed;
-}
+const driverName =
+  process.platform === "win32" ? "swipt-driver.exe" : "swipt-driver";
 
-export const serverHint = tr(
-  'swipt-server is missing; install it with "npm install -g @swipt/cli --include=optional"',
-);
-
-export function serverPath() {
-  const built = path.resolve(import.meta.dirname, "../../build/swipt-server");
+export function driverPath() {
+  const built = path.resolve(import.meta.dirname, "../../build", driverName);
   if (fs.existsSync(built)) {
     return built;
   }
@@ -69,39 +29,68 @@ export function serverPath() {
     packaged = path.join(
       path.dirname(
         createRequire(import.meta.url).resolve(
-          `@swipt/server-${process.platform}-${process.arch}/package.json`,
+          `@swipt/driver-${process.platform}-${process.arch}/package.json`,
         ),
       ),
-      "swipt-server",
+      driverName,
     );
   } catch (error) {
     if (error.code !== "MODULE_NOT_FOUND") {
       throw error;
     }
-    return "swipt-server";
+    return driverName;
   }
-  return fs.existsSync(packaged) ? packaged : "swipt-server";
+  return fs.existsSync(packaged) ? packaged : driverName;
 }
 
-async function guest(device, args) {
-  try {
-    await exec(serverPath(), [
-      "guest",
-      "-d",
-      device.udid,
-      "--socket",
-      device.socket,
-      ...args,
-    ]);
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      throw new Error(serverHint);
-    }
-    throw new Error(
-      `${error.stderr ?? ""}`.replace(/^Error: /, "").trim() || error.message,
-    );
+export class MissingDriverError extends Error {
+  constructor() {
+    super(driverHint);
   }
 }
+
+const usbmuxdHint =
+  process.platform === "linux"
+    ? tr("usbmuxd isn't running; install usbmuxd and start it")
+    : process.platform === "win32"
+      ? tr(
+          "Apple Mobile Device Service isn't running; install Apple Devices from the Microsoft Store",
+        )
+      : undefined;
+
+export function driverError(stderr: string, fallback: string) {
+  const message = /^Error: (.*)$/m.exec(stderr)?.[1] ?? fallback;
+  return new Error(
+    usbmuxdHint !== undefined && /^usbmuxd: connect/.test(message)
+      ? `${usbmuxdHint} (${message})`
+      : message,
+  );
+}
+
+export async function driver(args, { input = undefined } = {}) {
+  const running = exec(driverPath(), args, { maxBuffer: Infinity });
+  if (input !== undefined) {
+    running.child.stdin.end(input);
+  }
+  try {
+    const { stdout } = await running;
+    return stdout.trim() === "" ? undefined : JSON.parse(stdout);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      throw new MissingDriverError();
+    }
+    throw driverError(error.stderr ?? "", error.message);
+  }
+}
+
+const onDevice = (device, args, options = {}) =>
+  driver(["device", "-d", device.udid, ...args], options);
+
+const guest = (device, args, options = {}) =>
+  driver(
+    ["guest", "-d", device.udid, "--socket", device.socket, ...args],
+    options,
+  );
 
 function callGuest(device, method, params = {}) {
   return new Promise<any>((resolve, reject) => {
@@ -164,12 +153,7 @@ async function guests() {
 // (vphone-cli 8c3630c7, Research/Guest/xcode_install_signature_gate.md).
 const guestUDID = /^0000FE01-/;
 
-const reachability = tr(
-  "unlock the device and connect it with a USB cable or the same network as this Mac",
-);
-
-const deviceLine = (device) =>
-  `  ${device.name}  ${device.udid}${device.offline ? `  ${tr("(offline)")}` : ""}`;
+const deviceLine = (device) => `  ${device.name}  ${device.udid}`;
 
 interface DeviceQuery {
   required?: boolean;
@@ -180,51 +164,30 @@ async function findDevice(context, { required = true, filter }: DeviceQuery) {
   const given = context.options.device;
   const [listed, virtual] = await step(
     tr("looking for devices"),
-    () =>
-      Promise.all([devicectl(["list", "devices"], { parse: true }), guests()]),
+    () => Promise.all([driver(["device", "list"]), guests()]),
     { transient: true },
   );
-  const paired = [
-    ...listed.result.devices
-      .filter(
-        (device) =>
-          device.hardwareProperties.platform === "iOS" &&
-          ["physical", undefined].includes(device.hardwareProperties.reality) &&
-          !guestUDID.test(device.hardwareProperties.udid),
-      )
+  const devices = [
+    ...listed
+      .filter((device) => !guestUDID.test(device.udid))
       .map((device) => ({
-        name: device.deviceProperties.name,
-        udid: device.hardwareProperties.udid,
-        offline: device.connectionProperties.tunnelState === "unavailable",
+        name: device.name || device.udid,
+        udid: device.udid,
+        paired: device.paired,
       })),
     ...virtual,
   ];
   const named = (device) =>
     sameName(device.udid, given) || sameName(label(device.name), label(given));
-  const devices = paired.filter((device) => !device.offline);
   const matches = given ? devices.filter(named) : devices;
   if ((given || !required) && matches.length === 1) {
     return matches[0];
   }
-  if (paired.length === 0) {
-    throw new Error(
-      tr(
-        "No iPhone or iPad is paired with this Mac; connect one with a USB cable, unlock it, and trust this Mac.",
-      ),
-    );
-  }
-  const offline = given && paired.find(named);
-  if (matches.length === 0 && offline) {
-    throw new Error(
-      tr("{device} is offline; {hint}.", {
-        device: offline.name,
-        hint: reachability,
-      }),
-    );
-  }
   if (devices.length === 0) {
     throw new Error(
-      `${tr("Every paired iPhone and iPad is offline; {hint}:", { hint: reachability })}\n${paired.map(deviceLine).join("\n")}`,
+      tr(
+        "No iPhone or iPad is connected to this computer or found on the local network; connect one with a USB cable and unlock it.",
+      ),
     );
   }
   const reason = !given
@@ -235,7 +198,7 @@ async function findDevice(context, { required = true, filter }: DeviceQuery) {
           name: given,
         });
   const failure = new Error(
-    `${tr("{reason}; paired iPhone and iPad devices:", { reason })}\n${paired.map(deviceLine).join("\n")}`,
+    `${tr("{reason}; connected iPhone and iPad devices:", { reason })}\n${devices.map(deviceLine).join("\n")}`,
   );
   if (matches.length === 0) {
     throw failure;
@@ -257,66 +220,32 @@ async function findDevice(context, { required = true, filter }: DeviceQuery) {
 }
 
 export const apps = async (device) =>
-  device.virtual
-    ? guestApps(device)
-    : (
-        await devicectl(["device", "info", "apps", "--device", device.udid], {
-          parse: true,
-        })
-      ).result.apps;
+  device.virtual ? guestApps(device) : onDevice(device, ["apps"]);
 
-export const lockedError = /BSErrorCodeDescription = Locked|device is locked/;
+export const lockedError = /device is locked/;
 
-export const installApp = async (device, app, id) =>
-  device.virtual
-    ? guest(device, ["install", app, id])
-    : devicectl(["device", "install", "app", "--device", device.udid, app]);
+export const installApp = (device, app, id) =>
+  onDevice(device, ["install", app, id]);
 
 export const uninstallApp = async (device, id) =>
   device.virtual
     ? callGuest(device, "apps.uninstall", { bundle_id: id, force: true })
-    : devicectl(["device", "uninstall", "app", "--device", device.udid, id]);
+    : onDevice(device, ["uninstall", id]);
 
 export const launchApp = async (device, id, args = []) =>
   device.virtual
     ? launchOnGuest(device, id)
-    : devicectl([
-        "device",
-        "process",
-        "launch",
-        "--terminate-existing",
-        "--device",
-        device.udid,
-        id,
-        ...(args.length > 0 ? ["--", ...args] : []),
-      ]);
+    : onDevice(device, ["launch", id, "--", ...args]);
+
+export const openSettings = (device, url) =>
+  onDevice(device, ["launch", "--payload-url", url, "com.apple.Preferences"]);
 
 export async function terminateApp(device, id) {
   if (device.virtual) {
     await callGuest(device, "apps.terminate", { bundle_id: id });
     return;
   }
-  const [listed, { result }] = await Promise.all([
-    apps(device),
-    devicectl(["device", "info", "processes", "--device", device.udid], {
-      parse: true,
-    }),
-  ]);
-  const { url } = listed.find((app) => app.bundleIdentifier === id);
-  const running = result.runningProcesses.find((process) =>
-    process.executable?.startsWith(url),
-  );
-  if (running !== undefined) {
-    await devicectl([
-      "device",
-      "process",
-      "terminate",
-      "--device",
-      device.udid,
-      "--pid",
-      String(running.processIdentifier),
-    ]);
-  }
+  await onDevice(device, ["terminate", id]);
 }
 
 async function guestApps(device) {
@@ -355,112 +284,38 @@ export async function coreDevice(context, options: DeviceQuery = {}) {
       () => guest(device, ["pair"]),
       { transient: true },
     );
+  } else if (!device.paired) {
+    await step(
+      tr(
+        "tap Trust on {device} and enter its passcode to trust this computer",
+        {
+          device: device.name,
+        },
+      ),
+      () => onDevice(device, ["trust"]),
+    );
   }
   return device;
 }
 
-async function guestContainer(device, id) {
-  const { data_path: root } = await callGuest(device, "apps.data_dir", {
-    bundle_id: id,
-  });
-  return root;
-}
+const inContainer = (device, args, options = {}) =>
+  (device.virtual ? guest : onDevice)(device, args, options);
 
-const containerOptions = (id) => [
-  "--domain-type",
-  "appDataContainer",
-  "--domain-identifier",
+export const containerHasFile = (device, id, file) =>
+  inContainer(device, ["has", id, file]);
+
+export const pushToContainer = (device, id, source, destination) =>
+  inContainer(device, ["push", id, source, destination]);
+
+export const containerSQL = (
+  device,
   id,
-];
+  file,
+  statements,
+  { query = false } = {},
+) =>
+  inContainer(device, ["sqlite", id, file, ...(query ? ["--query"] : [])], {
+    input: statements,
+  });
 
-export async function containerHasFile(device, id, file) {
-  if (device.virtual) {
-    const root = await guestContainer(device, id);
-    const directory = path.posix.join(root, path.posix.dirname(file));
-    const { entries } = await callGuest(device, "files.list", {
-      path: directory,
-    }).catch(() => ({ entries: [] }));
-    return entries.some((it) => it.name === path.posix.basename(file));
-  }
-  const { result } = await devicectl(
-    [
-      "device",
-      "info",
-      "files",
-      "--device",
-      device.udid,
-      ...containerOptions(id),
-    ],
-    { parse: true },
-  );
-  return result.files.some((it) => it.relativePath === file);
-}
-
-export async function pullFromContainer(device, id, source, destination) {
-  if (device.virtual) {
-    const root = await guestContainer(device, id);
-    const { content } = await callGuest(device, "files.read", {
-      path: path.posix.join(root, source),
-      binary: true,
-    });
-    fs.writeFileSync(destination, Buffer.from(content, "base64"));
-    return;
-  }
-  await devicectl([
-    "device",
-    "copy",
-    "from",
-    "--device",
-    device.udid,
-    "--source",
-    source,
-    "--destination",
-    destination,
-    ...containerOptions(id),
-  ]);
-}
-
-const containerOwner = "501:501";
-
-export async function pushToContainer(device, id, source, destination) {
-  if (device.virtual) {
-    const root = await guestContainer(device, id);
-    const target = path.posix.join(root, destination);
-    const directory = path.posix.dirname(target);
-    await callGuest(device, "files.mkdir", { path: directory });
-    await callGuest(device, "files.chown", {
-      path: directory,
-      owner: containerOwner,
-    });
-    await callGuest(device, "files.write", {
-      path: target,
-      content: fs.readFileSync(source).toString("base64"),
-      encoding: "base64",
-    });
-    await callGuest(device, "files.chown", {
-      path: target,
-      owner: containerOwner,
-    });
-    return;
-  }
-  await devicectl([
-    "device",
-    "copy",
-    "to",
-    "--device",
-    device.udid,
-    "--source",
-    source,
-    "--destination",
-    destination,
-    ...containerOptions(id),
-  ]);
-}
-
-export const provisioningProfiles = async (udid) =>
-  (
-    await devicectl(
-      ["device", "profile", "list", "--type", "provisioning", "--device", udid],
-      { parse: true },
-    )
-  ).result.provisioningProfiles;
+export const provisioningProfiles = (device) => onDevice(device, ["profiles"]);

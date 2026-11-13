@@ -3,11 +3,13 @@ package libSwipt
 import (
 	"context"
 	"encoding/json"
+	"runtime"
 	"sync"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/automation"
+	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/graphics"
 	"github.com/swipt-automation/swipt/internal/log"
 )
@@ -73,14 +75,21 @@ func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOption
 	p.dialog = automation.Dialog{App: p.app, InApp: true, Backdrop: handler.OnBackdrop, Active: handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
 		return p.ask(ctx, request, handler.OnDialog, handler.OnDialogWithdrawn)
 	}}
+	languages := iteratorToArray[string](options.Languages)
+	osVersion := func() string { return p.device.connection.Phone().Environment().OSVersion }
+	if runtime.GOOS == "ios" {
+		osVersion = func() string { return options.OSVersion }
+	}
+	environment := func() device.Environment {
+		return device.Environment{OSVersion: osVersion(), Languages: languages}
+	}
 	p.host = automation.New(automation.Options{
-		Device:     p.device.connection.Phone(),
-		Directory:  options.SwipletDirectory,
-		Caches:     options.SwipletCacheDirectory,
-		Languages:  iteratorToArray[string](options.Languages),
-		OSVersion:  options.OSVersion,
-		LogFactory: p.logFactory,
-		Dialog:     p.dialog,
+		Device:      p.device.connection.Phone(),
+		Environment: environment,
+		Directory:   options.SwipletDirectory,
+		Caches:      options.SwipletCacheDirectory,
+		LogFactory:  p.logFactory,
+		Dialog:      p.dialog,
 		Graphics: graphics.New(graphics.Options{
 			Connection:        p.device.connection,
 			Logger:            p.logFactory.NewLogger("graphics"),

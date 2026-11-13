@@ -28,19 +28,23 @@ import {
   apps,
   configureGuest,
   containerHasFile,
+  containerSQL,
   coreDevice,
-  devicectl,
   installApp,
   launchApp,
   lockedError,
+  openSettings,
   provisioningProfiles,
-  pullFromContainer,
   pushToContainer,
-  serverHint,
-  serverPath,
+  driver,
+  driverError,
+  driverHint,
+  driverPath,
+  MissingDriverError,
   terminateApp,
   uninstallApp,
 } from "./coredevice";
+import { cacheDirectory } from "./directories";
 import { language, tr } from "./i18n";
 import {
   choose,
@@ -90,10 +94,10 @@ const guestEntitlements = (id) => `<?xml version="1.0" encoding="UTF-8"?>
 
 const accountsHint = "Xcode › Settings › Accounts";
 const xcodeProfiles = "Library/Developer/Xcode/UserData/Provisioning Profiles";
-const downloads = path.join(
-  process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache"),
-  "swipt",
-  "sideload",
+const downloads = path.join(cacheDirectory, "sideload");
+
+const signingNeedsMac = tr(
+  'Installing or updating Swipt needs macOS; install it from a Mac, then set it up here with "swipt sideload setup".',
 );
 
 const expiresSoon = ({ creation, expiration }) =>
@@ -226,7 +230,7 @@ async function download(url, file, signal, update) {
 }
 
 async function unpack(ipa, directory) {
-  await exec("unzip", ["-q", ipa, "-d", directory]);
+  await driver(["unzip", ipa, directory]);
   const payload = path.join(directory, "Payload");
   const app = fs.readdirSync(payload).find((name) => name.endsWith(".app"));
   if (app === undefined) {
@@ -620,7 +624,7 @@ const teamChoice = ({ id, name }) => ({
 
 async function sideloadedDevices(
   devices,
-  missing = tr("Swipt isn't sideloaded on any online iPhone or iPad."),
+  missing = tr("Swipt isn't sideloaded on any iPhone or iPad."),
 ) {
   const sideloaded = await step(
     tr("looking for Swipt on the devices"),
@@ -678,7 +682,7 @@ async function locate(context, device, fresh = false) {
     };
   }
   if (found.length > 1) {
-    const known = xcodeTeams();
+    const known = process.platform === "darwin" ? xcodeTeams() : [];
     const teams = found.map((app) => ({
       id: app.team,
       name: known.find((team) => team.id === app.team)?.name,
@@ -694,6 +698,9 @@ async function locate(context, device, fresh = false) {
     return { team, current: found.find((app) => app.team === team) };
   }
   if (found.length === 0 && fresh) {
+    if (process.platform !== "darwin") {
+      throw new Error(signingNeedsMac);
+    }
     const teams = xcodeTeams();
     if (teams.length === 0) {
       throw new Error(
@@ -731,7 +738,7 @@ async function signingPeriod(device, id, team) {
   const names = [id, "*"].map((it) => `iOS Team Provisioning Profile: ${it}`);
   const profiles = await step(
     tr("checking Swipt on {device}", { device: device.name }),
-    () => provisioningProfiles(device.udid),
+    () => provisioningProfiles(device),
     { transient: true },
   );
   return profiles
@@ -837,7 +844,7 @@ async function findInstalled(context) {
       sideloadedDevices(
         devices,
         tr(
-          'Swipt isn\'t sideloaded on any online iPhone or iPad; install it with "swipt sideload install".',
+          'Swipt isn\'t sideloaded on any iPhone or iPad; install it with "swipt sideload install".',
         ),
       ),
   });
@@ -922,7 +929,7 @@ async function mountDiskImage(context, device, app) {
       }),
       async () => {
         try {
-          await exec(serverPath(), [
+          await driver([
             "mount",
             "-d",
             device.udid,
@@ -930,7 +937,7 @@ async function mountDiskImage(context, device, app) {
             path.join(app, "DeveloperDiskImage"),
           ]);
         } catch (error) {
-          if (error.code !== "ENOENT") {
+          if (!(error instanceof MissingDriverError)) {
             throw error;
           }
         }
@@ -944,7 +951,7 @@ async function mountDiskImage(context, device, app) {
     console.error(
       tr("couldn't prepare the Developer Disk Image on {device}: {error}", {
         device: device.name,
-        error: /^Error: (.*)$/m.exec(error.stderr ?? "")?.[1] ?? error.message,
+        error: error.message,
       }),
     );
   }
@@ -1067,6 +1074,9 @@ async function deploy(
       );
     }
   }
+  if (!device.virtual && process.platform !== "darwin") {
+    throw new Error(signingNeedsMac);
+  }
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-sideload-"));
   try {
     const signing = device.virtual
@@ -1112,10 +1122,8 @@ async function installOnGuest(device, id, app) {
       ]);
       await resign(signed, id, { identity: "-", entitlements }, update);
     });
-    const archive = path.join(work, "Swipt.ipa");
-    await exec("zip", ["-qry1", archive, "Payload"], { cwd: work });
     await step(tr("installing on {device}", { device: device.name }), () =>
-      installApp(device, archive, id),
+      installApp(device, signed, id),
     );
   } finally {
     fs.rmSync(work, { recursive: true, force: true });
@@ -1257,12 +1265,12 @@ async function openConfigured(context, device, id, passcode, updated?, app?) {
         path.join(app, "DeveloperDiskImage"),
       );
     } catch (error) {
-      if (error.message !== serverHint) {
+      if (!(error instanceof MissingDriverError)) {
         throw error;
       }
       console.error(
         tr("{hint}; its developer isn't trusted automatically.", {
-          hint: serverHint,
+          hint: driverHint,
         }),
       );
       if (!(await launch(device, id, publishes ? [publishArgument] : []))) {
@@ -1286,16 +1294,10 @@ async function launch(device, id, args?) {
       await step(
         tr("opening Settings on {device}", { device: device.name }),
         () =>
-          devicectl([
-            "device",
-            "process",
-            "launch",
-            "--device",
-            device.udid,
-            "--payload-url",
+          openSettings(
+            device,
             "prefs:root=General&path=ManagedConfigurationList",
-            "com.apple.Preferences",
-          ]),
+          ),
       );
       console.log(
         tr(
@@ -1374,30 +1376,25 @@ const schema = [
 const databasePath = "Library/Application Support/Swipt.sqlite";
 
 async function savePreferences(device, id, preferences) {
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-database-"));
-  try {
-    const database = path.join(work, "Swipt.sqlite");
-    const exists = await containerHasFile(device, id, databasePath);
-    if (exists) {
-      await terminateApp(device, id);
-      await pullFromContainer(device, id, databasePath, database);
-    }
-    const quote = (text) => `'${text.replaceAll("'", "''")}'`;
-    execFileSync("sqlite3", [database], {
-      input: [
-        ...(exists ? [] : schema),
-        ...Object.entries(preferences).map(
-          ([name, value]) =>
-            `INSERT OR REPLACE INTO preferences VALUES (${quote(name)}, CAST(${quote(JSON.stringify(value))} AS BLOB))`,
-        ),
-      ]
-        .map((statement) => `${statement};\n`)
-        .join(""),
-    });
-    await pushToContainer(device, id, database, databasePath);
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
+  const exists = await containerHasFile(device, id, databasePath);
+  if (exists) {
+    await terminateApp(device, id);
   }
+  const quote = (text) => `'${text.replaceAll("'", "''")}'`;
+  await containerSQL(
+    device,
+    id,
+    databasePath,
+    [
+      ...(exists ? [] : schema),
+      ...Object.entries(preferences).map(
+        ([name, value]) =>
+          `INSERT OR REPLACE INTO preferences VALUES (${quote(name)}, CAST(${quote(JSON.stringify(value))} AS BLOB))`,
+      ),
+    ]
+      .map((statement) => `${statement};\n`)
+      .join(""),
+  );
 }
 
 const setUpAutoUnlock = (device, id, passcode) =>
@@ -1412,37 +1409,22 @@ const pairingFile = "PairingRecord.plist";
 const pairingPath = `Library/Application Support/${pairingFile}`;
 
 async function savedPasscode(device, id) {
-  if (!(await containerHasFile(device, id, databasePath))) {
-    return undefined;
-  }
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-database-"));
-  try {
-    const database = path.join(work, "Swipt.sqlite");
-    await pullFromContainer(device, id, databasePath, database);
-    const rows = execFileSync(
-      "sqlite3",
-      [
-        "-json",
-        database,
-        "SELECT name, CAST(data AS TEXT) AS value FROM preferences WHERE name LIKE 'autoUnlock%'",
-      ],
-      { encoding: "utf8" },
-    );
-    const saved = Object.fromEntries(
-      JSON.parse(rows || "[]").map(({ name, value }) => [
-        name,
-        JSON.parse(value),
-      ]),
-    );
-    return saved.autoUnlocks && saved.autoUnlockPasscode
-      ? {
-          passcode: saved.autoUnlockPasscode,
-          type: passcodeTypes[saved.autoUnlockPasscodeType ?? 0],
-        }
-      : undefined;
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
-  }
+  const rows = await containerSQL(
+    device,
+    id,
+    databasePath,
+    "SELECT name, CAST(data AS TEXT) AS value FROM preferences WHERE name LIKE 'autoUnlock%'",
+    { query: true },
+  );
+  const saved = Object.fromEntries(
+    rows.map(({ name, value }) => [name, JSON.parse(value)]),
+  );
+  return saved.autoUnlocks && saved.autoUnlockPasscode
+    ? {
+        passcode: saved.autoUnlockPasscode,
+        type: passcodeTypes[saved.autoUnlockPasscodeType ?? 0],
+      }
+    : undefined;
 }
 
 async function pair(device, id, overwrite = false) {
@@ -1464,18 +1446,17 @@ async function pair(device, id, overwrite = false) {
       async () => {
         const record = path.join(work, pairingFile);
         try {
-          await exec(serverPath(), ["pair", "-d", device.udid, "-o", record]);
+          await driver(["pair", "-d", device.udid, "-o", record]);
         } catch (error) {
-          if (typeof error.code === "number") {
-            warning = tr(
-              "Pairing failed, so Swipt pairs in Settings instead: {error}",
-              { error: error.stderr.trim() },
-            );
-          } else if (error.code === "ENOENT") {
-            warning = tr("{hint}; Swipt pairs in Settings instead.", {
-              hint: serverHint,
-            });
-          }
+          warning =
+            error instanceof MissingDriverError
+              ? tr("{hint}; Swipt pairs in Settings instead.", {
+                  hint: driverHint,
+                })
+              : tr(
+                  "Pairing failed, so Swipt pairs in Settings instead: {error}",
+                  { error: error.message },
+                );
           throw error;
         }
         await pushToContainer(device, id, record, pairingPath);
@@ -1494,8 +1475,8 @@ async function pair(device, id, overwrite = false) {
 }
 
 async function serve(udid, passcode, signal, diskImage) {
-  const server = spawn(
-    serverPath(),
+  const child = spawn(
+    driverPath(),
     [
       "-d",
       udid,
@@ -1511,37 +1492,46 @@ async function serve(udid, passcode, signal, diskImage) {
     },
   );
   let logs = "";
-  server.stderr.on("data", (chunk) => {
+  let origin;
+  child.stderr.on("data", (chunk) => {
     logs += chunk;
   });
-  const exited = new Promise((resolve) => server.once("close", resolve));
+  const exited = new Promise((resolve) => child.once("close", resolve));
   const url = new Promise((resolve, reject) => {
-    server.once("error", (error: NodeJS.ErrnoException) =>
-      reject(error.code === "ENOENT" ? new Error(serverHint) : error),
+    child.once("error", (error: NodeJS.ErrnoException) =>
+      reject(error.code === "ENOENT" ? new MissingDriverError() : error),
     );
     exited.then((code) =>
       reject(
         Object.assign(
-          new Error(
-            `swipt-server exited with ${code ?? "a signal"}${logs.trim() === "" ? "" : `: ${logs.trim()}`}`,
+          driverError(
+            logs,
+            `swipt-driver exited with ${code ?? "a signal"}${logs.trim() === "" ? "" : `: ${logs.trim()}`}`,
           ),
           { exitCode: code },
         ),
       ),
     );
-    readline.createInterface({ input: server.stdout }).on("line", (line) => {
+    readline.createInterface({ input: child.stdout }).on("line", (line) => {
       const found = /^Swipt API: (\S+)/.exec(line);
       if (found) {
         const parsed = new URL(found[1]);
         parsed.hostname = "127.0.0.1";
-        resolve(parsed.origin);
+        origin = parsed.origin;
+        resolve(origin);
       }
     });
   });
   return {
     url,
-    stop() {
-      server.kill("SIGTERM");
+    async stop() {
+      if (process.platform === "win32" && origin !== undefined) {
+        try {
+          await open({ url: origin, token: "" }).system.shutdown({});
+          return await exited;
+        } catch {}
+      }
+      child.kill("SIGTERM");
       return exited;
     },
   };
@@ -1559,17 +1549,17 @@ async function launchUnlocking(device, id, args, signal, diskImage) {
     if (passcode === undefined) {
       throw error;
     }
-    const server = await serve(device.udid, passcode, signal, diskImage);
+    const serving = await serve(device.udid, passcode, signal, diskImage);
     try {
       const failure = await tryUnlock(
-        open({ url: await server.url, token: "" }),
+        open({ url: await serving.url, token: "" }),
         signal,
       );
       if (failure !== undefined) {
         throw new Error(failure);
       }
     } finally {
-      await server.stop();
+      await serving.stop();
     }
   }
   await launchApp(device, id, args);
@@ -1609,17 +1599,17 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
             : process.stderr.isTTY
               ? "wait"
               : "";
-        let server;
+        let serving;
         let url;
         while (url === undefined) {
-          server = await serve(
+          serving = await serve(
             device.udid,
             passcode,
             context.signal,
             diskImage,
           );
           try {
-            url = await server.url;
+            url = await serving.url;
           } catch (error) {
             if (error.exitCode !== deviceNotListedExit || unlock !== "wait") {
               throw error;
@@ -1679,7 +1669,7 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
           }
           await run([id, "prompts"]);
         } finally {
-          await server.stop();
+          await serving.stop();
         }
       },
     );

@@ -47,3 +47,68 @@ func Install(conn net.Conn, packagePath, bundleID string) error {
 	}
 	return nil
 }
+
+type Application struct {
+	BundleID      string
+	Name          string
+	Path          string
+	Version       string
+	BundleVersion string
+}
+
+// Browse answers with chunks of CurrentList until Status is Complete (go-ios
+// 63c0d57, ios/installationproxy/installationproxy.go:88-131, 194-203).
+func Browse(conn net.Conn) ([]Application, error) {
+	plist := rsd.NewPlistConn(conn)
+	err := plist.Send(map[string]any{
+		"Command": "Browse",
+		"ClientOptions": map[string]any{
+			"ApplicationType":  "User",
+			"ReturnAttributes": []any{"CFBundleIdentifier", "CFBundleDisplayName", "CFBundleName", "CFBundleShortVersionString", "CFBundleVersion", "Path"},
+		},
+	})
+	if err != nil {
+		return nil, E.Cause(err, "instproxy: browse")
+	}
+	var applications []Application
+	for {
+		reply, err := plist.Receive()
+		if err != nil {
+			return nil, E.Cause(err, "instproxy: browse")
+		}
+		if failure, failed := reply["Error"]; failed {
+			return nil, E.New("instproxy: browse: ", fmt.Sprint(failure), ": ", fmt.Sprint(reply["ErrorDescription"]))
+		}
+		list, _ := reply["CurrentList"].([]any)
+		for _, item := range list {
+			attributes, _ := item.(map[string]any)
+			text := func(key string) string {
+				value, _ := attributes[key].(string)
+				return value
+			}
+			name := text("CFBundleDisplayName")
+			if name == "" {
+				name = text("CFBundleName")
+			}
+			applications = append(applications, Application{
+				BundleID: text("CFBundleIdentifier"), Name: name, Path: text("Path"),
+				Version: text("CFBundleShortVersionString"), BundleVersion: text("CFBundleVersion"),
+			})
+		}
+		if reply["Status"] == statusComplete {
+			return applications, nil
+		}
+	}
+}
+
+func Uninstall(conn net.Conn, bundleID string) error {
+	err := run(conn, map[string]any{
+		"Command":               "Uninstall",
+		"ApplicationIdentifier": bundleID,
+		"ClientOptions":         map[string]any{},
+	})
+	if err != nil {
+		return E.Cause(err, "instproxy: uninstall ", bundleID)
+	}
+	return nil
+}

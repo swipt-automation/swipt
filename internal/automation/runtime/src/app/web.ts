@@ -21,7 +21,6 @@ interface WebResult {
 }
 
 export interface WebHost {
-  readonly os: string;
   readonly osVersion: string;
   languages(): string[];
   log(level: string, message: string): void;
@@ -96,12 +95,8 @@ export function installWeb(
   } = globalThis;
   const now = () => timing.now();
   const encoder = new Encoder();
-  const languages = host.languages().join("\n");
   const native: Native = {
     swiplet: "",
-    languages,
-    os: host.os,
-    osVersion: host.osVersion,
     get dataDirectory() {
       return directories.data;
     },
@@ -167,6 +162,10 @@ export function installWeb(
     show: unavailable("show"),
     match: unavailable("match"),
     preferredLocalizations: unavailable("preferredLocalizations"),
+    environment: () => ({
+      osVersion: host.osVersion,
+      languages: host.languages(),
+    }),
     locate: () => undefined,
     sqlite: unavailable("sqlite"),
     openFile: (root, path) => host.webOpenFile(root, path),

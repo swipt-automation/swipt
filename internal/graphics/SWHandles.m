@@ -2,13 +2,12 @@
 
 #import "SWHandles.h"
 
+#import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWJSON.h"
 #import "SWJavaScript.h"
 #import "SWRaster.h"
 #import "SWRecognition.h"
-#import "SWRecordingSession.h"
-#import "SWScreenStream.h"
 #import "SWScreenRecording.h"
 
 static uint8_t SWClampChannel(NSInteger value) {
@@ -125,7 +124,7 @@ static SWImageHandle *SWReported(SWImageNode *node) {
 }
 
 - (void)dealloc {
-    [_stream close];
+    [_stream relinquish];
 }
 
 @end
@@ -141,7 +140,7 @@ static SWImageHandle *SWReported(SWImageNode *node) {
 }
 
 - (void)dealloc {
-    [_session abandon];
+    [_session relinquish];
 }
 
 @end

@@ -25,6 +25,8 @@ const (
 	signalFeature    = "com.apple.coredevice.feature.sendsignaltoprocess"
 
 	errorCodeProcessUnknown = 10004
+
+	noSuchProcess = 3
 )
 
 type App struct {
@@ -126,7 +128,7 @@ func stream(ctx context.Context, conn *xpc.Conn, input map[string]any) ([]any, e
 // 27B5028f CoreDeviceUtilities 0x396e18..0x396e50), which writes a keyed
 // container of relative and an optional base (swift-foundation e577ad6,
 // Sources/FoundationEssentials/URL/URL.swift:2048-2073).
-func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL string, terminateExisting, animated bool) error {
+func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL string, arguments []string, terminateExisting, animated bool) error {
 	open := map[string]any{}
 	if !animated {
 		// dtappserviced reads platformSpecificOptions before it opens the app with
@@ -137,7 +139,7 @@ func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL
 	}
 	platformOptions, _ := plist.Marshal(open, plist.XMLFormat)
 	options := map[string]any{
-		"arguments":                     []any{},
+		"arguments":                     common.Map(arguments, func(argument string) any { return argument }),
 		"environmentVariables":          map[string]any{},
 		"standardIOUsesPseudoterminals": true,
 		"startStopped":                  false,
@@ -233,7 +235,7 @@ func Signal(ctx context.Context, device *coredevice.Device, pid uint64, signal s
 		"process": map[string]any{"processIdentifier": int64(pid)},
 		"signal":  int64(signal),
 	})
-	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && featureError.CausedBy("NSPOSIXErrorDomain", int64(syscall.ESRCH)) {
+	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && featureError.CausedBy("NSPOSIXErrorDomain", noSuchProcess) {
 		return false, nil
 	}
 	if err != nil {

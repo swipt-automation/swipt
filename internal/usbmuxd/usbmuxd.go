@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"os"
+	"strings"
 
 	E "github.com/sagernet/sing/common/exceptions"
 
@@ -13,7 +15,6 @@ import (
 )
 
 const (
-	socketPath      = "/var/run/usbmuxd"
 	protocolVersion = 1
 	messagePlist    = 8
 	progName        = "swipt"
@@ -34,7 +35,15 @@ type header struct {
 
 func open(ctx context.Context, message map[string]any) (net.Conn, map[string]any, error) {
 	var dialer net.Dialer
-	conn, err := dialer.DialContext(ctx, "unix", socketPath)
+	// Where libusbmuxd connects (libusbmuxd 93eb168, src/libusbmuxd.c:167-224).
+	network, address := defaultNetwork, defaultAddress
+	if value := os.Getenv("USBMUXD_SOCKET_ADDRESS"); value != "" {
+		network, address = "tcp", value
+		if path, found := strings.CutPrefix(value, "UNIX:"); found {
+			network, address = "unix", path
+		}
+	}
+	conn, err := dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, nil, E.Cause(err, "usbmuxd: connect")
 	}

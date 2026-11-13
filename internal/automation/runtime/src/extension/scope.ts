@@ -117,9 +117,7 @@ export function installGlobalScope(console: Console): void {
         timeout,
         ...args,
       );
-  const navigator = createNavigator(
-    native.languages.split("\n").filter(Boolean),
-  );
+  const navigator = createNavigator(() => native.environment().languages);
   const interfaces = {
     AbortController,
     AbortSignal,

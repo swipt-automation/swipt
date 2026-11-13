@@ -149,10 +149,6 @@ public final class SwiptHostModule: Module {
       self.closeWeb()
     }
 
-    Constant("os") { () -> String in
-      "ios"
-    }
-
     Constant("osVersion") { () -> String in
       let version = ProcessInfo.processInfo.operatingSystemVersion
       return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"

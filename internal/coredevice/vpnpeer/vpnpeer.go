@@ -24,7 +24,6 @@ var fixedAddress = netip.AddrFrom4([4]byte{10, 7, 0, 1})
 const answerLimit = time.Second
 
 type tunnel struct {
-	name         string
 	gateways     []netip.Addr
 	destinations []netip.Addr
 	peers        []netip.Addr

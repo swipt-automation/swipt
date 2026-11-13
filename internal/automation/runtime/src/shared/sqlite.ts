@@ -1,4 +1,5 @@
 import { decodeBase64, encodeBase64 } from "./base64";
+import { nameOf } from "./paths";
 
 export interface DatabaseChangeEvent {
   databaseName: string;
@@ -165,8 +166,6 @@ const toBytes = (value: unknown, name: string): Uint8Array => {
   }
   throw new TypeError(`${name} must be a Uint8Array`);
 };
-
-const nameOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
 export const deepEqual = (a: unknown, b: unknown): boolean => {
   if (a === b) {

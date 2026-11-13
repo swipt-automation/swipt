@@ -1,5 +1,9 @@
 #import <Foundation/Foundation.h>
 
+@class SWCancelToken;
+@class SWFrame;
+@class SWScreenFrames;
+
 @interface SWGoObject : NSObject
 @property (nonatomic, readonly) uintptr_t handle;
 
@@ -24,16 +28,26 @@
 - (void)publish:(NSString *)value;
 @end
 
-@interface SWGoScreenStream : SWGoObject
-@property (nonatomic, readonly) NSInteger width;
-@property (nonatomic, readonly) NSInteger height;
-@property (nonatomic, readonly) double scale;
+@interface SWGoResource : SWGoObject
+- (void)relinquish;
+@end
 
-+ (instancetype)openWithMode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate error:(NSError **)error;
-- (void)configureMode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate;
-- (void)requestKeyFrame;
+@interface SWRecordingSession : SWGoResource
+- (BOOL)stop:(NSError **)error;
+@end
+
+@interface SWScreenOwner : SWGoObject
+- (void)close;
+@end
+
+@interface SWScreenStream : SWGoResource
+@property (nonatomic, readonly) BOOL closed;
+
++ (instancetype)openWithContext:(SWCallContext *)context owner:(SWScreenOwner *)owner mode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate error:(NSError **)error;
+- (SWFrame *)latestFrame:(SWCancelToken *)token error:(NSError **)error;
+- (SWFrame *)frameAfter:(NSInteger)previous until:(NSDate *)deadline token:(SWCancelToken *)token sequence:(NSInteger *)sequence error:(NSError **)error;
+- (SWRecordingSession *)recordWithContext:(SWCallContext *)context root:(NSString *)root path:(NSString *)path error:(NSError **)error;
 - (void)close;
 @end
 
 void SWLogError(NSString *message);
-void SWReportRecordingFailure(NSString *message);
