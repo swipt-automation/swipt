@@ -2,12 +2,11 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import { strFromU8, unzipSync } from "fflate";
+
 import { tr } from "../../../i18n";
 import { idPattern } from "../../../project";
-import { readZip } from "../../../zip";
 import { defineCommand } from "../../command";
-
-const manifestEntry = /^(?:[^/]+\/)?manifest\.json$/;
 
 function loadSource(root) {
   const manifest = JSON.parse(
@@ -103,17 +102,23 @@ function workspaceSwiplets(source) {
 }
 
 function readSwiplet(file) {
-  const entry = readZip(file)
-    .filter((it) => manifestEntry.test(it.name))
-    .sort((a, b) => a.name.length - b.name.length)[0];
+  const data = fs.readFileSync(file);
+  let entry;
+  try {
+    entry = unzipSync(data, {
+      filter: ({ name }) => name === "manifest.json",
+    })["manifest.json"];
+  } catch (error) {
+    throw new Error(`${file}: ${error.message}`);
+  }
   if (entry === undefined) {
     throw new Error(`${file} has no manifest.json`);
   }
-  const manifest = JSON.parse(entry.read().toString("utf8"));
+  const manifest = JSON.parse(strFromU8(entry));
   if (typeof manifest.id !== "string" || !idPattern.test(manifest.id)) {
     throw new Error(`${file} has no valid swiplet id in its manifest`);
   }
-  return { file, manifest, data: fs.readFileSync(file) };
+  return { file, manifest, data };
 }
 
 function sourceCommand(root, given) {

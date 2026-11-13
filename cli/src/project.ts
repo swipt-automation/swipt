@@ -7,12 +7,12 @@ import vm from "node:vm";
 
 import { transformAsync } from "@babel/core";
 import { build } from "esbuild";
+import { zipSync } from "fflate";
 
 import { AvailabilityChecker } from "./availability";
 import { tr } from "./i18n";
 import { loadEnvironment, metro } from "./metro";
 import { parseVersion, versionAtLeast } from "./version";
-import { writeZip } from "./zip";
 
 const require = createRequire(import.meta.url);
 
@@ -79,6 +79,8 @@ const storedSuffixes = [
   ".zst",
   ".xz",
 ];
+
+const zipEpoch = new Date(1980, 0, 1).getTime();
 
 export function loadProject(root) {
   const manifest = JSON.parse(
@@ -687,26 +689,43 @@ export async function buildProject(root, checker?) {
   const archive = path.join(dist, `${manifest.id}.swiplet`);
   fs.rmSync(archive, { force: true });
   fs.rmSync(path.join(dist, `${manifest.id}.zip`), { force: true });
-  writeZip(archive, folder, storedSuffixes);
-  return { id: manifest.id, archive, digest: folderDigest(folder) };
+  return { id: manifest.id, archive, digest: writeSwiplet(folder, archive) };
 }
 
-function folderDigest(folder) {
+function writeSwiplet(folder, archive) {
   const hash = createHash("sha256");
-  const walk = (directory) => {
-    for (const entry of fs
-      .readdirSync(directory, { withFileTypes: true })
-      .sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      const name = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        walk(name);
-      } else {
-        hash.update(`${path.relative(folder, name)}\0`);
-        hash.update(fs.readFileSync(name));
-        hash.update("\0");
-      }
-    }
-  };
-  walk(folder);
+  const entries = {};
+  const names = fs
+    .readdirSync(folder, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) =>
+      path
+        .relative(folder, path.join(entry.parentPath, entry.name))
+        .split(path.sep)
+        .join("/"),
+    )
+    .sort();
+  for (const name of names) {
+    const file = path.join(folder, name);
+    const data = fs.readFileSync(file);
+    const stat = fs.statSync(file);
+    hash.update(`${name}\0`);
+    hash.update(data);
+    hash.update("\0");
+    entries[name] = [
+      data,
+      {
+        level: storedSuffixes.some((suffix) =>
+          name.toLowerCase().endsWith(suffix),
+        )
+          ? 0
+          : 6,
+        mtime: Math.max(stat.mtimeMs, zipEpoch),
+        os: 3,
+        attrs: ((stat.mode & 0o777) | 0o100000) << 16,
+      },
+    ];
+  }
+  fs.writeFileSync(archive, zipSync(entries));
   return hash.digest("hex");
 }

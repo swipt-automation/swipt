@@ -45,6 +45,7 @@
     "babel-preset-expo": "~58.0.23",
     "bonjour-service": "^1.4.4",
     "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
     "image-size": "^2.0.4",
     "multicast-dns": "^7.2.5",
     "react-native-worklets": "0.13.0",
