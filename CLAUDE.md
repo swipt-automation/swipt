@@ -14,7 +14,7 @@
 - `bun run --cwd cli build` - Build the CLI
 - `bun typecheck` - Type-check cli and dev
 - `make lib` - Build the SDK runtime and libswipt
-- `make drivers` - Build swipt-driver for every release target
+- `make driver` / `make drivers` - Build swipt-driver for this computer / for every release target
 - `make build_ios` / `make build_macos` - Build the Debug app
 - `make runtime_bundle` - Bundle the Swiplet UI runtime
 - `make build_ios_ipa` - Build Swipt.ipa

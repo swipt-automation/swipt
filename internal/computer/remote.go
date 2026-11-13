@@ -15,6 +15,7 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/logger"
+	"github.com/swipt-automation/swipt/internal/atomicfile"
 	"github.com/swipt-automation/swipt/internal/coredevice"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/coredevice/pairing"
@@ -77,11 +78,11 @@ func forgetRemotePairing(udid string) error {
 }
 
 func remotePairingDirectory() (string, error) {
-	configuration, err := os.UserConfigDir()
+	configuration, _, err := userDirectories()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configuration, swiptFolder, remotePairingFolder), nil
+	return filepath.Join(configuration, remotePairingFolder), nil
 }
 
 func remotePairings() (map[string]*pairing.Record, error) {
@@ -188,7 +189,7 @@ func rememberRemotePairing(ctx context.Context, found peer, logger logger.Contex
 	if err = os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
 		return err
 	}
-	return writeFileAtomically(file, data)
+	return atomicfile.Write(file, data, 0o600)
 }
 
 func remotePairingAccepted(ctx context.Context, found peer, record *pairing.Record, logger logger.ContextLogger) (bool, error) {

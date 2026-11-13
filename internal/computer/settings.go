@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+
+	"github.com/swipt-automation/swipt/internal/atomicfile"
 )
 
 const settingsFile = "driver.json"
@@ -44,7 +46,7 @@ func (s settings) save(directory string) error {
 	if err != nil {
 		return err
 	}
-	return writeFileAtomically(filepath.Join(directory, settingsFile), append(data, '\n'))
+	return atomicfile.Write(filepath.Join(directory, settingsFile), append(data, '\n'), 0o600)
 }
 
 func randomPort() int {

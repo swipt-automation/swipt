@@ -10,7 +10,7 @@ lib: runtime
 
 .PHONY: driver drivers
 driver:
-	go build -trimpath -o build/swipt-driver ./cmd/swipt-driver
+	go run ./internal/cmd/build_driver
 
 drivers:
 	go run ./internal/cmd/build_driver -target all

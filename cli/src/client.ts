@@ -3,12 +3,14 @@ import { createRequire } from "node:module";
 
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 
+import { resolveHost } from "./mdns";
 import { LogService } from "./proto/logs_pb";
 import { REPLService } from "./proto/repl_pb";
 import { SwipletService } from "./proto/swiplets_pb";
 import { SystemService } from "./proto/system_pb";
 
 const largestMessage = 128 << 20;
+const resolveLimit = 5000;
 const contentType = "application/grpc-web+proto";
 const webSocketSubprotocol = "grpc-websockets";
 const { apiLevel } = createRequire(import.meta.url)("@swipt/api/package.json");
@@ -76,6 +78,41 @@ const transportError = (error) => {
     causeText(error?.cause) || error?.message || String(error),
   );
 };
+
+async function locate(connection, signal) {
+  const url = new URL(connection.url);
+  if (!url.hostname.endsWith(".local")) {
+    return connection.url;
+  }
+  let address;
+  try {
+    address = await resolveHost(
+      url.hostname,
+      AbortSignal.any([
+        ...(signal ? [signal] : []),
+        AbortSignal.timeout(resolveLimit),
+      ]),
+    );
+  } catch (error) {
+    throw transportError(error);
+  }
+  if (signal?.aborted) {
+    throw new RpcError(Code.Canceled, "the call was canceled");
+  }
+  if (address === undefined) {
+    throw new RpcError(
+      Code.Unavailable,
+      `${url.hostname} isn't found on the local network`,
+    );
+  }
+  url.hostname = address.includes(":") ? `[${address}]` : address;
+  return url.href.replace(/\/+$/, "");
+}
+
+async function base(connection, signal) {
+  connection.resolved ??= await locate(connection, signal);
+  return connection.resolved;
+}
 
 function frame(schema, init) {
   const body = toBinary(schema, create(schema, init));
@@ -164,7 +201,7 @@ async function* invokeHTTP(connection, method, input, { signal }) {
   let response;
   try {
     response = await fetch(
-      `${connection.base}/${method.parent.typeName}/${method.name}`,
+      `${await base(connection, signal)}/${method.parent.typeName}/${method.name}`,
       {
         method: "POST",
         headers: requestHeaders(connection),
@@ -212,8 +249,9 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   if (signal?.aborted) {
     throw new RpcError(Code.Canceled, "the call was canceled");
   }
+  const webSocketBase = (await base(connection, signal)).replace(/^http/, "ws");
   const socket = new WebSocket(
-    `${connection.webSocketBase}/${method.parent.typeName}/${method.name}`,
+    `${webSocketBase}/${method.parent.typeName}/${method.name}`,
     [webSocketSubprotocol],
   );
   socket.binaryType = "arraybuffer";
@@ -244,7 +282,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
           failure ??
             new RpcError(
               Code.Unavailable,
-              `cannot connect to ${connection.webSocketBase}`,
+              `cannot connect to ${webSocketBase}`,
             ),
         ),
       { once: true },
@@ -281,7 +319,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   socket.addEventListener("error", () => {
     failure ??= new RpcError(
       Code.Unavailable,
-      `cannot connect to ${connection.webSocketBase}`,
+      `cannot connect to ${webSocketBase}`,
     );
   });
   signal?.addEventListener("abort", abort, { once: true });
@@ -373,11 +411,7 @@ function bind(service, connection): Record<string, any> {
 }
 
 export function open({ url, token }) {
-  const connection = {
-    token,
-    base: url,
-    webSocketBase: url.replace(/^http/, "ws"),
-  };
+  const connection = { url, token, resolved: undefined };
   return {
     system: bind(SystemService, connection),
     logs: bind(LogService, connection),

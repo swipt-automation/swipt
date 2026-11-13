@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice"
 	"github.com/swipt-automation/swipt/internal/coredevice/afc"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
-	"github.com/swipt-automation/swipt/internal/coredevice/housearrest"
 	"github.com/swipt-automation/swipt/internal/coredevice/instproxy"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/coredevice/misagent"
@@ -26,32 +26,49 @@ import (
 const stagingDirectory = "PublicStaging"
 
 type ListedDevice struct {
-	Name   string `json:"name"`
-	UDID   string `json:"udid"`
-	Paired bool   `json:"paired"`
+	Name    string `json:"name"`
+	UDID    string `json:"udid"`
+	Paired  bool   `json:"paired"`
+	Virtual bool   `json:"virtual"`
 }
 
 func Devices(ctx context.Context) ([]ListedDevice, error) {
-	listed, listErr := usbmuxd.ListDevices(ctx)
+	listed, err := usbmuxd.ListDevices(ctx)
+	failures := []error{usbmuxdFailure(err)}
+	paired := func(udid string) bool {
+		_, err := usbmuxd.ReadPairRecord(ctx, udid)
+		return err == nil
+	}
 	devices := []ListedDevice{}
 	for _, found := range preferUSB(listed) {
-		name, _ := lockdown.GetValue(ctx, dialer(found.ID), "DeviceName")
+		if strings.HasPrefix(found.UDID, virtualPrefix) {
+			continue
+		}
+		name, err := peer{device: found}.name(ctx)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		text, _ := name.(string)
-		_, err := usbmuxd.ReadPairRecord(ctx, found.UDID)
-		devices = append(devices, ListedDevice{Name: text, UDID: found.UDID, Paired: err == nil})
+		failures = append(failures, err)
+		devices = append(devices, ListedDevice{Name: name, UDID: found.UDID, Paired: paired(found.UDID)})
 	}
 	network, err := browseNetwork(ctx, listed, "")
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
+	failures = append(failures, err)
 	for _, it := range network {
 		devices = append(devices, ListedDevice{Name: it.record.DeviceName, UDID: it.udid, Paired: true})
 	}
+	machines, err := virtualMachines(ctx)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	failures = append(failures, err)
+	for _, machine := range machines {
+		devices = append(devices, ListedDevice{Name: machine.name, UDID: machine.udid, Paired: paired(machine.udid), Virtual: true})
+	}
 	if len(devices) == 0 {
-		if err = E.Errors(usbmuxdFailure(listErr), err); err != nil {
+		if err = E.Errors(failures...); err != nil {
 			return nil, err
 		}
 	}
@@ -62,15 +79,18 @@ func Trust(ctx context.Context, udid string) error {
 	if _, err := usbmuxd.ReadPairRecord(ctx, udid); err == nil {
 		return nil
 	}
+	machine, err := findVirtualMachine(ctx, udid)
+	if err != nil {
+		return err
+	}
 	devices, err := usbmuxd.ListDevices(ctx)
 	if err != nil {
 		return err
 	}
-	index := slices.IndexFunc(preferUSB(devices), func(it usbmuxd.Device) bool { return it.UDID == udid })
-	if index < 0 {
+	found := common.Find(preferUSB(devices), func(it usbmuxd.Device) bool { return it.UDID == udid })
+	if found.ID == 0 {
 		return E.Extend(ErrDeviceNotListed, udid)
 	}
-	found := preferUSB(devices)[index]
 	buid, err := usbmuxd.ReadBUID(ctx)
 	if err != nil {
 		return err
@@ -79,7 +99,12 @@ func Trust(ctx context.Context, udid string) error {
 	if err != nil {
 		return err
 	}
-	record, err := lockdown.Pair(ctx, dialer(found.ID), pairing)
+	record := pairing.HostRecord
+	if machine == nil {
+		record, err = lockdown.Pair(ctx, dialer(found.ID), pairing)
+	} else {
+		err = machine.control.trust(ctx, pairing)
+	}
 	if err != nil {
 		return err
 	}
@@ -94,6 +119,9 @@ type Application struct {
 }
 
 func (s *Session) Applications(ctx context.Context) ([]Application, error) {
+	if s.virtual != nil {
+		return s.virtual.control.applications(ctx)
+	}
 	conn, err := s.service(ctx, instproxy.Service)
 	if err != nil {
 		return nil, err
@@ -165,6 +193,10 @@ func (s *Session) Install(ctx context.Context, source, bundleID string) error {
 }
 
 func (s *Session) Uninstall(ctx context.Context, bundleID string) error {
+	if s.virtual != nil {
+		_, err := s.virtual.control.call(ctx, "apps.uninstall", map[string]any{"bundle_id": bundleID, "force": true})
+		return err
+	}
 	conn, err := s.service(ctx, instproxy.Service)
 	if err != nil {
 		return err
@@ -174,6 +206,12 @@ func (s *Session) Uninstall(ctx context.Context, bundleID string) error {
 }
 
 func (s *Session) Launch(ctx context.Context, bundleID, payloadURL string, arguments []string) error {
+	if s.virtual != nil {
+		if payloadURL != "" || len(arguments) > 0 {
+			return E.New("a virtual machine launches an app without a payload URL or arguments")
+		}
+		return s.virtual.control.launch(ctx, bundleID)
+	}
 	target, err := s.device(ctx)
 	if err != nil {
 		return err
@@ -216,6 +254,10 @@ func (s *Session) installed(ctx context.Context, bundleID string) (instproxy.App
 }
 
 func (s *Session) Terminate(ctx context.Context, bundleID string) error {
+	if s.virtual != nil {
+		_, err := s.virtual.control.call(ctx, "apps.terminate", map[string]any{"bundle_id": bundleID})
+		return err
+	}
 	target, processes, err := s.processes(ctx, bundleID)
 	if err != nil {
 		return err
@@ -253,22 +295,6 @@ func (s *Session) processes(ctx context.Context, bundleID string) (*coredevice.D
 	return target, slices.DeleteFunc(processes, func(process apps.Process) bool {
 		return !strings.HasPrefix(strings.TrimPrefix(process.Executable, "/private"), bundle)
 	}), nil
-}
-
-func (s *Session) container(ctx context.Context, bundleID string) (*afc.Client, error) {
-	conn, err := s.service(ctx, housearrest.Service)
-	if err != nil {
-		return nil, err
-	}
-	err = housearrest.VendContainer(conn, bundleID)
-	if err != nil {
-		conn.Close()
-		if _, found, lookupErr := s.installed(ctx, bundleID); lookupErr == nil && !found {
-			return nil, E.Cause(err, bundleID, " is not an installed user app")
-		}
-		return nil, err
-	}
-	return afc.New(conn), nil
 }
 
 type Profile struct {

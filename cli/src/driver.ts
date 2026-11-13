@@ -1,186 +1,296 @@
+import { spawn } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
+import readline from "node:readline";
 
-import { findDriver, stopDriver } from "./connection";
-import { appRunning, coreDevice, serve, terminateApp } from "./coredevice";
-import { configDirectory } from "./directories";
+import { label, sameName } from "./connection";
 import { tr } from "./i18n";
-import { FalseResult, choose, columns, interactive, step } from "./output";
-import { askPasscode, passcodeOf } from "./passcode";
-import { savedPasscode, swiptApps } from "./sideload";
+import { choose, interactive, step } from "./output";
 
-// Passcodes for unlocking each device automatically, by UDID; null when its
-// user declined.
-const passcodeFile = path.join(configDirectory, "passcodes.json");
+const require = createRequire(import.meta.url);
+const target = `${process.platform}-${process.arch}`;
+const executable =
+  process.platform === "win32" ? "swipt-driver.exe" : "swipt-driver";
+const checkout = path.resolve(import.meta.dirname, "../..");
+const fromSource = fs.existsSync(path.join(checkout, "go.mod"));
+const crashLogLimit = 64 * 1024;
 
-function loadPasscodes() {
+export const failures = {
+  deviceNotListed: "device_not_listed",
+  locked: "locked",
+  untrusted: "untrusted",
+};
+
+function driverPath() {
+  if (fromSource) {
+    return path.join(checkout, "build/driver", target, executable);
+  }
   try {
-    return JSON.parse(fs.readFileSync(passcodeFile, "utf8"));
+    return path.join(
+      path.dirname(require.resolve(`@swipt/driver-${target}/package.json`)),
+      executable,
+    );
   } catch (error) {
-    if (error.code === "ENOENT") {
-      return {};
+    if (error.code !== "MODULE_NOT_FOUND") {
+      throw error;
     }
-    throw error;
+    return undefined;
   }
 }
 
-function savePasscode(udid, passcode) {
-  const saved = loadPasscodes();
-  saved[udid] = passcode ?? null;
-  fs.mkdirSync(configDirectory, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(passcodeFile, `${JSON.stringify(saved, null, 2)}\n`, {
-    mode: 0o600,
-  });
-}
+const diskImage = () =>
+  path.dirname(require.resolve("@swipt/developer-disk-image/package.json"));
 
-async function confirm(context, message, action, failure) {
-  const confirmed = await choose(
-    context,
-    message,
-    [
-      { name: action, value: true },
-      { name: tr("Cancel"), value: false },
-    ],
-    failure,
-  );
-  if (!confirmed) {
-    throw new FalseResult();
-  }
-}
-
-async function runningApps(device) {
-  const ids = await swiptApps(device);
-  const running = await Promise.all(ids.map((id) => appRunning(device, id)));
-  return { ids, running: ids.filter((_, index) => running[index]) };
-}
-
-// The device has one accessibility client: Swipt on the device, or a driver
-// on one computer. Returns the IDs of Swipt on the device.
-async function takeOver(context, device) {
-  const [{ ids, running }, driving] = await step(
-    tr("checking {device}", { device: device.name }),
-    () =>
-      Promise.all([
-        runningApps(device),
-        findDriver(device.udid, context.signal),
-      ]),
-    { transient: true },
-  );
-  if (driving !== undefined) {
-    const parameters = {
-      device: device.name,
-      computer: driving.name,
-      url: driving.url,
-    };
-    await confirm(
-      context,
-      tr(
-        "The driver on {computer} serves {device}, and only one of them can control it. Stop that driver?",
-        parameters,
-      ),
-      tr("Stop the driver on {computer}", parameters),
-      new Error(
-        tr(
-          'The driver on {computer} serves {device}, and only one of them can control it; stop it with "swipt device stop -d {url}".',
-          parameters,
-        ),
-      ),
-    );
-    await step(tr("stopping the driver on {computer}", parameters), () =>
-      stopDriver(driving, context.signal),
-    );
-  }
-  if (running.length > 0) {
-    const parameters = { device: device.name };
-    await confirm(
-      context,
-      tr(
-        "Swipt is running on {device}, and only one of them can control it. Quit Swipt?",
-        parameters,
-      ),
-      tr("Quit Swipt"),
-      new Error(
-        tr(
-          "Swipt is running on {device}, and only one of them can control it; quit Swipt first.",
-          parameters,
-        ),
-      ),
-    );
-    await step(tr("quitting Swipt on {device}", parameters), () =>
-      Promise.all(running.map((id) => terminateApp(device, id))),
-    );
-  }
-  return ids;
-}
-
-async function swiptPasscode(device, ids) {
-  for (const id of ids) {
-    try {
-      const passcode = await savedPasscode(device, id);
-      if (passcode !== undefined) {
-        return passcode;
-      }
-    } catch {}
-  }
-  return undefined;
-}
-
-// The driver unlocks the device whenever it needs to, for as long as it runs.
-async function unlockPasscode(context, device, ids) {
-  const { options } = context;
-  if (options.passcode !== undefined) {
-    const passcode = passcodeOf(options);
-    savePasscode(device.udid, passcode);
-    return passcode;
-  }
-  const saved = loadPasscodes();
-  if (device.udid in saved) {
-    return saved[device.udid] ?? undefined;
-  }
-  let passcode = await step(
-    tr("checking Swipt on {device}", { device: device.name }),
-    () => swiptPasscode(device, ids),
-    { transient: true },
-  );
-  if (passcode === undefined) {
-    if (!interactive(context)) {
-      return undefined;
-    }
-    passcode = await askPasscode(context);
-  }
-  savePasscode(device.udid, passcode);
-  return passcode;
-}
-
-export async function run(context) {
-  if (context.options["passcode-type"] !== undefined) {
-    passcodeOf(context.options);
-  }
-  const device = await coreDevice(context, { required: false, virtual: false });
-  const ids = await takeOver(context, device);
-  const passcode = await unlockPasscode(context, device, ids);
-  const driven = serve(device.udid, { passcode, signal: context.signal });
-  const ready = await step(
-    tr("starting the driver for {device}", { device: device.name }),
-    () => driven.serving,
-    { transient: true },
-  );
-  console.log(
-    `${ready.device}\n${columns([
-      ["CLI", ready.api],
-      ["MCP", ready.mcp],
-      [tr("Local network"), ready.network],
-    ])}`,
-  );
-  console.error(
-    passcode === undefined
+const usbmuxdHint =
+  process.platform === "linux"
+    ? tr("usbmuxd isn't running; install usbmuxd and start it")
+    : process.platform === "win32"
       ? tr(
-          "{device} isn't unlocked automatically; set its passcode with --passcode. Ctrl-C stops the driver.",
-          { device: ready.device },
+          "Apple Mobile Device Service isn't running; install Apple Devices from the Microsoft Store",
         )
-      : tr("Ctrl-C stops the driver."),
-  );
-  driven.stderr.pipe(process.stderr);
-  await driven.finished();
-  context.signal.throwIfAborted();
+      : undefined;
+
+function driverError({ code, message }) {
+  let text = message;
+  if (code === "usbmuxd_unavailable" && usbmuxdHint !== undefined) {
+    text = `${usbmuxdHint} (${message})`;
+  } else if (code === "driver_running") {
+    text = tr("The driver is already running on this computer; stop it first.");
+  }
+  return Object.assign(new Error(text), { code });
 }
+
+function start(args, { input = undefined, signal = undefined } = {}) {
+  const file = driverPath();
+  if (file === undefined || !fs.existsSync(file)) {
+    throw new Error(
+      fromSource
+        ? `${file} is missing; build it with "make driver".`
+        : tr(
+            'The driver is missing; install it with "npm install -g @swipt/cli --include=optional".',
+          ),
+    );
+  }
+  const child = spawn(file, args, {
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  let stopped = false;
+  const stop = () => {
+    stopped = true;
+    child.stdin.end();
+  };
+  child.stdin.on("error", () => {});
+  if (input !== undefined) {
+    child.stdin.write(`${JSON.stringify(input)}\n`);
+  }
+  signal?.addEventListener("abort", stop, { once: true });
+  let logs = "";
+  child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    logs = (logs + chunk).slice(-crashLogLimit);
+  });
+  const lines = [];
+  let firstLine;
+  const first = new Promise<any>((resolve) => {
+    firstLine = resolve;
+  });
+  readline.createInterface({ input: child.stdout }).on("line", (line) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      parsed = { error: { message: line } };
+    }
+    lines.push(parsed);
+    firstLine(parsed);
+  });
+  const exited = new Promise<any>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", (code, signalName) => {
+      signal?.removeEventListener("abort", stop);
+      child.stdin.end();
+      firstLine(undefined);
+      const last = lines.at(-1);
+      if (last?.error !== undefined) {
+        reject(driverError(last.error));
+      } else if (code === 0 || stopped) {
+        resolve(last?.result);
+      } else {
+        reject(
+          new Error(
+            `swipt-driver exited with ${code ?? signalName}${logs.trim() === "" ? "" : `:\n${logs.trim()}`}`,
+          ),
+        );
+      }
+    });
+  });
+  exited.catch(() => {});
+  return { first, exited, stop, stderr: child.stderr };
+}
+
+const driver = async (args, options = {}) => start(args, options).exited;
+
+const onDevice = (device, command, args = [], options = {}) =>
+  driver(["device", command, "-d", device.udid, ...args], options);
+
+export const randomToken = () => crypto.randomBytes(16).toString("hex");
+
+export function serve(
+  udid,
+  { passcode = undefined, token = "", localNetwork = false, signal },
+) {
+  const running = start(
+    [
+      "-d",
+      udid,
+      "--disk-image",
+      diskImage(),
+      "--secrets-stdin",
+      ...(passcode ? ["--passcode-type", passcode.type] : []),
+      ...(localNetwork ? ["--local-network"] : []),
+    ],
+    { input: { passcode: passcode?.passcode, token }, signal },
+  );
+  return {
+    serving: running.first.then(async (line) => {
+      if (line?.result === undefined) {
+        await running.exited;
+        signal.throwIfAborted();
+        throw new Error("swipt-driver stopped before serving");
+      }
+      const local = new URL(line.result.api);
+      local.hostname = "127.0.0.1";
+      return { ...line.result, local: { url: local.origin, token } };
+    }),
+    stderr: running.stderr,
+    finished: () => running.exited,
+    async stop() {
+      running.stop();
+      await running.exited.catch(() => {});
+    },
+  };
+}
+
+const deviceLine = (device) => `  ${device.name}  ${device.udid}`;
+
+interface DeviceQuery {
+  required?: boolean;
+  virtual?: boolean;
+  filter?: (devices: any[]) => Promise<any[]> | any[];
+}
+
+async function findDevice(
+  context,
+  { required = true, virtual = true, filter }: DeviceQuery,
+) {
+  const given = context.options.device;
+  const listed = await step(
+    tr("looking for devices"),
+    () => driver(["device", "list"]),
+    { transient: true },
+  );
+  const devices = listed
+    .filter((device) => virtual || !device.virtual)
+    .map((device) => ({ ...device, name: device.name || device.udid }));
+  const named = (device) =>
+    sameName(device.udid, given) || sameName(label(device.name), label(given));
+  const matches = given ? devices.filter(named) : devices;
+  if ((given || !required) && matches.length === 1) {
+    return matches[0];
+  }
+  if (devices.length === 0) {
+    throw new Error(
+      tr(
+        "No iPhone or iPad is connected to this computer or found on the local network; connect one with a USB cable and unlock it.",
+      ),
+    );
+  }
+  const reason = !given
+    ? tr("Choose a device with -d NAME|UDID")
+    : matches.length === 0
+      ? tr("No iPhone or iPad is named {name}", { name: given })
+      : tr("More than one iPhone or iPad is named {name}; choose one by UDID", {
+          name: given,
+        });
+  const failed = new Error(
+    `${tr("{reason}; connected iPhone and iPad devices:", { reason })}\n${devices.map(deviceLine).join("\n")}`,
+  );
+  if (matches.length === 0) {
+    throw failed;
+  }
+  const choices =
+    filter !== undefined && interactive(context)
+      ? await filter(matches)
+      : matches;
+  return choose(
+    context,
+    tr("Choose a device"),
+    choices.map((device) => ({
+      name: `${device.name}  ${device.udid}`,
+      short: device.name,
+      value: device,
+    })),
+    failed,
+  );
+}
+
+export async function trustedDevice(context, query: DeviceQuery = {}) {
+  const device = await findDevice(context, query);
+  if (!device.paired) {
+    await step(
+      device.virtual
+        ? tr("pairing with {device}", { device: device.name })
+        : tr(
+            "tap Trust on {device} and enter its passcode to trust this computer",
+            { device: device.name },
+          ),
+      () => onDevice(device, "trust"),
+      { transient: device.virtual },
+    );
+  }
+  return device;
+}
+
+export const apps = (device) => onDevice(device, "apps");
+
+export const appRunning = (device, id) => onDevice(device, "running", [id]);
+
+export const installApp = (device, app, id) =>
+  onDevice(device, "install", [app, id]);
+
+export const uninstallApp = (device, id) => onDevice(device, "uninstall", [id]);
+
+export const launchApp = (device, id, args = []) =>
+  onDevice(device, "launch", [id, "--", ...args]);
+
+export const openSettings = (device, url) =>
+  onDevice(device, "launch", ["--payload-url", url, "com.apple.Preferences"]);
+
+export const terminateApp = (device, id) => onDevice(device, "terminate", [id]);
+
+export const configureVirtual = (device, id, name) =>
+  onDevice(device, "configure", [id, name]);
+
+export const pairApp = (device, id, file) =>
+  onDevice(device, "pair", [id, file]);
+
+export const containerHasFile = (device, id, file) =>
+  onDevice(device, "has", [id, file]);
+
+export const containerSQL = (
+  device,
+  id,
+  file,
+  statements,
+  { query = false } = {},
+) =>
+  onDevice(device, "sqlite", [id, file, ...(query ? ["--query"] : [])], {
+    input: statements,
+  });
+
+export const provisioningProfiles = (device) => onDevice(device, "profiles");
+
+export const mountDiskImage = (device) =>
+  onDevice(device, "mount", ["--disk-image", diskImage()]);

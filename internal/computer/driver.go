@@ -4,8 +4,6 @@ package computer
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,6 +13,7 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/api"
+	"github.com/swipt-automation/swipt/internal/api/discovery"
 	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/graphics"
@@ -22,20 +21,21 @@ import (
 )
 
 const (
-	swiptFolder    = "Swipt"
 	lockName       = "driver.lock"
 	swipletsFolder = "Swiplets"
 	shutdownGrace  = 2 * time.Second
 )
 
 type Options struct {
-	Device       string
+	UDID         string
 	Passcode     string
 	PasscodeType string
+	Token        string
+	LocalNetwork bool
 	DiskImages   []string
 	Version      string
 	Logs         *log.Factory
-	Output       io.Writer
+	Ready        func(Serving) error
 }
 
 func Run(ctx context.Context, options Options) error {
@@ -43,17 +43,11 @@ func Run(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
-	configuration, err := os.UserConfigDir()
+	directory, caches, err := userDirectories()
 	if err != nil {
 		return err
 	}
-	cacheRoot, err := os.UserCacheDir()
-	if err != nil {
-		return err
-	}
-	directory := filepath.Join(configuration, swiptFolder)
-	caches := filepath.Join(cacheRoot, swiptFolder)
-	if err = os.MkdirAll(directory, 0o755); err != nil {
+	if err = os.MkdirAll(directory, 0o700); err != nil {
 		return err
 	}
 	stored, err := loadSettings(directory)
@@ -63,34 +57,48 @@ func Run(ctx context.Context, options Options) error {
 	url := func(host string) string {
 		return "http://" + net.JoinHostPort(host, strconv.Itoa(stored.Port))
 	}
-	held, err := acquire(filepath.Join(directory, lockName), url("localhost"))
+	held, err := acquire(filepath.Join(directory, lockName))
 	if err != nil {
 		return err
 	}
 	defer held.Close()
-	paired, err := chooseDevice(ctx, options.Device)
+	found, err := findPeer(ctx, options.UDID)
 	if err != nil {
 		return err
 	}
-	listener, err := listenConfig.Listen(ctx, "tcp", ":"+strconv.Itoa(stored.Port))
+	name, err := found.name(ctx)
+	if err != nil {
+		return err
+	}
+	var address string
+	if !options.LocalNetwork {
+		address = "127.0.0.1"
+	}
+	listener, err := listenConfig.Listen(ctx, "tcp", net.JoinHostPort(address, strconv.Itoa(stored.Port)))
 	if E.IsMulti(err, errPortTaken...) {
 		stored.Port = randomPort()
 		if err = stored.save(directory); err != nil {
 			return err
 		}
-		listener, err = listenConfig.Listen(ctx, "tcp", ":"+strconv.Itoa(stored.Port))
+		listener, err = listenConfig.Listen(ctx, "tcp", net.JoinHostPort(address, strconv.Itoa(stored.Port)))
 	}
 	if err != nil {
 		return E.Cause(err, "listen on port ", stored.Port)
 	}
 	defer listener.Close()
-	// Stopped after the device is closed, so a computer that sees the
-	// advertisement go away can control the device.
-	host, stopAdvertising, err := advertise(ctx, uint16(stored.Port), paired.UDID)
-	if err != nil {
-		return err
+	serving := Serving{Device: name, UDID: options.UDID, API: url("localhost"), MCP: url("localhost") + api.MCPPath}
+	if options.LocalNetwork {
+		txt := map[string]string{discovery.UDIDKey: options.UDID}
+		if options.Token != "" {
+			txt[discovery.AuthenticatesKey] = "1"
+		}
+		host, stopAdvertising, err := advertise(ctx, name, uint16(stored.Port), txt)
+		if err != nil {
+			return err
+		}
+		defer stopAdvertising()
+		serving.Network = url(host)
 	}
-	defer stopAdvertising()
 
 	deviceLogger := options.Logs.NewLogger("device")
 	diskImages, err := diskImageDirectory(ctx, options.DiskImages, deviceLogger)
@@ -98,8 +106,8 @@ func Run(ctx context.Context, options Options) error {
 		return err
 	}
 	connection := device.New(device.Options{
-		Name:               paired.Name,
-		Connect:            connect(paired.UDID, deviceLogger),
+		Name:               name,
+		Connect:            connect(options.UDID, deviceLogger),
 		Logger:             deviceLogger,
 		Observer:           observer{},
 		DiskImageDirectory: diskImages,
@@ -131,12 +139,13 @@ func Run(ctx context.Context, options Options) error {
 		AppVersion: options.Version,
 		Shutdown:   func() { stopOnce.Do(func() { close(stop) }) },
 	})
+	var credential *api.Credential
+	if options.Token != "" {
+		credential = server.NewCredential(options.Token)
+	}
 	served := make(chan error, 1)
-	go func() { served <- server.Serve(listener, "", nil) }()
-	if err = json.NewEncoder(options.Output).Encode(Serving{
-		Device: paired.Name, UDID: paired.UDID,
-		API: url("localhost"), MCP: url("localhost") + api.MCPPath, Network: url(host),
-	}); err != nil {
+	go func() { served <- server.Serve(listener, "", credential) }()
+	if err = options.Ready(serving); err != nil {
 		return err
 	}
 	select {
@@ -155,32 +164,20 @@ func Run(ctx context.Context, options Options) error {
 	return nil
 }
 
-// Serving is the line Run prints once the API answers.
 type Serving struct {
 	Device  string `json:"device"`
 	UDID    string `json:"udid"`
 	API     string `json:"api"`
 	MCP     string `json:"mcp"`
-	Network string `json:"network"`
+	Network string `json:"network,omitempty"`
 }
 
-type MountOptions struct {
-	Device     string
-	DiskImages []string
-	Logs       *log.Factory
-}
-
-func Mount(ctx context.Context, options MountOptions) error {
-	paired, err := chooseDevice(ctx, options.Device)
+func Mount(ctx context.Context, udid string, diskImages []string, logger log.ContextLogger) error {
+	directory, err := diskImageDirectory(ctx, diskImages, logger)
 	if err != nil {
 		return err
 	}
-	logger := options.Logs.NewLogger("device")
-	directory, err := diskImageDirectory(ctx, options.DiskImages, logger)
-	if err != nil {
-		return err
-	}
-	return device.PrepareDiskImage(ctx, connect(paired.UDID, logger), directory, logger)
+	return device.PrepareDiskImage(ctx, connect(udid, logger), directory, logger)
 }
 
 func passcodeType(name string) (device.PasscodeType, error) {

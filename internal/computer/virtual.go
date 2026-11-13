@@ -7,25 +7,97 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"net"
+	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
+	"slices"
+	"strings"
+	"time"
 
-	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
-	"github.com/swipt-automation/swipt/internal/usbmuxd"
 
 	"howett.net/plist"
 )
 
 const (
-	lockdownRecords      = "/var/root/Library/Lockdown/pair_records"
-	localNetworkRules    = "/var/preferences/com.apple.networkextension.plist"
-	notificationSettings = "/var/mobile/Library/BulletinBoard/VersionedSectionInfo.plist"
-	mobileOwner          = "501:501"
+	// vphone guests are built with chip ID 0xFE01, which their UDID starts with
+	// (vphone-cli 8c3630c7, Research/Guest/xcode_install_signature_gate.md).
+	virtualPrefix     = "0000FE01-"
+	launchpadSocket   = "Library/Application Support/vphone-launchpad/control.sock"
+	launchpadCLI      = "vphone-launchpad-cli"
+	launchTimeout     = 30 * time.Second
+	launchRetry       = time.Second
+	lockdownRecords   = "/var/root/Library/Lockdown/pair_records"
+	localNetworkRules = "/var/preferences/com.apple.networkextension.plist"
+	notifications     = "/var/mobile/Library/BulletinBoard/VersionedSectionInfo.plist"
+	mobileOwner       = "501:501"
 )
+
+var errNotVirtual = E.New("only a virtual machine does this")
+
+type virtualMachine struct {
+	name    string
+	udid    string
+	control vphoned
+}
+
+func virtualMachines(ctx context.Context) ([]virtualMachine, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	if _, err = os.Stat(filepath.Join(home, launchpadSocket)); errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	output, err := exec.CommandContext(ctx, launchpadCLI, "vm", "list").Output()
+	if errors.Is(err, exec.ErrNotFound) {
+		return nil, nil
+	}
+	if exitError, exited := errors.AsType[*exec.ExitError](err); exited {
+		return nil, E.New(launchpadCLI, " vm list: ", strings.TrimSpace(string(exitError.Stderr)))
+	}
+	if err != nil {
+		return nil, err
+	}
+	var listed []struct {
+		Name          string `json:"name"`
+		UDID          string `json:"udid"`
+		State         string `json:"state"`
+		ControlSocket string `json:"controlSocket"`
+	}
+	if err = json.Unmarshal(output, &listed); err != nil {
+		return nil, E.Cause(err, launchpadCLI, " vm list")
+	}
+	var machines []virtualMachine
+	for _, it := range listed {
+		if it.State == "running" && it.UDID != "" && it.ControlSocket != "" {
+			machines = append(machines, virtualMachine{name: it.Name, udid: it.UDID, control: vphoned(it.ControlSocket)})
+		}
+	}
+	return machines, nil
+}
+
+func findVirtualMachine(ctx context.Context, udid string) (*virtualMachine, error) {
+	if !strings.HasPrefix(udid, virtualPrefix) {
+		return nil, nil
+	}
+	machines, err := virtualMachines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	index := slices.IndexFunc(machines, func(it virtualMachine) bool { return it.udid == udid })
+	if index < 0 {
+		return nil, E.Extend(ErrDeviceNotListed, udid)
+	}
+	return &machines[index], nil
+}
 
 type vphoned string
 
@@ -94,6 +166,11 @@ func (socket vphoned) editFile(ctx context.Context, file string, edit func([]byt
 	return true, socket.writeFile(ctx, file, data)
 }
 
+func (socket vphoned) chown(ctx context.Context, file string) error {
+	_, err := socket.call(ctx, "files.chown", map[string]any{"path": file, "owner": mobileOwner})
+	return err
+}
+
 func (socket vphoned) restart(ctx context.Context, names ...string) error {
 	for _, name := range names {
 		listed, err := socket.call(ctx, "processes.list", map[string]any{"filter": name})
@@ -115,46 +192,68 @@ func (socket vphoned) restart(ctx context.Context, names ...string) error {
 	return nil
 }
 
-func GuestPair(ctx context.Context, udid, socket string) error {
-	_, err := usbmuxd.ReadPairRecord(ctx, udid)
-	if err == nil {
-		return nil
-	}
-	devices, err := usbmuxd.ListDevices(ctx)
+func (socket vphoned) trust(ctx context.Context, pairing *lockdown.Pairing) error {
+	err := socket.writeFile(ctx, path.Join(lockdownRecords, pairing.HostID+".plist"), pairing.DeviceRecord)
 	if err != nil {
 		return err
 	}
-	found := common.Find(preferUSB(devices), func(it usbmuxd.Device) bool { return it.UDID == udid })
-	if found.ID == 0 {
-		return E.Extend(ErrDeviceNotListed, udid)
-	}
-	buid, err := usbmuxd.ReadBUID(ctx)
-	if err != nil {
-		return err
-	}
-	pairing, err := lockdown.NewPairing(ctx, dialer(found.ID), buid, udid, Name())
-	if err != nil {
-		return err
-	}
-	guest := vphoned(socket)
-	err = guest.writeFile(ctx, path.Join(lockdownRecords, pairing.HostID+".plist"), pairing.DeviceRecord)
-	if err != nil {
-		return err
-	}
-	err = usbmuxd.SavePairRecord(ctx, found.ID, udid, pairing.HostRecord)
-	if err != nil {
-		return err
-	}
-	return guest.restart(ctx, "lockdownd")
+	return socket.restart(ctx, "lockdownd")
 }
 
-func (socket vphoned) chown(ctx context.Context, file string) error {
-	_, err := socket.call(ctx, "files.chown", map[string]any{"path": file, "owner": mobileOwner})
-	return err
+func (socket vphoned) applications(ctx context.Context) ([]Application, error) {
+	listed, err := socket.call(ctx, "apps.list", nil)
+	if err != nil {
+		return nil, err
+	}
+	entries, _ := listed["apps"].([]any)
+	applications := make([]Application, 0, len(entries))
+	for _, entry := range entries {
+		fields, _ := entry.(map[string]any)
+		text := func(key string) string {
+			value, _ := fields[key].(string)
+			return value
+		}
+		applications = append(applications, Application{BundleIdentifier: text("bundle_id"), Name: text("name"), Version: text("version"), BundleVersion: text("build")})
+	}
+	return applications, nil
 }
 
-func GuestConfigure(ctx context.Context, socket, bundleID, name string) error {
-	guest := vphoned(socket)
+func (socket vphoned) launch(ctx context.Context, bundleID string) error {
+	ctx, cancel := context.WithTimeout(ctx, launchTimeout)
+	defer cancel()
+	for {
+		_, err := socket.call(ctx, "screen.unlock", nil)
+		if err == nil {
+			_, err = socket.call(ctx, "apps.launch", map[string]any{"bundle_id": bundleID})
+		}
+		if err == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-time.After(launchRetry):
+		}
+	}
+}
+
+func (socket vphoned) container(ctx context.Context, bundleID string) (*Container, error) {
+	located, err := socket.call(ctx, "apps.data_dir", map[string]any{"bundle_id": bundleID})
+	if err != nil {
+		return nil, err
+	}
+	root, _ := located["data_path"].(string)
+	if root == "" {
+		return nil, E.New(bundleID, " has no data container")
+	}
+	return &Container{guestContainer{socket, root}}, nil
+}
+
+func (s *Session) Configure(ctx context.Context, bundleID, name string) error {
+	if s.virtual == nil {
+		return errNotVirtual
+	}
+	guest := s.virtual.control
 	_, err := guest.call(ctx, "settings.set", map[string]any{"domain": "com.apple.springboard", "key": "SBDidShowReorderText", "value": true, "type": "bool"})
 	if err != nil {
 		return err
@@ -171,13 +270,13 @@ func GuestConfigure(ctx context.Context, socket, bundleID, name string) error {
 			return err
 		}
 	}
-	changed, err = guest.editFile(ctx, notificationSettings, func(data []byte) ([]byte, error) {
+	changed, err = guest.editFile(ctx, notifications, func(data []byte) ([]byte, error) {
 		return allowNotifications(data, bundleID, name)
 	})
 	if err != nil || !changed {
 		return err
 	}
-	if err = guest.chown(ctx, notificationSettings); err != nil {
+	if err = guest.chown(ctx, notifications); err != nil {
 		return err
 	}
 	return guest.restart(ctx, "SpringBoard")

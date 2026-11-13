@@ -31,7 +31,7 @@ else
   npm publish "./$DISK_IMAGE"
 fi
 npm pkg set "version=$VERSION" --prefix api
-npm pkg set "version=$VERSION" "peerDependencies.@swipt/api=$VERSION" "${optional[@]}" --prefix cli
+npm pkg set "version=$VERSION" "peerDependencies.@swipt/api=$VERSION" "dependencies.@swipt/developer-disk-image=$DISK_IMAGE_VERSION" "${optional[@]}" --prefix cli
 for package in api "${TARGETS[@]/#/build/driver/}" cli; do
   cp LICENSE "$package/"
   PACKAGE=$(node -p "require('./$package/package.json').name")

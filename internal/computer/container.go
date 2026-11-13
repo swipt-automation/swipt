@@ -12,7 +12,7 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/afc"
-	"github.com/swipt-automation/swipt/internal/log"
+	"github.com/swipt-automation/swipt/internal/coredevice/housearrest"
 )
 
 type containerFiles interface {
@@ -26,30 +26,23 @@ type Container struct {
 	files containerFiles
 }
 
-func OpenContainer(ctx context.Context, udid, bundleID string, logger log.ContextLogger) (*Container, error) {
-	session, err := OpenSession(ctx, udid, logger)
+func (s *Session) Container(ctx context.Context, bundleID string) (*Container, error) {
+	if s.virtual != nil {
+		return s.virtual.control.container(ctx, bundleID)
+	}
+	conn, err := s.service(ctx, housearrest.Service)
 	if err != nil {
 		return nil, err
 	}
-	client, err := session.container(ctx, bundleID)
+	err = housearrest.VendContainer(conn, bundleID)
 	if err != nil {
-		session.Close()
+		conn.Close()
+		if _, found, lookupErr := s.installed(ctx, bundleID); lookupErr == nil && !found {
+			return nil, E.Cause(err, bundleID, " is not an installed user app")
+		}
 		return nil, err
 	}
-	return &Container{deviceContainer{session, client}}, nil
-}
-
-func OpenGuestContainer(ctx context.Context, socket, bundleID string) (*Container, error) {
-	guest := vphoned(socket)
-	located, err := guest.call(ctx, "apps.data_dir", map[string]any{"bundle_id": bundleID})
-	if err != nil {
-		return nil, err
-	}
-	root, _ := located["data_path"].(string)
-	if root == "" {
-		return nil, E.New(bundleID, " has no data container")
-	}
-	return &Container{guestContainer{guest, root}}, nil
+	return &Container{deviceContainer{afc.New(conn)}}, nil
 }
 
 func (c *Container) Close() {
@@ -60,11 +53,7 @@ func (c *Container) Has(ctx context.Context, file string) (bool, error) {
 	return c.files.exists(ctx, path.Join("/", file))
 }
 
-func (c *Container) Push(ctx context.Context, source, file string) error {
-	content, err := os.ReadFile(source)
-	if err != nil {
-		return err
-	}
+func (c *Container) Write(ctx context.Context, file string, content []byte) error {
 	return c.files.write(ctx, path.Join("/", file), content)
 }
 
@@ -107,8 +96,7 @@ func (c *Container) SQLite(ctx context.Context, file, statements string, query b
 }
 
 type deviceContainer struct {
-	session *Session
-	client  *afc.Client
+	client *afc.Client
 }
 
 func (d deviceContainer) exists(_ context.Context, file string) (bool, error) {
@@ -128,7 +116,6 @@ func (d deviceContainer) write(_ context.Context, file string, content []byte) e
 
 func (d deviceContainer) close() {
 	d.client.Close()
-	d.session.Close()
 }
 
 type guestContainer struct {

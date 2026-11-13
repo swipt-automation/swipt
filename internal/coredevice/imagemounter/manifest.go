@@ -79,9 +79,6 @@ func Outdated(ctx context.Context, mounted, dir string) (available string, outda
 	return manifest.ProductBuildVersion, buildOlder(mountedVersion, availableVersion), nil
 }
 
-// Newest returns the directory whose Developer Disk Image has the newest
-// build, skipping directories without a readable manifest; it returns "" when
-// none has one.
 func Newest(ctx context.Context, directories []string) (string, error) {
 	var newest string
 	var newestVersion [4]uint64

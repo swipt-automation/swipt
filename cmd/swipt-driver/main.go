@@ -12,128 +12,158 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"strings"
 	"syscall"
 	"time"
 
+	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/computer"
+	"github.com/swipt-automation/swipt/internal/coredevice/apps"
+	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/log"
+	"github.com/swipt-automation/swipt/internal/usbmuxd"
 
 	"github.com/spf13/cobra"
 )
 
-const exitDeviceNotListed = 3
-
 var (
-	options       computer.Options
-	passcodeStdin bool
-	pairOptions   computer.PairOptions
-	pairOutput    string
-	mountOptions  computer.MountOptions
+	logs       = log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}})
+	output     = json.NewEncoder(os.Stdout)
+	input      = make(chan string, 1)
+	udid       string
+	diskImages []string
 )
 
+var errorCodes = []struct {
+	code string
+	err  error
+}{
+	{"device_not_listed", computer.ErrDeviceNotListed},
+	{"usbmuxd_unavailable", usbmuxd.ErrUnavailable},
+	{"locked", device.ErrLocked},
+	{"untrusted", apps.ErrUntrusted},
+	{"driver_running", computer.ErrRunning},
+}
+
+type failure struct {
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message"`
+}
+
 func main() {
+	var options computer.Options
+	var secretsStdin bool
 	command := &cobra.Command{
-		Use:   "swipt-driver [-d NAME|UDID]",
+		Use:   "swipt-driver -d UDID",
 		Short: "Serve the Swipt API and MCP from this computer",
 		Long: `Serve the Swipt API and MCP from this computer. Run it with "swipt driver".
 
-Once the API answers, it prints one JSON line with the device and the URLs.`,
-		Args:          cobra.NoArgs,
-		RunE:          run,
+Each line of standard output is a JSON object: {"result": ...} once the API
+answers, or {"error": {"code": ..., "message": ...}} when the driver fails.
+Standard error carries the logs. The driver stops when standard input ends.
+
+With --secrets-stdin, the first line of standard input is a JSON object:
+"passcode" unlocks the device automatically, and API clients must send "token".`,
+		Args: cobra.NoArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			if secretsStdin {
+				var secrets struct{ Passcode, Token string }
+				if err := readInput(command.Context(), &secrets); err != nil {
+					return err
+				}
+				options.Passcode, options.Token = secrets.Passcode, secrets.Token
+			}
+			options.UDID = udid
+			options.DiskImages = diskImages
+			options.Logs = logs
+			options.Version = version()
+			options.Ready = func(serving computer.Serving) error {
+				return output.Encode(map[string]any{"result": serving})
+			}
+			return computer.Run(command.Context(), options)
+		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	command.Flags().StringVarP(&options.Device, "device", "d", "", "the device, by name or UDID")
-	command.Flags().BoolVar(&passcodeStdin, "passcode-stdin", false, "read the passcode for unlocking the device automatically from standard input")
+	command.Flags().StringVarP(&udid, "device", "d", "", "the UDID of the device")
+	_ = command.MarkFlagRequired("device")
+	command.Flags().BoolVar(&secretsStdin, "secrets-stdin", false, "read the passcode and the token from standard input")
 	command.Flags().StringVar(&options.PasscodeType, "passcode-type", "", "pin (4 or 6 digits, default), numeric or alphanumeric")
-	command.Flags().StringArrayVar(&options.DiskImages, "disk-image", nil, "a directory with a Developer Disk Image; the newest one is mounted")
-	pairCommand := &cobra.Command{
-		Use:    "pair",
-		Hidden: true,
-		Args:   cobra.NoArgs,
-		RunE:   runPair,
-	}
-	pairCommand.Flags().StringVarP(&pairOptions.Device, "device", "d", "", "")
-	pairCommand.Flags().StringVarP(&pairOutput, "output", "o", "", "")
-	mountCommand := &cobra.Command{
-		Use:    "mount",
-		Hidden: true,
-		Args:   cobra.NoArgs,
-		RunE:   runMount,
-	}
-	mountCommand.Flags().StringVarP(&mountOptions.Device, "device", "d", "", "")
-	mountCommand.Flags().StringArrayVar(&mountOptions.DiskImages, "disk-image", nil, "")
-	unzipCommand := &cobra.Command{
-		Use:    "unzip ARCHIVE DIRECTORY",
-		Hidden: true,
-		Args:   cobra.ExactArgs(2),
-		RunE: func(_ *cobra.Command, args []string) error {
-			return computer.Unzip(args[0], args[1])
-		},
-	}
-	command.AddCommand(pairCommand, mountCommand, guestCommand(), deviceCommand(), unzipCommand)
+	command.Flags().BoolVar(&options.LocalNetwork, "local-network", false, "serve the local network and advertise there, not only this computer")
+	command.Flags().StringArrayVar(&diskImages, "disk-image", nil, "a directory with a Developer Disk Image; the newest one is mounted")
+	command.AddCommand(deviceCommand())
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(ctx)
+	go watchInput(cancel)
 	err := command.ExecuteContext(ctx)
-	interrupted := ctx.Err() != nil
+	stopped := ctx.Err() != nil
+	cancel()
 	stop()
 	switch {
 	case err == nil:
 		return
-	case interrupted:
+	case stopped:
 		os.Exit(130)
 	}
-	command.PrintErrln(command.ErrPrefix(), err.Error())
-	if errors.Is(err, computer.ErrDeviceNotListed) {
-		os.Exit(exitDeviceNotListed)
+	if encodeErr := output.Encode(map[string]any{"error": describe(err)}); encodeErr != nil {
+		fmt.Fprintln(os.Stderr, err)
 	}
 	os.Exit(1)
 }
 
-func guestCommand() *cobra.Command {
-	var udid, socket string
-	group := &cobra.Command{Use: "guest", Hidden: true}
-	group.PersistentFlags().StringVarP(&udid, "device", "d", "", "")
-	group.PersistentFlags().StringVar(&socket, "socket", "", "")
-	add := func(use string, args cobra.PositionalArgs, run func(context.Context, []string) error) {
-		group.AddCommand(&cobra.Command{Use: use, Args: args, RunE: func(command *cobra.Command, args []string) error {
-			return run(command.Context(), args)
-		}})
+func describe(err error) failure {
+	described := failure{Message: err.Error()}
+	for _, it := range errorCodes {
+		if errors.Is(err, it.err) {
+			described.Code = it.code
+			break
+		}
 	}
-	add("pair", cobra.NoArgs, func(ctx context.Context, _ []string) error {
-		return computer.GuestPair(ctx, udid, socket)
-	})
-	add("configure BUNDLE_ID NAME", cobra.ExactArgs(2), func(ctx context.Context, args []string) error {
-		return computer.GuestConfigure(ctx, socket, args[0], args[1])
-	})
-	group.AddCommand(containerCommands(func(ctx context.Context, bundleID string) (*computer.Container, error) {
-		return computer.OpenGuestContainer(ctx, socket, bundleID)
-	})...)
-	return group
+	return described
+}
+
+func watchInput(stop context.CancelFunc) {
+	defer stop()
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return
+	}
+	input <- line
+	_, _ = io.Copy(io.Discard, reader)
+}
+
+func readInput(ctx context.Context, value any) error {
+	select {
+	case line := <-input:
+		return json.Unmarshal([]byte(line), value)
+	case <-ctx.Done():
+		return E.New("standard input ended before the input")
+	}
+}
+
+type action func(context.Context, []string) (any, error)
+
+func jsonCommand(use string, args cobra.PositionalArgs, run action) *cobra.Command {
+	return &cobra.Command{Use: use, Args: args, RunE: func(command *cobra.Command, args []string) error {
+		result, err := run(command.Context(), args)
+		if err != nil {
+			return err
+		}
+		return output.Encode(map[string]any{"result": result})
+	}}
 }
 
 func deviceCommand() *cobra.Command {
-	var udid, payloadURL string
+	var payloadURL string
+	var query bool
 	group := &cobra.Command{Use: "device", Hidden: true}
 	group.PersistentFlags().StringVarP(&udid, "device", "d", "", "")
-	logger := log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}}).NewLogger("device")
-	add := func(use string, args cobra.PositionalArgs, run func(context.Context, []string) (any, error)) *cobra.Command {
-		command := &cobra.Command{Use: use, Args: args, RunE: func(command *cobra.Command, args []string) error {
-			result, err := run(command.Context(), args)
-			if err != nil || result == nil {
-				return err
-			}
-			return json.NewEncoder(command.OutOrStdout()).Encode(result)
-		}}
+	logger := logs.NewLogger("device")
+	add := func(use string, args cobra.PositionalArgs, run action) *cobra.Command {
+		command := jsonCommand(use, args, run)
 		group.AddCommand(command)
 		return command
 	}
-	add("list", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
-		return computer.Devices(ctx)
-	})
-	add("trust", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
-		return nil, computer.Trust(ctx, udid)
-	})
 	onDevice := func(use string, args cobra.PositionalArgs, run func(context.Context, *computer.Session, []string) (any, error)) *cobra.Command {
 		return add(use, args, func(ctx context.Context, args []string) (any, error) {
 			session, err := computer.OpenSession(ctx, udid, logger)
@@ -144,6 +174,26 @@ func deviceCommand() *cobra.Command {
 			return run(ctx, session, args)
 		})
 	}
+	inContainer := func(use string, args cobra.PositionalArgs, run func(context.Context, *computer.Container, []string) (any, error)) *cobra.Command {
+		return onDevice(use, args, func(ctx context.Context, session *computer.Session, args []string) (any, error) {
+			container, err := session.Container(ctx, args[0])
+			if err != nil {
+				return nil, err
+			}
+			defer container.Close()
+			return run(ctx, container, args[1:])
+		})
+	}
+	add("list", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
+		return computer.Devices(ctx)
+	})
+	add("trust", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
+		return nil, computer.Trust(ctx, udid)
+	})
+	mount := add("mount", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
+		return nil, computer.Mount(ctx, udid, diskImages, logger)
+	})
+	mount.Flags().StringArrayVar(&diskImages, "disk-image", nil, "")
 	onDevice("apps", cobra.NoArgs, func(ctx context.Context, session *computer.Session, _ []string) (any, error) {
 		return session.Applications(ctx)
 	})
@@ -163,82 +213,27 @@ func deviceCommand() *cobra.Command {
 	onDevice("running BUNDLE_ID", cobra.ExactArgs(1), func(ctx context.Context, session *computer.Session, args []string) (any, error) {
 		return session.Running(ctx, args[0])
 	})
-	group.AddCommand(containerCommands(func(ctx context.Context, bundleID string) (*computer.Container, error) {
-		return computer.OpenContainer(ctx, udid, bundleID, logger)
-	})...)
 	onDevice("profiles", cobra.NoArgs, func(ctx context.Context, session *computer.Session, _ []string) (any, error) {
 		return session.Profiles(ctx)
 	})
-	return group
-}
-
-func containerCommands(open func(context.Context, string) (*computer.Container, error)) []*cobra.Command {
-	var query bool
-	add := func(use string, args cobra.PositionalArgs, run func(context.Context, *computer.Container, []string) (any, error)) *cobra.Command {
-		return &cobra.Command{Use: use, Args: args, RunE: func(command *cobra.Command, args []string) error {
-			container, err := open(command.Context(), args[0])
-			if err != nil {
-				return err
-			}
-			defer container.Close()
-			result, err := run(command.Context(), container, args[1:])
-			if err != nil || result == nil {
-				return err
-			}
-			return json.NewEncoder(command.OutOrStdout()).Encode(result)
-		}}
-	}
-	has := add("has BUNDLE_ID PATH", cobra.ExactArgs(2), func(ctx context.Context, container *computer.Container, args []string) (any, error) {
+	onDevice("configure BUNDLE_ID NAME", cobra.ExactArgs(2), func(ctx context.Context, session *computer.Session, args []string) (any, error) {
+		return nil, session.Configure(ctx, args[0], args[1])
+	})
+	onDevice("pair BUNDLE_ID PATH", cobra.ExactArgs(2), func(ctx context.Context, session *computer.Session, args []string) (any, error) {
+		return nil, session.Pair(ctx, args[0], args[1])
+	})
+	inContainer("has BUNDLE_ID PATH", cobra.ExactArgs(2), func(ctx context.Context, container *computer.Container, args []string) (any, error) {
 		return container.Has(ctx, args[0])
 	})
-	push := add("push BUNDLE_ID SOURCE PATH", cobra.ExactArgs(3), func(ctx context.Context, container *computer.Container, args []string) (any, error) {
-		return nil, container.Push(ctx, args[0], args[1])
-	})
-	sqlite := add("sqlite BUNDLE_ID PATH", cobra.ExactArgs(2), func(ctx context.Context, container *computer.Container, args []string) (any, error) {
-		statements, err := io.ReadAll(os.Stdin)
-		if err != nil {
+	sqlite := inContainer("sqlite BUNDLE_ID PATH", cobra.ExactArgs(2), func(ctx context.Context, container *computer.Container, args []string) (any, error) {
+		var statements string
+		if err := readInput(ctx, &statements); err != nil {
 			return nil, err
 		}
-		rows, err := container.SQLite(ctx, args[0], string(statements), query)
-		if err != nil || !query {
-			return nil, err
-		}
-		return rows, nil
+		return container.SQLite(ctx, args[0], statements, query)
 	})
 	sqlite.Flags().BoolVar(&query, "query", false, "")
-	return []*cobra.Command{has, push, sqlite}
-}
-
-func run(command *cobra.Command, _ []string) error {
-	if passcodeStdin {
-		line, err := bufio.NewReader(command.InOrStdin()).ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			return err
-		}
-		options.Passcode = strings.TrimRight(line, "\r\n")
-	}
-	options.Logs = log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}})
-	options.Version = version()
-	options.Output = command.OutOrStdout()
-	return computer.Run(command.Context(), options)
-}
-
-func runPair(command *cobra.Command, _ []string) error {
-	pairOptions.Logs = log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}})
-	record, err := computer.Pair(command.Context(), pairOptions)
-	if err != nil {
-		return err
-	}
-	if pairOutput == "" {
-		_, err = command.OutOrStdout().Write(record)
-		return err
-	}
-	return os.WriteFile(pairOutput, record, 0o600)
-}
-
-func runMount(command *cobra.Command, _ []string) error {
-	mountOptions.Logs = log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}})
-	return computer.Mount(command.Context(), mountOptions)
+	return group
 }
 
 func version() string {

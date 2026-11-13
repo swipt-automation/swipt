@@ -20,6 +20,8 @@ const (
 	progName        = "swipt"
 )
 
+var ErrUnavailable = E.New("usbmuxd: connect")
+
 type Device struct {
 	ID         uint64
 	UDID       string
@@ -45,7 +47,10 @@ func open(ctx context.Context, message map[string]any) (net.Conn, map[string]any
 	}
 	conn, err := dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, nil, E.Cause(err, "usbmuxd: connect")
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, nil, E.Cause1(ErrUnavailable, err)
 	}
 	reply, err := request(ctx, conn, message)
 	if err != nil {

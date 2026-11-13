@@ -17,7 +17,7 @@ import (
 	"github.com/swipt-automation/swipt/internal/dnssd"
 )
 
-const systemDiskImages = "/Library/Developer/DeveloperDiskImages/iOS_DDI/Restore"
+var systemDiskImages = []string{"/Library/Developer/DeveloperDiskImages/iOS_DDI/Restore"}
 
 func Name() string {
 	name := C.SCDynamicStoreCopyComputerName(0, nil)
@@ -46,8 +46,8 @@ func goString(value C.CFStringRef) string {
 	return C.GoString((*C.char)(unsafe.Pointer(&buffer[0])))
 }
 
-func advertise(ctx context.Context, port uint16, udid string) (string, func(), error) {
-	advertisement, err := dnssd.Advertise(ctx, Name(), discovery.ServiceType, port, map[string]string{discovery.UDIDKey: udid})
+func advertise(ctx context.Context, name string, port uint16, txt map[string]string) (string, func(), error) {
+	advertisement, err := dnssd.Advertise(ctx, name, discovery.ServiceType, port, txt)
 	if err != nil {
 		return "", nil, err
 	}

@@ -207,7 +207,7 @@ function printError(error, target, operation?) {
         break;
       case Code.Unauthenticated:
         message = tr(
-          "{message}; connect with the URL from Swipt › Developer: swipt device add {url}",
+          '{message}; connect with the URL that Swipt › Developer or "swipt driver" shows: swipt device add {url}',
           { message, url: connection.withToken(target.url) },
         );
         break;

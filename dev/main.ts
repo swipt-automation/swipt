@@ -5,9 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-import { apps, coreDevice } from "@swipt/cli/coredevice";
+import { trustedDevice } from "@swipt/cli/driver";
 import { FalseResult } from "@swipt/cli/output";
-import { bundleId, installAndOpen, installPasscode } from "@swipt/cli/sideload";
+import { installAndOpen, installPasscode } from "@swipt/cli/sideload";
+import { bundleId, swiptApps } from "@swipt/cli/swipt-app";
 
 import { buildExpoModulesCore } from "./expo-modules-core";
 import { syncLocales } from "./strings";
@@ -29,9 +30,15 @@ const goSources = [
   ":!*_test.go",
 ];
 
+const driver = path.join(
+  root,
+  "build/driver",
+  `${process.platform}-${process.arch}`,
+  process.platform === "win32" ? "swipt-driver.exe" : "swipt-driver",
+);
+
 const interrupt = new AbortController();
 process.on("SIGINT", () => interrupt.abort());
-process.env.PATH = `${path.join(root, "build")}${path.delimiter}${process.env.PATH}`;
 
 function run(command, args, env?) {
   const result = spawnSync(command, args, {
@@ -123,15 +130,24 @@ const frameworks = () => {
 };
 
 async function installApp(context) {
-  const device = await coreDevice(context, { required: false });
-  const current = (await apps(device)).find(
-    (it) => it.bundleIdentifier === bundleId,
-  );
-  const passcode = await installPasscode(context, device, current);
   const toolchain = [
     capture("go", "version"),
     capture("xcodebuild", "-version"),
   ];
+  build(
+    "driver",
+    {
+      paths: [...goSources, "cmd/swipt-driver", "cli/package.json"],
+      inputs: toolchain,
+      product: driver,
+    },
+    () => run("make", ["driver"]),
+  );
+  const device = await trustedDevice(context, { required: false });
+  const current = (await swiptApps(device)).find(
+    (it) => it.bundleIdentifier === bundleId,
+  );
+  const passcode = await installPasscode(context, device, current);
   const flags = [
     process.env.XCODEBUILD_FLAGS,
     ...(device.virtual ? ["CODE_SIGNING_ALLOWED=NO"] : []),
@@ -164,15 +180,6 @@ async function installApp(context) {
       product: "Frameworks/LibSwipt.xcframework/Info.plist",
     },
     () => run("make", ["-o", "runtime", "lib"]),
-  );
-  build(
-    "driver",
-    {
-      paths: [...goSources, "cmd/swipt-driver"],
-      inputs: toolchain,
-      product: "build/swipt-driver",
-    },
-    () => run("make", ["driver"]),
   );
   build(
     "app",

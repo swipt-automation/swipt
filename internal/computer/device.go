@@ -7,8 +7,6 @@ import (
 	"errors"
 	"net"
 	"slices"
-	"strings"
-	"unicode"
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -23,12 +21,7 @@ import (
 
 const connectionUSB = "USB"
 
-var ErrDeviceNotListed = E.New("device not connected to this computer or found on the local network")
-
-type pairedDevice struct {
-	UDID string
-	Name string
-}
+var ErrDeviceNotListed = E.New("the device is neither connected to this computer nor found on the local network")
 
 func preferUSB(devices []usbmuxd.Device) []usbmuxd.Device {
 	var result []usbmuxd.Device
@@ -51,81 +44,13 @@ func dialer(id uint64) lockdown.Dialer {
 }
 
 func usbmuxdFailure(err error) error {
-	if operationError, isOperation := errors.AsType[*net.OpError](err); !isOperation || operationError.Op != "dial" {
+	if !errors.Is(err, usbmuxd.ErrUnavailable) {
 		return err
 	}
 	if records, _ := remotePairings(); len(records) > 0 {
 		return nil
 	}
 	return err
-}
-
-func chooseDevice(ctx context.Context, given string) (pairedDevice, error) {
-	listed, err := usbmuxd.ListDevices(ctx)
-	var devices []pairedDevice
-	failures := []error{usbmuxdFailure(err)}
-	for _, found := range preferUSB(listed) {
-		value, err := lockdown.GetValue(ctx, dialer(found.ID), "DeviceName")
-		if err != nil {
-			if ctx.Err() != nil {
-				return pairedDevice{}, err
-			}
-			err = E.Cause(err, "read the name of ", found.UDID)
-			if strings.EqualFold(found.UDID, given) {
-				return pairedDevice{}, err
-			}
-			failures = append(failures, err)
-			continue
-		}
-		name, _ := value.(string)
-		devices = append(devices, pairedDevice{UDID: found.UDID, Name: name})
-	}
-	network, err := browseNetwork(ctx, listed, "")
-	if ctx.Err() != nil {
-		return pairedDevice{}, ctx.Err()
-	}
-	failures = append(failures, err)
-	for _, it := range network {
-		devices = append(devices, pairedDevice{UDID: it.udid, Name: it.record.DeviceName})
-	}
-	if given != "" {
-		devices = common.Filter(devices, func(it pairedDevice) bool {
-			return strings.EqualFold(it.UDID, given) || strings.EqualFold(it.Name, given) || label(given) != "" && strings.EqualFold(label(it.Name), label(given))
-		})
-	}
-	switch len(devices) {
-	case 1:
-		return devices[0], nil
-	case 0:
-		if err = E.Errors(failures...); err != nil {
-			return pairedDevice{}, err
-		}
-		if given != "" {
-			return pairedDevice{}, E.Extend(ErrDeviceNotListed, given)
-		}
-		return pairedDevice{}, ErrDeviceNotListed
-	}
-	names := common.Map(devices, func(it pairedDevice) string { return it.Name + " (" + it.UDID + ")" })
-	return pairedDevice{}, E.New("more than one device is connected to this computer: ", strings.Join(names, ", "), "; choose one with -d NAME|UDID")
-}
-
-func label(name string) string {
-	var parts []string
-	var part strings.Builder
-	for _, character := range strings.NewReplacer("'", "", "’", "").Replace(name) {
-		if character < unicode.MaxASCII && (unicode.IsLetter(character) || unicode.IsDigit(character)) {
-			part.WriteRune(character)
-			continue
-		}
-		if part.Len() > 0 {
-			parts = append(parts, part.String())
-			part.Reset()
-		}
-	}
-	if part.Len() > 0 {
-		parts = append(parts, part.String())
-	}
-	return strings.Join(parts, "-")
 }
 
 type peer struct {
@@ -145,7 +70,7 @@ func findPeer(ctx context.Context, udid string) (peer, error) {
 		if ctx.Err() != nil {
 			return peer{}, ctx.Err()
 		}
-		return peer{}, &device.Error{Problem: device.ProblemNoTunnel, Err: E.Errors(E.New("the device is neither connected to this computer nor found on the local network"), listErr, err)}
+		return peer{}, &device.Error{Problem: device.ProblemNoTunnel, Err: E.Errors(E.Extend(ErrDeviceNotListed, udid), listErr, err)}
 	}
 	data, err := usbmuxd.ReadPairRecord(ctx, udid)
 	if err != nil {
@@ -157,6 +82,18 @@ func findPeer(ctx context.Context, udid string) (peer, error) {
 	}
 	record.UDID = udid
 	return peer{device: found, record: record}, nil
+}
+
+func (p peer) name(ctx context.Context) (string, error) {
+	if p.network != nil {
+		return p.network.record.DeviceName, nil
+	}
+	value, err := lockdown.GetValue(ctx, dialer(p.device.ID), "DeviceName")
+	if err != nil {
+		return "", E.Cause(err, "read the name of ", p.device.UDID)
+	}
+	name, _ := value.(string)
+	return name, nil
 }
 
 func (p peer) connect(ctx context.Context, logger log.ContextLogger) (*coredevice.Device, error) {
@@ -184,17 +121,22 @@ func connect(udid string, logger log.ContextLogger) func(ctx context.Context) (*
 }
 
 type Session struct {
-	peer   peer
-	logger log.ContextLogger
-	tunnel *coredevice.Device
+	peer    peer
+	virtual *virtualMachine
+	logger  log.ContextLogger
+	tunnel  *coredevice.Device
 }
 
 func OpenSession(ctx context.Context, udid string, logger log.ContextLogger) (*Session, error) {
+	machine, err := findVirtualMachine(ctx, udid)
+	if err != nil {
+		return nil, err
+	}
 	found, err := findPeer(ctx, udid)
 	if err != nil {
 		return nil, err
 	}
-	return &Session{peer: found, logger: logger}, nil
+	return &Session{peer: found, virtual: machine, logger: logger}, nil
 }
 
 func (s *Session) device(ctx context.Context) (*coredevice.Device, error) {

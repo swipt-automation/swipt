@@ -27,7 +27,14 @@ const (
 	errorCodeProcessUnknown = 10004
 
 	noSuchProcess = 3
+
+	// FBSOpenApplicationErrorCodeSecurity, which FBSOpenApplicationErrorCodeToString
+	// names Security (FrontBoardServices, iOS 27.0.1 24A446).
+	openApplicationErrorDomain = "FBSOpenApplicationErrorDomain"
+	openApplicationSecurity    = 3
 )
+
+var ErrUntrusted = E.New("the app or its developer is not trusted")
 
 type App struct {
 	BundleID      string
@@ -168,6 +175,9 @@ func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL
 	// process is still exiting fails with it (iOS 27.2 24B115).
 	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && terminateExisting && featureError.Code == errorCodeProcessUnknown {
 		_, err = coredevice.InvokeFeature(ctx, conn, uuid.NewString(), launchFeature, "", input)
+	}
+	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && featureError.CausedBy(openApplicationErrorDomain, openApplicationSecurity) {
+		return E.Cause1(ErrUntrusted, E.Cause(err, "apps: launch ", bundleID))
 	}
 	if err != nil {
 		return E.Cause(err, "apps: launch ", bundleID)

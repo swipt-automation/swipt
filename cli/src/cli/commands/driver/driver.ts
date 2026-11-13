@@ -1,4 +1,4 @@
-import * as driving from "../../../driver";
+import * as serving from "../../../serve";
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { passcodeOptions, udidDeviceOption } from "../flags";
@@ -15,8 +15,17 @@ export const driver = defineCommand({
   options: {
     ...udidDeviceOption,
     ...passcodeOptions(
-      tr("passcode to unlock the device automatically; empty forgets it"),
+      tr("passcode to unlock the device automatically; empty turns that off"),
     ),
+    token: {
+      type: "string",
+      value: "TOKEN",
+      help: tr("require this token from API clients"),
+    },
+    "random-token": {
+      type: "boolean",
+      help: tr("require a random token from API clients"),
+    },
   },
-  run: driving.run,
+  run: serving.run,
 });

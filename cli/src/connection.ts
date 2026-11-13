@@ -1,15 +1,13 @@
-import dgram from "node:dgram";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import Bonjour from "bonjour-service";
-import multicastDNS from "multicast-dns";
 
 import { Code, RpcError, UsageError, open } from "./client";
 import { configDirectory } from "./directories";
 import { tr } from "./i18n";
+import { multicastOptions } from "./mdns";
 import { columns } from "./output";
 import {
   DeviceConnectionProblem,
@@ -84,19 +82,8 @@ function parseURL(text) {
   };
 }
 
-export const withToken = (url) => url.replace("://", "://TOKEN@");
-
-const multicastOptions = () =>
-  Object.values(os.networkInterfaces())
-    .map((addresses) =>
-      addresses.find((it) => it.family === "IPv4" && !it.internal),
-    )
-    .filter(Boolean)
-    .map(({ address }) => ({
-      socket: dgram.createSocket("udp4"),
-      bind: false,
-      interface: address,
-    }));
+export const withToken = (url, token = "TOKEN") =>
+  url.replace("://", `://${encodeURIComponent(token)}@`);
 
 async function browse(signal, until, limit = browseLimit) {
   const responders = multicastOptions().map(
@@ -160,7 +147,6 @@ export async function findPublished(name, signal) {
   return found.find(matches);
 }
 
-// A computer that runs swipt-driver publishes the UDID of the device it serves.
 export async function findDriver(udid, signal) {
   const serves = (service) =>
     service.udid !== undefined && sameName(service.udid, udid);
@@ -169,14 +155,8 @@ export async function findDriver(udid, signal) {
   );
 }
 
-// Returns once the driver no longer publishes itself, which it does after it
-// has let go of the device.
 export async function stopDriver(service, signal) {
-  const device = { url: service.url, token: "" };
-  await open((await located(device, signal)) ?? device).system.shutdown(
-    {},
-    { signal },
-  );
+  await open({ url: service.url, token: "" }).system.shutdown({}, { signal });
   const deadline = AbortSignal.any([signal, AbortSignal.timeout(stopLimit)]);
   try {
     while ((await findDriver(service.udid, deadline)) !== undefined) {
@@ -187,7 +167,9 @@ export async function stopDriver(service, signal) {
       throw error;
     }
     throw new Error(
-      tr("The driver on {computer} didn't stop.", { computer: service.name }),
+      tr("The driver on {computer} didn't stop.", {
+        computer: new URL(service.url).hostname,
+      }),
     );
   }
 }
@@ -329,15 +311,7 @@ export async function attach(context) {
     device = parseURL(stored[names[0]]);
   }
   context.target.url = device.url;
-  if (process.platform === "darwin") {
-    return open(device);
-  }
-  return open(
-    (await located(
-      device,
-      AbortSignal.any([context.signal, AbortSignal.timeout(answerLimit)]),
-    )) ?? device,
-  );
+  return open(device);
 }
 
 const connectionStates = {
@@ -377,70 +351,9 @@ function connectionText(connection) {
     .join(": ");
 }
 
-async function localAddress(host, signal) {
-  const sockets = multicastOptions().map((options) => multicastDNS(options));
-  const query = () => {
-    for (const mdns of sockets) {
-      mdns.query([
-        { name: host, type: "A" },
-        { name: host, type: "AAAA" },
-      ]);
-    }
-  };
-  const requery = setInterval(query, browseRequery);
-  try {
-    return await new Promise<string | undefined>((resolve, reject) => {
-      if (signal.aborted) {
-        resolve(undefined);
-      }
-      signal.addEventListener("abort", () => resolve(undefined), {
-        once: true,
-      });
-      for (const mdns of sockets) {
-        mdns.on("error", reject);
-        mdns.on("response", (response) => {
-          const answers = response.answers.filter(
-            (it) =>
-              sameName(it.name, host) &&
-              (it.type === "A" ||
-                (it.type === "AAAA" && !/^fe[89ab]/i.test(it.data))),
-          );
-          const answer = answers.find((it) => it.type === "A") ?? answers[0];
-          if (answer) {
-            resolve(answer.data);
-          }
-        });
-      }
-      query();
-    });
-  } finally {
-    clearInterval(requery);
-    for (const mdns of sockets) {
-      mdns.destroy();
-    }
-  }
-}
-
-async function located(device, signal) {
-  const url = new URL(device.url);
-  if (!url.hostname.endsWith(".local")) {
-    return device;
-  }
-  const address = await localAddress(url.hostname, signal);
-  if (address === undefined) {
-    return undefined;
-  }
-  url.hostname = address.includes(":") ? `[${address}]` : address;
-  return { ...device, url: url.href.replace(/\/+$/, "") };
-}
-
 async function probe(url, signal) {
   try {
-    const device = await located(parseURL(url), signal);
-    if (device === undefined) {
-      return { cells: [tr("offline")] };
-    }
-    const info = await open(device).system.getInfo({}, { signal });
+    const info = await open(parseURL(url)).system.getInfo({}, { signal });
     return {
       cells: [
         info.appBuild === ""
@@ -467,7 +380,9 @@ export async function list({ signal }) {
     Object.values(stored).map((url) => [url, probe(url, deadline)]),
   );
   const locked = (await discover(signal, stored)).filter(
-    (it) => it.authenticates && storedName(stored, it.name) === undefined,
+    (it) =>
+      it.authenticates &&
+      !Object.values(stored).some((url) => parseURL(url).url === it.url),
   );
   const names = Object.keys(stored).sort((a, b) => a.localeCompare(b));
   if (names.length === 0 && locked.length === 0) {
