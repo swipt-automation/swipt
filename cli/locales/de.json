@@ -227,7 +227,7 @@
   "unreachable": "nicht erreichbar",
   "usage: {usage}": "Verwendung: {usage}",
   "use nightly build": "Nightly-Build verwenden",
-  "waiting for {device}": "Warten auf {device}",
+  "waiting for {device}": "Auf {device} wird gewartet",
   "watch the state": "Status überwachen",
   "without logs": "keine Protokolle anzeigen",
   "xcodebuild is missing; install Xcode.": "xcodebuild fehlt; installiere Xcode.",

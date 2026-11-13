@@ -151,7 +151,7 @@
   "connecting": "ସଂଯୋଗ କରାଯାଉଛି",
   "couldn't prepare the Developer Disk Image on {device}: {error}": "{device} ରେ ଡେଭଲପର୍ ଡିସ୍କ୍ ଇମେଜ୍ ପ୍ରସ୍ତୁତ କରାଯାଇପାରିଲା ନାହିଁ: {error}",
   "destination": "ଗନ୍ତବ୍ୟସ୍ଥଳ",
-  "developer mode off": "ଡିଭେଲପର୍ ମୋଡ୍ ବନ୍ଦ ଅଛି",
+  "developer mode off": "ଡେଭଲପର୍ ମୋଡ୍ ବନ୍ଦ ଅଛି",
   "device unsupported": "ଡିଭାଇସ୍ ସମର୍ଥିତ ନୁହେଁ",
   "disk image missing": "ଡିସ୍କ୍ ଇମେଜ୍ ନାହିଁ",
   "disk image mount failed": "ଡିସ୍କ୍ ଇମେଜ୍ ମାଉଣ୍ଟ୍ କରାଯାଇପାରିଲା ନାହିଁ",

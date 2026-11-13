@@ -1,5 +1,5 @@
 {
-  "\"source.icon\" in package.json must have a symbol and may have a color.": "\"source.icon\" i package.json skal have et symbol og kan have en farve.",
+  "\"source.icon\" in package.json must have a symbol and may have a color.": "\"source.icon\" i package.json skal have symbol og kan have color.",
   "\"source.localizedNames\" in package.json must map languages to names.": "\"source.localizedNames\" i package.json skal knytte sprog til navne.",
   "\"source.url\" in package.json isn't an absolute URL.": "\"source.url\" i package.json er ikke en absolut URL.",
   "\"swiplet.id\" in package.json must be 1 to 128 lowercase letters, digits, dots, underscores and hyphens starting with a letter or a digit.": "\"swiplet.id\" i package.json skal bestå af 1 til 128 små bogstaver, cifre, punktummer, understregningstegn og bindestreger og starte med et bogstav eller et ciffer.",
