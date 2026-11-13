@@ -1,0 +1,393 @@
+{
+  "availability": {
+    "advice": "available()로 이를 확인하거나, 이를 사용하는 코드를 @available로 표시하거나, package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
+    "apiLevel": "API 레벨 {{level}}",
+    "entryNeeds": "{{location}}: {{name}}은(는) Swiplet의 진입점이며 {{requirement}}이(가) 필요합니다. package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
+    "importNeeds": "{{location}}: {{name}}을(를) 가져오려면 {{requirement}}이(가) 필요합니다. package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
+    "invalidEntry": "{{location}}: @available에 \"{{entry}}\"이(가) 있습니다. @available에는 \"apiLevel <level>\" 및 \"iOS <version>\"을(를) 쉼표로 구분하여 지정해야 합니다.",
+    "needs": "{{location}}: {{name}}에는 {{requirement}}이(가) 필요합니다.",
+    "repeatedEntry": "{{location}}: @available에 {{kind}}이(가) 두 번 지정되어 있습니다."
+  },
+  "cli": {
+    "commands": "명령:",
+    "exactArgs_other": "인수가 {{count}}개 필요하지만 {{received}}개를 받았습니다.",
+    "help": "도움말",
+    "helpHint": "사용법을 보려면 \"swipt help\"를 실행하십시오.",
+    "minimumArgs_other": "인수가 {{count}}개 이상 필요하지만 {{received}}개를 받았습니다.",
+    "missingCommand": "명령이 지정되지 않았습니다.",
+    "options": "옵션:",
+    "rangeArgs_other": "인수가 {{least}}~{{count}}개 필요하지만 {{received}}개를 받았습니다.",
+    "unauthenticated": "{{message}}. Swipt > ‘개발자’ 또는 \"swipt driver\"에 표시되는 URL로 연결하십시오. swipt device add {{url}}",
+    "unimplemented": "{{url}}의 Swipt에는 이 명령이 없습니다. Swipt를 업데이트하십시오.",
+    "unknownCommand": "{{parent}}에 {{name}} 명령이 없습니다.",
+    "unknownOption": "{{option}}은(는) {{command}}의 옵션이 아닙니다.",
+    "unreachable": "{{url}}의 Swipt에 연결할 수 없습니다. {{message}}",
+    "usage": "사용법: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "데이터 디렉토리는 유지하고 모든 데이터 파일 삭제"
+      },
+      "list": {
+        "description": "데이터 파일 나열",
+        "recursive": "하위 디렉토리 포함"
+      },
+      "read": {
+        "description": "데이터 파일 또는 디렉토리 읽기",
+        "output": "대상 위치",
+        "saved_other": "파일 {{count}}개를 {{path}}에 저장했습니다."
+      },
+      "remove": {
+        "description": "데이터 파일 삭제",
+        "recursive": "디렉토리 내용 포함"
+      },
+      "replDescription": "REPL 데이터 디렉토리의 파일 관리",
+      "swipletDescription": "Swiplet 데이터 디렉토리의 파일 관리",
+      "write": {
+        "description": "데이터 파일 쓰기"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "URL로 기기 추가(원격 기기이거나 토큰이 필요한 경우 필수)"
+      },
+      "description": "기기 관리 및 로그 읽기",
+      "list": {
+        "description": "기기를 나열하고 로컬 네트워크에서 발견된 기기 추가"
+      },
+      "logs": {
+        "count": "이전 항목 수(기본값 100)",
+        "description": "로그 출력",
+        "follow": "새 항목을 계속 표시",
+        "invalidDuration": "{{option}}의 인수 {{value}}이(가) 유효하지 않습니다. 30s 또는 1m30s와 같은 시간이어야 합니다.",
+        "invalidLevel": "--level은 error, warn, info 또는 debug여야 합니다.",
+        "invalidNumber": "{{option}}의 인수 {{value}}이(가) 유효하지 않습니다. 숫자여야 합니다.",
+        "level": "최소 레벨(기본값 info)",
+        "since": "최대 경과 시간",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "저장된 기기 삭제"
+      },
+      "stop": {
+        "description": "Swipt API 제공 중단",
+        "stopped": "중단됨"
+      }
+    },
+    "driver": {
+      "description": "이 컴퓨터에서 기기의 Swipt API 및 MCP 제공",
+      "details": "기기를 제어할 수 있는 것은 한 번에 하나뿐입니다. 기기의 Swipt 또는 컴퓨터 한 대의 드라이버 중 하나입니다.",
+      "passcode": "기기의 잠금을 자동으로 해제하는 데 사용할 암호. 비워 두면 자동 잠금 해제가 꺼짐",
+      "randomToken": "API 클라이언트에 임의의 토큰 요구",
+      "token": "API 클라이언트에 이 토큰 요구"
+    },
+    "project": {
+      "build": {
+        "description": "프로젝트를 dist/<swiplet.id>.swiplet으로 번들링"
+      },
+      "create": {
+        "description": "새 디렉토리 또는 빈 디렉토리에 Swiplet 프로젝트 생성",
+        "notEmpty": "{{directory}}이(가) 비어 있지 않습니다."
+      },
+      "deploy": {
+        "description": "프로젝트를 빌드하여 기기에 설치"
+      },
+      "description": "Swiplet 프로젝트 생성, 빌드 및 배포",
+      "develop": {
+        "deployed": "{{elapsed}} 만에 빌드 및 배포 완료. {{directory}} 모니터링 중",
+        "description": "Swiplet 프로젝트를 빌드 및 설치하고 변경 사항을 계속 반영",
+        "quiet": "로그 표시 안 함",
+        "unchanged": "{{elapsed}} 만에 빌드 완료. 변경 사항 없음"
+      },
+      "source": {
+        "description": "빌드된 Swiplet을 swiplets.json과 함께 dist/에 수집",
+        "duplicateID": "{{id}}이(가) {{first}}와(과) {{second}} 모두에 해당합니다.",
+        "invalidIcon": "package.json의 \"source.icon\"에는 symbol이 있어야 하며 color는 선택 사항입니다.",
+        "invalidLocalizedNames": "package.json의 \"source.localizedNames\"는 언어와 이름의 매핑이어야 합니다.",
+        "invalidURL": "package.json의 \"source.url\"이 절대 URL이 아닙니다.",
+        "noWorkspaces": "package.json에 Swiplet이 포함된 워크스페이스가 없습니다. 나열할 Swiplet을 지정하십시오.",
+        "notBuilt": "{{file}}이(가) 없습니다. 먼저 {{directory}}을(를) 빌드하십시오."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "전역 변수 및 모듈의 TypeScript 선언 출력"
+      },
+      "dataDirectory": "{{path}}은(는) REPL의 데이터 디렉토리를 가리킵니다. --output DIRECTORY로 저장하십시오.",
+      "description": "기기의 REPL 세션에서 JavaScript 실행",
+      "directory": "{{path}}은(는) REPL 데이터 디렉토리 안의 디렉토리입니다. --output DIRECTORY로 저장하십시오.",
+      "reset": {
+        "description": "세션 재설정"
+      },
+      "run": {
+        "arguments": "첫 번째 인수는 기존 파일을 가리키면 FILE, 그렇지 않으면 CODE입니다. 옵션은 그 앞에 지정합니다.",
+        "description": "기기에서 JavaScript 표현식 또는 프로그램 실행",
+        "details": "CODE는 표현식이며 그 값이 출력됩니다. FILE 또는 -로 지정하거나 인수 없이 전달하는 표준 입력은 프로그램이며 콘솔 출력만 출력됩니다.",
+        "extraArguments": "{{argument}}은(는) 파일이 아니며, CODE는 ARG를 받지 않습니다.",
+        "images": "이미지 디렉토리(기본값: 새 임시 디렉토리)"
+      }
+    },
+    "sideload": {
+      "description": "Swipt 사이드로드",
+      "install": {
+        "description": "Swipt 설치",
+        "force": "같거나 더 최신인 빌드 위에 설치"
+      },
+      "passcode": "이 암호로 자동 잠금 해제 설정",
+      "setup": {
+        "description": "Swipt 설정"
+      },
+      "uninstall": {
+        "description": "Swipt 제거"
+      },
+      "update": {
+        "description": "Swipt 업데이트 또는 갱신",
+        "passcode": "이 암호로 기기 잠금 해제"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet 동작 호출",
+        "input": "입력 JSON, @FILE 또는 -",
+        "invalidInput": "--input이 JSON이 아닙니다. {{error}}"
+      },
+      "dataDirectory": "{{path}}은(는) {{swiplet}}의 데이터 디렉토리를 가리킵니다. --output DIRECTORY로 저장하십시오.",
+      "description": "기기의 Swiplet 관리",
+      "directory": "{{path}}은(는) {{swiplet}} 데이터 디렉토리 안의 디렉토리입니다. --output DIRECTORY로 저장하십시오.",
+      "install": {
+        "description": "Swiplet 아카이브 설치",
+        "notFound": "{{path}}에 아카이브가 없습니다."
+      },
+      "list": {
+        "actions": "동작",
+        "description": "Swiplet 나열",
+        "id": "ID",
+        "service": "서비스",
+        "status": "상태",
+        "title": "제목",
+        "version": "버전"
+      },
+      "remove": {
+        "description": "Swiplet 제거",
+        "removed": "{{name}} 제거됨"
+      },
+      "service": {
+        "description": "Swiplet 서비스 관리",
+        "disable": {
+          "description": "Swiplet 서비스 끄기"
+        },
+        "enable": {
+          "description": "Swiplet 서비스 켜기"
+        },
+        "watch": {
+          "description": "Swiplet 서비스 모니터링"
+        },
+        "watchState": "상태 모니터링"
+      },
+      "show": {
+        "description": "Swiplet 정보 보기",
+        "input": "입력: {{schema}}",
+        "notFound": "Swiplet {{id}}이(가) 없습니다.",
+        "output": "출력: {{schema}}",
+        "service": "서비스: {{status}}"
+      }
+    },
+    "version": {
+      "description": "버전 출력"
+    }
+  },
+  "connection": {
+    "added": "{{device}} 추가됨",
+    "ambiguous": "기기가 여러 대 있습니다({{devices}}). -d로 하나를 선택하십시오.",
+    "driverNotStopped": "{{computer}}의 드라이버가 중단되지 않았습니다.",
+    "invalidURL": "{{text}}은(는) URL이 아닙니다.",
+    "none": "기기가 없습니다. Swipt > ‘개발자’ > ‘로컬 네트워크’를 켜거나 \"swipt device add URL\"로 기기를 연결하십시오.",
+    "noneOnNetwork": "Swipt를 로컬 네트워크에 게시하는 기기가 없습니다. Swipt > ‘개발자’ > ‘로컬 네트워크’를 켜거나 \"swipt device add URL\"로 기기를 연결하십시오.",
+    "notFound": "기기 {{device}}이(가) 없습니다.",
+    "notFoundHint": "기기 {{device}}이(가) 없습니다. \"swipt device list\"로 기기 목록을 확인하십시오.",
+    "offline": "오프라인",
+    "problem": {
+      "developerModeOff": "개발자 모드가 꺼져 있음",
+      "deviceUnsupported": "지원되지 않는 기기",
+      "diskImageMissing": "디스크 이미지 없음",
+      "diskImageMountFailed": "디스크 이미지 마운트 실패",
+      "pairingRejected": "페어링 거부됨",
+      "screenInUse": "화면 사용 중",
+      "unreachable": "연결할 수 없음",
+      "vpnPeerAddressMissing": "VPN 피어 주소 없음"
+    },
+    "removed": "{{name}} 삭제됨",
+    "requiresToken": "토큰 필요",
+    "requiresTokenHint": "{{device}}에 토큰이 필요합니다. swipt device add {{url}}",
+    "state": {
+      "connecting": "연결 중",
+      "failed": "실패",
+      "preparing": "준비 중",
+      "running": "연결됨",
+      "stopped": "중단됨"
+    },
+    "unsupportedURL": "{{text}}은(는) http 또는 https URL이 아닙니다."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} 설치됨",
+    "replaced": "{{id}} {{version}} 대체됨"
+  },
+  "driver": {
+    "alreadyRunning": "이 컴퓨터에서 드라이버가 이미 실행 중입니다. 먼저 드라이버를 중단하십시오.",
+    "ambiguousName": "이름이 {{name}}인 iPhone 또는 iPad가 여러 대 있습니다. UDID로 하나를 선택하십시오.",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service가 실행 중이 아닙니다. Microsoft Store에서 ‘Apple 기기’ 앱을 설치하십시오.",
+    "chooseDevice": "기기 선택",
+    "chooseDeviceHint": "-d NAME|UDID로 기기를 선택하십시오.",
+    "connectedDevices": "{{reason}}. 연결된 iPhone 및 iPad:",
+    "lookingForDevices": "기기를 찾는 중",
+    "missing": "드라이버가 없습니다. \"npm install -g @swipt/cli --include=optional\"로 설치하십시오.",
+    "nameNotFound": "이름이 {{name}}인 iPhone 또는 iPad가 없습니다.",
+    "noDevice": "이 컴퓨터에 연결되어 있거나 로컬 네트워크에서 발견된 iPhone 또는 iPad가 없습니다. USB 케이블로 기기를 연결하고 잠금을 해제하십시오.",
+    "pairing": "{{device}}와(과) 페어링 중",
+    "trustPrompt": "{{device}}에서 ‘신뢰’를 탭하고 암호를 입력하여 이 컴퓨터를 신뢰하십시오.",
+    "usbmuxdMissing": "usbmuxd가 실행 중이 아닙니다. usbmuxd를 설치하고 실행하십시오."
+  },
+  "error": "오류: {{message}}",
+  "flags": {
+    "device": "사용할 기기",
+    "nightly": "nightly 빌드 사용",
+    "noSetup": "Swipt 페어링, 개발자 신뢰 및 API 게시 안 함",
+    "noSetupAPI": "로컬 네트워크에 API 게시 안 함",
+    "noSetupPair": "Swipt 페어링 안 함",
+    "passcodeType": "pin(4자리 또는 6자리 숫자, 기본값), numeric 또는 alphanumeric",
+    "team": "팀 ID(팀이 여러 개인 경우 필수)"
+  },
+  "metro": {
+    "boolean": "불리언 값",
+    "contextArgument": "require.context의 {{index}}번째 인수는 {{expected}}여야 합니다.",
+    "contextRegExp": "require.context의 {{index}}번째 인수는 정규 표현식 리터럴이어야 합니다.",
+    "oneOf": "{{values}} 중 하나",
+    "string": "문자열",
+    "workletsMismatch": "프로젝트는 react-native-worklets {{version}}을(를) 사용하지만 Swipt는 {{expected}}을(를) 실행합니다. react-native-worklets@{{expected}}을(를) 설치하거나 제거하십시오."
+  },
+  "noThanks": "괜찮습니다.",
+  "output": {
+    "navigate": "이동",
+    "select": "선택",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}}부터 {{status}}",
+    "serviceStatus": {
+      "failed": "실패",
+      "running": "실행 중",
+      "starting": "시작 중",
+      "stopped": "중단됨",
+      "turnedOff": "끔",
+      "turnedOn": "켬"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "사용자 지정 알파벳 숫자 코드",
+    "alphanumericDetail": "알파벳 숫자",
+    "empty": "암호를 입력하십시오.",
+    "invalidAlphanumeric": "암호에는 출력 가능한 ASCII 문자를 최대 64자까지 사용할 수 있습니다.",
+    "invalidNumeric": "숫자 코드에는 숫자만 사용할 수 있습니다.",
+    "invalidPin": "pin 암호는 4자리 또는 6자리 숫자입니다. 사용자 지정 암호에는 --passcode-type numeric 또는 alphanumeric이 필요합니다.",
+    "invalidType": "--passcode-type의 인수 {{value}}이(가) 유효하지 않습니다. {{types}} 중 하나여야 합니다.",
+    "masked": "[입력 내용이 가려짐]",
+    "numeric": "사용자 지정 숫자 코드",
+    "numericDetail": "숫자",
+    "pin": "4자리 또는 6자리 암호",
+    "pinDetail": "4자리 또는 6자리 숫자",
+    "prompt": "기기 암호",
+    "setUp": "자동 잠금 해제를 설정하겠습니까? 설정하면 Swipt가 자동으로 이 기기의 잠금을 해제할 수 있습니다."
+  },
+  "project": {
+    "assetConflict": "{{source}}와(과) {{asset}}이(가) Swiplet에서 모두 assets/{{name}}이(가) 됩니다.",
+    "conditionalActions": "확장 프로그램이 available()에 따라 서로 다른 동작을 정의합니다. 모든 시스템에서 동일한 동작을 정의하고 run 또는 동작 내에서 available()을 확인하십시오.",
+    "databaseAtLoad": "extension.js가 로드되는 동안 데이터베이스가 사용되었습니다. run 또는 동작 내에서 사용하십시오.",
+    "interfaceImport": "인터페이스가 런타임에 {{file}}을(를) 가져옵니다. `import type`으로 해당 타입을 가져오십시오.",
+    "interfaceOnly": "{{name}}은(는) Swiplet 인터페이스에서만 작동합니다.",
+    "invalidExposure": "동작 {{action}}은(는) \"shortcuts\"에만 노출할 수 있습니다.",
+    "invalidExtension": "확장 프로그램의 기본 내보내기가 defineExtension의 결과가 아닙니다.",
+    "invalidID": "package.json의 \"swiplet.id\"는 1~128자의 영문 소문자, 숫자, 점, 밑줄 및 하이픈으로 구성되어야 하며 영문자 또는 숫자로 시작해야 합니다.",
+    "invalidLocalizedNames": "package.json의 \"swiplet.localizedNames\"는 언어와 이름의 매핑이어야 합니다.",
+    "invalidMinimumAPILevel": "package.json의 \"swiplet.minimumAPILevel\"은 {{oldest}}부터 @swipt/api의 API 레벨인 {{level}}까지의 정수여야 합니다.",
+    "invalidMinimumIOSVersion": "package.json의 \"swiplet.minimumIOSVersion\"은 @swipt/api의 최소 iOS 버전인 {{version}} 이상의 버전 번호여야 합니다.",
+    "invalidName": "package.json의 \"swiplet.name\"은 비어 있지 않은 문자열이어야 합니다.",
+    "invalidSchema": "동작 {{action}}의 {{side}} 스키마가 Standard JSON Schema를 구현하지 않습니다. 이를 구현하는 라이브러리(예: Zod 4)를 사용하십시오.",
+    "invalidString": "package.json의 \"{{field}}\"은(는) 문자열이어야 합니다.",
+    "invalidVersionCode": "package.json의 \"swiplet.versionCode\"는 양의 정수여야 합니다.",
+    "missingTitle": "동작 {{action}}에 제목이 필요합니다.",
+    "storageAtLoad": "extension.js가 로드되는 동안 스토리지가 사용되었습니다. run 또는 동작 내에서 사용하십시오.",
+    "unprovidedModule": "Swipt는 확장 프로그램에 \"{{module}}\"을(를) 제공하지 않습니다. extension.js에 번들링하십시오.",
+    "usedAtLoad": "extension.js가 로드되는 동안 {{name}}이(가) 사용되었습니다. run 또는 동작 내에서 사용하십시오."
+  },
+  "serve": {
+    "cancel": "취소",
+    "checking": "{{device}} 확인 중",
+    "conflictingTokens": "--token과 --random-token은 함께 사용할 수 없습니다.",
+    "invalidToken": "토큰은 공백 없이 출력 가능한 ASCII 문자 하나 이상으로 구성됩니다.",
+    "localNetwork": "로컬 네트워크",
+    "noAutoUnlock": "{{device}}의 잠금은 자동으로 해제되지 않습니다. --passcode로 암호를 설정하십시오. Ctrl-C를 누르면 드라이버가 중단됩니다.",
+    "quitSwipt": "Swipt 종료",
+    "quittingSwipt": "{{device}}에서 Swipt 종료 중",
+    "served": "{{computer}}의 드라이버가 이미 {{device}}을(를) 제어하고 있습니다. 먼저 해당 드라이버를 중단하십시오.",
+    "servedPrompt": "{{computer}}의 드라이버가 이미 {{device}}을(를) 제어하고 있습니다. 해당 드라이버를 중단하겠습니까?",
+    "starting": "{{device}}의 드라이버 시작 중",
+    "stopDriver": "{{computer}}의 드라이버 중단",
+    "stopHint": "Ctrl-C를 누르면 드라이버가 중단됩니다.",
+    "stoppingDriver": "{{computer}}의 드라이버 중단 중",
+    "swiptRunning": "{{device}}에서 Swipt가 실행 중이면 드라이버가 기기를 제어할 수 없습니다. 먼저 Swipt를 종료하십시오.",
+    "swiptRunningPrompt": "{{device}}에서 Swipt가 실행 중이면 드라이버가 기기를 제어할 수 없습니다. Swipt를 종료하겠습니까?"
+  },
+  "sideload": {
+    "ambiguousTeam": "여러 팀이 {{device}}에 Swipt를 사이드로드했습니다. --team ID로 하나를 선택하십시오.",
+    "certificateFailed": "Xcode가 팀 {{team}}의 개발 인증서를 만들 수 없습니다. {{accounts}} › Manage Certificates에서 추가하십시오({{errors}}).",
+    "checking": "{{device}}에서 Swipt 확인 중",
+    "checkingRelease": "최신 릴리스 확인 중",
+    "chooseTeam": "팀 선택",
+    "chooseTeamHint": "--team ID로 팀을 선택하십시오.",
+    "diskImageFailed": "{{device}}에서 개발자 디스크 이미지를 준비할 수 없습니다. {{error}}",
+    "downgrade": "다운그레이드",
+    "downgradePrompt": "{{device}}의 Swipt를 {{version}}에서 {{releaseVersion}}(으)로 다운그레이드하겠습니까? 이전 버전이 데이터를 읽을 수 없으면 Swipt의 데이터가 재설정됩니다.",
+    "downgradeToStablePrompt": "{{device}}의 Swipt를 nightly 빌드 {{version}}에서 안정 버전 {{releaseVersion}}(으)로 다운그레이드하겠습니까? 이전 버전이 데이터를 읽을 수 없으면 Swipt의 데이터가 재설정됩니다.",
+    "downloading": "{{release}}에서 Swipt {{version}}({{build}}) 다운로드 중",
+    "expiration": "서명은 {{expiration}} 만료됩니다.",
+    "installed": "{{device}}에 {{build}}이(가) 설치되었습니다.",
+    "installing": "{{device}}에 설치 중",
+    "invalidTeam": "--team의 인수 {{value}}이(가) 유효하지 않습니다. {{accounts}}에 표시된 10자리 팀 ID여야 합니다.",
+    "laterThanRelease": "{{device}}의 {{build}}은(는) {{release}}({{releaseBuild}})보다 최신입니다.",
+    "locked": "{{device}}: {{message}}. 기기의 잠금을 해제하거나 --passcode를 전달한 다음 다시 실행하십시오.",
+    "looking": "기기에서 Swipt를 찾는 중",
+    "needsMacOS": "Swipt를 설치하거나 업데이트하려면 macOS가 필요합니다. Mac에서 설치한 다음 여기에서 \"swipt sideload setup\"으로 설정하십시오.",
+    "noAccount": "Xcode에 계정이 없습니다. {{accounts}}에서 로그인하거나 --team ID로 팀을 선택하십시오.",
+    "noAccountForTeam": "Xcode에 팀 {{team}}의 계정이 없습니다. {{accounts}}에서 해당 Apple 계정으로 로그인하십시오.",
+    "noCertificate": "Xcode에 개발 인증서가 없습니다. {{accounts}} › Manage Certificates에서 추가하거나 --team ID로 팀을 선택하십시오.",
+    "noneInstalled": "Swipt가 사이드로드된 iPhone 또는 iPad가 없습니다.",
+    "noneInstalledHint": "Swipt가 사이드로드된 iPhone 또는 iPad가 없습니다. \"swipt sideload install\"로 설치하십시오.",
+    "notInstalled": "{{device}}에 사이드로드된 Swipt가 없습니다.",
+    "notInstalledByTeam": "팀 {{team}}이(가) {{device}}에 사이드로드한 Swipt가 없습니다.",
+    "notInstalledByTeamHint": "팀 {{team}}이(가) {{device}}에 사이드로드한 Swipt가 없습니다. \"swipt sideload install\"로 설치하십시오.",
+    "notInstalledHint": "{{device}}에 사이드로드된 Swipt가 없습니다. \"swipt sideload install\"로 설치하십시오.",
+    "notOnNetwork": "로컬 네트워크에서 {{device}}을(를) 찾을 수 없습니다. Swipt > ‘개발자’ > ‘로컬 네트워크’에서 API URL을 확인하십시오.",
+    "opening": "{{device}}에서 Swipt를 여는 중",
+    "openingSettings": "{{device}}에서 ‘설정’을 여는 중",
+    "opensAfterUnlock": "{{device}}의 잠금을 해제하면 열립니다.",
+    "pairingFailed": "페어링에 실패하여 Swipt가 대신 ‘설정’에서 페어링합니다. {{error}}",
+    "preparingDiskImage": "{{device}}에서 개발자 디스크 이미지 준비 중",
+    "preparingSigning": "Xcode를 통해 팀 {{team}}의 Swipt 서명 준비 중",
+    "removed": "{{device}}에서 {{build}} 제거됨",
+    "removing": "{{device}}에서 Swipt 제거 중",
+    "renewalNeedsDowngrade": "{{device}}의 {{build}}에 새 서명이 필요하지만 {{release}}({{releaseBuild}})은(는) 더 오래된 버전입니다. --nightly를 사용하거나 \"swipt sideload install --force\"로 다운그레이드하십시오.",
+    "resigning": "Swipt 재서명 중",
+    "running": "{{app}}이(가) 실행 중입니다.",
+    "settingUpAutoUnlock": "자동 잠금 해제 설정 중",
+    "trusted": "{{developer}} 신뢰됨.",
+    "trusting": "‘설정’에서 {{developer}} 신뢰 중",
+    "unlockPrompt": "계속하려면 기기의 잠금을 해제하십시오.",
+    "unlocking": "기기 잠금 해제 중",
+    "untrusted": "아직 개발자를 신뢰하지 않았습니다. {{device}}에 열린 ‘설정’ 페이지에서 개발자를 신뢰한 다음 Swipt를 여십시오.",
+    "upToDate": "{{device}}의 {{build}}은(는) 이미 {{release}}입니다.",
+    "updated": "{{device}}에서 {{build}}이(가) 업데이트되었습니다.",
+    "waiting": "{{device}} 대기 중",
+    "xcodeMissing": "xcodebuild에는 Xcode가 필요합니다. Xcode를 설치하고 xcode-select로 선택하십시오.",
+    "xcodebuildMissing": "xcodebuild가 없습니다. Xcode를 설치하십시오."
+  }
+}

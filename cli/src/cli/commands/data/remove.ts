@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { type ResolveTarget, operandCount } from "./operand";
@@ -22,12 +22,12 @@ export const remove = (operand: string, target: ResolveTarget) => {
   return defineCommand({
     name: "remove",
     use: `remove ${operand}PATH`,
-    short: tr("Remove a data file"),
+    short: t("commands.data.remove.description"),
     args: [before + 1, before + 1],
     options: {
       recursive: {
         type: "boolean",
-        help: tr("include directory contents"),
+        help: t("commands.data.remove.recursive"),
       },
     },
     run: removeFile(target),

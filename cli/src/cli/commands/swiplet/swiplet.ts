@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { data } from "../data";
 import type { DataTarget } from "../data/operand";
@@ -13,21 +13,15 @@ import { show } from "./show";
 const swipletData = ([id, ...args]: string[]): DataTarget => ({
   id,
   wholeDirectory: (name) =>
-    tr(
-      "{path} names the data directory of {swiplet}; save it with --output DIRECTORY",
-      { path: name, swiplet: id },
-    ),
+    t("commands.swiplet.dataDirectory", { path: name, swiplet: id }),
   subdirectory: (name) =>
-    tr(
-      "{path} is a directory in the data directory of {swiplet}; save it with --output DIRECTORY",
-      { path: name, swiplet: id },
-    ),
+    t("commands.swiplet.directory", { path: name, swiplet: id }),
   args,
 });
 
 export const swiplet = defineCommand({
   name: "swiplet",
-  short: tr("Manage the swiplets on the device"),
+  short: t("commands.swiplet.description"),
   options: deviceOption,
   commands: [
     list,

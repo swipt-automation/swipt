@@ -2,13 +2,13 @@ import { parseArgs } from "node:util";
 
 import { Code, RpcError, UsageError } from "../client";
 import * as connection from "../connection";
-import { tr } from "../i18n";
+import { t } from "../i18n";
 import { FalseResult, errorMessage } from "../output";
 import type { Command, Options } from "./command";
 import { root } from "./commands";
 
 const globalOptions: Options = {
-  help: { type: "boolean", short: "h", help: tr("help") },
+  help: { type: "boolean", short: "h", help: t("cli.help") },
 };
 
 const parseOptions = (options: Options = {}) =>
@@ -32,9 +32,9 @@ function usage(trail: Command[]) {
   const lines = [command.short, ""];
   if ("commands" in command) {
     lines.push(
-      tr("usage: {usage}", { usage: `${name} COMMAND` }),
+      t("cli.usage", { usage: `${name} COMMAND` }),
       "",
-      tr("commands:"),
+      t("cli.commands"),
     );
     lines.push(
       ...columns(
@@ -46,7 +46,7 @@ function usage(trail: Command[]) {
     );
   } else {
     lines.push(
-      tr("usage: {usage}", {
+      t("cli.usage", {
         usage: `${trail
           .slice(0, -1)
           .map((it) => it.name)
@@ -61,7 +61,7 @@ function usage(trail: Command[]) {
     ...trail.reduce((found, it) => ({ ...found, ...it.options }), {}),
     ...globalOptions,
   };
-  lines.push("", tr("options:"));
+  lines.push("", t("cli.options"));
   lines.push(
     ...columns(
       Object.entries(options).map(([option, it]) => [
@@ -102,14 +102,14 @@ function resolve(argv: string[]) {
       if (help || loose.values.help || current !== root || argv.length === 0) {
         return { trail };
       }
-      throw new UsageError(tr("A command is missing."));
+      throw new UsageError(t("cli.missingCommand"));
     }
     const found: Command | undefined = current.commands.find(
       (it) => it.name === word,
     );
     if (!found) {
       throw new UsageError(
-        tr("unknown command {name} for {parent}", {
+        t("cli.unknownCommand", {
           name: JSON.stringify(word),
           parent: JSON.stringify(trail.map((it) => it.name).join(" ")),
         }),
@@ -143,7 +143,7 @@ function resolve(argv: string[]) {
     throw new UsageError(
       option === undefined
         ? message
-        : tr("{option} isn't an option of {command}.", {
+        : t("cli.unknownOption", {
             option,
             command: JSON.stringify(trail.map((it) => it.name).join(" ")),
           }),
@@ -157,35 +157,16 @@ function resolve(argv: string[]) {
   if (args.length < least || args.length > most) {
     throw new UsageError(
       least === most
-        ? tr(
-            {
-              one: "accepts {count} arg, received {received}",
-              other: "accepts {count} args, received {received}",
-            },
-            {
+        ? t("cli.exactArgs", {
+            count: least,
+            received: args.length,
+          })
+        : most === Infinity
+          ? t("cli.minimumArgs", {
               count: least,
               received: args.length,
-            },
-          )
-        : most === Infinity
-          ? tr(
-              {
-                one: "accepts at least {count} arg, received {received}",
-                other: "accepts at least {count} args, received {received}",
-              },
-              {
-                count: least,
-                received: args.length,
-              },
-            )
-          : tr(
-              {
-                one: "accepts between {least} and {count} arg, received {received}",
-                other:
-                  "accepts between {least} and {count} args, received {received}",
-              },
-              { least, count: most, received: args.length },
-            ),
+            })
+          : t("cli.rangeArgs", { least, count: most, received: args.length }),
     );
   }
   return { trail, invocation: { command, args, options: parsed.values } };
@@ -204,35 +185,29 @@ function printError(
     switch (error.code) {
       case Code.Unavailable:
         exit = 5;
-        message = tr("Swipt at {url} is unreachable: {message}", {
+        message = t("cli.unreachable", {
           url: target.url,
           message,
         });
         break;
       case Code.Unauthenticated:
-        message = tr(
-          '{message}; connect with the URL that Swipt › Developer or "swipt driver" shows: swipt device add {url}',
-          {
-            message,
-            url: connection.withToken(target.url),
-          },
-        );
+        message = t("cli.unauthenticated", {
+          message,
+          url: connection.withToken(target.url),
+        });
         break;
       case Code.Unimplemented:
-        message = tr(
-          "Swipt at {url} doesn't have this command; update Swipt.",
-          { url: target.url },
-        );
+        message = t("cli.unimplemented", { url: target.url });
         break;
     }
   }
   console.error(
-    tr("error: {message}", {
+    t("error", {
       message: operation === undefined ? message : `${operation}: ${message}`,
     }),
   );
   if (exit === 2) {
-    console.error(tr('Run "swipt help" for usage.'));
+    console.error(t("cli.helpHint"));
   }
   return exit;
 }

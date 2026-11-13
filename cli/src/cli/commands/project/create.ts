@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 
 const { version }: { version: string } = JSON.parse(
@@ -126,7 +126,7 @@ const quote = (value: string) =>
 function createCommand(directory: string) {
   const root = path.resolve(directory);
   if (fs.existsSync(root) && fs.readdirSync(root).length > 0) {
-    throw new Error(tr("{directory} isn't empty.", { directory }));
+    throw new Error(t("commands.project.create.notEmpty", { directory }));
   }
   for (const [file, template] of Object.entries(templates)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
@@ -141,7 +141,7 @@ function createCommand(directory: string) {
 export const create = defineCommand({
   name: "create",
   use: "create DIRECTORY",
-  short: tr("Make a swiplet project in a new or empty directory"),
+  short: t("commands.project.create.description"),
   args: [1, 1],
   run: ({ args }) => createCommand(args[0]),
 });

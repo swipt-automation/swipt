@@ -1,0 +1,393 @@
+{
+  "availability": {
+    "advice": "请使用 available() 检查这些项、使用 @available 标记使用它们的代码，或提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
+    "apiLevel": "API 级别 {{level}}",
+    "entryNeeds": "{{location}}：{{name}} 是 Swiplet 的入口，需要 {{requirement}}；请提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
+    "importNeeds": "{{location}}：导入 {{name}} 需要 {{requirement}}；请提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
+    "invalidEntry": "{{location}}：@available 包含 \"{{entry}}\"；@available 接受以逗号分隔的 \"apiLevel <level>\" 和 \"iOS <version>\"。",
+    "needs": "{{location}}：{{name}} 需要 {{requirement}}。",
+    "repeatedEntry": "{{location}}：@available 两次指定了 {{kind}}。"
+  },
+  "cli": {
+    "commands": "命令：",
+    "exactArgs_other": "需要 {{count}} 个参数，收到 {{received}} 个",
+    "help": "帮助",
+    "helpHint": "运行 \"swipt help\" 查看用法。",
+    "minimumArgs_other": "至少需要 {{count}} 个参数，收到 {{received}} 个",
+    "missingCommand": "缺少命令。",
+    "options": "选项：",
+    "rangeArgs_other": "需要 {{least}} 到 {{count}} 个参数，收到 {{received}} 个",
+    "unauthenticated": "{{message}}；请使用“Swipt”>“开发者”或 \"swipt driver\" 显示的 URL 连接：swipt device add {{url}}",
+    "unimplemented": "{{url}} 上的 Swipt 没有此命令；请更新 Swipt。",
+    "unknownCommand": "{{parent}} 没有命令 {{name}}",
+    "unknownOption": "{{option}} 不是 {{command}} 的选项。",
+    "unreachable": "无法连接 {{url}} 上的 Swipt：{{message}}",
+    "usage": "用法：{{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "移除所有数据文件，保留数据目录"
+      },
+      "list": {
+        "description": "列出数据文件",
+        "recursive": "包含子目录"
+      },
+      "read": {
+        "description": "读取数据文件或目录",
+        "output": "目标位置",
+        "saved_other": "已将 {{count}} 个文件保存到 {{path}}"
+      },
+      "remove": {
+        "description": "移除数据文件",
+        "recursive": "包含目录内容"
+      },
+      "replDescription": "管理 REPL 数据目录中的文件",
+      "swipletDescription": "管理 Swiplet 数据目录中的文件",
+      "write": {
+        "description": "写入数据文件"
+      }
+    },
+    "description": "Swipt 命令行工具",
+    "device": {
+      "add": {
+        "description": "通过 URL 添加设备；远程设备或需要令牌的设备需要这样添加"
+      },
+      "description": "管理设备并读取其日志",
+      "list": {
+        "description": "列出设备，并添加在本地网络上发现的设备"
+      },
+      "logs": {
+        "count": "历史条目数（默认 100）",
+        "description": "输出日志",
+        "follow": "持续显示新条目",
+        "invalidDuration": "{{option}} 的参数 {{value}} 无效：应为时长，例如 30s 或 1m30s",
+        "invalidLevel": "--level 只能是 error、warn、info 或 debug",
+        "invalidNumber": "{{option}} 的参数 {{value}} 无效：应为数字",
+        "level": "最低级别（默认 info）",
+        "since": "最长回溯时间",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "忽略设备"
+      },
+      "stop": {
+        "description": "停止提供 Swipt API",
+        "stopped": "已停止"
+      }
+    },
+    "driver": {
+      "description": "从此电脑为设备提供 Swipt API 和 MCP",
+      "details": "同一时间只能有一方控制设备：设备上的 Swipt，或一台电脑上的驱动程序。",
+      "passcode": "用于自动解锁设备的密码；留空则关闭自动解锁",
+      "randomToken": "要求 API 客户端提供随机令牌",
+      "token": "要求 API 客户端提供此令牌"
+    },
+    "project": {
+      "build": {
+        "description": "将项目打包为 dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "在新目录或空目录中创建 Swiplet 项目",
+        "notEmpty": "{{directory}} 不是空目录。"
+      },
+      "deploy": {
+        "description": "构建项目并安装到设备上"
+      },
+      "description": "创建、构建和部署 Swiplet 项目",
+      "develop": {
+        "deployed": "已在 {{elapsed}} 内完成构建和部署；正在监视 {{directory}}",
+        "description": "构建并安装 Swiplet 项目，并在其更改时持续更新",
+        "quiet": "不显示日志",
+        "unchanged": "已在 {{elapsed}} 内完成构建；没有任何变化"
+      },
+      "source": {
+        "description": "将已构建的 Swiplet 收集到 dist/，并生成 swiplets.json",
+        "duplicateID": "{{id}} 同时对应 {{first}} 和 {{second}}",
+        "invalidIcon": "package.json 中的 \"source.icon\" 必须有 symbol，可以有 color。",
+        "invalidLocalizedNames": "package.json 中的 \"source.localizedNames\" 必须是语言到名称的映射。",
+        "invalidURL": "package.json 中的 \"source.url\" 不是绝对 URL。",
+        "noWorkspaces": "package.json 未列出包含 Swiplet 的工作区；请指定要列出的 Swiplet。",
+        "notBuilt": "缺少 {{file}}；请先构建 {{directory}}。"
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "输出全局变量和模块的 TypeScript 声明"
+      },
+      "dataDirectory": "{{path}} 指向 REPL 的数据目录；请使用 --output DIRECTORY 保存",
+      "description": "在设备上的 REPL 会话中运行 JavaScript",
+      "directory": "{{path}} 是 REPL 数据目录中的目录；请使用 --output DIRECTORY 保存",
+      "reset": {
+        "description": "重置会话"
+      },
+      "run": {
+        "arguments": "第一个参数指向现有文件时视为 FILE，否则视为 CODE；选项要放在它之前。",
+        "description": "在设备上运行 JavaScript 表达式或程序",
+        "details": "CODE 是表达式，会输出其值。FILE 或标准输入（传入 - 或不传参数）是程序，只输出其控制台内容。",
+        "extraArguments": "{{argument}} 不是文件，而 CODE 不接受 ARG。",
+        "images": "图像目录（默认：新的临时目录）"
+      }
+    },
+    "sideload": {
+      "description": "侧载 Swipt",
+      "install": {
+        "description": "安装 Swipt",
+        "force": "在相同或更新的版本上覆盖安装"
+      },
+      "passcode": "使用此密码设置自动解锁",
+      "setup": {
+        "description": "设置 Swipt"
+      },
+      "uninstall": {
+        "description": "移除 Swipt"
+      },
+      "update": {
+        "description": "更新或续签 Swipt",
+        "passcode": "使用此密码解锁设备"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "调用 Swiplet 操作",
+        "input": "输入 JSON、@FILE 或 -",
+        "invalidInput": "--input 不是 JSON：{{error}}"
+      },
+      "dataDirectory": "{{path}} 指向 {{swiplet}} 的数据目录；请使用 --output DIRECTORY 保存",
+      "description": "管理设备上的 Swiplet",
+      "directory": "{{path}} 是 {{swiplet}} 数据目录中的目录；请使用 --output DIRECTORY 保存",
+      "install": {
+        "description": "安装 Swiplet 归档",
+        "notFound": "{{path}} 处没有归档"
+      },
+      "list": {
+        "actions": "操作",
+        "description": "列出 Swiplet",
+        "id": "ID",
+        "service": "服务",
+        "status": "状态",
+        "title": "标题",
+        "version": "版本"
+      },
+      "remove": {
+        "description": "移除 Swiplet",
+        "removed": "已移除 {{name}}"
+      },
+      "service": {
+        "description": "管理 Swiplet 服务",
+        "disable": {
+          "description": "关闭 Swiplet 服务"
+        },
+        "enable": {
+          "description": "打开 Swiplet 服务"
+        },
+        "watch": {
+          "description": "监视 Swiplet 服务"
+        },
+        "watchState": "监视状态"
+      },
+      "show": {
+        "description": "显示 Swiplet",
+        "input": "输入：{{schema}}",
+        "notFound": "没有 Swiplet {{id}}。",
+        "output": "输出：{{schema}}",
+        "service": "服务：{{status}}"
+      }
+    },
+    "version": {
+      "description": "输出版本"
+    }
+  },
+  "connection": {
+    "added": "已添加 {{device}}",
+    "ambiguous": "有多台设备：{{devices}}；请使用 -d 选择一台",
+    "driverNotStopped": "{{computer}} 上的驱动程序未能停止。",
+    "invalidURL": "{{text}} 不是 URL。",
+    "none": "没有设备；请打开“Swipt”>“开发者”>“本地网络”，或使用 \"swipt device add URL\" 连接设备。",
+    "noneOnNetwork": "本地网络上没有设备发布 Swipt；请打开“Swipt”>“开发者”>“本地网络”，或使用 \"swipt device add URL\" 连接设备。",
+    "notFound": "没有设备 {{device}}。",
+    "notFoundHint": "没有设备 {{device}}；运行 \"swipt device list\" 可列出设备。",
+    "offline": "离线",
+    "problem": {
+      "developerModeOff": "开发者模式已关闭",
+      "deviceUnsupported": "不支持此设备",
+      "diskImageMissing": "缺少磁盘映像",
+      "diskImageMountFailed": "磁盘映像装载失败",
+      "pairingRejected": "配对被拒绝",
+      "screenInUse": "屏幕正在使用中",
+      "unreachable": "无法连接",
+      "vpnPeerAddressMissing": "缺少 VPN 对端地址"
+    },
+    "removed": "已移除 {{name}}",
+    "requiresToken": "需要令牌",
+    "requiresTokenHint": "{{device}} 需要令牌：swipt device add {{url}}",
+    "state": {
+      "connecting": "正在连接",
+      "failed": "失败",
+      "preparing": "正在准备",
+      "running": "已连接",
+      "stopped": "已停止"
+    },
+    "unsupportedURL": "{{text}} 不是 http 或 https URL。"
+  },
+  "deploy": {
+    "installed": "已安装 {{id}} {{version}}",
+    "replaced": "已替换 {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "驱动程序已在此电脑上运行；请先停止它。",
+    "ambiguousName": "有多台 iPhone 或 iPad 名为 {{name}}；请通过 UDID 选择",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service 未在运行；请从 Microsoft Store 安装“Apple 设备”App",
+    "chooseDevice": "选择设备",
+    "chooseDeviceHint": "请使用 -d NAME|UDID 选择设备",
+    "connectedDevices": "{{reason}}；已连接的 iPhone 和 iPad：",
+    "lookingForDevices": "正在查找设备",
+    "missing": "缺少驱动程序；请使用 \"npm install -g @swipt/cli --include=optional\" 安装。",
+    "nameNotFound": "没有名为 {{name}} 的 iPhone 或 iPad",
+    "noDevice": "没有 iPhone 或 iPad 连接到此电脑，在本地网络上也找不到；请用 USB 连接线连接设备并解锁。",
+    "pairing": "正在与 {{device}} 配对",
+    "trustPrompt": "请在 {{device}} 上轻点“信任”并输入其密码，以信任此电脑",
+    "usbmuxdMissing": "usbmuxd 未在运行；请安装 usbmuxd 并启动它"
+  },
+  "error": "错误：{{message}}",
+  "flags": {
+    "device": "要使用的设备",
+    "nightly": "使用 nightly 版本",
+    "noSetup": "不配对 Swipt、不信任其开发者，也不发布其 API",
+    "noSetupAPI": "不向本地网络发布 API",
+    "noSetupPair": "不配对 Swipt",
+    "passcodeType": "pin（4 位或 6 位数字，默认）、numeric 或 alphanumeric",
+    "team": "团队 ID，有多个团队时必须指定"
+  },
+  "metro": {
+    "boolean": "布尔值",
+    "contextArgument": "require.context 的第 {{index}} 个参数必须是 {{expected}}",
+    "contextRegExp": "require.context 的第 {{index}} 个参数必须是正则表达式字面量。",
+    "oneOf": "{{values}} 之一",
+    "string": "字符串",
+    "workletsMismatch": "项目使用 react-native-worklets {{version}}，但 Swipt 运行的是 {{expected}}；请安装 react-native-worklets@{{expected}} 或将其移除。"
+  },
+  "noThanks": "不用了",
+  "output": {
+    "navigate": "移动",
+    "select": "选择",
+    "service": "{{enabled}}，{{status}}",
+    "serviceSince": "{{enabled}}，自 {{time}} 起{{status}}",
+    "serviceStatus": {
+      "failed": "失败",
+      "running": "正在运行",
+      "starting": "正在启动",
+      "stopped": "已停止",
+      "turnedOff": "已关闭",
+      "turnedOn": "已打开"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "自定义字母数字密码",
+    "alphanumericDetail": "字母数字",
+    "empty": "请输入密码。",
+    "invalidAlphanumeric": "密码最多包含 64 个可打印 ASCII 字符。",
+    "invalidNumeric": "数字密码只能包含数字。",
+    "invalidPin": "pin 密码为 4 位或 6 位数字；自定义密码需要 --passcode-type numeric 或 alphanumeric",
+    "invalidType": "--passcode-type 的参数 {{value}} 无效：应为 {{types}}",
+    "masked": "[输入内容已隐藏]",
+    "numeric": "自定义数字密码",
+    "numericDetail": "数字",
+    "pin": "4 位或 6 位数字密码",
+    "pinDetail": "4 位或 6 位数字",
+    "prompt": "设备密码",
+    "setUp": "要设置自动解锁吗？设置后 Swipt 可以自行解锁此设备。"
+  },
+  "project": {
+    "assetConflict": "{{source}} 和 {{asset}} 在 Swiplet 中都会成为 assets/{{name}}。",
+    "conditionalActions": "扩展会根据 available() 定义不同的操作；请在所有系统上定义相同的操作，并在 run 或操作内检查 available()。",
+    "databaseAtLoad": "extension.js 加载期间使用了数据库；请在 run 或操作内使用。",
+    "interfaceImport": "界面在运行时导入了 {{file}}；请使用 `import type` 导入其类型。",
+    "interfaceOnly": "{{name}} 只能在 Swiplet 界面中使用。",
+    "invalidExposure": "操作 {{action}} 只能向 \"shortcuts\" 公开。",
+    "invalidExtension": "扩展的默认导出不是 defineExtension 的结果。",
+    "invalidID": "package.json 中的 \"swiplet.id\" 必须由 1 到 128 个小写字母、数字、点、下划线和连字符组成，并以字母或数字开头。",
+    "invalidLocalizedNames": "package.json 中的 \"swiplet.localizedNames\" 必须是语言到名称的映射。",
+    "invalidMinimumAPILevel": "package.json 中的 \"swiplet.minimumAPILevel\" 必须是 {{oldest}} 到 {{level}}（@swipt/api 的 API 级别）之间的整数。",
+    "invalidMinimumIOSVersion": "package.json 中的 \"swiplet.minimumIOSVersion\" 必须是不低于 {{version}}（@swipt/api 的最低 iOS 版本）的版本号。",
+    "invalidName": "package.json 中的 \"swiplet.name\" 必须是非空字符串。",
+    "invalidSchema": "操作 {{action}} 的 {{side}} 架构未实现 Standard JSON Schema；请使用已实现它的库，例如 Zod 4。",
+    "invalidString": "package.json 中的 \"{{field}}\" 必须是字符串。",
+    "invalidVersionCode": "package.json 中的 \"swiplet.versionCode\" 必须是正整数。",
+    "missingTitle": "操作 {{action}} 需要标题。",
+    "storageAtLoad": "extension.js 加载期间使用了存储；请在 run 或操作内使用。",
+    "unprovidedModule": "Swipt 不向扩展提供 \"{{module}}\"；请将其打包进 extension.js。",
+    "usedAtLoad": "extension.js 加载期间使用了 {{name}}；请在 run 或操作内使用。"
+  },
+  "serve": {
+    "cancel": "取消",
+    "checking": "正在检查 {{device}}",
+    "conflictingTokens": "--token 和 --random-token 不能同时使用。",
+    "invalidToken": "令牌由一个或多个可打印 ASCII 字符组成，不含空格。",
+    "localNetwork": "本地网络",
+    "noAutoUnlock": "{{device}} 不会自动解锁；请使用 --passcode 设置其密码。按 Ctrl-C 可停止驱动程序。",
+    "quitSwipt": "退出 Swipt",
+    "quittingSwipt": "正在退出 {{device}} 上的 Swipt",
+    "served": "{{computer}} 上的驱动程序已在为 {{device}} 提供服务；请先停止该驱动程序。",
+    "servedPrompt": "{{computer}} 上的驱动程序已在为 {{device}} 提供服务。要停止该驱动程序吗？",
+    "starting": "正在为 {{device}} 启动驱动程序",
+    "stopDriver": "停止 {{computer}} 上的驱动程序",
+    "stopHint": "按 Ctrl-C 可停止驱动程序。",
+    "stoppingDriver": "正在停止 {{computer}} 上的驱动程序",
+    "swiptRunning": "Swipt 正在 {{device}} 上运行，驱动程序无法控制该设备；请先退出 Swipt。",
+    "swiptRunningPrompt": "Swipt 正在 {{device}} 上运行，驱动程序无法控制该设备。要退出 Swipt 吗？"
+  },
+  "sideload": {
+    "ambiguousTeam": "多个团队在 {{device}} 上侧载了 Swipt；请使用 --team ID 选择一个：",
+    "certificateFailed": "Xcode 无法为团队 {{team}} 创建开发证书；请在 {{accounts}} › Manage Certificates 中添加（{{errors}}）。",
+    "checking": "正在检查 {{device}} 上的 Swipt",
+    "checkingRelease": "正在检查最新版本",
+    "chooseTeam": "选择团队",
+    "chooseTeamHint": "请使用 --team ID 选择团队：",
+    "diskImageFailed": "无法准备 {{device}} 上的开发者磁盘映像：{{error}}",
+    "downgrade": "降级",
+    "downgradePrompt": "要将 {{device}} 上的 Swipt 从 {{version}} 降级到 {{releaseVersion}} 吗？旧版本无法读取数据时，Swipt 会重置其数据。",
+    "downgradeToStablePrompt": "要将 {{device}} 上的 Swipt 从 nightly 版本 {{version}} 降级到稳定版本 {{releaseVersion}} 吗？旧版本无法读取数据时，Swipt 会重置其数据。",
+    "downloading": "正在从 {{release}} 下载 Swipt {{version}}（{{build}}）",
+    "expiration": "签名将在 {{expiration}}过期。",
+    "installed": "已在 {{device}} 上安装 {{build}}。",
+    "installing": "正在安装到 {{device}}",
+    "invalidTeam": "--team 的参数 {{value}} 无效：应为 {{accounts}} 中显示的 10 位团队 ID",
+    "laterThanRelease": "{{device}} 上的 {{build}} 比 {{release}}（{{releaseBuild}}）更新。",
+    "locked": "{{device}}：{{message}}；请解锁设备或传入 --passcode，然后重新运行。",
+    "looking": "正在设备上查找 Swipt",
+    "needsMacOS": "安装或更新 Swipt 需要 macOS；请在 Mac 上安装，然后在此使用 \"swipt sideload setup\" 进行设置。",
+    "noAccount": "Xcode 没有账户；请在 {{accounts}} 中登录，或使用 --team ID 选择团队",
+    "noAccountForTeam": "Xcode 没有团队 {{team}} 的账户；请在 {{accounts}} 中使用其 Apple 账户登录。",
+    "noCertificate": "Xcode 没有开发证书；请在 {{accounts}} › Manage Certificates 中添加，或使用 --team ID 选择团队",
+    "noneInstalled": "所有 iPhone 和 iPad 上都未侧载 Swipt。",
+    "noneInstalledHint": "所有 iPhone 和 iPad 上都未侧载 Swipt；请使用 \"swipt sideload install\" 安装。",
+    "notInstalled": "{{device}} 上未侧载 Swipt。",
+    "notInstalledByTeam": "团队 {{team}} 未在 {{device}} 上侧载 Swipt。",
+    "notInstalledByTeamHint": "团队 {{team}} 未在 {{device}} 上侧载 Swipt；请使用 \"swipt sideload install\" 安装。",
+    "notInstalledHint": "{{device}} 上未侧载 Swipt；请使用 \"swipt sideload install\" 安装。",
+    "notOnNetwork": "在本地网络上找不到 {{device}}；请前往“Swipt”>“开发者”>“本地网络”查看其 API URL。",
+    "opening": "正在打开 {{device}} 上的 Swipt",
+    "openingSettings": "正在打开 {{device}} 上的“设置”",
+    "opensAfterUnlock": "{{device}} 解锁后会打开。",
+    "pairingFailed": "配对失败，Swipt 将改为在“设置”中配对：{{error}}",
+    "preparingDiskImage": "正在准备 {{device}} 上的开发者磁盘映像",
+    "preparingSigning": "正在通过 Xcode 用团队 {{team}} 为 Swipt 准备签名",
+    "removed": "已从 {{device}} 移除 {{build}}",
+    "removing": "正在从 {{device}} 移除 Swipt",
+    "renewalNeedsDowngrade": "{{device}} 上的 {{build}} 需要重新签名，但 {{release}}（{{releaseBuild}}）的版本更旧；请使用 --nightly，或用 \"swipt sideload install --force\" 降级。",
+    "resigning": "正在重新签名 Swipt",
+    "running": "{{app}} 正在运行。",
+    "settingUpAutoUnlock": "正在设置自动解锁",
+    "trusted": "已信任 {{developer}}。",
+    "trusting": "正在“设置”中信任 {{developer}}",
+    "unlockPrompt": "请解锁设备以继续。",
+    "unlocking": "正在解锁设备",
+    "untrusted": "尚未信任其开发者；请在 {{device}} 上打开的“设置”页面中信任，然后打开 Swipt。",
+    "upToDate": "{{device}} 上的 {{build}} 已是 {{release}}。",
+    "updated": "已在 {{device}} 上更新 {{build}}。",
+    "waiting": "正在等待 {{device}}",
+    "xcodeMissing": "xcodebuild 需要 Xcode；请安装并使用 xcode-select 选择",
+    "xcodebuildMissing": "缺少 xcodebuild；请安装 Xcode。"
+  }
+}

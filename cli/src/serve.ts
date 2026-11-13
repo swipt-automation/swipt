@@ -13,7 +13,7 @@ import {
   terminateApp,
   trustedDevice,
 } from "./driver";
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import {
   FalseResult,
   type PromptContext,
@@ -70,7 +70,7 @@ async function confirm(
     message,
     [
       { name: action, value: true },
-      { name: tr("Cancel"), value: false },
+      { name: t("serve.cancel"), value: false },
     ],
     failure,
   );
@@ -87,7 +87,7 @@ async function runningApps(device: Device) {
 
 async function takeOver(context: PromptContext, device: Device) {
   const [{ ids, running }, driving] = await step(
-    tr("checking {device}", { device: device.name }),
+    t("serve.checking", { device: device.name }),
     () =>
       Promise.all([
         runningApps(device),
@@ -100,25 +100,17 @@ async function takeOver(context: PromptContext, device: Device) {
       device: device.name,
       computer: new URL(driving.url).hostname,
     };
-    const serves = new Error(
-      tr(
-        "The driver on {computer} already serves {device}; stop that driver first.",
-        parameters,
-      ),
-    );
+    const serves = new Error(t("serve.served", parameters));
     if (driving.authenticates) {
       throw serves;
     }
     await confirm(
       context,
-      tr(
-        "The driver on {computer} already serves {device}. Stop that driver?",
-        parameters,
-      ),
-      tr("Stop the driver on {computer}", parameters),
+      t("serve.servedPrompt", parameters),
+      t("serve.stopDriver", parameters),
       serves,
     );
-    await step(tr("stopping the driver on {computer}", parameters), () =>
+    await step(t("serve.stoppingDriver", parameters), () =>
       stopDriver(driving.url, device.udid, context.signal),
     );
   }
@@ -126,19 +118,11 @@ async function takeOver(context: PromptContext, device: Device) {
     const parameters = { device: device.name };
     await confirm(
       context,
-      tr(
-        "The driver can't control {device} while Swipt is running on it. Quit Swipt?",
-        parameters,
-      ),
-      tr("Quit Swipt"),
-      new Error(
-        tr(
-          "The driver can't control {device} while Swipt is running on it; quit Swipt first.",
-          parameters,
-        ),
-      ),
+      t("serve.swiptRunningPrompt", parameters),
+      t("serve.quitSwipt"),
+      new Error(t("serve.swiptRunning", parameters)),
     );
-    await step(tr("quitting Swipt on {device}", parameters), () =>
+    await step(t("serve.quittingSwipt", parameters), () =>
       Promise.all(running.map((id) => terminateApp(device, id))),
     );
   }
@@ -173,7 +157,7 @@ async function unlockPasscode(
     return saved[device.udid] ?? undefined;
   }
   let passcode = await step(
-    tr("checking Swipt on {device}", { device: device.name }),
+    t("sideload.checking", { device: device.name }),
     () => swiptPasscode(device, ids),
     { transient: true },
   );
@@ -190,16 +174,12 @@ async function unlockPasscode(
 function apiToken(options: ServeOptions) {
   if (options["random-token"]) {
     if (options.token !== undefined) {
-      throw new UsageError(
-        tr("--token and --random-token can't be used together."),
-      );
+      throw new UsageError(t("serve.conflictingTokens"));
     }
     return randomToken();
   }
   if (options.token !== undefined && !/^[\x21-\x7e]+$/.test(options.token)) {
-    throw new UsageError(
-      tr("A token is one or more printable ASCII characters without spaces."),
-    );
+    throw new UsageError(t("serve.invalidToken"));
   }
   return options.token;
 }
@@ -224,14 +204,14 @@ export async function run(
     signal: context.signal,
   });
   const ready = await step(
-    tr("starting the driver for {device}", { device: device.name }),
+    t("serve.starting", { device: device.name }),
     () => driven.serving,
     { transient: true },
   );
   const urls: [name: string, url: string | undefined][] = [
     ["CLI", ready.api],
     ["MCP", ready.mcp],
-    [tr("Local network"), ready.network],
+    [t("serve.localNetwork"), ready.network],
   ];
   console.log(
     `${ready.device}\n${columns(
@@ -242,11 +222,8 @@ export async function run(
   );
   console.error(
     passcode === undefined
-      ? tr(
-          "{device} isn't unlocked automatically; set its passcode with --passcode. Ctrl-C stops the driver.",
-          { device: ready.device },
-        )
-      : tr("Ctrl-C stops the driver."),
+      ? t("serve.noAutoUnlock", { device: ready.device })
+      : t("serve.stopHint"),
   );
   driven.stderr.pipe(process.stderr);
   await driven.finished();

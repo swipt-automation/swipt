@@ -1,0 +1,401 @@
+{
+  "availability": {
+    "advice": "Verificați-le cu available(), marcați cu @available codul care le utilizează sau măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
+    "apiLevel": "nivelul API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} este un punct de intrare al Swiplet-ului și necesită {{requirement}}; măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
+    "importNeeds": "{{location}}: importarea modulului {{name}} necesită {{requirement}}; măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
+    "invalidEntry": "{{location}}: @available conține \"{{entry}}\"; acceptă \"apiLevel <level>\" și \"iOS <version>\", separate prin virgule.",
+    "needs": "{{location}}: {{name}} necesită {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available indică {{kind}} de două ori."
+  },
+  "cli": {
+    "commands": "comenzi:",
+    "exactArgs_few": "acceptă {{count}} argumente, primite: {{received}}",
+    "exactArgs_one": "acceptă {{count}} argument, primite: {{received}}",
+    "exactArgs_other": "acceptă {{count}} de argumente, primite: {{received}}",
+    "help": "ajutor",
+    "helpHint": "Rulați \"swipt help\" pentru instrucțiuni de utilizare.",
+    "minimumArgs_few": "acceptă cel puțin {{count}} argumente, primite: {{received}}",
+    "minimumArgs_one": "acceptă cel puțin {{count}} argument, primite: {{received}}",
+    "minimumArgs_other": "acceptă cel puțin {{count}} de argumente, primite: {{received}}",
+    "missingCommand": "Lipsește o comandă.",
+    "options": "opțiuni:",
+    "rangeArgs_few": "acceptă între {{least}} și {{count}} argumente, primite: {{received}}",
+    "rangeArgs_one": "acceptă între {{least}} și {{count}} argument, primite: {{received}}",
+    "rangeArgs_other": "acceptă între {{least}} și {{count}} de argumente, primite: {{received}}",
+    "unauthenticated": "{{message}}; conectați-vă cu URL-ul afișat de Swipt › Dezvoltator sau de \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "Aplicația Swipt de la adresa {{url}} nu are această comandă; actualizați Swipt.",
+    "unknownCommand": "comandă necunoscută {{name}} pentru {{parent}}",
+    "unknownOption": "{{option}} nu este o opțiune pentru {{command}}.",
+    "unreachable": "Aplicația Swipt de la adresa {{url}} nu poate fi accesată: {{message}}",
+    "usage": "utilizare: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Elimină toate fișierele de date, păstrând dosarul de date"
+      },
+      "list": {
+        "description": "Listează fișierele de date",
+        "recursive": "include subdosarele"
+      },
+      "read": {
+        "description": "Citește un fișier de date sau un dosar",
+        "output": "destinația",
+        "saved_few": "s-au salvat {{count}} fișiere în {{path}}",
+        "saved_one": "s-a salvat {{count}} fișier în {{path}}",
+        "saved_other": "s-au salvat {{count}} de fișiere în {{path}}"
+      },
+      "remove": {
+        "description": "Elimină un fișier de date",
+        "recursive": "include conținutul dosarelor"
+      },
+      "replDescription": "Gestionează fișierele din dosarul de date al REPL-ului",
+      "swipletDescription": "Gestionează fișierele din dosarul de date al unui Swiplet",
+      "write": {
+        "description": "Scrie un fișier de date"
+      }
+    },
+    "description": "Instrumentul Swipt pentru linia de comandă",
+    "device": {
+      "add": {
+        "description": "Adaugă un dispozitiv prin URL; este necesar dacă acesta este la distanță sau solicită un token"
+      },
+      "description": "Gestionează dispozitivele și citește jurnalele acestora",
+      "list": {
+        "description": "Listează dispozitivele și adaugă-le pe cele găsite în rețeaua locală"
+      },
+      "logs": {
+        "count": "numărul de intrări anterioare (implicit 100)",
+        "description": "Afișează jurnalele",
+        "follow": "urmărește intrările noi",
+        "invalidDuration": "argument nevalid {{value}} pentru {{option}}: trebuie să fie o durată, de exemplu 30s sau 1m30s",
+        "invalidLevel": "--level poate fi error, warn, info sau debug",
+        "invalidNumber": "argument nevalid {{value}} pentru {{option}}: trebuie să fie un număr",
+        "level": "nivelul minim (implicit info)",
+        "since": "vechimea maximă",
+        "swiplet": "ID Swiplet"
+      },
+      "remove": {
+        "description": "Uită un dispozitiv"
+      },
+      "stop": {
+        "description": "Oprește furnizarea API-ului Swipt",
+        "stopped": "oprit"
+      }
+    },
+    "driver": {
+      "description": "Furnizează API-ul Swipt și MCP pentru un dispozitiv de pe acest computer",
+      "details": "O singură parte poate controla dispozitivul la un moment dat: Swipt de pe acesta sau driverul de pe un computer.",
+      "passcode": "cod de acces pentru deblocarea automată a dispozitivului; lăsați-l gol pentru a dezactiva deblocarea automată",
+      "randomToken": "solicită un token aleatoriu de la clienții API",
+      "token": "solicită acest token de la clienții API"
+    },
+    "project": {
+      "build": {
+        "description": "Împachetează proiectul în dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Creează un proiect Swiplet într-un dosar nou sau gol",
+        "notEmpty": "{{directory}} nu este gol."
+      },
+      "deploy": {
+        "description": "Compilează proiectul și instalează-l pe dispozitiv"
+      },
+      "description": "Creează, compilează și implementează proiecte Swiplet",
+      "develop": {
+        "deployed": "compilat și implementat în {{elapsed}}; se urmărește {{directory}}",
+        "description": "Compilează, instalează și urmărește modificările unui proiect Swiplet",
+        "quiet": "fără jurnale",
+        "unchanged": "compilat în {{elapsed}}; nimic nu s-a schimbat"
+      },
+      "source": {
+        "description": "Colectează Swiplet-urile compilate în dist/ cu un swiplets.json",
+        "duplicateID": "{{id}} este atât {{first}}, cât și {{second}}",
+        "invalidIcon": "\"source.icon\" din package.json trebuie să conțină symbol și poate conține color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" din package.json trebuie să asocieze limbile cu numele.",
+        "invalidURL": "\"source.url\" din package.json nu este un URL absolut.",
+        "noWorkspaces": "package.json nu listează niciun spațiu de lucru cu Swiplet-uri; indicați Swiplet-urile care trebuie incluse în listă.",
+        "notBuilt": "{{file}} lipsește; compilați mai întâi {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Afișează declarațiile TypeScript ale variabilelor globale și ale modulelor"
+      },
+      "dataDirectory": "{{path}} indică dosarul de date al REPL-ului; salvați-l cu --output DIRECTORY",
+      "description": "Rulează JavaScript în sesiunea REPL de pe dispozitiv",
+      "directory": "{{path}} este un dosar din dosarul de date al REPL-ului; salvați-l cu --output DIRECTORY",
+      "reset": {
+        "description": "Resetează sesiunea"
+      },
+      "run": {
+        "arguments": "Primul argument este FILE dacă indică un fișier existent și CODE în caz contrar; opțiunile se pun înaintea lui.",
+        "description": "Rulează o expresie sau un program JavaScript pe dispozitiv",
+        "details": "CODE este o expresie a cărei valoare este afișată. FILE sau intrarea standard dată ca - sau fără argument este un program și se afișează doar ieșirea sa în consolă.",
+        "extraArguments": "{{argument}} nu este un fișier, iar CODE nu acceptă ARG.",
+        "images": "dosarul pentru imagini (implicit: un dosar temporar nou)"
+      }
+    },
+    "sideload": {
+      "description": "Instalează Swipt prin sideload",
+      "install": {
+        "description": "Instalează Swipt",
+        "force": "instalează peste aceeași versiune sau una mai nouă"
+      },
+      "passcode": "configurează deblocarea automată cu acest cod de acces",
+      "setup": {
+        "description": "Configurează Swipt"
+      },
+      "uninstall": {
+        "description": "Elimină Swipt"
+      },
+      "update": {
+        "description": "Actualizează sau reînnoiește Swipt",
+        "passcode": "deblochează dispozitivul cu acest cod de acces"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Apelează o acțiune Swiplet",
+        "input": "date de intrare în format JSON, @FILE sau -",
+        "invalidInput": "--input nu este în format JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} indică dosarul de date al Swiplet-ului {{swiplet}}; salvați-l cu --output DIRECTORY",
+      "description": "Gestionează Swiplet-urile de pe dispozitiv",
+      "directory": "{{path}} este un dosar din dosarul de date al Swiplet-ului {{swiplet}}; salvați-l cu --output DIRECTORY",
+      "install": {
+        "description": "Instalează o arhivă Swiplet",
+        "notFound": "Nu există nicio arhivă la {{path}}"
+      },
+      "list": {
+        "actions": "ACȚIUNI",
+        "description": "Listează Swiplet-urile",
+        "id": "ID",
+        "service": "SERVICIU",
+        "status": "STARE",
+        "title": "TITLU",
+        "version": "VERSIUNE"
+      },
+      "remove": {
+        "description": "Elimină un Swiplet",
+        "removed": "s-a eliminat {{name}}"
+      },
+      "service": {
+        "description": "Gestionează serviciile Swiplet",
+        "disable": {
+          "description": "Dezactivează un serviciu Swiplet"
+        },
+        "enable": {
+          "description": "Activează un serviciu Swiplet"
+        },
+        "watch": {
+          "description": "Urmărește serviciile Swiplet"
+        },
+        "watchState": "urmărește starea"
+      },
+      "show": {
+        "description": "Afișează un Swiplet",
+        "input": "date de intrare: {{schema}}",
+        "notFound": "Nu există Swiplet-ul {{id}}.",
+        "output": "date de ieșire: {{schema}}",
+        "service": "serviciu: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Afișează versiunea"
+    }
+  },
+  "connection": {
+    "added": "s-a adăugat {{device}}",
+    "ambiguous": "Există mai multe dispozitive: {{devices}}; alegeți unul cu -d",
+    "driverNotStopped": "Driverul de pe {{computer}} nu s-a oprit.",
+    "invalidURL": "{{text}} nu este un URL.",
+    "none": "Nu există niciun dispozitiv; activați Swipt › Dezvoltator › Rețea locală sau conectați unul cu \"swipt device add URL\".",
+    "noneOnNetwork": "Niciun dispozitiv nu publică Swipt în rețeaua locală; activați Swipt › Dezvoltator › Rețea locală sau conectați unul cu \"swipt device add URL\".",
+    "notFound": "Nu există dispozitivul {{device}}.",
+    "notFoundHint": "Nu există dispozitivul {{device}}; \"swipt device list\" listează dispozitivele.",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "modul Dezvoltator este dezactivat",
+      "deviceUnsupported": "dispozitiv neacceptat",
+      "diskImageMissing": "imaginea de disc lipsește",
+      "diskImageMountFailed": "montarea imaginii de disc nu a reușit",
+      "pairingRejected": "asociere respinsă",
+      "screenInUse": "ecranul este în uz",
+      "unreachable": "inaccesibil",
+      "vpnPeerAddressMissing": "adresa partenerului VPN lipsește"
+    },
+    "removed": "s-a eliminat {{name}}",
+    "requiresToken": "necesită un token",
+    "requiresTokenHint": "{{device}} necesită un token: swipt device add {{url}}",
+    "state": {
+      "connecting": "în curs de conectare",
+      "failed": "eșuată",
+      "preparing": "în curs de pregătire",
+      "running": "activă",
+      "stopped": "oprită"
+    },
+    "unsupportedURL": "{{text}} nu este un URL http sau https."
+  },
+  "deploy": {
+    "installed": "s-a instalat {{id}} {{version}}",
+    "replaced": "s-a înlocuit {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Driverul rulează deja pe acest computer; opriți-l mai întâi.",
+    "ambiguousName": "Mai multe dispozitive iPhone sau iPad se numesc {{name}}; alegeți unul după UDID",
+    "appleMobileDeviceServiceMissing": "Serviciul Apple Mobile Device Service nu rulează; instalați aplicația Dispozitive Apple din Microsoft Store",
+    "chooseDevice": "Alegeți un dispozitiv",
+    "chooseDeviceHint": "Alegeți un dispozitiv cu -d NAME|UDID",
+    "connectedDevices": "{{reason}}; dispozitive iPhone și iPad conectate:",
+    "lookingForDevices": "se caută dispozitive",
+    "missing": "Driverul lipsește; instalați-l cu \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Niciun iPhone sau iPad nu se numește {{name}}",
+    "noDevice": "Niciun iPhone sau iPad nu este conectat la acest computer sau găsit în rețeaua locală; conectați unul cu un cablu USB și deblocați-l.",
+    "pairing": "se efectuează asocierea cu {{device}}",
+    "trustPrompt": "pe {{device}}, apăsați pe „Am încredere” și introduceți codul de acces pentru a acorda încredere acestui computer",
+    "usbmuxdMissing": "usbmuxd nu rulează; instalați usbmuxd și porniți-l"
+  },
+  "error": "eroare: {{message}}",
+  "flags": {
+    "device": "dispozitivul de utilizat",
+    "nightly": "utilizează versiunea nightly",
+    "noSetup": "nu asocia Swipt, nu acorda încredere dezvoltatorului și nu publica API-ul",
+    "noSetupAPI": "nu publica API-ul în rețeaua locală",
+    "noSetupPair": "nu asocia Swipt",
+    "passcodeType": "pin (4 sau 6 cifre, implicit), numeric sau alphanumeric",
+    "team": "ID-ul echipei, obligatoriu dacă există mai multe"
+  },
+  "metro": {
+    "boolean": "o valoare booleană",
+    "contextArgument": "Argumentul {{index}} din require.context trebuie să fie {{expected}}",
+    "contextRegExp": "Argumentul {{index}} din require.context trebuie să fie un literal de expresie regulată.",
+    "oneOf": "una dintre valorile {{values}}",
+    "string": "un șir de caractere",
+    "workletsMismatch": "Proiectul are react-native-worklets {{version}}, dar aplicația Swipt rulează {{expected}}; instalați react-native-worklets@{{expected}} sau eliminați-l."
+  },
+  "noThanks": "Nu, mulțumesc",
+  "output": {
+    "navigate": "navigați",
+    "select": "selectați",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} de la ora {{time}}",
+    "serviceStatus": {
+      "failed": "eșuat",
+      "running": "în execuție",
+      "starting": "în curs de pornire",
+      "stopped": "oprit",
+      "turnedOff": "dezactivat",
+      "turnedOn": "activat"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Cod alfanumeric personalizat",
+    "alphanumericDetail": "alfanumeric",
+    "empty": "Introduceți codul de acces.",
+    "invalidAlphanumeric": "Un cod de acces conține cel mult 64 de caractere ASCII imprimabile.",
+    "invalidNumeric": "Un cod numeric conține doar cifre.",
+    "invalidPin": "Un cod de acces pin are 4 sau 6 cifre; unul personalizat necesită --passcode-type numeric sau alphanumeric",
+    "invalidType": "argument nevalid {{value}} pentru --passcode-type: trebuie să fie {{types}}",
+    "masked": "[datele introduse sunt ascunse]",
+    "numeric": "Cod numeric personalizat",
+    "numericDetail": "numeric",
+    "pin": "Cod de acces din 4 sau 6 cifre",
+    "pinDetail": "4 sau 6 cifre",
+    "prompt": "Cod de acces al dispozitivului",
+    "setUp": "Doriți să configurați deblocarea automată? Aplicația Swipt va putea astfel să deblocheze singură acest dispozitiv."
+  },
+  "project": {
+    "assetConflict": "{{source}} și {{asset}} ar deveni ambele assets/{{name}} în Swiplet.",
+    "conditionalActions": "Extensia definește acțiuni diferite în funcție de available(); definiți aceleași acțiuni pe toate sistemele și verificați available() în run sau într-o acțiune.",
+    "databaseAtLoad": "S-a utilizat baza de date în timpul încărcării extension.js; utilizați-o în run sau într-o acțiune.",
+    "interfaceImport": "Interfața importă {{file}} la rulare; importați tipul acestuia cu `import type`.",
+    "interfaceOnly": "{{name}} funcționează doar în interfața Swiplet.",
+    "invalidExposure": "Acțiunea {{action}} se poate expune doar către \"shortcuts\".",
+    "invalidExtension": "Exportul implicit al extensiei nu este rezultatul funcției defineExtension.",
+    "invalidID": "\"swiplet.id\" din package.json trebuie să conțină între 1 și 128 de litere mici, cifre, puncte, caractere de subliniere și cratime și să înceapă cu o literă sau o cifră.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" din package.json trebuie să asocieze limbile cu numele.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" din package.json trebuie să fie un număr întreg între {{oldest}} și {{level}}, nivelul API al pachetului @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" din package.json trebuie să fie un număr de versiune începând cu {{version}}, versiunea iOS minimă a pachetului @swipt/api.",
+    "invalidName": "\"swiplet.name\" din package.json trebuie să fie un șir de caractere care nu este gol.",
+    "invalidSchema": "Schema {{side}} a acțiunii {{action}} nu implementează Standard JSON Schema; utilizați o bibliotecă ce o implementează, de exemplu Zod 4.",
+    "invalidString": "\"{{field}}\" din package.json trebuie să fie un șir de caractere.",
+    "invalidVersionCode": "\"swiplet.versionCode\" din package.json trebuie să fie un număr întreg pozitiv.",
+    "missingTitle": "Acțiunea {{action}} necesită un titlu.",
+    "storageAtLoad": "S-a utilizat stocarea în timpul încărcării extension.js; utilizați-o în run sau într-o acțiune.",
+    "unprovidedModule": "Aplicația Swipt nu oferă \"{{module}}\" extensiilor; includeți acest modul în extension.js.",
+    "usedAtLoad": "S-a utilizat {{name}} în timpul încărcării extension.js; utilizați acest element în run sau într-o acțiune."
+  },
+  "serve": {
+    "cancel": "Anulează",
+    "checking": "se verifică {{device}}",
+    "conflictingTokens": "--token și --random-token nu pot fi folosite împreună.",
+    "invalidToken": "Un token conține unul sau mai multe caractere ASCII imprimabile, fără spații.",
+    "localNetwork": "Rețea locală",
+    "noAutoUnlock": "{{device}} nu se deblochează automat; setați codul de acces cu --passcode. Apăsați Ctrl-C pentru a opri driverul.",
+    "quitSwipt": "Închide Swipt",
+    "quittingSwipt": "se închide Swipt pe {{device}}",
+    "served": "Driverul de pe {{computer}} deservește deja {{device}}; mai întâi opriți acel driver.",
+    "servedPrompt": "Driverul de pe {{computer}} deservește deja {{device}}. Doriți să opriți acel driver?",
+    "starting": "se pornește driverul pentru {{device}}",
+    "stopDriver": "Oprește driverul de pe {{computer}}",
+    "stopHint": "Apăsați Ctrl-C pentru a opri driverul.",
+    "stoppingDriver": "se oprește driverul de pe {{computer}}",
+    "swiptRunning": "Driverul nu poate controla {{device}} cât timp Swipt rulează pe acesta; mai întâi închideți Swipt.",
+    "swiptRunningPrompt": "Driverul nu poate controla {{device}} cât timp Swipt rulează pe acesta. Doriți să închideți Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Aplicația Swipt este instalată prin sideload pe {{device}} de mai multe echipe; alegeți una cu --team ID:",
+    "certificateFailed": "Xcode nu a putut crea un certificat de dezvoltare pentru echipa {{team}}; adăugați unul în {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "se verifică Swipt pe {{device}}",
+    "checkingRelease": "se verifică cea mai recentă versiune",
+    "chooseTeam": "Alegeți o echipă",
+    "chooseTeamHint": "Alegeți o echipă cu --team ID:",
+    "diskImageFailed": "pregătirea imaginii de disc pentru dezvoltatori pe {{device}} nu a reușit: {{error}}",
+    "downgrade": "Revino la o versiune anterioară",
+    "downgradePrompt": "Doriți să reveniți de la versiunea {{version}} la versiunea anterioară {{releaseVersion}} a aplicației Swipt de pe {{device}}? Aplicația Swipt își resetează datele când versiunea anterioară nu le poate citi.",
+    "downgradeToStablePrompt": "Doriți să reveniți de la versiunea nightly {{version}} la versiunea stabilă {{releaseVersion}} a aplicației Swipt de pe {{device}}? Aplicația Swipt își resetează datele când versiunea anterioară nu le poate citi.",
+    "downloading": "se descarcă Swipt {{version}} ({{build}}) de la {{release}}",
+    "expiration": "Semnătura expiră {{expiration}}.",
+    "installed": "{{build}} a fost instalat pe {{device}}.",
+    "installing": "se instalează pe {{device}}",
+    "invalidTeam": "argument nevalid {{value}} pentru --team: trebuie să fie ID-ul de echipă din 10 caractere afișat în {{accounts}}",
+    "laterThanRelease": "{{build}} de pe {{device}} este mai recent decât {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; deblocați dispozitivul sau transmiteți --passcode, apoi rulați din nou comanda.",
+    "looking": "se caută Swipt pe dispozitive",
+    "needsMacOS": "Instalarea sau actualizarea aplicației Swipt necesită macOS; instalați-o de pe un Mac, apoi configurați-o aici cu \"swipt sideload setup\".",
+    "noAccount": "Xcode nu are niciun cont; autentificați-vă în {{accounts}} sau alegeți o echipă cu --team ID",
+    "noAccountForTeam": "Xcode nu are niciun cont pentru echipa {{team}}; autentificați-vă în contul Apple al echipei, în {{accounts}}.",
+    "noCertificate": "Xcode nu are niciun certificat de dezvoltare; adăugați unul în {{accounts}} › Manage Certificates sau alegeți o echipă cu --team ID",
+    "noneInstalled": "Aplicația Swipt nu este instalată prin sideload pe niciun iPhone sau iPad.",
+    "noneInstalledHint": "Aplicația Swipt nu este instalată prin sideload pe niciun iPhone sau iPad; instalați-o cu \"swipt sideload install\".",
+    "notInstalled": "Aplicația Swipt nu este instalată prin sideload pe {{device}}.",
+    "notInstalledByTeam": "Aplicația Swipt nu este instalată prin sideload pe {{device}} de către echipa {{team}}.",
+    "notInstalledByTeamHint": "Aplicația Swipt nu este instalată prin sideload pe {{device}} de către echipa {{team}}; instalați-o cu \"swipt sideload install\".",
+    "notInstalledHint": "Aplicația Swipt nu este instalată prin sideload pe {{device}}; instalați-o cu \"swipt sideload install\".",
+    "notOnNetwork": "{{device}} nu a fost găsit în rețeaua locală; găsiți URL-urile API în Swipt › Dezvoltator › Rețea locală.",
+    "opening": "se deschide Swipt pe {{device}}",
+    "openingSettings": "se deschide aplicația Configurări pe {{device}}",
+    "opensAfterUnlock": "Se deschide după ce {{device}} este deblocat.",
+    "pairingFailed": "Asocierea nu a reușit, așa că aplicația Swipt va efectua asocierea în Configurări: {{error}}",
+    "preparingDiskImage": "se pregătește imaginea de disc pentru dezvoltatori pe {{device}}",
+    "preparingSigning": "se pregătește semnarea pentru Swipt cu echipa {{team}} prin Xcode",
+    "removed": "s-a eliminat {{build}} de pe {{device}}",
+    "removing": "se elimină Swipt de pe {{device}}",
+    "renewalNeedsDowngrade": "{{build}} de pe {{device}} trebuie semnat din nou, dar {{release}} ({{releaseBuild}}) este mai vechi; utilizați --nightly sau reveniți la o versiune anterioară cu \"swipt sideload install --force\".",
+    "resigning": "se semnează din nou Swipt",
+    "running": "{{app}} rulează.",
+    "settingUpAutoUnlock": "se configurează deblocarea automată",
+    "trusted": "{{developer}} este de încredere.",
+    "trusting": "se acordă încredere pentru {{developer}} în Configurări",
+    "unlockPrompt": "Deblocați dispozitivul pentru a continua.",
+    "unlocking": "se deblochează dispozitivul",
+    "untrusted": "Încă nu s-a acordat încredere dezvoltatorului; acordați-i încredere în pagina din Configurări deschisă pe {{device}}, apoi deschideți Swipt.",
+    "upToDate": "{{build}} de pe {{device}} este deja {{release}}.",
+    "updated": "{{build}} a fost actualizat pe {{device}}.",
+    "waiting": "se așteaptă {{device}}",
+    "xcodeMissing": "xcodebuild necesită Xcode; instalați-l și selectați-l cu xcode-select",
+    "xcodebuildMissing": "xcodebuild lipsește; instalați Xcode."
+  }
+}

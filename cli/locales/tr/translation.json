@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Bunları available() ile denetleyin, bunları kullanan kodu @available ile işaretleyin ya da package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
+    "apiLevel": "API düzeyi {{level}}",
+    "entryNeeds": "{{location}}: {{name}}, Swiplet’in giriş noktasıdır ve {{requirement}} gerektirir; package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
+    "importNeeds": "{{location}}: {{name}} öğesini içe aktarmak {{requirement}} gerektirir; package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
+    "invalidEntry": "{{location}}: @available \"{{entry}}\" içeriyor; virgülle ayrılmış \"apiLevel <level>\" ve \"iOS <version>\" girişlerini kabul eder.",
+    "needs": "{{location}}: {{name}} için {{requirement}} gerekli.",
+    "repeatedEntry": "{{location}}: @available, {{kind}} değerini iki kez belirtiyor."
+  },
+  "cli": {
+    "commands": "komutlar:",
+    "exactArgs_one": "{{count}} argüman kabul eder, {{received}} argüman alındı",
+    "exactArgs_other": "{{count}} argüman kabul eder, {{received}} argüman alındı",
+    "help": "yardım",
+    "helpHint": "Kullanım için \"swipt help\" komutunu çalıştırın.",
+    "minimumArgs_one": "en az {{count}} argüman kabul eder, {{received}} argüman alındı",
+    "minimumArgs_other": "en az {{count}} argüman kabul eder, {{received}} argüman alındı",
+    "missingCommand": "Komut eksik.",
+    "options": "seçenekler:",
+    "rangeArgs_one": "{{least}} ile {{count}} arasında argüman kabul eder, {{received}} argüman alındı",
+    "rangeArgs_other": "{{least}} ile {{count}} arasında argüman kabul eder, {{received}} argüman alındı",
+    "unauthenticated": "{{message}}; Swipt › Geliştirici bölümünün veya \"swipt driver\" komutunun gösterdiği URL ile bağlanın: swipt device add {{url}}",
+    "unimplemented": "{{url}} adresindeki Swipt’te bu komut yok; Swipt’i güncelleyin.",
+    "unknownCommand": "{{parent}} için bilinmeyen komut: {{name}}",
+    "unknownOption": "{{option}}, {{command}} komutunun seçeneği değil.",
+    "unreachable": "{{url}} adresindeki Swipt’e erişilemiyor: {{message}}",
+    "usage": "kullanım: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Veri dizinini koruyarak tüm veri dosyalarını sil"
+      },
+      "list": {
+        "description": "Veri dosyalarını listele",
+        "recursive": "alt dizinleri dahil et"
+      },
+      "read": {
+        "description": "Bir veri dosyasını veya dizinini oku",
+        "output": "hedef",
+        "saved_one": "{{count}} dosya {{path}} konumuna kaydedildi",
+        "saved_other": "{{count}} dosya {{path}} konumuna kaydedildi"
+      },
+      "remove": {
+        "description": "Bir veri dosyasını sil",
+        "recursive": "dizin içeriğini dahil et"
+      },
+      "replDescription": "REPL’in veri dizinindeki dosyaları yönet",
+      "swipletDescription": "Bir Swiplet’in veri dizinindeki dosyaları yönet",
+      "write": {
+        "description": "Bir veri dosyası yaz"
+      }
+    },
+    "description": "Swipt komut satırı aracı",
+    "device": {
+      "add": {
+        "description": "Bir aygıtı URL’siyle ekle; aygıt uzaktaysa veya belirteç gerektiriyorsa gereklidir"
+      },
+      "description": "Aygıtları yönet ve günlüklerini oku",
+      "list": {
+        "description": "Aygıtları listele ve yerel ağda bulunanları ekle"
+      },
+      "logs": {
+        "count": "geçmiş giriş sayısı (saptanmış: 100)",
+        "description": "Günlükleri yazdır",
+        "follow": "yeni girişleri izle",
+        "invalidDuration": "{{option}} için {{value}} argümanı geçersiz: 30s veya 1m30s gibi bir süre olmalıdır",
+        "invalidLevel": "--level değeri error, warn, info veya debug olmalıdır",
+        "invalidNumber": "{{option}} için {{value}} argümanı geçersiz: bir sayı olmalıdır",
+        "level": "en düşük düzey (saptanmış: info)",
+        "since": "geriye dönük en uzun süre",
+        "swiplet": "Swiplet ID’si"
+      },
+      "remove": {
+        "description": "Bir aygıtı unut"
+      },
+      "stop": {
+        "description": "Swipt API’sini sunmayı durdur",
+        "stopped": "durdu"
+      }
+    },
+    "driver": {
+      "description": "Bu bilgisayardan bir aygıt için Swipt API’sini ve MCP’yi sun",
+      "details": "Aygıtı aynı anda yalnızca bir taraf denetleyebilir: aygıttaki Swipt veya bir bilgisayardaki sürücü.",
+      "passcode": "aygıtın kilidini otomatik açmak için parola; boş bırakılırsa otomatik kilit açma kapatılır",
+      "randomToken": "API istemcilerinden rastgele bir belirteç iste",
+      "token": "API istemcilerinden bu belirteci iste"
+    },
+    "project": {
+      "build": {
+        "description": "Projeyi dist/<swiplet.id>.swiplet olarak paketle"
+      },
+      "create": {
+        "description": "Yeni veya boş bir dizinde Swiplet projesi oluştur",
+        "notEmpty": "{{directory}} boş değil."
+      },
+      "deploy": {
+        "description": "Projeyi derle ve aygıta yükle"
+      },
+      "description": "Swiplet projeleri oluştur, derle ve dağıt",
+      "develop": {
+        "deployed": "{{elapsed}} içinde derlendi ve dağıtıldı; {{directory}} izleniyor",
+        "description": "Bir Swiplet projesini derle, yükle ve değişiklikleri izleyerek güncel tut",
+        "quiet": "günlükler olmadan",
+        "unchanged": "{{elapsed}} içinde derlendi; hiçbir şey değişmedi"
+      },
+      "source": {
+        "description": "Derlenen Swiplet’leri bir swiplets.json ile dist/ içinde topla",
+        "duplicateID": "{{id}} kimliği hem {{first}} hem de {{second}} dosyasında kullanılıyor",
+        "invalidIcon": "package.json dosyasındaki \"source.icon\" symbol içermelidir, color içerebilir.",
+        "invalidLocalizedNames": "package.json dosyasındaki \"source.localizedNames\" dilleri adlarla eşleştirmelidir.",
+        "invalidURL": "package.json dosyasındaki \"source.url\" mutlak bir URL değil.",
+        "noWorkspaces": "package.json dosyasında Swiplet içeren çalışma alanı listelenmiyor; listelenecek Swiplet’leri belirtin.",
+        "notBuilt": "{{file}} eksik; önce {{directory}} dizinini derleyin."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Genel değişkenlerin ve modüllerin TypeScript bildirimlerini yazdır"
+      },
+      "dataDirectory": "{{path}}, REPL veri dizinini gösteriyor; --output DIRECTORY ile kaydedin",
+      "description": "Aygıttaki REPL oturumunda JavaScript çalıştır",
+      "directory": "{{path}}, REPL veri dizininde bir dizindir; --output DIRECTORY ile kaydedin",
+      "reset": {
+        "description": "Oturumu sıfırla"
+      },
+      "run": {
+        "arguments": "İlk argüman var olan bir dosyayı belirtiyorsa FILE, aksi takdirde CODE olur; seçenekler ondan önce gelir.",
+        "description": "Aygıtta bir JavaScript ifadesi veya programı çalıştır",
+        "details": "CODE, değeri yazdırılan bir ifadedir. FILE veya - olarak ya da argümansız verilen standart girdi bir programdır ve yalnızca konsol çıktısı yazdırılır.",
+        "extraArguments": "{{argument}} bir dosya değil ve CODE, ARG kabul etmez.",
+        "images": "görüntü dizini (saptanmış: yeni bir geçici dizin)"
+      }
+    },
+    "sideload": {
+      "description": "Swipt’i yandan yükle",
+      "install": {
+        "description": "Swipt’i yükle",
+        "force": "aynı veya daha yeni bir derlemenin üzerine yükle"
+      },
+      "passcode": "otomatik kilit açmayı bu parolayla ayarla",
+      "setup": {
+        "description": "Swipt’i ayarla"
+      },
+      "uninstall": {
+        "description": "Swipt’i kaldır"
+      },
+      "update": {
+        "description": "Swipt’i güncelle veya imzasını yenile",
+        "passcode": "aygıtın kilidini bu parolayla aç"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Bir Swiplet eylemini çağır",
+        "input": "JSON girdisi, @FILE veya -",
+        "invalidInput": "--input değeri JSON değil: {{error}}"
+      },
+      "dataDirectory": "{{path}}, {{swiplet}} veri dizinini gösteriyor; --output DIRECTORY ile kaydedin",
+      "description": "Aygıttaki Swiplet’leri yönet",
+      "directory": "{{path}}, {{swiplet}} veri dizininde bir dizindir; --output DIRECTORY ile kaydedin",
+      "install": {
+        "description": "Bir Swiplet arşivini yükle",
+        "notFound": "{{path}} konumunda arşiv yok"
+      },
+      "list": {
+        "actions": "EYLEMLER",
+        "description": "Swiplet’leri listele",
+        "id": "ID",
+        "service": "SERVİS",
+        "status": "DURUM",
+        "title": "BAŞLIK",
+        "version": "SÜRÜM"
+      },
+      "remove": {
+        "description": "Bir Swiplet’i kaldır",
+        "removed": "{{name}} kaldırıldı"
+      },
+      "service": {
+        "description": "Swiplet servislerini yönet",
+        "disable": {
+          "description": "Bir Swiplet servisini kapat"
+        },
+        "enable": {
+          "description": "Bir Swiplet servisini aç"
+        },
+        "watch": {
+          "description": "Swiplet servislerini izle"
+        },
+        "watchState": "durumu izle"
+      },
+      "show": {
+        "description": "Bir Swiplet’i göster",
+        "input": "girdi: {{schema}}",
+        "notFound": "{{id}} ID’li Swiplet yok.",
+        "output": "çıktı: {{schema}}",
+        "service": "servis: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Sürümü yazdır"
+    }
+  },
+  "connection": {
+    "added": "{{device}} eklendi",
+    "ambiguous": "Birden fazla aygıt var: {{devices}}; -d ile birini seçin",
+    "driverNotStopped": "{{computer}} bilgisayarındaki sürücü durmadı.",
+    "invalidURL": "{{text}} bir URL değil.",
+    "none": "Aygıt yok; Swipt › Geliştirici › Yerel Ağ seçeneğini açın veya \"swipt device add URL\" ile bir aygıt bağlayın.",
+    "noneOnNetwork": "Yerel ağda Swipt yayımlayan aygıt yok; Swipt › Geliştirici › Yerel Ağ seçeneğini açın veya \"swipt device add URL\" ile bir aygıt bağlayın.",
+    "notFound": "{{device}} adında aygıt yok.",
+    "notFoundHint": "{{device}} adında aygıt yok; \"swipt device list\" aygıtları listeler.",
+    "offline": "çevrimdışı",
+    "problem": {
+      "developerModeOff": "geliştirici modu kapalı",
+      "deviceUnsupported": "aygıt desteklenmiyor",
+      "diskImageMissing": "disk görüntüsü yok",
+      "diskImageMountFailed": "disk görüntüsü bağlanamadı",
+      "pairingRejected": "eşleme reddedildi",
+      "screenInUse": "ekran kullanımda",
+      "unreachable": "erişilemiyor",
+      "vpnPeerAddressMissing": "VPN eş adresi yok"
+    },
+    "removed": "{{name}} kaldırıldı",
+    "requiresToken": "belirteç gerekli",
+    "requiresTokenHint": "{{device}} belirteç gerektiriyor: swipt device add {{url}}",
+    "state": {
+      "connecting": "bağlanıyor",
+      "failed": "başarısız",
+      "preparing": "hazırlanıyor",
+      "running": "bağlı",
+      "stopped": "durdu"
+    },
+    "unsupportedURL": "{{text}} bir http veya https URL’si değil."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} yüklendi",
+    "replaced": "{{id}} {{version}} değiştirildi"
+  },
+  "driver": {
+    "alreadyRunning": "Sürücü bu bilgisayarda zaten çalışıyor; önce durdurun.",
+    "ambiguousName": "{{name}} adında birden fazla iPhone veya iPad var; UDID ile birini seçin",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service çalışmıyor; Microsoft Store’dan Apple Aygıtları uygulamasını yükleyin",
+    "chooseDevice": "Aygıt seçin",
+    "chooseDeviceHint": "-d NAME|UDID ile bir aygıt seçin",
+    "connectedDevices": "{{reason}}; bağlı iPhone ve iPad aygıtları:",
+    "lookingForDevices": "aygıtlar aranıyor",
+    "missing": "Sürücü eksik; \"npm install -g @swipt/cli --include=optional\" ile yükleyin.",
+    "nameNotFound": "{{name}} adında iPhone veya iPad yok",
+    "noDevice": "Bu bilgisayara bağlı veya yerel ağda bulunan iPhone veya iPad yok; USB kablosuyla bir aygıt bağlayın ve kilidini açın.",
+    "pairing": "{{device}} aygıtıyla eşleniyor",
+    "trustPrompt": "{{device}} aygıtında Güven’e dokunun ve bu bilgisayara güvenmek için aygıtın parolasını girin",
+    "usbmuxdMissing": "usbmuxd çalışmıyor; usbmuxd’yi yükleyin ve başlatın"
+  },
+  "error": "hata: {{message}}",
+  "flags": {
+    "device": "kullanılacak aygıt",
+    "nightly": "nightly derlemeyi kullan",
+    "noSetup": "Swipt’i eşlemeden, geliştiricisine güvenmeden ve API’sini yayımlamadan",
+    "noSetupAPI": "API’yi yerel ağda yayımlamadan",
+    "noSetupPair": "Swipt’i eşlemeden",
+    "passcodeType": "pin (4 veya 6 basamak, saptanmış), numeric veya alphanumeric",
+    "team": "ekip ID’si, birden fazla ekip varsa gerekli"
+  },
+  "metro": {
+    "boolean": "bir boole değeri",
+    "contextArgument": "require.context çağrısının {{index}}. argümanı {{expected}} olmalıdır",
+    "contextRegExp": "require.context çağrısının {{index}}. argümanı bir düzenli ifade değişmezi olmalıdır.",
+    "oneOf": "{{values}} değerlerinden biri",
+    "string": "bir dize",
+    "workletsMismatch": "Projede react-native-worklets {{version}} var ancak Swipt {{expected}} çalıştırıyor; react-native-worklets@{{expected}} yükleyin veya paketi kaldırın."
+  },
+  "noThanks": "Hayır, Teşekkürler",
+  "output": {
+    "navigate": "gezin",
+    "select": "seç",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} itibarıyla {{status}}",
+    "serviceStatus": {
+      "failed": "başarısız",
+      "running": "çalışıyor",
+      "starting": "başlatılıyor",
+      "stopped": "durdu",
+      "turnedOff": "kapalı",
+      "turnedOn": "açık"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Özel alfasayısal kod",
+    "alphanumericDetail": "alfasayısal",
+    "empty": "Parolayı girin.",
+    "invalidAlphanumeric": "Parola en fazla 64 yazdırılabilir ASCII karakteri içerebilir.",
+    "invalidNumeric": "Sayısal kod yalnızca rakam içerebilir.",
+    "invalidPin": "pin parolası 4 veya 6 basamaklıdır; özel parola için --passcode-type numeric veya alphanumeric gerekir",
+    "invalidType": "--passcode-type için {{value}} argümanı geçersiz: {{types}} değerlerinden biri olmalıdır",
+    "masked": "[girdi gizlendi]",
+    "numeric": "Özel sayısal kod",
+    "numericDetail": "sayısal",
+    "pin": "4 veya 6 basamaklı parola",
+    "pinDetail": "4 veya 6 basamak",
+    "prompt": "Aygıt parolası",
+    "setUp": "Otomatik kilit açma ayarlansın mı? Böylece Swipt bu aygıtın kilidini kendiliğinden açabilir."
+  },
+  "project": {
+    "assetConflict": "{{source}} ve {{asset}} Swiplet içinde aynı assets/{{name}} yoluna denk gelir.",
+    "conditionalActions": "Uzantı, available() sonucuna göre farklı eylemler tanımlıyor; her sistemde aynı eylemleri tanımlayın ve available() denetimini run veya bir eylem içinde yapın.",
+    "databaseAtLoad": "Veritabanı, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın.",
+    "interfaceImport": "Arayüz çalışma zamanında {{file}} dosyasını içe aktarıyor; türünü `import type` ile içe aktarın.",
+    "interfaceOnly": "{{name}} yalnızca Swiplet arayüzünde çalışır.",
+    "invalidExposure": "{{action}} eylemi kendini yalnızca \"shortcuts\" için kullanıma sunabilir.",
+    "invalidExtension": "Uzantının saptanmış dışa aktarımı defineExtension sonucu değil.",
+    "invalidID": "package.json dosyasındaki \"swiplet.id\" 1 ile 128 karakter arasında olmalı, küçük harf, rakam, nokta, alt çizgi ve tirelerden oluşmalı ve harf veya rakamla başlamalıdır.",
+    "invalidLocalizedNames": "package.json dosyasındaki \"swiplet.localizedNames\" dilleri adlarla eşleştirmelidir.",
+    "invalidMinimumAPILevel": "package.json dosyasındaki \"swiplet.minimumAPILevel\" {{oldest}} ile {{level}} (@swipt/api API düzeyi) arasında bir tam sayı olmalıdır.",
+    "invalidMinimumIOSVersion": "package.json dosyasındaki \"swiplet.minimumIOSVersion\" {{version}} (@swipt/api en düşük iOS sürümü) veya daha yüksek bir sürüm numarası olmalıdır.",
+    "invalidName": "package.json dosyasındaki \"swiplet.name\" boş olmayan bir dize olmalıdır.",
+    "invalidSchema": "{{action}} eyleminin {{side}} şeması Standard JSON Schema’yı uygulamıyor; Zod 4 gibi bunu uygulayan bir kitaplık kullanın.",
+    "invalidString": "package.json dosyasındaki \"{{field}}\" bir dize olmalıdır.",
+    "invalidVersionCode": "package.json dosyasındaki \"swiplet.versionCode\" pozitif bir tam sayı olmalıdır.",
+    "missingTitle": "{{action}} eylemi için başlık gerekli.",
+    "storageAtLoad": "Depolama, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın.",
+    "unprovidedModule": "Swipt, \"{{module}}\" modülünü uzantılara sağlamıyor; modülü extension.js içine paketleyin.",
+    "usedAtLoad": "{{name}}, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın."
+  },
+  "serve": {
+    "cancel": "Vazgeç",
+    "checking": "{{device}} aygıtı denetleniyor",
+    "conflictingTokens": "--token ve --random-token birlikte kullanılamaz.",
+    "invalidToken": "Belirteç, boşluk içermeyen bir veya daha fazla yazdırılabilir ASCII karakterinden oluşur.",
+    "localNetwork": "Yerel ağ",
+    "noAutoUnlock": "{{device}} aygıtının kilidi otomatik açılmıyor; parolasını --passcode ile ayarlayın. Sürücüyü durdurmak için Ctrl-C’ye basın.",
+    "quitSwipt": "Swipt’ten çık",
+    "quittingSwipt": "{{device}} aygıtında Swipt’ten çıkılıyor",
+    "served": "{{computer}} bilgisayarındaki sürücü zaten {{device}} aygıtına hizmet veriyor; önce o sürücüyü durdurun.",
+    "servedPrompt": "{{computer}} bilgisayarındaki sürücü zaten {{device}} aygıtına hizmet veriyor. O sürücü durdurulsun mu?",
+    "starting": "{{device}} aygıtı için sürücü başlatılıyor",
+    "stopDriver": "{{computer}} bilgisayarındaki sürücüyü durdur",
+    "stopHint": "Sürücüyü durdurmak için Ctrl-C’ye basın.",
+    "stoppingDriver": "{{computer}} bilgisayarındaki sürücü durduruluyor",
+    "swiptRunning": "Swipt {{device}} aygıtında çalışırken sürücü aygıtı denetleyemez; önce Swipt’ten çıkın.",
+    "swiptRunningPrompt": "Swipt {{device}} aygıtında çalışırken sürücü aygıtı denetleyemez. Swipt’ten çıkılsın mı?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Swipt, {{device}} aygıtına birden fazla ekip tarafından yandan yüklenmiş; --team ID ile birini seçin:",
+    "certificateFailed": "Xcode, {{team}} ekibi için geliştirme sertifikası oluşturamadı; {{accounts}} › Manage Certificates bölümünden bir tane ekleyin ({{errors}}).",
+    "checking": "{{device}} aygıtında Swipt denetleniyor",
+    "checkingRelease": "en son sürüm denetleniyor",
+    "chooseTeam": "Ekip seçin",
+    "chooseTeamHint": "--team ID ile bir ekip seçin:",
+    "diskImageFailed": "{{device}} aygıtında geliştirici disk görüntüsü hazırlanamadı: {{error}}",
+    "downgrade": "Sürümü Düşür",
+    "downgradePrompt": "{{device}} aygıtındaki Swipt’in sürümü {{version}} sürümünden {{releaseVersion}} sürümüne düşürülsün mü? Eski sürüm verileri okuyamadığında Swipt verilerini sıfırlar.",
+    "downgradeToStablePrompt": "{{device}} aygıtındaki Swipt’in sürümü nightly {{version}} derlemesinden kararlı {{releaseVersion}} sürümüne düşürülsün mü? Eski sürüm verileri okuyamadığında Swipt verilerini sıfırlar.",
+    "downloading": "Swipt {{version}} ({{build}}), {{release}} sürümünden indiriliyor",
+    "expiration": "İmzası {{expiration}} sona erecek.",
+    "installed": "{{build}}, {{device}} aygıtına yüklendi.",
+    "installing": "{{device}} aygıtına yükleniyor",
+    "invalidTeam": "--team için {{value}} argümanı geçersiz: {{accounts}} bölümünde gösterilen 10 karakterlik ekip ID’si olmalıdır",
+    "laterThanRelease": "{{device}} aygıtındaki {{build}}, {{release}} ({{releaseBuild}}) sürümünden daha yeni.",
+    "locked": "{{device}}: {{message}}; aygıtın kilidini açın veya --passcode iletin, sonra bu komutu yeniden çalıştırın.",
+    "looking": "aygıtlarda Swipt aranıyor",
+    "needsMacOS": "Swipt’i yüklemek veya güncellemek için macOS gerekir; Swipt’i bir Mac’ten yükleyin, ardından burada \"swipt sideload setup\" ile ayarlayın.",
+    "noAccount": "Xcode’da hesap yok; {{accounts}} bölümünde giriş yapın veya --team ID ile bir ekip seçin",
+    "noAccountForTeam": "Xcode’da {{team}} ekibinin hesabı yok; {{accounts}} bölümünde ekibin Apple Hesabı ile giriş yapın.",
+    "noCertificate": "Xcode’da geliştirme sertifikası yok; {{accounts}} › Manage Certificates bölümünden bir tane ekleyin veya --team ID ile bir ekip seçin",
+    "noneInstalled": "Swipt hiçbir iPhone veya iPad aygıtına yandan yüklenmemiş.",
+    "noneInstalledHint": "Swipt hiçbir iPhone veya iPad aygıtına yandan yüklenmemiş; \"swipt sideload install\" ile yükleyin.",
+    "notInstalled": "Swipt, {{device}} aygıtına yandan yüklenmemiş.",
+    "notInstalledByTeam": "Swipt, {{device}} aygıtına {{team}} ekibi tarafından yandan yüklenmemiş.",
+    "notInstalledByTeamHint": "Swipt, {{device}} aygıtına {{team}} ekibi tarafından yandan yüklenmemiş; \"swipt sideload install\" ile yükleyin.",
+    "notInstalledHint": "Swipt, {{device}} aygıtına yandan yüklenmemiş; \"swipt sideload install\" ile yükleyin.",
+    "notOnNetwork": "{{device}} yerel ağda bulunamadı; API URL’lerini Swipt › Geliştirici › Yerel Ağ bölümünde bulabilirsiniz.",
+    "opening": "{{device}} aygıtında Swipt açılıyor",
+    "openingSettings": "{{device}} aygıtında Ayarlar açılıyor",
+    "opensAfterUnlock": "{{device}} aygıtının kilidi açıldığında açılır.",
+    "pairingFailed": "Eşleme başarısız oldu, bu nedenle Swipt bunun yerine Ayarlar’da eşleme yapacak: {{error}}",
+    "preparingDiskImage": "{{device}} aygıtında geliştirici disk görüntüsü hazırlanıyor",
+    "preparingSigning": "Xcode üzerinden {{team}} ekibiyle Swipt için imzalama hazırlanıyor",
+    "removed": "{{build}}, {{device}} aygıtından kaldırıldı",
+    "removing": "Swipt, {{device}} aygıtından kaldırılıyor",
+    "renewalNeedsDowngrade": "{{device}} aygıtındaki {{build}} yeniden imzalanmalı ancak {{release}} ({{releaseBuild}}) daha eski; --nightly kullanın veya \"swipt sideload install --force\" ile sürüm düşürün.",
+    "resigning": "Swipt yeniden imzalanıyor",
+    "running": "{{app}} çalışıyor.",
+    "settingUpAutoUnlock": "otomatik kilit açma ayarlanıyor",
+    "trusted": "{{developer}} geliştiricisine güvenildi.",
+    "trusting": "Ayarlar’da {{developer}} geliştiricisine güveniliyor",
+    "unlockPrompt": "Devam etmek için aygıtın kilidini açın.",
+    "unlocking": "aygıtın kilidi açılıyor",
+    "untrusted": "Geliştiricisine henüz güvenilmiyor; {{device}} aygıtında açılan Ayarlar sayfasında güvenin, sonra Swipt’i açın.",
+    "upToDate": "{{device}} aygıtındaki {{build}} zaten {{release}} sürümünde.",
+    "updated": "{{build}}, {{device}} aygıtında güncellendi.",
+    "waiting": "{{device}} aygıtı bekleniyor",
+    "xcodeMissing": "xcodebuild için Xcode gerekir; Xcode’u yükleyin ve xcode-select ile seçin",
+    "xcodebuildMissing": "xcodebuild eksik; Xcode’u yükleyin."
+  }
+}

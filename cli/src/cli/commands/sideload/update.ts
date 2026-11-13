@@ -1,14 +1,14 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import * as sideload from "../../../sideload";
 import { defineCommand } from "../../command";
 import { nightlyOption, passcodeOptions, setupOptions } from "../flags";
 
 export const update = defineCommand({
   name: "update",
-  short: tr("Update or renew Swipt"),
+  short: t("commands.sideload.update.description"),
   args: [0, 0],
   options: {
-    ...passcodeOptions(tr("unlock device with this passcode")),
+    ...passcodeOptions(t("commands.sideload.update.passcode")),
     ...nightlyOption,
     ...setupOptions,
   },

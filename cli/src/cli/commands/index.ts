@@ -1,4 +1,4 @@
-import { tr } from "../../i18n";
+import { t } from "../../i18n";
 import { defineCommand } from "../command";
 import { device } from "./device";
 import { driver } from "./driver";
@@ -10,6 +10,6 @@ import { version } from "./version";
 
 export const root = defineCommand({
   name: "swipt",
-  short: tr("Swipt CLI"),
+  short: t("commands.description"),
   commands: [project, device, swiplet, repl, driver, sideload, version],
 });

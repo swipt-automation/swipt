@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "available() மூலம் இவற்றைச் சரிபார்க்கவும், இவற்றைப் பயன்படுத்தும் குறியீட்டை @available மூலம் குறிக்கவும் அல்லது package.jsonஇல் உள்ள \"swiplet.minimumAPILevel\" அல்லது \"swiplet.minimumIOSVersion\"-ஐ அதிகரிக்கவும்.",
+    "apiLevel": "API நிலை {{level}}",
+    "entryNeeds": "{{location}}: {{name}} என்பது Swipletஇன் நுழைவுப் புள்ளி, அதற்கு {{requirement}} தேவை. package.jsonஇல் உள்ள \"swiplet.minimumAPILevel\" அல்லது \"swiplet.minimumIOSVersion\"-ஐ அதிகரிக்கவும்.",
+    "importNeeds": "{{location}}: {{name}}-ஐ இம்போர்ட் செய்ய {{requirement}} தேவை. package.jsonஇல் உள்ள \"swiplet.minimumAPILevel\" அல்லது \"swiplet.minimumIOSVersion\"-ஐ அதிகரிக்கவும்.",
+    "invalidEntry": "{{location}}: @available-இல் \"{{entry}}\" உள்ளது. இது காற்புள்ளிகளால் பிரிக்கப்பட்ட \"apiLevel <level>\", \"iOS <version>\" ஆகியவற்றை ஏற்கும்.",
+    "needs": "{{location}}: {{name}}-க்கு {{requirement}} தேவை.",
+    "repeatedEntry": "{{location}}: @available-இல் {{kind}} இரண்டு முறை உள்ளது."
+  },
+  "cli": {
+    "commands": "கட்டளைகள்:",
+    "exactArgs_one": "{{count}} ஆர்க்யுமென்ட் தேவை, பெறப்பட்டவை: {{received}}",
+    "exactArgs_other": "{{count}} ஆர்க்யுமென்ட்கள் தேவை, பெறப்பட்டவை: {{received}}",
+    "help": "உதவி",
+    "helpHint": "பயன்பாட்டு விவரங்களுக்கு \"swipt help\" என்பதை இயக்கவும்.",
+    "minimumArgs_one": "குறைந்தது {{count}} ஆர்க்யுமென்ட் தேவை, பெறப்பட்டவை: {{received}}",
+    "minimumArgs_other": "குறைந்தது {{count}} ஆர்க்யுமென்ட்கள் தேவை, பெறப்பட்டவை: {{received}}",
+    "missingCommand": "கட்டளை இல்லை.",
+    "options": "விருப்பங்கள்:",
+    "rangeArgs_one": "{{least}} முதல் {{count}} வரை ஆர்க்யுமென்ட் தேவை, பெறப்பட்டவை: {{received}}",
+    "rangeArgs_other": "{{least}} முதல் {{count}} வரை ஆர்க்யுமென்ட்கள் தேவை, பெறப்பட்டவை: {{received}}",
+    "unauthenticated": "{{message}}. Swipt › டெவலப்பர் அல்லது \"swipt driver\" காட்டும் URL மூலம் இணைக்கவும்: swipt device add {{url}}",
+    "unimplemented": "{{url}}-இல் உள்ள Swiptஇல் இந்தக் கட்டளை இல்லை. Swiptஐப் புதுப்பிக்கவும்.",
+    "unknownCommand": "{{parent}}-க்கு {{name}} என்ற கட்டளை தெரியவில்லை",
+    "unknownOption": "{{option}} என்பது {{command}}-இன் விருப்பம் அல்ல.",
+    "unreachable": "{{url}}-இல் உள்ள Swiptஐ அணுக முடியவில்லை: {{message}}",
+    "usage": "பயன்பாடு: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "தரவுக் கோப்பகத்தை வைத்துக்கொண்டு எல்லாத் தரவுக் கோப்புகளையும் அகற்று"
+      },
+      "list": {
+        "description": "தரவுக் கோப்புகளைப் பட்டியலிடு",
+        "recursive": "துணைக்கோப்பகங்களைச் சேர்"
+      },
+      "read": {
+        "description": "தரவுக் கோப்பு அல்லது கோப்பகத்தைப் படி",
+        "output": "சேருமிடம்",
+        "saved_one": "{{count}} கோப்பு {{path}}-இல் சேமிக்கப்பட்டது",
+        "saved_other": "{{count}} கோப்புகள் {{path}}-இல் சேமிக்கப்பட்டன"
+      },
+      "remove": {
+        "description": "தரவுக் கோப்பை அகற்று",
+        "recursive": "கோப்பக உள்ளடக்கத்தைச் சேர்"
+      },
+      "replDescription": "REPLஇன் தரவுக் கோப்பகத்தில் உள்ள கோப்புகளை நிர்வகி",
+      "swipletDescription": "Swipletஇன் தரவுக் கோப்பகத்தில் உள்ள கோப்புகளை நிர்வகி",
+      "write": {
+        "description": "தரவுக் கோப்பை எழுது"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "URL மூலம் சாதனத்தைச் சேர். சாதனம் தொலைவில் இருந்தால் அல்லது டோக்கன் தேவைப்பட்டால் இது அவசியம்"
+      },
+      "description": "சாதனங்களை நிர்வகித்து அவற்றின் பதிவுகளைப் படி",
+      "list": {
+        "description": "சாதனங்களைப் பட்டியலிட்டு, உள்ளக நெட்வொர்க்கில் கண்டறிந்தவற்றைச் சேர்"
+      },
+      "logs": {
+        "count": "முந்தைய உள்ளீடுகளின் எண்ணிக்கை (இயல்பு 100)",
+        "description": "பதிவுகளை அச்சிடு",
+        "follow": "புதிய உள்ளீடுகளைப் பின்தொடர்",
+        "invalidDuration": "{{option}}-க்கான {{value}} தவறான ஆர்க்யுமென்ட்: இது 30s அல்லது 1m30s போன்ற கால அளவாக இருக்க வேண்டும்",
+        "invalidLevel": "--level என்பது error, warn, info அல்லது debug ஆக இருக்க வேண்டும்",
+        "invalidNumber": "{{option}}-க்கான {{value}} தவறான ஆர்க்யுமென்ட்: இது எண்ணாக இருக்க வேண்டும்",
+        "level": "குறைந்தபட்ச நிலை (இயல்பு info)",
+        "since": "அதிகபட்ச காலம்",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "சாதனத்தை மற"
+      },
+      "stop": {
+        "description": "Swipt APIஐ வழங்குவதை நிறுத்து",
+        "stopped": "நிறுத்தப்பட்டது"
+      }
+    },
+    "driver": {
+      "description": "இந்தக் கம்ப்யூட்டரிலிருந்து ஒரு சாதனத்திற்கு Swipt API மற்றும் MCPஐ வழங்கு",
+      "details": "ஒரே நேரத்தில் ஒரு தரப்பு மட்டுமே சாதனத்தைக் கட்டுப்படுத்த முடியும்: சாதனத்தில் உள்ள Swipt அல்லது ஒரு கம்ப்யூட்டரில் உள்ள டிரைவர்.",
+      "passcode": "சாதனத்தைத் தானாக அன்லாக் செய்வதற்கான பாஸ்கோடு. காலியாக விட்டால் அது முடக்கப்படும்",
+      "randomToken": "API கிளையன்ட்களிடமிருந்து ஒரு சீரற்ற டோக்கனைக் கோரு",
+      "token": "API கிளையன்ட்களிடமிருந்து இந்த டோக்கனைக் கோரு"
+    },
+    "project": {
+      "build": {
+        "description": "திட்டப்பணியை dist/<swiplet.id>.swiplet ஆகத் தொகு"
+      },
+      "create": {
+        "description": "புதிய அல்லது காலியான கோப்பகத்தில் Swiplet திட்டப்பணியை உருவாக்கு",
+        "notEmpty": "{{directory}} காலியாக இல்லை."
+      },
+      "deploy": {
+        "description": "திட்டப்பணியை பில்டு செய்து சாதனத்தில் நிறுவு"
+      },
+      "description": "Swiplet திட்டப்பணிகளை உருவாக்கு, பில்டு செய், டெப்ளாய் செய்",
+      "develop": {
+        "deployed": "{{elapsed}} நேரத்தில் பில்டு செய்யப்பட்டு டெப்ளாய் செய்யப்பட்டது. {{directory}} கண்காணிக்கப்படுகிறது",
+        "description": "Swiplet திட்டப்பணியை பில்டு செய்து நிறுவி, அது மாறும்போது பின்தொடர்",
+        "quiet": "பதிவுகள் இல்லாமல்",
+        "unchanged": "{{elapsed}} நேரத்தில் பில்டு செய்யப்பட்டது. எதுவும் மாறவில்லை"
+      },
+      "source": {
+        "description": "பில்டு செய்யப்பட்ட Swipletகளை swiplets.json உடன் dist/ இல் சேகரி",
+        "duplicateID": "{{id}} என்பது {{first}}, {{second}} இரண்டுமாக உள்ளது",
+        "invalidIcon": "package.jsonஇல் உள்ள \"source.icon\"இல் symbol இருக்க வேண்டும், color இருக்கலாம்.",
+        "invalidLocalizedNames": "package.jsonஇல் உள்ள \"source.localizedNames\" மொழிகளைப் பெயர்களுடன் மேப் செய்ய வேண்டும்.",
+        "invalidURL": "package.jsonஇல் உள்ள \"source.url\" முழுமையான URL அல்ல.",
+        "noWorkspaces": "Swipletகள் உள்ள பணியிடங்கள் எதுவும் package.jsonஇல் பட்டியலிடப்படவில்லை. பட்டியலிட வேண்டிய Swipletகளின் பெயர்களைக் குறிப்பிடவும்.",
+        "notBuilt": "{{file}} இல்லை. முதலில் {{directory}}-ஐ பில்டு செய்யவும்."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "குளோபல்கள், தொகுதிகளின் TypeScript அறிவிப்புகளை அச்சிடு"
+      },
+      "dataDirectory": "{{path}} என்பது REPLஇன் தரவுக் கோப்பகத்தைக் குறிக்கிறது. --output DIRECTORY மூலம் அதைச் சேமிக்கவும்",
+      "description": "சாதனத்தில் உள்ள REPL அமர்வில் JavaScriptஐ இயக்கு",
+      "directory": "{{path}} என்பது REPLஇன் தரவுக் கோப்பகத்தில் உள்ள கோப்பகம். --output DIRECTORY மூலம் அதைச் சேமிக்கவும்",
+      "reset": {
+        "description": "அமர்வை மீட்டமை"
+      },
+      "run": {
+        "arguments": "முதல் ஆர்க்யுமென்ட் ஏற்கெனவே உள்ள கோப்பைக் குறித்தால் அது FILE, இல்லையெனில் CODE. விருப்பங்களை அதற்கு முன் கொடுக்கவும்.",
+        "description": "சாதனத்தில் JavaScript எக்ஸ்பிரஷனையோ நிரலையோ இயக்கு",
+        "details": "CODE என்பது எக்ஸ்பிரஷன், அதன் மதிப்பு அச்சிடப்படும். FILE அல்லது - எனக் கொடுக்கப்பட்ட அல்லது ஆர்க்யுமென்ட் இல்லாத நிலையான உள்ளீடு என்பது நிரல், அதன் கன்சோல் வெளியீடு மட்டுமே அச்சிடப்படும்.",
+        "extraArguments": "{{argument}} கோப்பு அல்ல, CODE எந்த ARGஐயும் ஏற்காது.",
+        "images": "இமேஜ் கோப்பகம் (இயல்பு: புதிய தற்காலிகக் கோப்பகம்)"
+      }
+    },
+    "sideload": {
+      "description": "Swiptஐ சைடுலோடு செய்",
+      "install": {
+        "description": "Swiptஐ நிறுவு",
+        "force": "அதே அல்லது புதிய பில்டின் மேல் நிறுவு"
+      },
+      "passcode": "இந்தப் பாஸ்கோடு மூலம் தானியங்கு அன்லாக்கை அமை",
+      "setup": {
+        "description": "Swiptஐ அமை"
+      },
+      "uninstall": {
+        "description": "Swiptஐ அகற்று"
+      },
+      "update": {
+        "description": "Swiptஐப் புதுப்பி அல்லது ரீநியூ செய்",
+        "passcode": "இந்தப் பாஸ்கோடு மூலம் சாதனத்தை அன்லாக் செய்"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet செயலை அழை",
+        "input": "உள்ளீடு JSON, @FILE அல்லது -",
+        "invalidInput": "--input JSON அல்ல: {{error}}"
+      },
+      "dataDirectory": "{{path}} என்பது {{swiplet}}-இன் தரவுக் கோப்பகத்தைக் குறிக்கிறது. --output DIRECTORY மூலம் அதைச் சேமிக்கவும்",
+      "description": "சாதனத்தில் உள்ள Swipletகளை நிர்வகி",
+      "directory": "{{path}} என்பது {{swiplet}}-இன் தரவுக் கோப்பகத்தில் உள்ள கோப்பகம். --output DIRECTORY மூலம் அதைச் சேமிக்கவும்",
+      "install": {
+        "description": "Swiplet காப்பகத்தை நிறுவு",
+        "notFound": "{{path}}-இல் காப்பகம் இல்லை"
+      },
+      "list": {
+        "actions": "செயல்கள்",
+        "description": "Swipletகளைப் பட்டியலிடு",
+        "id": "ID",
+        "service": "சேவை",
+        "status": "நிலை",
+        "title": "தலைப்பு",
+        "version": "பதிப்பு"
+      },
+      "remove": {
+        "description": "Swipletஐ அகற்று",
+        "removed": "{{name}} அகற்றப்பட்டது"
+      },
+      "service": {
+        "description": "Swiplet சேவைகளை நிர்வகி",
+        "disable": {
+          "description": "Swiplet சேவையை ஆஃப் செய்"
+        },
+        "enable": {
+          "description": "Swiplet சேவையை ஆன் செய்"
+        },
+        "watch": {
+          "description": "Swiplet சேவைகளைக் கண்காணி"
+        },
+        "watchState": "நிலையைக் கண்காணி"
+      },
+      "show": {
+        "description": "Swipletஐக் காட்டு",
+        "input": "உள்ளீடு: {{schema}}",
+        "notFound": "{{id}} என்ற Swiplet இல்லை.",
+        "output": "வெளியீடு: {{schema}}",
+        "service": "சேவை: {{status}}"
+      }
+    },
+    "version": {
+      "description": "பதிப்பை அச்சிடு"
+    }
+  },
+  "connection": {
+    "added": "{{device}} சேர்க்கப்பட்டது",
+    "ambiguous": "ஒன்றுக்கும் மேற்பட்ட சாதனங்கள் உள்ளன: {{devices}}. -d மூலம் ஒன்றைத் தேர்ந்தெடுக்கவும்",
+    "driverNotStopped": "{{computer}}-இல் உள்ள டிரைவர் நிற்கவில்லை.",
+    "invalidURL": "{{text}} URL அல்ல.",
+    "none": "சாதனம் இல்லை. Swipt › டெவலப்பர் › உள்ளக நெட்வொர்க் என்பதை ஆன் செய்யவும் அல்லது \"swipt device add URL\" மூலம் சாதனத்தை இணைக்கவும்.",
+    "noneOnNetwork": "உள்ளக நெட்வொர்க்கில் எந்தச் சாதனமும் Swiptஐ வெளியிடவில்லை. Swipt › டெவலப்பர் › உள்ளக நெட்வொர்க் என்பதை ஆன் செய்யவும் அல்லது \"swipt device add URL\" மூலம் சாதனத்தை இணைக்கவும்.",
+    "notFound": "{{device}} என்ற சாதனம் இல்லை.",
+    "notFoundHint": "{{device}} என்ற சாதனம் இல்லை. \"swipt device list\" அவற்றைப் பட்டியலிடும்.",
+    "offline": "ஆஃப்லைன்",
+    "problem": {
+      "developerModeOff": "டெவலப்பர் பயன்முறை ஆஃப் செய்யப்பட்டுள்ளது",
+      "deviceUnsupported": "சாதனம் ஆதரிக்கப்படவில்லை",
+      "diskImageMissing": "டிஸ்க் இமேஜ் இல்லை",
+      "diskImageMountFailed": "டிஸ்க் இமேஜை மவுண்ட் செய்ய முடியவில்லை",
+      "pairingRejected": "இணைசேர்த்தல் நிராகரிக்கப்பட்டது",
+      "screenInUse": "திரை பயன்பாட்டில் உள்ளது",
+      "unreachable": "அணுக முடியவில்லை",
+      "vpnPeerAddressMissing": "VPN பியர் முகவரி இல்லை"
+    },
+    "removed": "{{name}} அகற்றப்பட்டது",
+    "requiresToken": "டோக்கன் தேவை",
+    "requiresTokenHint": "{{device}}-க்கு டோக்கன் தேவை: swipt device add {{url}}",
+    "state": {
+      "connecting": "இணைக்கப்படுகிறது",
+      "failed": "தோல்வியடைந்தது",
+      "preparing": "தயாராகிறது",
+      "running": "செயலில் உள்ளது",
+      "stopped": "நிறுத்தப்பட்டது"
+    },
+    "unsupportedURL": "{{text}} http அல்லது https URL அல்ல."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} நிறுவப்பட்டது",
+    "replaced": "{{id}} {{version}} மாற்றப்பட்டது"
+  },
+  "driver": {
+    "alreadyRunning": "இந்தக் கம்ப்யூட்டரில் டிரைவர் ஏற்கெனவே இயங்குகிறது. முதலில் அதை நிறுத்தவும்.",
+    "ambiguousName": "{{name}} என்ற பெயரில் ஒன்றுக்கும் மேற்பட்ட iPhone அல்லது iPad சாதனங்கள் உள்ளன. UDID மூலம் ஒன்றைத் தேர்ந்தெடுக்கவும்",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service இயங்கவில்லை. Microsoft Storeஇலிருந்து Apple Devices செயலியை நிறுவவும்",
+    "chooseDevice": "சாதனத்தைத் தேர்ந்தெடு",
+    "chooseDeviceHint": "-d NAME|UDID மூலம் சாதனத்தைத் தேர்ந்தெடுக்கவும்",
+    "connectedDevices": "{{reason}}. இணைக்கப்பட்ட iPhone மற்றும் iPad சாதனங்கள்:",
+    "lookingForDevices": "சாதனங்கள் தேடப்படுகின்றன",
+    "missing": "டிரைவர் இல்லை. \"npm install -g @swipt/cli --include=optional\" மூலம் அதை நிறுவவும்.",
+    "nameNotFound": "{{name}} என்ற பெயரில் iPhone அல்லது iPad சாதனம் இல்லை",
+    "noDevice": "இந்த கம்ப்யூட்டருடன் எந்த iPhone அல்லது iPad சாதனமும் இணைக்கப்படவில்லை, உள்ளக நெட்வொர்க்கிலும் கிடைக்கவில்லை. USB கேபிள் மூலம் சாதனத்தை இணைத்து அன்லாக் செய்யவும்.",
+    "pairing": "{{device}}-உடன் இணைசேர்க்கப்படுகிறது",
+    "trustPrompt": "{{device}} சாதனத்தில் நம்பகமானது என்பதைத் தட்டி, இந்த கம்ப்யூட்டரை நம்ப அதன் பாஸ்கோடை உள்ளிடவும்",
+    "usbmuxdMissing": "usbmuxd இயங்கவில்லை. usbmuxd ஐ நிறுவி அதைத் தொடங்கவும்"
+  },
+  "error": "பிழை: {{message}}",
+  "flags": {
+    "device": "பயன்படுத்த வேண்டிய சாதனம்",
+    "nightly": "nightly பில்டைப் பயன்படுத்து",
+    "noSetup": "Swiptஐ இணைசேர்க்காதே, அதன் டெவலப்பரை நம்பாதே, அதன் APIஐ வெளியிடாதே",
+    "noSetupAPI": "உள்ளக நெட்வொர்க்கில் APIஐ வெளியிடாதே",
+    "noSetupPair": "Swiptஐ இணைசேர்க்காதே",
+    "passcodeType": "pin (4 அல்லது 6 இலக்கங்கள், இயல்பு), numeric அல்லது alphanumeric",
+    "team": "குழு ID, ஒன்றுக்கும் மேற்பட்டவை இருந்தால் தேவை"
+  },
+  "metro": {
+    "boolean": "பூலியன்",
+    "contextArgument": "require.contextஇன் {{index}}-ஆவது ஆர்க்யுமென்ட் {{expected}} ஆக இருக்க வேண்டும்",
+    "contextRegExp": "require.contextஇன் {{index}}-ஆவது ஆர்க்யுமென்ட் ரெகுலர் எக்ஸ்பிரஷன் லிட்டரலாக இருக்க வேண்டும்.",
+    "oneOf": "{{values}} ஆகியவற்றில் ஒன்று",
+    "string": "ஸ்டிரிங்",
+    "workletsMismatch": "திட்டப்பணியில் react-native-worklets {{version}} உள்ளது, ஆனால் Swipt {{expected}}-ஐ இயக்குகிறது. react-native-worklets@{{expected}}-ஐ நிறுவவும் அல்லது அதை அகற்றவும்."
+  },
+  "noThanks": "வேண்டாம், நன்றி",
+  "output": {
+    "navigate": "நகர்த்து",
+    "select": "தேர்ந்தெடு",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} முதல் {{status}}",
+    "serviceStatus": {
+      "failed": "தோல்வியடைந்தது",
+      "running": "இயங்குகிறது",
+      "starting": "தொடங்குகிறது",
+      "stopped": "நிறுத்தப்பட்டது",
+      "turnedOff": "ஆஃப்",
+      "turnedOn": "ஆன்"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "பிரத்தியேக எண்ணெழுத்துக் குறியீடு",
+    "alphanumericDetail": "எண்ணெழுத்து",
+    "empty": "பாஸ்கோடை உள்ளிடவும்.",
+    "invalidAlphanumeric": "பாஸ்கோடில் அச்சிடக்கூடிய ASCII எழுத்துக்குறிகள் 64 வரை இருக்கலாம்.",
+    "invalidNumeric": "எண் பாஸ்கோடில் இலக்கங்கள் மட்டுமே இருக்கும்.",
+    "invalidPin": "pin பாஸ்கோடு 4 அல்லது 6 இலக்கங்கள் கொண்டது. பிரத்தியேகப் பாஸ்கோடுக்கு --passcode-type numeric அல்லது alphanumeric தேவை",
+    "invalidType": "--passcode-typeக்கான {{value}} தவறான ஆர்க்யுமென்ட்: இது {{types}} ஆக இருக்க வேண்டும்",
+    "masked": "[உள்ளீடு மறைக்கப்பட்டுள்ளது]",
+    "numeric": "பிரத்தியேக எண் குறியீடு",
+    "numericDetail": "எண்",
+    "pin": "4 அல்லது 6 இலக்கப் பாஸ்கோடு",
+    "pinDetail": "4 அல்லது 6 இலக்கங்கள்",
+    "prompt": "சாதனப் பாஸ்கோடு",
+    "setUp": "தானியங்கு அன்லாக்கை அமைக்கவா? பிறகு Swipt இந்தச் சாதனத்தைத் தானாகவே அன்லாக் செய்யலாம்."
+  },
+  "project": {
+    "assetConflict": "{{source}}, {{asset}} இரண்டும் Swipletஇல் assets/{{name}} ஆகும்.",
+    "conditionalActions": "நீட்டிப்பு available()-ஐப் பொறுத்து வெவ்வேறு செயல்களை வரையறுக்கிறது. ஒவ்வொரு சிஸ்டத்திலும் ஒரே செயல்களை வரையறுத்து, run அல்லது செயலுக்குள் available()-ஐச் சரிபார்க்கவும்.",
+    "databaseAtLoad": "extension.js ஏற்றப்படும்போது தரவுத்தளம் பயன்படுத்தப்படுகிறது. அதை run அல்லது செயலுக்குள் பயன்படுத்தவும்.",
+    "interfaceImport": "இடைமுகம் இயங்கும் நேரத்தில் {{file}}-ஐ இம்போர்ட் செய்கிறது. `import type` மூலம் அதன் வகையை இம்போர்ட் செய்யவும்.",
+    "interfaceOnly": "{{name}} Swiplet இடைமுகத்தில் மட்டுமே செயல்படும்.",
+    "invalidExposure": "{{action}} செயல் தன்னை \"shortcuts\"க்கு மட்டுமே வெளிப்படுத்த முடியும்.",
+    "invalidExtension": "நீட்டிப்பின் இயல்பு ஏற்றுமதி defineExtensionஇன் முடிவு அல்ல.",
+    "invalidID": "package.jsonஇல் உள்ள \"swiplet.id\" 1 முதல் 128 வரையிலான சிற்றெழுத்துகள், இலக்கங்கள், புள்ளிகள், அடிக்கோடுகள், ஹைஃபன்கள் கொண்டதாகவும் எழுத்து அல்லது இலக்கத்தில் தொடங்குவதாகவும் இருக்க வேண்டும்.",
+    "invalidLocalizedNames": "package.jsonஇல் உள்ள \"swiplet.localizedNames\" மொழிகளைப் பெயர்களுடன் மேப் செய்ய வேண்டும்.",
+    "invalidMinimumAPILevel": "package.jsonஇல் உள்ள \"swiplet.minimumAPILevel\" {{oldest}} முதல் @swipt/apiஇன் API நிலையான {{level}} வரையிலான முழு எண்ணாக இருக்க வேண்டும்.",
+    "invalidMinimumIOSVersion": "package.jsonஇல் உள்ள \"swiplet.minimumIOSVersion\" @swipt/apiஇன் குறைந்தபட்ச iOS பதிப்பான {{version}} அல்லது அதைவிடப் பெரிய பதிப்பு எண்ணாக இருக்க வேண்டும்.",
+    "invalidName": "package.jsonஇல் உள்ள \"swiplet.name\" காலியாக இல்லாத ஸ்டிரிங்காக இருக்க வேண்டும்.",
+    "invalidSchema": "{{action}} செயலின் {{side}} ஸ்கீமா Standard JSON Schemaஐச் செயல்படுத்தவில்லை. அதைச் செயல்படுத்தும் லைப்ரரியைப் பயன்படுத்தவும், எடுத்துக்காட்டாக Zod 4.",
+    "invalidString": "package.jsonஇல் உள்ள \"{{field}}\" ஸ்டிரிங்காக இருக்க வேண்டும்.",
+    "invalidVersionCode": "package.jsonஇல் உள்ள \"swiplet.versionCode\" நேர்மறை முழு எண்ணாக இருக்க வேண்டும்.",
+    "missingTitle": "{{action}} செயலுக்குத் தலைப்பு தேவை.",
+    "storageAtLoad": "extension.js ஏற்றப்படும்போது சேமிப்பகம் பயன்படுத்தப்படுகிறது. அதை run அல்லது செயலுக்குள் பயன்படுத்தவும்.",
+    "unprovidedModule": "Swipt நீட்டிப்புகளுக்கு \"{{module}}\"ஐ வழங்காது. அதை extension.jsஇல் தொகுக்கவும்.",
+    "usedAtLoad": "extension.js ஏற்றப்படும்போது {{name}} பயன்படுத்தப்படுகிறது. அதை run அல்லது செயலுக்குள் பயன்படுத்தவும்."
+  },
+  "serve": {
+    "cancel": "ரத்துசெய்",
+    "checking": "{{device}} சரிபார்க்கப்படுகிறது",
+    "conflictingTokens": "--token, --random-token ஆகியவற்றை ஒன்றாகப் பயன்படுத்த முடியாது.",
+    "invalidToken": "டோக்கன் என்பது இடைவெளிகள் இல்லாத, அச்சிடக்கூடிய ஒன்று அல்லது அதற்கு மேற்பட்ட ASCII எழுத்துக்குறிகள் ஆகும்.",
+    "localNetwork": "உள்ளக நெட்வொர்க்",
+    "noAutoUnlock": "{{device}} தானாக அன்லாக் ஆகாது. --passcode மூலம் அதன் பாஸ்கோடை அமைக்கவும். டிரைவரை நிறுத்த Ctrl-C ஐ அழுத்தவும்.",
+    "quitSwipt": "Swiptஐ மூடு",
+    "quittingSwipt": "{{device}}-இல் Swipt மூடப்படுகிறது",
+    "served": "{{computer}}-இல் உள்ள டிரைவர் ஏற்கெனவே {{device}} சாதனத்திற்குச் சேவை வழங்குகிறது. முதலில் அந்த டிரைவரை நிறுத்தவும்.",
+    "servedPrompt": "{{computer}}-இல் உள்ள டிரைவர் ஏற்கெனவே {{device}} சாதனத்திற்குச் சேவை வழங்குகிறது. அந்த டிரைவரை நிறுத்தவா?",
+    "starting": "{{device}}-க்கான டிரைவர் தொடங்கப்படுகிறது",
+    "stopDriver": "{{computer}}-இல் உள்ள டிரைவரை நிறுத்து",
+    "stopHint": "டிரைவரை நிறுத்த Ctrl-C ஐ அழுத்தவும்.",
+    "stoppingDriver": "{{computer}}-இல் உள்ள டிரைவர் நிறுத்தப்படுகிறது",
+    "swiptRunning": "{{device}} சாதனத்தில் Swipt இயங்கும்போது டிரைவரால் அதைக் கட்டுப்படுத்த முடியாது. முதலில் Swiptஐ மூடவும்.",
+    "swiptRunningPrompt": "{{device}} சாதனத்தில் Swipt இயங்கும்போது டிரைவரால் அதைக் கட்டுப்படுத்த முடியாது. Swiptஐ மூடவா?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}}-இல் ஒன்றுக்கும் மேற்பட்ட குழுக்களால் Swipt சைடுலோடு செய்யப்பட்டுள்ளது. --team ID மூலம் ஒன்றைத் தேர்ந்தெடுக்கவும்:",
+    "certificateFailed": "{{team}} குழுவுக்கான டெவலப்மென்ட் சான்றிதழை Xcode ஆல் உருவாக்க முடியவில்லை. {{accounts}} › Manage Certificates என்பதில் ஒன்றைச் சேர்க்கவும் ({{errors}}).",
+    "checking": "{{device}}-இல் Swipt சரிபார்க்கப்படுகிறது",
+    "checkingRelease": "சமீபத்திய ரிலீஸ் சரிபார்க்கப்படுகிறது",
+    "chooseTeam": "குழுவைத் தேர்ந்தெடு",
+    "chooseTeamHint": "--team ID மூலம் குழுவைத் தேர்ந்தெடுக்கவும்:",
+    "diskImageFailed": "{{device}}-இல் டெவலப்பர் டிஸ்க் இமேஜைத் தயார் செய்ய முடியவில்லை: {{error}}",
+    "downgrade": "டவுன்கிரேடு செய்",
+    "downgradePrompt": "{{device}}-இல் உள்ள Swiptஐ {{version}}-இலிருந்து {{releaseVersion}}-க்கு டவுன்கிரேடு செய்யவா? பழைய பதிப்பால் தரவைப் படிக்க முடியாதபோது Swipt அதன் தரவை மீட்டமைக்கும்.",
+    "downgradeToStablePrompt": "{{device}}-இல் உள்ள Swiptஐ nightly பில்டு {{version}}-இலிருந்து நிலையான பதிப்பு {{releaseVersion}}-க்கு டவுன்கிரேடு செய்யவா? பழைய பதிப்பால் தரவைப் படிக்க முடியாதபோது Swipt அதன் தரவை மீட்டமைக்கும்.",
+    "downloading": "{{release}}-இலிருந்து Swipt {{version}} ({{build}}) பதிவிறக்கப்படுகிறது",
+    "expiration": "இதன் சைனிங் {{expiration}} காலாவதியாகும்.",
+    "installed": "{{device}}-இல் {{build}} நிறுவப்பட்டது.",
+    "installing": "{{device}}-இல் நிறுவப்படுகிறது",
+    "invalidTeam": "--teamக்கான {{value}} தவறான ஆர்க்யுமென்ட்: இது {{accounts}} என்பதில் காட்டப்படும் 10 எழுத்துக்குறி குழு ID ஆக இருக்க வேண்டும்",
+    "laterThanRelease": "{{device}}-இல் உள்ள {{build}}, {{release}} ({{releaseBuild}})-ஐ விடப் புதியது.",
+    "locked": "{{device}}: {{message}}. அதை அன்லாக் செய்யவும் அல்லது --passcode ஐ வழங்கவும், பிறகு இதை மீண்டும் இயக்கவும்.",
+    "looking": "சாதனங்களில் Swipt தேடப்படுகிறது",
+    "needsMacOS": "Swiptஐ நிறுவ அல்லது புதுப்பிக்க macOS தேவை. Mac இலிருந்து அதை நிறுவி, பிறகு \"swipt sideload setup\" மூலம் இங்கே அமைக்கவும்.",
+    "noAccount": "Xcodeஇல் கணக்கு இல்லை. {{accounts}} என்பதில் உள்நுழையவும் அல்லது --team ID மூலம் குழுவைத் தேர்ந்தெடுக்கவும்",
+    "noAccountForTeam": "{{team}} குழுவுக்கான கணக்கு Xcodeஇல் இல்லை. {{accounts}} என்பதில் அதன் Apple கணக்கு மூலம் உள்நுழையவும்.",
+    "noCertificate": "Xcodeஇல் டெவலப்மென்ட் சான்றிதழ் இல்லை. {{accounts}} › Manage Certificates என்பதில் ஒன்றைச் சேர்க்கவும் அல்லது --team ID மூலம் குழுவைத் தேர்ந்தெடுக்கவும்",
+    "noneInstalled": "எந்த iPhone அல்லது iPad சாதனத்திலும் Swipt சைடுலோடு செய்யப்படவில்லை.",
+    "noneInstalledHint": "எந்த iPhone அல்லது iPad சாதனத்திலும் Swipt சைடுலோடு செய்யப்படவில்லை. \"swipt sideload install\" மூலம் அதை நிறுவவும்.",
+    "notInstalled": "{{device}}-இல் Swipt சைடுலோடு செய்யப்படவில்லை.",
+    "notInstalledByTeam": "{{device}}-இல் {{team}} குழுவால் Swipt சைடுலோடு செய்யப்படவில்லை.",
+    "notInstalledByTeamHint": "{{device}}-இல் {{team}} குழுவால் Swipt சைடுலோடு செய்யப்படவில்லை. \"swipt sideload install\" மூலம் அதை நிறுவவும்.",
+    "notInstalledHint": "{{device}}-இல் Swipt சைடுலோடு செய்யப்படவில்லை. \"swipt sideload install\" மூலம் அதை நிறுவவும்.",
+    "notOnNetwork": "உள்ளக நெட்வொர்க்கில் {{device}} கிடைக்கவில்லை. அதன் API URLகளை Swipt › டெவலப்பர் › உள்ளக நெட்வொர்க் என்பதில் பார்க்கவும்.",
+    "opening": "{{device}}-இல் Swipt திறக்கப்படுகிறது",
+    "openingSettings": "{{device}}-இல் அமைப்புகள் திறக்கப்படுகிறது",
+    "opensAfterUnlock": "{{device}} அன்லாக் செய்யப்பட்டதும் இது திறக்கும்.",
+    "pairingFailed": "இணைசேர்த்தல் தோல்வியடைந்ததால் Swipt அதற்குப் பதிலாக அமைப்புகளில் இணைசேர்க்கும்: {{error}}",
+    "preparingDiskImage": "{{device}}-இல் டெவலப்பர் டிஸ்க் இமேஜ் தயாராகிறது",
+    "preparingSigning": "Xcode மூலம் {{team}} குழுவுடன் Swiptக்கான சைனிங் தயாராகிறது",
+    "removed": "{{device}}-இலிருந்து {{build}} அகற்றப்பட்டது",
+    "removing": "{{device}}-இலிருந்து Swipt அகற்றப்படுகிறது",
+    "renewalNeedsDowngrade": "{{device}}-இல் உள்ள {{build}}-க்குப் புதிய சைனிங் தேவை, ஆனால் {{release}} ({{releaseBuild}}) பழையது. --nightly ஐப் பயன்படுத்தவும் அல்லது \"swipt sideload install --force\" மூலம் டவுன்கிரேடு செய்யவும்.",
+    "resigning": "Swipt மீண்டும் சைன் செய்யப்படுகிறது",
+    "running": "{{app}} இயங்குகிறது.",
+    "settingUpAutoUnlock": "தானியங்கு அன்லாக் அமைக்கப்படுகிறது",
+    "trusted": "{{developer}} நம்பப்பட்டது.",
+    "trusting": "அமைப்புகளில் {{developer}} நம்பப்படுகிறது",
+    "unlockPrompt": "தொடர சாதனத்தை அன்லாக் செய்யவும்.",
+    "unlocking": "சாதனம் அன்லாக் செய்யப்படுகிறது",
+    "untrusted": "இதன் டெவலப்பர் இன்னும் நம்பப்படவில்லை. {{device}}-இல் திறந்துள்ள அமைப்புகள் பக்கத்தில் நம்பிக்கை அளித்த பிறகு Swiptஐத் திறக்கவும்.",
+    "upToDate": "{{device}}-இல் உள்ள {{build}} ஏற்கெனவே {{release}} ஆக உள்ளது.",
+    "updated": "{{device}}-இல் {{build}} புதுப்பிக்கப்பட்டது.",
+    "waiting": "{{device}}-க்காகக் காத்திருக்கிறது",
+    "xcodeMissing": "xcodebuildக்கு Xcode தேவை. அதை நிறுவி xcode-select மூலம் தேர்ந்தெடுக்கவும்",
+    "xcodebuildMissing": "xcodebuild இல்லை. Xcodeஐ நிறுவவும்."
+  }
+}

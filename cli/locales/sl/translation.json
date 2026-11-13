@@ -1,0 +1,405 @@
+{
+  "availability": {
+    "advice": "Preverite jih z available(), kodo, ki jih uporablja, označite z @available ali povišajte \"swiplet.minimumAPILevel\" oziroma \"swiplet.minimumIOSVersion\" v package.json.",
+    "apiLevel": "raven API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} je vstopna točka Swipleta in zahteva {{requirement}}; povišajte \"swiplet.minimumAPILevel\" oziroma \"swiplet.minimumIOSVersion\" v package.json.",
+    "importNeeds": "{{location}}: uvoz modula {{name}} zahteva {{requirement}}; povišajte \"swiplet.minimumAPILevel\" oziroma \"swiplet.minimumIOSVersion\" v package.json.",
+    "invalidEntry": "{{location}}: @available vsebuje \"{{entry}}\"; sprejema vnosa \"apiLevel <level>\" in \"iOS <version>\", ločena z vejicami.",
+    "needs": "{{location}}: {{name}} zahteva {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available dvakrat navaja {{kind}}."
+  },
+  "cli": {
+    "commands": "ukazi:",
+    "exactArgs_few": "sprejme {{count}} argumente, prejeto: {{received}}",
+    "exactArgs_one": "sprejme {{count}} argument, prejeto: {{received}}",
+    "exactArgs_other": "sprejme {{count}} argumentov, prejeto: {{received}}",
+    "exactArgs_two": "sprejme {{count}} argumenta, prejeto: {{received}}",
+    "help": "pomoč",
+    "helpHint": "Za navodila za uporabo zaženite \"swipt help\".",
+    "minimumArgs_few": "sprejme vsaj {{count}} argumente, prejeto: {{received}}",
+    "minimumArgs_one": "sprejme vsaj {{count}} argument, prejeto: {{received}}",
+    "minimumArgs_other": "sprejme vsaj {{count}} argumentov, prejeto: {{received}}",
+    "minimumArgs_two": "sprejme vsaj {{count}} argumenta, prejeto: {{received}}",
+    "missingCommand": "Manjka ukaz.",
+    "options": "možnosti:",
+    "rangeArgs_few": "sprejme od {{least}} do {{count}} argumentov, prejeto: {{received}}",
+    "rangeArgs_one": "sprejme od {{least}} do {{count}} argumenta, prejeto: {{received}}",
+    "rangeArgs_other": "sprejme od {{least}} do {{count}} argumentov, prejeto: {{received}}",
+    "rangeArgs_two": "sprejme od {{least}} do {{count}} argumentov, prejeto: {{received}}",
+    "unauthenticated": "{{message}}; povežite se z URL-jem, ki ga prikaže razdelek Swipt › Razvijalec ali \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "Aplikacija Swipt na naslovu {{url}} nima tega ukaza; posodobite aplikacijo Swipt.",
+    "unknownCommand": "neznan ukaz {{name}} za {{parent}}",
+    "unknownOption": "{{option}} ni možnost ukaza {{command}}.",
+    "unreachable": "Aplikacija Swipt na naslovu {{url}} ni dosegljiva: {{message}}",
+    "usage": "uporaba: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Odstrani vse podatkovne datoteke, podatkovni imenik pa ohrani"
+      },
+      "list": {
+        "description": "Izpiši podatkovne datoteke",
+        "recursive": "vključi podimenike"
+      },
+      "read": {
+        "description": "Preberi podatkovno datoteko ali imenik",
+        "output": "cilj",
+        "saved_few": "v {{path}} so shranjene {{count}} datoteke",
+        "saved_one": "v {{path}} je shranjena {{count}} datoteka",
+        "saved_other": "v {{path}} je shranjenih {{count}} datotek",
+        "saved_two": "v {{path}} sta shranjeni {{count}} datoteki"
+      },
+      "remove": {
+        "description": "Odstrani podatkovno datoteko",
+        "recursive": "vključi vsebino imenikov"
+      },
+      "replDescription": "Upravljaj datoteke v podatkovnem imeniku okolja REPL",
+      "swipletDescription": "Upravljaj datoteke v podatkovnem imeniku Swipleta",
+      "write": {
+        "description": "Zapiši podatkovno datoteko"
+      }
+    },
+    "description": "Orodje ukazne vrstice Swipt",
+    "device": {
+      "add": {
+        "description": "Dodaj napravo z njenim URL-jem; potrebno, če je oddaljena ali zahteva žeton"
+      },
+      "description": "Upravljaj naprave in preberi njihove dnevnike",
+      "list": {
+        "description": "Izpiši naprave in dodaj tiste, ki so najdene v lokalnem omrežju"
+      },
+      "logs": {
+        "count": "število preteklih vnosov (privzeto 100)",
+        "description": "Izpiši dnevnike",
+        "follow": "spremljaj nove vnose",
+        "invalidDuration": "neveljaven argument {{value}} za {{option}}: mora biti trajanje, na primer 30s ali 1m30s",
+        "invalidLevel": "--level je lahko error, warn, info ali debug",
+        "invalidNumber": "neveljaven argument {{value}} za {{option}}: mora biti število",
+        "level": "najnižja raven (privzeto info)",
+        "since": "največja starost vnosov",
+        "swiplet": "ID Swipleta"
+      },
+      "remove": {
+        "description": "Pozabi napravo"
+      },
+      "stop": {
+        "description": "Prenehaj ponujati vmesnik API za Swipt",
+        "stopped": "ustavljeno"
+      }
+    },
+    "driver": {
+      "description": "Ponujaj vmesnik API za Swipt in MCP za napravo iz tega računalnika",
+      "details": "Napravo lahko hkrati upravlja le ena stran: aplikacija Swipt v njej ali gonilnik v enem računalniku.",
+      "passcode": "koda za samodejno odklepanje naprave; pustite prazno, da to izklopite",
+      "randomToken": "zahtevaj naključni žeton od odjemalcev API-ja",
+      "token": "zahtevaj ta žeton od odjemalcev API-ja"
+    },
+    "project": {
+      "build": {
+        "description": "Zapakiraj projekt v dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Ustvari projekt Swiplet v novem ali praznem imeniku",
+        "notEmpty": "Imenik {{directory}} ni prazen."
+      },
+      "deploy": {
+        "description": "Zgradi projekt in ga namesti v napravo"
+      },
+      "description": "Ustvari, zgradi in razmesti projekte Swiplet",
+      "develop": {
+        "deployed": "zgrajeno in razmeščeno v {{elapsed}}; spremljanje imenika {{directory}}",
+        "description": "Zgradi in namesti projekt Swiplet ter ga spremljaj ob spremembah",
+        "quiet": "brez dnevnikov",
+        "unchanged": "zgrajeno v {{elapsed}}; nič se ni spremenilo"
+      },
+      "source": {
+        "description": "Zberi zgrajene Swiplete v dist/ z datoteko swiplets.json",
+        "duplicateID": "{{id}} je hkrati {{first}} in {{second}}",
+        "invalidIcon": "\"source.icon\" v package.json mora imeti symbol in lahko ima color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" v package.json mora jezikom pripisati imena.",
+        "invalidURL": "\"source.url\" v package.json ni absolutni URL.",
+        "noWorkspaces": "package.json ne navaja delovnih prostorov s Swipleti; navedite Swiplete, ki naj bodo na seznamu.",
+        "notBuilt": "{{file}} manjka; najprej zgradite {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Izpiši deklaracije TypeScript za globalne spremenljivke in module"
+      },
+      "dataDirectory": "{{path}} označuje podatkovni imenik okolja REPL; shranite ga z --output DIRECTORY",
+      "description": "Zaženi JavaScript v seji REPL v napravi",
+      "directory": "{{path}} je imenik v podatkovnem imeniku okolja REPL; shranite ga z --output DIRECTORY",
+      "reset": {
+        "description": "Ponastavi sejo"
+      },
+      "run": {
+        "arguments": "Prvi argument je FILE, če označuje obstoječo datoteko, sicer pa CODE; možnosti navedite pred njim.",
+        "description": "Zaženi izraz ali program JavaScript v napravi",
+        "details": "CODE je izraz, katerega vrednost se izpiše. FILE ali standardni vhod, podan kot - ali brez argumenta, je program in izpiše se le njegov izhod konzole.",
+        "extraArguments": "{{argument}} ni datoteka, CODE pa ne sprejme ARG.",
+        "images": "imenik za slike (privzeto: nov začasni imenik)"
+      }
+    },
+    "sideload": {
+      "description": "Stransko naloži aplikacijo Swipt",
+      "install": {
+        "description": "Namesti aplikacijo Swipt",
+        "force": "namesti čez isto ali novejšo različico"
+      },
+      "passcode": "nastavi samodejno odklepanje s to kodo",
+      "setup": {
+        "description": "Nastavi aplikacijo Swipt"
+      },
+      "uninstall": {
+        "description": "Odstrani aplikacijo Swipt"
+      },
+      "update": {
+        "description": "Posodobi ali obnovi aplikacijo Swipt",
+        "passcode": "odkleni napravo s to kodo"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Pokliči dejanje Swiplet",
+        "input": "vhod JSON, @FILE ali -",
+        "invalidInput": "--input ni JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} označuje podatkovni imenik Swipleta {{swiplet}}; shranite ga z --output DIRECTORY",
+      "description": "Upravljaj Swiplete v napravi",
+      "directory": "{{path}} je imenik v podatkovnem imeniku Swipleta {{swiplet}}; shranite ga z --output DIRECTORY",
+      "install": {
+        "description": "Namesti arhiv Swiplet",
+        "notFound": "Na poti {{path}} ni arhiva"
+      },
+      "list": {
+        "actions": "DEJANJA",
+        "description": "Izpiši Swiplete",
+        "id": "ID",
+        "service": "STORITEV",
+        "status": "STANJE",
+        "title": "NASLOV",
+        "version": "RAZLIČICA"
+      },
+      "remove": {
+        "description": "Odstrani Swiplet",
+        "removed": "odstranjen Swiplet {{name}}"
+      },
+      "service": {
+        "description": "Upravljaj storitve Swiplet",
+        "disable": {
+          "description": "Izklopi storitev Swiplet"
+        },
+        "enable": {
+          "description": "Vklopi storitev Swiplet"
+        },
+        "watch": {
+          "description": "Spremljaj storitve Swiplet"
+        },
+        "watchState": "spremljaj stanje"
+      },
+      "show": {
+        "description": "Prikaži Swiplet",
+        "input": "vhod: {{schema}}",
+        "notFound": "Swiplet {{id}} ne obstaja.",
+        "output": "izhod: {{schema}}",
+        "service": "storitev: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Izpiši različico"
+    }
+  },
+  "connection": {
+    "added": "dodano: {{device}}",
+    "ambiguous": "Naprav je več: {{devices}}; izberite eno z -d",
+    "driverNotStopped": "Gonilnik v računalniku {{computer}} se ni ustavil.",
+    "invalidURL": "{{text}} ni URL.",
+    "none": "Ni nobene naprave; vklopite možnost Swipt › Razvijalec › Lokalno omrežje ali povežite napravo z \"swipt device add URL\".",
+    "noneOnNetwork": "Nobena naprava ne objavlja aplikacije Swipt v lokalnem omrežju; vklopite možnost Swipt › Razvijalec › Lokalno omrežje ali povežite napravo z \"swipt device add URL\".",
+    "notFound": "Naprava {{device}} ne obstaja.",
+    "notFoundHint": "Naprava {{device}} ne obstaja; naprave izpiše \"swipt device list\".",
+    "offline": "brez povezave",
+    "problem": {
+      "developerModeOff": "način za razvijalce je izklopljen",
+      "deviceUnsupported": "naprava ni podprta",
+      "diskImageMissing": "ni slike diska",
+      "diskImageMountFailed": "priklop slike diska ni uspel",
+      "pairingRejected": "seznanjanje je zavrnjeno",
+      "screenInUse": "zaslon je v uporabi",
+      "unreachable": "nedosegljivo",
+      "vpnPeerAddressMissing": "manjka naslov soležnika VPN"
+    },
+    "removed": "odstranjena naprava {{name}}",
+    "requiresToken": "zahteva žeton",
+    "requiresTokenHint": "Naprava {{device}} zahteva žeton: swipt device add {{url}}",
+    "state": {
+      "connecting": "vzpostavljanje povezave",
+      "failed": "neuspešna",
+      "preparing": "pripravljanje",
+      "running": "aktivna",
+      "stopped": "ustavljena"
+    },
+    "unsupportedURL": "{{text}} ni URL http ali https."
+  },
+  "deploy": {
+    "installed": "nameščeno: {{id}} {{version}}",
+    "replaced": "zamenjano: {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Gonilnik se v tem računalniku že izvaja; najprej ga ustavite.",
+    "ambiguousName": "Več naprav iPhone ali iPad ima ime {{name}}; izberite eno po identifikatorju UDID",
+    "appleMobileDeviceServiceMissing": "Storitev Apple Mobile Device Service ne teče; namestite aplikacijo Naprave Apple iz trgovine Microsoft Store",
+    "chooseDevice": "Izberite napravo",
+    "chooseDeviceHint": "Izberite napravo z -d NAME|UDID",
+    "connectedDevices": "{{reason}}; povezane naprave iPhone in iPad:",
+    "lookingForDevices": "iskanje naprav",
+    "missing": "Gonilnik manjka; namestite ga z \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Nobena naprava iPhone ali iPad nima imena {{name}}",
+    "noDevice": "S tem računalnikom ni povezana nobena naprava iPhone ali iPad in v lokalnem omrežju ni bila najdena nobena; povežite napravo s kablom USB in jo odklenite.",
+    "pairing": "seznanjanje z napravo {{device}}",
+    "trustPrompt": "v napravi {{device}} tapnite Zaupaj in vnesite njeno kodo, da boste zaupali temu računalniku",
+    "usbmuxdMissing": "usbmuxd ne teče; namestite usbmuxd in ga zaženite"
+  },
+  "error": "napaka: {{message}}",
+  "flags": {
+    "device": "naprava, ki naj se uporabi",
+    "nightly": "uporabi nočno različico",
+    "noSetup": "ne seznani aplikacije Swipt, ne zaupaj njenemu razvijalcu in ne objavi njenega vmesnika API",
+    "noSetupAPI": "ne objavi vmesnika API v lokalnem omrežju",
+    "noSetupPair": "ne seznani aplikacije Swipt",
+    "passcodeType": "pin (4 ali 6 števk, privzeto), numeric ali alphanumeric",
+    "team": "ID ekipe, obvezen, če je ekip več"
+  },
+  "metro": {
+    "boolean": "logična vrednost",
+    "contextArgument": "Argument {{index}} funkcije require.context mora biti {{expected}}",
+    "contextRegExp": "Argument {{index}} funkcije require.context mora biti literal regularnega izraza.",
+    "oneOf": "ena od vrednosti {{values}}",
+    "string": "niz",
+    "workletsMismatch": "Projekt ima react-native-worklets {{version}}, aplikacija Swipt pa izvaja {{expected}}; namestite react-native-worklets@{{expected}} ali paket odstranite."
+  },
+  "noThanks": "Ne, hvala",
+  "output": {
+    "navigate": "premikanje",
+    "select": "izbira",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} od {{time}}",
+    "serviceStatus": {
+      "failed": "neuspešna",
+      "running": "deluje",
+      "starting": "zaganja se",
+      "stopped": "ustavljena",
+      "turnedOff": "izklopljena",
+      "turnedOn": "vklopljena"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Prilagojena alfanumerična koda",
+    "alphanumericDetail": "alfanumerična",
+    "empty": "Vnesite kodo.",
+    "invalidAlphanumeric": "Koda lahko vsebuje največ 64 natisljivih znakov ASCII.",
+    "invalidNumeric": "Numerična koda vsebuje samo števke.",
+    "invalidPin": "Koda vrste pin ima 4 ali 6 števk; prilagojena koda zahteva --passcode-type numeric ali alphanumeric",
+    "invalidType": "neveljaven argument {{value}} za --passcode-type: mora biti ena od vrednosti {{types}}",
+    "masked": "[vnos je skrit]",
+    "numeric": "Prilagojena numerična koda",
+    "numericDetail": "numerična",
+    "pin": "4- ali 6-mestna koda",
+    "pinDetail": "4 ali 6 števk",
+    "prompt": "Koda naprave",
+    "setUp": "Želite nastaviti samodejno odklepanje? Aplikacija Swipt bo nato lahko sama odklenila to napravo."
+  },
+  "project": {
+    "assetConflict": "Za {{source}} in {{asset}} bi bila v Swipletu uporabljena ista pot assets/{{name}}.",
+    "conditionalActions": "Razširitev definira različna dejanja glede na available(); v vseh sistemih definirajte enaka dejanja in available() preverite znotraj run ali dejanja.",
+    "databaseAtLoad": "Zbirka podatkov se uporablja med nalaganjem extension.js; to storite znotraj run ali dejanja.",
+    "interfaceImport": "Vmesnik med izvajanjem uvozi {{file}}; njegov tip uvozite z `import type`.",
+    "interfaceOnly": "{{name}} deluje samo v vmesniku Swipleta.",
+    "invalidExposure": "Dejanje {{action}} je lahko izpostavljeno samo za \"shortcuts\".",
+    "invalidExtension": "Privzeti izvoz razširitve ni rezultat funkcije defineExtension.",
+    "invalidID": "\"swiplet.id\" v package.json mora vsebovati od 1 do 128 malih črk, števk, pik, podčrtajev in vezajev ter se začeti s črko ali števko.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" v package.json mora jezikom pripisati imena.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" v package.json mora biti celo število od {{oldest}} do {{level}}, kar je raven API paketa @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" v package.json mora biti številka različice od {{version}} naprej, kar je najnižja različica iOS paketa @swipt/api.",
+    "invalidName": "\"swiplet.name\" v package.json mora biti neprazen niz.",
+    "invalidSchema": "Shema {{side}} dejanja {{action}} ne implementira specifikacije Standard JSON Schema; uporabite knjižnico, ki jo implementira, na primer Zod 4.",
+    "invalidString": "\"{{field}}\" v package.json mora biti niz.",
+    "invalidVersionCode": "\"swiplet.versionCode\" v package.json mora biti pozitivno celo število.",
+    "missingTitle": "Dejanje {{action}} potrebuje naslov.",
+    "storageAtLoad": "Shramba se uporablja med nalaganjem extension.js; to storite znotraj run ali dejanja.",
+    "unprovidedModule": "Aplikacija Swipt razširitvam ne zagotavlja modula \"{{module}}\"; zapakirajte ga v extension.js.",
+    "usedAtLoad": "{{name}} se uporablja med nalaganjem extension.js; to storite znotraj run ali dejanja."
+  },
+  "serve": {
+    "cancel": "Prekliči",
+    "checking": "preverjanje naprave {{device}}",
+    "conflictingTokens": "--token in --random-token ni mogoče uporabiti skupaj.",
+    "invalidToken": "Žeton sestavlja en ali več natisljivih znakov ASCII brez presledkov.",
+    "localNetwork": "Lokalno omrežje",
+    "noAutoUnlock": "Naprava {{device}} se ne odklene samodejno; nastavite njeno kodo z --passcode. Za ustavitev gonilnika pritisnite Ctrl-C.",
+    "quitSwipt": "Zapri Swipt",
+    "quittingSwipt": "zapiranje aplikacije Swipt v napravi {{device}}",
+    "served": "Gonilnik v računalniku {{computer}} že streže napravi {{device}}; najprej ustavite ta gonilnik.",
+    "servedPrompt": "Gonilnik v računalniku {{computer}} že streže napravi {{device}}. Želite ustaviti ta gonilnik?",
+    "starting": "zaganjanje gonilnika za napravo {{device}}",
+    "stopDriver": "Ustavi gonilnik v računalniku {{computer}}",
+    "stopHint": "Za ustavitev gonilnika pritisnite Ctrl-C.",
+    "stoppingDriver": "ustavljanje gonilnika v računalniku {{computer}}",
+    "swiptRunning": "Gonilnik ne more upravljati naprave {{device}}, dokler se v njej izvaja aplikacija Swipt; najprej zaprite Swipt.",
+    "swiptRunningPrompt": "Gonilnik ne more upravljati naprave {{device}}, dokler se v njej izvaja aplikacija Swipt. Želite zapreti Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Aplikacijo Swipt je v napravo {{device}} stransko naložilo več ekip; izberite eno z --team ID:",
+    "certificateFailed": "Aplikacija Xcode ni mogla ustvariti razvojnega potrdila za ekipo {{team}}; dodajte ga v razdelku {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "preverjanje aplikacije Swipt v napravi {{device}}",
+    "checkingRelease": "preverjanje najnovejše izdaje",
+    "chooseTeam": "Izberite ekipo",
+    "chooseTeamHint": "Izberite ekipo z --team ID:",
+    "diskImageFailed": "slike diska za razvijalce v napravi {{device}} ni bilo mogoče pripraviti: {{error}}",
+    "downgrade": "Preidi na starejšo različico",
+    "downgradePrompt": "Želite preiti z različice {{version}} aplikacije Swipt v napravi {{device}} na starejšo različico {{releaseVersion}}? Aplikacija Swipt ponastavi svoje podatke, ko jih starejša različica ne more prebrati.",
+    "downgradeToStablePrompt": "Želite preiti z nočne različice {{version}} aplikacije Swipt v napravi {{device}} na stabilno različico {{releaseVersion}}? Aplikacija Swipt ponastavi svoje podatke, ko jih starejša različica ne more prebrati.",
+    "downloading": "prenašanje aplikacije Swipt {{version}} ({{build}}) iz izdaje {{release}}",
+    "expiration": "Njen podpis poteče {{expiration}}.",
+    "installed": "Aplikacija {{build}} je nameščena v napravi {{device}}.",
+    "installing": "nameščanje v napravo {{device}}",
+    "invalidTeam": "neveljaven argument {{value}} za --team: mora biti 10-znakovni ID ekipe, prikazan v razdelku {{accounts}}",
+    "laterThanRelease": "Aplikacija {{build}} v napravi {{device}} je novejša od različice {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; odklenite napravo ali podajte --passcode in nato znova zaženite ta ukaz.",
+    "looking": "iskanje aplikacije Swipt v napravah",
+    "needsMacOS": "Za nameščanje ali posodabljanje aplikacije Swipt je potreben macOS; namestite jo iz Maca, nato pa jo tukaj nastavite z \"swipt sideload setup\".",
+    "noAccount": "Aplikacija Xcode nima računa; prijavite se v razdelku {{accounts}} ali izberite ekipo z --team ID",
+    "noAccountForTeam": "Aplikacija Xcode nima računa za ekipo {{team}}; prijavite se z njenim Apple računom v razdelku {{accounts}}.",
+    "noCertificate": "Aplikacija Xcode nima razvojnega potrdila; dodajte ga v razdelku {{accounts}} › Manage Certificates ali izberite ekipo z --team ID",
+    "noneInstalled": "Aplikacija Swipt ni stransko naložena v nobeni napravi iPhone ali iPad.",
+    "noneInstalledHint": "Aplikacija Swipt ni stransko naložena v nobeni napravi iPhone ali iPad; namestite jo z \"swipt sideload install\".",
+    "notInstalled": "Aplikacija Swipt ni stransko naložena v napravi {{device}}.",
+    "notInstalledByTeam": "Ekipa {{team}} ni stransko naložila aplikacije Swipt v napravo {{device}}.",
+    "notInstalledByTeamHint": "Ekipa {{team}} ni stransko naložila aplikacije Swipt v napravo {{device}}; namestite jo z \"swipt sideload install\".",
+    "notInstalledHint": "Aplikacija Swipt ni stransko naložena v napravi {{device}}; namestite jo z \"swipt sideload install\".",
+    "notOnNetwork": "Naprave {{device}} ni bilo mogoče najti v lokalnem omrežju; URL-je njenega API-ja najdete v Swipt › Razvijalec › Lokalno omrežje.",
+    "opening": "odpiranje aplikacije Swipt v napravi {{device}}",
+    "openingSettings": "odpiranje Nastavitev v napravi {{device}}",
+    "opensAfterUnlock": "Aplikacija se bo odprla, ko bo naprava {{device}} odklenjena.",
+    "pairingFailed": "Seznanjanje ni uspelo, zato se bo aplikacija Swipt seznanila v Nastavitvah: {{error}}",
+    "preparingDiskImage": "pripravljanje slike diska za razvijalce v napravi {{device}}",
+    "preparingSigning": "pripravljanje podpisovanja aplikacije Swipt z ekipo {{team}} prek aplikacije Xcode",
+    "removed": "aplikacija {{build}} je odstranjena iz naprave {{device}}",
+    "removing": "odstranjevanje aplikacije Swipt iz naprave {{device}}",
+    "renewalNeedsDowngrade": "Aplikacija {{build}} v napravi {{device}} potrebuje nov podpis, vendar je različica {{release}} ({{releaseBuild}}) starejša; uporabite --nightly ali se vrnite na starejšo različico z \"swipt sideload install --force\".",
+    "resigning": "vnovično podpisovanje aplikacije Swipt",
+    "running": "Aplikacija {{app}} deluje.",
+    "settingUpAutoUnlock": "nastavljanje samodejnega odklepanja",
+    "trusted": "Razvijalcu {{developer}} je zaupano.",
+    "trusting": "zaupanje razvijalcu {{developer}} v Nastavitvah",
+    "unlockPrompt": "Za nadaljevanje odklenite napravo.",
+    "unlocking": "odklepanje naprave",
+    "untrusted": "Razvijalcu še ni zaupano; zaupajte mu na strani v Nastavitvah, ki je odprta v napravi {{device}}, nato pa odprite aplikacijo Swipt.",
+    "upToDate": "Aplikacija {{build}} v napravi {{device}} je že različica {{release}}.",
+    "updated": "Aplikacija {{build}} je posodobljena v napravi {{device}}.",
+    "waiting": "čakanje na napravo {{device}}",
+    "xcodeMissing": "xcodebuild potrebuje aplikacijo Xcode; namestite jo in jo izberite z xcode-select",
+    "xcodebuildMissing": "xcodebuild manjka; namestite aplikacijo Xcode."
+  }
+}

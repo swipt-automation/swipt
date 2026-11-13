@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Tarkista ne available()-funktiolla, merkitse niitä käyttävä koodi @available-tunnisteella tai nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
+    "apiLevel": "API-taso {{level}}",
+    "entryNeeds": "{{location}}: {{name}} on Swipletin aloituskohta ja edellyttää seuraavaa: {{requirement}}; nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
+    "importNeeds": "{{location}}: moduulin {{name}} tuominen edellyttää seuraavaa: {{requirement}}; nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
+    "invalidEntry": "{{location}}: @available-tunnisteessa on \"{{entry}}\"; tunniste hyväksyy pilkuilla erotetut arvot \"apiLevel <level>\" ja \"iOS <version>\".",
+    "needs": "{{location}}: {{name}} edellyttää seuraavaa: {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available-tunnisteessa on {{kind}} kahdesti."
+  },
+  "cli": {
+    "commands": "komennot:",
+    "exactArgs_one": "hyväksyy {{count}} argumentin, saatiin {{received}}",
+    "exactArgs_other": "hyväksyy {{count}} argumenttia, saatiin {{received}}",
+    "help": "ohje",
+    "helpHint": "Katso käyttöohjeet komennolla \"swipt help\".",
+    "minimumArgs_one": "hyväksyy vähintään {{count}} argumentin, saatiin {{received}}",
+    "minimumArgs_other": "hyväksyy vähintään {{count}} argumenttia, saatiin {{received}}",
+    "missingCommand": "Komento puuttuu.",
+    "options": "valinnat:",
+    "rangeArgs_one": "hyväksyy {{least}}–{{count}} argumentin, saatiin {{received}}",
+    "rangeArgs_other": "hyväksyy {{least}}–{{count}} argumenttia, saatiin {{received}}",
+    "unauthenticated": "{{message}}; yhdistä URL-osoitteella, jonka Swipt › Kehittäjä tai \"swipt driver\" näyttää: swipt device add {{url}}",
+    "unimplemented": "Osoitteessa {{url}} olevassa Swiptissä ei ole tätä komentoa; päivitä Swipt.",
+    "unknownCommand": "komennolla {{parent}} ei ole komentoa {{name}}",
+    "unknownOption": "{{option}} ei ole komennon {{command}} valinta.",
+    "unreachable": "Osoitteessa {{url}} olevaan Swiptiin ei saada yhteyttä: {{message}}",
+    "usage": "käyttö: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Poista kaikki datatiedostot, mutta säilytä datahakemisto"
+      },
+      "list": {
+        "description": "Näytä datatiedostot",
+        "recursive": "sisällytä alihakemistot"
+      },
+      "read": {
+        "description": "Lue datatiedosto tai -hakemisto",
+        "output": "kohde",
+        "saved_one": "{{count}} tiedosto tallennettu kohteeseen {{path}}",
+        "saved_other": "{{count}} tiedostoa tallennettu kohteeseen {{path}}"
+      },
+      "remove": {
+        "description": "Poista datatiedosto",
+        "recursive": "sisällytä hakemiston sisältö"
+      },
+      "replDescription": "Hallitse REPL:n datahakemiston tiedostoja",
+      "swipletDescription": "Hallitse Swipletin datahakemiston tiedostoja",
+      "write": {
+        "description": "Kirjoita datatiedosto"
+      }
+    },
+    "description": "Swipt-komentorivityökalu",
+    "device": {
+      "add": {
+        "description": "Lisää laite sen URL-osoitteella; tarvitaan, jos laite on etälaite tai vaatii tunnuksen"
+      },
+      "description": "Hallitse laitteita ja lue niiden lokeja",
+      "list": {
+        "description": "Näytä laitteet ja lisää lähiverkosta löydetyt laitteet"
+      },
+      "logs": {
+        "count": "aiempien merkintöjen määrä (oletus 100)",
+        "description": "Tulosta lokit",
+        "follow": "seuraa uusia merkintöjä",
+        "invalidDuration": "valinnan {{option}} argumentti {{value}} ei kelpaa: sen on oltava kesto, kuten 30s tai 1m30s",
+        "invalidLevel": "valinnan --level arvon on oltava error, warn, info tai debug",
+        "invalidNumber": "valinnan {{option}} argumentti {{value}} ei kelpaa: sen on oltava luku",
+        "level": "vähimmäistaso (oletus info)",
+        "since": "merkintöjen enimmäisikä",
+        "swiplet": "Swipletin ID"
+      },
+      "remove": {
+        "description": "Unohda laite"
+      },
+      "stop": {
+        "description": "Lopeta Swipt-API:n tarjoaminen",
+        "stopped": "pysäytetty"
+      }
+    },
+    "driver": {
+      "description": "Tarjoa laitteen Swipt-API ja MCP tältä tietokoneelta",
+      "details": "Vain yksi taho kerrallaan voi ohjata laitetta: laitteen Swipt tai yhden tietokoneen ajuri.",
+      "passcode": "pääsykoodi laitteen lukituksen automaattiseen avaamiseen; jätä tyhjäksi, niin toiminto poistetaan käytöstä",
+      "randomToken": "vaadi API-asiakkailta satunnainen tunnus",
+      "token": "vaadi API-asiakkailta tämä tunnus"
+    },
+    "project": {
+      "build": {
+        "description": "Paketoi projekti tiedostoksi dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Luo Swiplet-projekti uuteen tai tyhjään hakemistoon",
+        "notEmpty": "{{directory}} ei ole tyhjä."
+      },
+      "deploy": {
+        "description": "Koosta projekti ja asenna se laitteeseen"
+      },
+      "description": "Luo, koosta ja asenna Swiplet-projekteja",
+      "develop": {
+        "deployed": "koostettu ja asennettu ajassa {{elapsed}}; seurataan hakemistoa {{directory}}",
+        "description": "Koosta ja asenna Swiplet-projekti ja seuraa sen muutoksia",
+        "quiet": "ilman lokeja",
+        "unchanged": "koostettu ajassa {{elapsed}}; ei muutoksia"
+      },
+      "source": {
+        "description": "Kokoa koostetut Swipletit dist/-kansioon swiplets.json-tiedoston kanssa",
+        "duplicateID": "{{id}} on sekä {{first}} että {{second}}",
+        "invalidIcon": "package.json-tiedoston kentässä \"source.icon\" on oltava symbol, ja siinä voi olla color.",
+        "invalidLocalizedNames": "package.json-tiedoston kentän \"source.localizedNames\" on yhdistettävä kielet nimiin.",
+        "invalidURL": "package.json-tiedoston kenttä \"source.url\" ei ole absoluuttinen URL-osoite.",
+        "noWorkspaces": "package.json ei sisällä työtiloja, joissa on Swipletejä; nimeä listattavat Swipletit.",
+        "notBuilt": "Tiedosto {{file}} puuttuu; koosta ensin {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Tulosta globaalien muuttujien ja moduulien TypeScript-määrittelyt"
+      },
+      "dataDirectory": "{{path}} viittaa REPL:n datahakemistoon; tallenna se valinnalla --output DIRECTORY",
+      "description": "Suorita JavaScriptiä laitteen REPL-istunnossa",
+      "directory": "{{path}} on hakemisto REPL:n datahakemistossa; tallenna se valinnalla --output DIRECTORY",
+      "reset": {
+        "description": "Nollaa istunto"
+      },
+      "run": {
+        "arguments": "Ensimmäinen argumentti on FILE, jos se viittaa olemassa olevaan tiedostoon, ja muuten CODE; valinnat annetaan sitä ennen.",
+        "description": "Suorita JavaScript-lauseke tai -ohjelma laitteessa",
+        "details": "CODE on lauseke, jonka arvo tulostetaan. FILE tai vakiosyöte, joka annetaan muodossa - tai ilman argumenttia, on ohjelma, ja vain sen konsolituloste tulostetaan.",
+        "extraArguments": "{{argument}} ei ole tiedosto, eikä CODE ota ARG-argumentteja.",
+        "images": "kuvahakemisto (oletus: uusi väliaikainen hakemisto)"
+      }
+    },
+    "sideload": {
+      "description": "Sivulataa Swipt",
+      "install": {
+        "description": "Asenna Swipt",
+        "force": "asenna saman tai uudemman koontiversion päälle"
+      },
+      "passcode": "määritä automaattinen lukituksen avaus tällä pääsykoodilla",
+      "setup": {
+        "description": "Määritä Swipt"
+      },
+      "uninstall": {
+        "description": "Poista Swipt"
+      },
+      "update": {
+        "description": "Päivitä tai uusi Swipt",
+        "passcode": "avaa laitteen lukitus tällä pääsykoodilla"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Kutsu Swiplet-toimintoa",
+        "input": "JSON-syöte, @FILE tai -",
+        "invalidInput": "--input ei ole JSON-muodossa: {{error}}"
+      },
+      "dataDirectory": "{{path}} viittaa Swipletin {{swiplet}} datahakemistoon; tallenna se valinnalla --output DIRECTORY",
+      "description": "Hallitse laitteessa olevia Swipletejä",
+      "directory": "{{path}} on hakemisto Swipletin {{swiplet}} datahakemistossa; tallenna se valinnalla --output DIRECTORY",
+      "install": {
+        "description": "Asenna Swiplet-arkisto",
+        "notFound": "Polussa {{path}} ei ole arkistoa"
+      },
+      "list": {
+        "actions": "TOIMINNOT",
+        "description": "Näytä Swipletit",
+        "id": "ID",
+        "service": "PALVELU",
+        "status": "TILA",
+        "title": "NIMI",
+        "version": "VERSIO"
+      },
+      "remove": {
+        "description": "Poista Swiplet",
+        "removed": "{{name}} poistettu"
+      },
+      "service": {
+        "description": "Hallitse Swiplet-palveluita",
+        "disable": {
+          "description": "Poista Swiplet-palvelu käytöstä"
+        },
+        "enable": {
+          "description": "Ota Swiplet-palvelu käyttöön"
+        },
+        "watch": {
+          "description": "Seuraa Swiplet-palveluita"
+        },
+        "watchState": "seuraa tilaa"
+      },
+      "show": {
+        "description": "Näytä Swiplet",
+        "input": "syöte: {{schema}}",
+        "notFound": "Swipletiä {{id}} ei ole.",
+        "output": "tulos: {{schema}}",
+        "service": "palvelu: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Tulosta versio"
+    }
+  },
+  "connection": {
+    "added": "{{device}} lisätty",
+    "ambiguous": "Laitteita on useampi: {{devices}}; valitse yksi valinnalla -d",
+    "driverNotStopped": "Tietokoneen {{computer}} ajuri ei pysähtynyt.",
+    "invalidURL": "{{text}} ei ole URL-osoite.",
+    "none": "Laitteita ei ole; ota käyttöön Swipt › Kehittäjä › Lähiverkko tai yhdistä laite komennolla \"swipt device add URL\".",
+    "noneOnNetwork": "Yksikään laite ei julkaise Swiptiä lähiverkossa; ota käyttöön Swipt › Kehittäjä › Lähiverkko tai yhdistä laite komennolla \"swipt device add URL\".",
+    "notFound": "Laitetta {{device}} ei ole.",
+    "notFoundHint": "Laitetta {{device}} ei ole; \"swipt device list\" näyttää laitteet.",
+    "offline": "ei yhteyttä",
+    "problem": {
+      "developerModeOff": "kehittäjätila pois päältä",
+      "deviceUnsupported": "laitetta ei tueta",
+      "diskImageMissing": "levykuva puuttuu",
+      "diskImageMountFailed": "levykuvan liittäminen epäonnistui",
+      "pairingRejected": "parin muodostaminen hylätty",
+      "screenInUse": "näyttö on käytössä",
+      "unreachable": "ei tavoitettavissa",
+      "vpnPeerAddressMissing": "VPN-vastapään osoite puuttuu"
+    },
+    "removed": "{{name}} poistettu",
+    "requiresToken": "vaatii tunnuksen",
+    "requiresTokenHint": "{{device}} vaatii tunnuksen: swipt device add {{url}}",
+    "state": {
+      "connecting": "muodostetaan yhteyttä",
+      "failed": "epäonnistunut",
+      "preparing": "valmistellaan",
+      "running": "aktiivinen",
+      "stopped": "pysäytetty"
+    },
+    "unsupportedURL": "{{text}} ei ole http- tai https-URL-osoite."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} asennettu",
+    "replaced": "{{id}} {{version}} korvattu"
+  },
+  "driver": {
+    "alreadyRunning": "Ajuri on jo käynnissä tässä tietokoneessa; pysäytä se ensin.",
+    "ambiguousName": "Usean iPhone- tai iPad-laitteen nimi on {{name}}; valitse laite UDID:n perusteella",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service ei ole käynnissä; asenna Apple-laitteet-appi Microsoft Storesta",
+    "chooseDevice": "Valitse laite",
+    "chooseDeviceHint": "Valitse laite valinnalla -d NAME|UDID",
+    "connectedDevices": "{{reason}}; liitetyt iPhone- ja iPad-laitteet:",
+    "lookingForDevices": "etsitään laitteita",
+    "missing": "Ajuri puuttuu; asenna se komennolla \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Yhdenkään iPhone- tai iPad-laitteen nimi ei ole {{name}}",
+    "noDevice": "Tähän tietokoneeseen ei ole liitetty iPhone- tai iPad-laitetta eikä lähiverkosta löytynyt sellaista; liitä laite USB-johdolla ja avaa sen lukitus.",
+    "pairing": "muodostetaan paria laitteen {{device}} kanssa",
+    "trustPrompt": "napauta laitteessa {{device}} ”Luota” ja syötä sen pääsykoodi luottaaksesi tähän tietokoneeseen",
+    "usbmuxdMissing": "usbmuxd ei ole käynnissä; asenna usbmuxd ja käynnistä se"
+  },
+  "error": "virhe: {{message}}",
+  "flags": {
+    "device": "käytettävä laite",
+    "nightly": "käytä nightly-koontiversiota",
+    "noSetup": "älä muodosta Swiptille paria, älä luota sen kehittäjään äläkä julkaise sen API:a",
+    "noSetupAPI": "älä julkaise API:a lähiverkkoon",
+    "noSetupPair": "älä muodosta Swiptille paria",
+    "passcodeType": "pin (4 tai 6 numeroa, oletus), numeric tai alphanumeric",
+    "team": "tiimin ID, pakollinen, jos tiimejä on useampi"
+  },
+  "metro": {
+    "boolean": "totuusarvo",
+    "contextArgument": "require.context-kutsun argumentin {{index}} on oltava {{expected}}",
+    "contextRegExp": "require.context-kutsun argumentin {{index}} on oltava säännöllisen lausekkeen literaali.",
+    "oneOf": "yksi arvoista {{values}}",
+    "string": "merkkijono",
+    "workletsMismatch": "Projektissa on react-native-worklets {{version}}, mutta Swipt käyttää versiota {{expected}}; asenna react-native-worklets@{{expected}} tai poista se."
+  },
+  "noThanks": "Ei kiitos",
+  "output": {
+    "navigate": "siirry",
+    "select": "valitse",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} {{time}} alkaen",
+    "serviceStatus": {
+      "failed": "epäonnistunut",
+      "running": "käynnissä",
+      "starting": "käynnistymässä",
+      "stopped": "pysäytetty",
+      "turnedOff": "ei käytössä",
+      "turnedOn": "käytössä"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Mukautettu aakkosnumeerinen koodi",
+    "alphanumericDetail": "aakkosnumeerinen",
+    "empty": "Syötä pääsykoodi.",
+    "invalidAlphanumeric": "Pääsykoodissa voi olla enintään 64 tulostettavaa ASCII-merkkiä.",
+    "invalidNumeric": "Numeerinen koodi voi sisältää vain numeroita.",
+    "invalidPin": "pin-pääsykoodissa on 4 tai 6 numeroa; mukautettu koodi vaatii valinnan --passcode-type numeric tai alphanumeric",
+    "invalidType": "valinnan --passcode-type argumentti {{value}} ei kelpaa: sen on oltava yksi seuraavista: {{types}}",
+    "masked": "[syöte on piilotettu]",
+    "numeric": "Mukautettu numeerinen koodi",
+    "numericDetail": "numeerinen",
+    "pin": "4- tai 6-numeroinen pääsykoodi",
+    "pinDetail": "4 tai 6 numeroa",
+    "prompt": "Laitteen pääsykoodi",
+    "setUp": "Määritetäänkö automaattinen lukituksen avaus? Swipt voi sen jälkeen avata tämän laitteen lukituksen itse."
+  },
+  "project": {
+    "assetConflict": "{{source}} ja {{asset}} vastaavat Swipletissä molemmat polkua assets/{{name}}.",
+    "conditionalActions": "Laajennus määrittää eri toiminnot available()-funktion tuloksen mukaan; määritä samat toiminnot kaikissa järjestelmissä ja tarkista available() run-funktiossa tai toiminnossa.",
+    "databaseAtLoad": "Tietokanta on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa.",
+    "interfaceImport": "Käyttöliittymä tuo tiedoston {{file}} suorituksen aikana; tuo sen tyyppi lausekkeella `import type`.",
+    "interfaceOnly": "{{name}} toimii vain Swipletin käyttöliittymässä.",
+    "invalidExposure": "Toiminto {{action}} voidaan tuoda saataville vain kohteelle \"shortcuts\".",
+    "invalidExtension": "Laajennuksen oletusvienti ei ole defineExtension-kutsun tulos.",
+    "invalidID": "package.json-tiedoston kentän \"swiplet.id\" on oltava 1–128 merkkiä pitkä, sisällettävä vain pieniä kirjaimia, numeroita, pisteitä, alaviivoja ja yhdysviivoja sekä alettava kirjaimella tai numerolla.",
+    "invalidLocalizedNames": "package.json-tiedoston kentän \"swiplet.localizedNames\" on yhdistettävä kielet nimiin.",
+    "invalidMinimumAPILevel": "package.json-tiedoston kentän \"swiplet.minimumAPILevel\" on oltava kokonaisluku {{oldest}}:stä @swipt/api-paketin API-tasoon ({{level}}).",
+    "invalidMinimumIOSVersion": "package.json-tiedoston kentän \"swiplet.minimumIOSVersion\" on oltava versionumero, joka on vähintään @swipt/api-paketin iOS-vähimmäisversio ({{version}}).",
+    "invalidName": "package.json-tiedoston kentän \"swiplet.name\" on oltava ei-tyhjä merkkijono.",
+    "invalidSchema": "Toiminnon {{action}} {{side}}-skeema ei toteuta Standard JSON Schema -määritystä; käytä sen toteuttavaa kirjastoa, kuten Zod 4:ää.",
+    "invalidString": "package.json-tiedoston kentän \"{{field}}\" on oltava merkkijono.",
+    "invalidVersionCode": "package.json-tiedoston kentän \"swiplet.versionCode\" on oltava positiivinen kokonaisluku.",
+    "missingTitle": "Toiminto {{action}} tarvitsee nimen.",
+    "storageAtLoad": "Tallennustila on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa.",
+    "unprovidedModule": "Swipt ei tarjoa moduulia \"{{module}}\" laajennuksille; paketoi se tiedostoon extension.js.",
+    "usedAtLoad": "{{name}} on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa."
+  },
+  "serve": {
+    "cancel": "Kumoa",
+    "checking": "tarkistetaan laite {{device}}",
+    "conflictingTokens": "Valintoja --token ja --random-token ei voi käyttää yhdessä.",
+    "invalidToken": "Tunnus koostuu yhdestä tai useammasta tulostettavasta ASCII-merkistä ilman välilyöntejä.",
+    "localNetwork": "Lähiverkko",
+    "noAutoUnlock": "Laitteen {{device}} lukitusta ei avata automaattisesti; aseta sen pääsykoodi valinnalla --passcode. Pysäytä ajuri painamalla Ctrl-C.",
+    "quitSwipt": "Lopeta Swipt",
+    "quittingSwipt": "lopetetaan Swipt laitteessa {{device}}",
+    "served": "Tietokoneen {{computer}} ajuri palvelee jo laitetta {{device}}; pysäytä kyseinen ajuri ensin.",
+    "servedPrompt": "Tietokoneen {{computer}} ajuri palvelee jo laitetta {{device}}. Pysäytetäänkö kyseinen ajuri?",
+    "starting": "käynnistetään ajuri laitteelle {{device}}",
+    "stopDriver": "Pysäytä tietokoneen {{computer}} ajuri",
+    "stopHint": "Pysäytä ajuri painamalla Ctrl-C.",
+    "stoppingDriver": "pysäytetään tietokoneen {{computer}} ajuri",
+    "swiptRunning": "Ajuri ei voi ohjata laitetta {{device}}, kun Swipt on käynnissä siinä; lopeta Swipt ensin.",
+    "swiptRunningPrompt": "Ajuri ei voi ohjata laitetta {{device}}, kun Swipt on käynnissä siinä. Lopetetaanko Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Useampi kuin yksi tiimi on sivuladannut Swiptin laitteeseen {{device}}; valitse yksi valinnalla --team ID:",
+    "certificateFailed": "Xcode ei voinut luoda tiimin {{team}} kehitysvarmennetta; lisää varmenne kohdassa {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "tarkistetaan Swipt laitteessa {{device}}",
+    "checkingRelease": "tarkistetaan uusinta julkaisua",
+    "chooseTeam": "Valitse tiimi",
+    "chooseTeamHint": "Valitse tiimi valinnalla --team ID:",
+    "diskImageFailed": "kehittäjän levykuvan valmisteleminen laitteessa {{device}} epäonnistui: {{error}}",
+    "downgrade": "Vaihda vanhempaan versioon",
+    "downgradePrompt": "Vaihdetaanko laitteen {{device}} Swipt versiosta {{version}} vanhempaan versioon {{releaseVersion}}? Swipt nollaa tietonsa, jos vanhempi versio ei pysty lukemaan niitä.",
+    "downgradeToStablePrompt": "Vaihdetaanko laitteen {{device}} Swipt nightly-koontiversiosta {{version}} vakaaseen versioon {{releaseVersion}}? Swipt nollaa tietonsa, jos vanhempi versio ei pysty lukemaan niitä.",
+    "downloading": "ladataan Swiptin versiota {{version}} ({{build}}) julkaisusta {{release}}",
+    "expiration": "Allekirjoitus vanhenee {{expiration}}.",
+    "installed": "{{build}} on asennettu laitteeseen {{device}}.",
+    "installing": "asennetaan laitteeseen {{device}}",
+    "invalidTeam": "valinnan --team argumentti {{value}} ei kelpaa: sen on oltava kohdassa {{accounts}} näkyvä 10-merkkinen tiimin ID",
+    "laterThanRelease": "Laitteessa {{device}} oleva {{build}} on uudempi kuin {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; avaa laitteen lukitus tai anna valinta --passcode ja suorita komento sitten uudelleen.",
+    "looking": "etsitään Swiptiä laitteista",
+    "needsMacOS": "Swiptin asentaminen tai päivittäminen vaatii macOS:n; asenna Swipt Macilta ja määritä se sitten täällä komennolla \"swipt sideload setup\".",
+    "noAccount": "Xcodessa ei ole tiliä; kirjaudu sisään kohdassa {{accounts}} tai valitse tiimi valinnalla --team ID",
+    "noAccountForTeam": "Xcodessa ei ole tiimin {{team}} tiliä; kirjaudu sisään tiimin Apple-tilillä kohdassa {{accounts}}.",
+    "noCertificate": "Xcodessa ei ole kehitysvarmennetta; lisää varmenne kohdassa {{accounts}} › Manage Certificates tai valitse tiimi valinnalla --team ID",
+    "noneInstalled": "Swiptiä ei ole sivuladattu mihinkään iPhone- tai iPad-laitteeseen.",
+    "noneInstalledHint": "Swiptiä ei ole sivuladattu mihinkään iPhone- tai iPad-laitteeseen; asenna se komennolla \"swipt sideload install\".",
+    "notInstalled": "Swiptiä ei ole sivuladattu laitteeseen {{device}}.",
+    "notInstalledByTeam": "Tiimi {{team}} ei ole sivuladannut Swiptiä laitteeseen {{device}}.",
+    "notInstalledByTeamHint": "Tiimi {{team}} ei ole sivuladannut Swiptiä laitteeseen {{device}}; asenna se komennolla \"swipt sideload install\".",
+    "notInstalledHint": "Swiptiä ei ole sivuladattu laitteeseen {{device}}; asenna se komennolla \"swipt sideload install\".",
+    "notOnNetwork": "Laitetta {{device}} ei löytynyt lähiverkosta; sen API-URL-osoitteet löytyvät kohdasta Swipt › Kehittäjä › Lähiverkko.",
+    "opening": "avataan Swipt laitteessa {{device}}",
+    "openingSettings": "avataan Asetukset laitteessa {{device}}",
+    "opensAfterUnlock": "Se avautuu, kun laitteen {{device}} lukitus avataan.",
+    "pairingFailed": "Parin muodostaminen epäonnistui, joten Swipt tekee parin sen sijaan Asetuksissa: {{error}}",
+    "preparingDiskImage": "valmistellaan kehittäjän levykuvaa laitteessa {{device}}",
+    "preparingSigning": "valmistellaan Swiptin allekirjoitusta tiimillä {{team}} Xcoden kautta",
+    "removed": "{{build}} poistettu laitteesta {{device}}",
+    "removing": "poistetaan Swipt laitteesta {{device}}",
+    "renewalNeedsDowngrade": "Laitteessa {{device}} oleva {{build}} on allekirjoitettava uudelleen, mutta {{release}} ({{releaseBuild}}) on vanhempi; käytä valintaa --nightly tai vaihda vanhempaan versioon komennolla \"swipt sideload install --force\".",
+    "resigning": "allekirjoitetaan Swipt uudelleen",
+    "running": "{{app}} on käynnissä.",
+    "settingUpAutoUnlock": "määritetään automaattista lukituksen avausta",
+    "trusted": "{{developer}} on merkitty luotetuksi.",
+    "trusting": "merkitään kehittäjä {{developer}} luotetuksi Asetuksissa",
+    "unlockPrompt": "Jatka avaamalla laitteen lukitus.",
+    "unlocking": "avataan laitteen lukitus",
+    "untrusted": "Sen kehittäjään ei vielä luoteta; luota siihen laitteessa {{device}} avatulla Asetukset-sivulla ja avaa sitten Swipt.",
+    "upToDate": "Laitteessa {{device}} oleva {{build}} on jo {{release}}.",
+    "updated": "{{build}} on päivitetty laitteessa {{device}}.",
+    "waiting": "odotetaan laitetta {{device}}",
+    "xcodeMissing": "xcodebuild vaatii Xcoden; asenna se ja valitse se komennolla xcode-select",
+    "xcodebuildMissing": "xcodebuild puuttuu; asenna Xcode."
+  }
+}

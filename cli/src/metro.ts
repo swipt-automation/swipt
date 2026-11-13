@@ -16,7 +16,7 @@ import { loadProjectEnv } from "@expo/env";
 import type { Plugin, ResolveResult } from "esbuild";
 import { imageSize } from "image-size";
 
-import { tr } from "./i18n";
+import { t } from "./i18n";
 
 declare module "@babel/core" {
   interface TransformCaller {
@@ -159,7 +159,7 @@ function contextArgument<T>(
     }
   }
   throw call.buildCodeFrameError(
-    tr("Argument {index} of require.context must be {expected}", {
+    t("metro.contextArgument", {
       index: index + 1,
       expected,
     }),
@@ -173,10 +173,7 @@ function contextPattern(call: NodePath<types.CallExpression>, index: number) {
   }
   if (!types.isRegExpLiteral(node)) {
     throw call.buildCodeFrameError(
-      tr(
-        "Argument {index} of require.context must be a regular expression literal.",
-        { index: index + 1 },
-      ),
+      t("metro.contextRegExp", { index: index + 1 }),
     );
   }
   return new RegExp(node.pattern, node.flags.replace(/[gy]/g, ""));
@@ -205,7 +202,7 @@ const requireContext: PluginObj = {
           call,
           0,
           undefined,
-          tr("a string"),
+          t("metro.string"),
           (value) => typeof value === "string",
         ),
       );
@@ -213,7 +210,7 @@ const requireContext: PluginObj = {
         call,
         1,
         true,
-        tr("a Boolean"),
+        t("metro.boolean"),
         (value) => typeof value === "boolean",
       );
       const filter = contextPattern(call, 2);
@@ -221,7 +218,7 @@ const requireContext: PluginObj = {
         call,
         3,
         "sync",
-        tr("one of {values}", { values: contextModes.join(", ") }),
+        t("metro.oneOf", { values: contextModes.join(", ") }),
         (value): value is string =>
           typeof value === "string" && contextModes.includes(value),
       );
@@ -343,12 +340,7 @@ function checkWorklets(root: string) {
   );
   const { version: expected } = require("react-native-worklets/package.json");
   if (version !== expected) {
-    throw new Error(
-      tr(
-        "The project has react-native-worklets {version}, but Swipt runs {expected}; install react-native-worklets@{expected} or remove it.",
-        { version, expected },
-      ),
-    );
+    throw new Error(t("metro.workletsMismatch", { version, expected }));
   }
 }
 

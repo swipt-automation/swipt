@@ -1,13 +1,11 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
+
+import i18next from "i18next";
 
 const locales = new URL("../locales/", import.meta.url);
 
-const languages = new Set([
-  "en",
-  ...fs.readdirSync(locales).map((file) => path.basename(file, ".json")),
-]);
+const languages = new Set(fs.readdirSync(locales));
 
 function environmentLanguages(variables: NodeJS.ProcessEnv) {
   const locale = variables.LC_ALL || variables.LC_MESSAGES || variables.LANG;
@@ -99,28 +97,23 @@ export const language =
     .map((tag) => supportedLanguage(tag.split(/[.@]/)[0].replaceAll("_", "-")))
     .find(Boolean) ?? "en";
 
-type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & {
-  other: string;
-};
+const resources = Object.fromEntries(
+  [...new Set([language, "en"])].map((it) => [
+    it,
+    {
+      translation: JSON.parse(
+        fs.readFileSync(new URL(`${it}/translation.json`, locales), "utf8"),
+      ),
+    },
+  ]),
+);
 
-const messages: Record<string, string | PluralForms> =
-  language === "en"
-    ? {}
-    : JSON.parse(fs.readFileSync(new URL(`${language}.json`, locales), "utf8"));
+i18next.init({
+  lng: language,
+  fallbackLng: "en",
+  resources,
+  initAsync: false,
+  interpolation: { escapeValue: false },
+});
 
-const pluralRules = new Intl.PluralRules(language);
-
-export function tr(
-  source: string | { one: string; other: string },
-  values: Record<string, unknown> = {},
-  context?: string,
-) {
-  const key = typeof source === "string" ? source : source.other;
-  const message =
-    messages[context === undefined ? key : `[${context}] ${key}`] ?? source;
-  const text =
-    typeof message === "string"
-      ? message
-      : (message[pluralRules.select(Number(values.count))] ?? message.other);
-  return text.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name]));
-}
+export const t = i18next.getFixedT(language);

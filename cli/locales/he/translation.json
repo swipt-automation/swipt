@@ -1,0 +1,401 @@
+{
+  "availability": {
+    "advice": "יש לבדוק אותם באמצעות available(), לסמן את הקוד שמשתמש בהם באמצעות @available, או להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
+    "apiLevel": "רמת API {{level}}",
+    "entryNeeds": "‏{{location}}: {{name}} הוא נקודת כניסה של ה-Swiplet ודורש {{requirement}}; יש להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
+    "importNeeds": "‏{{location}}: ייבוא של {{name}} דורש {{requirement}}; יש להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
+    "invalidEntry": "‏{{location}}: תג ה-@available כולל את \"{{entry}}\"; הוא מקבל \"apiLevel <level>\" ו-\"iOS <version>\", מופרדים בפסיקים.",
+    "needs": "‏{{location}}: {{name}} דורש {{requirement}}.",
+    "repeatedEntry": "‏{{location}}: תג ה-@available מציין את {{kind}} פעמיים."
+  },
+  "cli": {
+    "commands": "פקודות:",
+    "exactArgs_one": "הפקודה מקבלת ארגומנט אחד, התקבלו: {{received}}",
+    "exactArgs_other": "הפקודה מקבלת {{count}} ארגומנטים, התקבלו: {{received}}",
+    "exactArgs_two": "הפקודה מקבלת שני ארגומנטים, התקבלו: {{received}}",
+    "help": "עזרה",
+    "helpHint": "יש להריץ \"swipt help\" לקבלת הוראות שימוש.",
+    "minimumArgs_one": "הפקודה מקבלת ארגומנט אחד לפחות, התקבלו: {{received}}",
+    "minimumArgs_other": "הפקודה מקבלת לפחות {{count}} ארגומנטים, התקבלו: {{received}}",
+    "minimumArgs_two": "הפקודה מקבלת לפחות שני ארגומנטים, התקבלו: {{received}}",
+    "missingCommand": "חסרה פקודה.",
+    "options": "אפשרויות:",
+    "rangeArgs_one": "הפקודה מקבלת בין {{least}} לארגומנט אחד, התקבלו: {{received}}",
+    "rangeArgs_other": "הפקודה מקבלת בין {{least}} ל-{{count}} ארגומנטים, התקבלו: {{received}}",
+    "rangeArgs_two": "הפקודה מקבלת בין {{least}} לשני ארגומנטים, התקבלו: {{received}}",
+    "unauthenticated": "‏{{message}}; יש להתחבר באמצעות כתובת ה-URL שמוצגת ב״Swipt״ › ״מפתחים״ או ב-\"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "ל-Swipt בכתובת {{url}} אין את הפקודה הזו; יש לעדכן את Swipt.",
+    "unknownCommand": "הפקודה {{name}} אינה מוכרת עבור {{parent}}",
+    "unknownOption": "‏{{option}} אינה אפשרות של {{command}}.",
+    "unreachable": "לא ניתן להתחבר ל-Swipt בכתובת {{url}}: {{message}}",
+    "usage": "שימוש: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "הסרת כל קובצי הנתונים ושמירה על תיקיית הנתונים"
+      },
+      "list": {
+        "description": "הצגת רשימת קובצי הנתונים",
+        "recursive": "הכללת תיקיות משנה"
+      },
+      "read": {
+        "description": "קריאת קובץ נתונים או תיקייה",
+        "output": "יעד",
+        "saved_one": "קובץ אחד נשמר ב-{{path}}",
+        "saved_other": "‏{{count}} קבצים נשמרו ב-{{path}}",
+        "saved_two": "שני קבצים נשמרו ב-{{path}}"
+      },
+      "remove": {
+        "description": "הסרת קובץ נתונים",
+        "recursive": "הכללת תוכן התיקייה"
+      },
+      "replDescription": "ניהול הקבצים בתיקיית הנתונים של ה-REPL",
+      "swipletDescription": "ניהול הקבצים בתיקיית הנתונים של Swiplet",
+      "write": {
+        "description": "כתיבת קובץ נתונים"
+      }
+    },
+    "description": "כלי שורת הפקודה של Swipt",
+    "device": {
+      "add": {
+        "description": "הוספת מכשיר לפי כתובת ה-URL שלו; נדרש כשהמכשיר מרוחק או דורש אסימון"
+      },
+      "description": "ניהול המכשירים וקריאת היומנים שלהם",
+      "list": {
+        "description": "הצגת רשימת המכשירים והוספת אלה שנמצאו ברשת המקומית"
+      },
+      "logs": {
+        "count": "מספר הרשומות הקודמות (ברירת מחדל: 100)",
+        "description": "הצגת היומנים",
+        "follow": "מעקב אחר רשומות חדשות",
+        "invalidDuration": "הארגומנט {{value}} של {{option}} אינו חוקי: יש להזין משך זמן, כגון 30s או 1m30s",
+        "invalidLevel": "‏--level יכול להיות error, warn, info או debug",
+        "invalidNumber": "הארגומנט {{value}} של {{option}} אינו חוקי: יש להזין מספר",
+        "level": "רמה מינימלית (ברירת מחדל: info)",
+        "since": "גיל מקסימלי של רשומות",
+        "swiplet": "מזהה Swiplet"
+      },
+      "remove": {
+        "description": "הסרת מכשיר"
+      },
+      "stop": {
+        "description": "הפסקת אספקת ה-API של Swipt",
+        "stopped": "נעצר"
+      }
+    },
+    "driver": {
+      "description": "אספקת ה-API של Swipt ו-MCP עבור מכשיר מהמחשב הזה",
+      "details": "רק גורם אחד יכול לשלוט במכשיר בכל פעם: Swipt במכשיר, או מנהל ההתקן במחשב אחד.",
+      "passcode": "קוד גישה לביטול נעילה אוטומטי של המכשיר; השארת הערך ריק מכבה את ביטול הנעילה האוטומטי",
+      "randomToken": "דרישת אסימון אקראי מלקוחות API",
+      "token": "דרישת האסימון הזה מלקוחות API"
+    },
+    "project": {
+      "build": {
+        "description": "אריזת הפרויקט אל dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "יצירת פרויקט Swiplet בתיקייה חדשה או ריקה",
+        "notEmpty": "התיקייה {{directory}} אינה ריקה."
+      },
+      "deploy": {
+        "description": "בניית הפרויקט והתקנתו במכשיר"
+      },
+      "description": "יצירה, בנייה ופריסה של פרויקטי Swiplet",
+      "develop": {
+        "deployed": "הבנייה והפריסה הושלמו תוך {{elapsed}}; עוקב אחר {{directory}}",
+        "description": "בנייה והתקנה של פרויקט Swiplet ומעקב אחר השינויים בו",
+        "quiet": "ללא יומנים",
+        "unchanged": "הבנייה הושלמה תוך {{elapsed}}; לא השתנה דבר"
+      },
+      "source": {
+        "description": "איסוף ה-Swiplet שנבנו אל dist/ עם swiplets.json",
+        "duplicateID": "‏{{id}} הוא גם {{first}} וגם {{second}}",
+        "invalidIcon": "‏\"source.icon\" ב-package.json חייב לכלול symbol ויכול לכלול color.",
+        "invalidLocalizedNames": "‏\"source.localizedNames\" ב-package.json חייב למפות שפות לשמות.",
+        "invalidURL": "‏\"source.url\" ב-package.json אינו כתובת URL מוחלטת.",
+        "noWorkspaces": "ב-package.json אין סביבות עבודה עם Swiplet; יש לציין את ה-Swiplet שיש לכלול ברשימה.",
+        "notBuilt": "‏{{file}} חסר; יש לבנות תחילה את {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "הצגת הצהרות ה-TypeScript של המשתנים הגלובליים והמודולים"
+      },
+      "dataDirectory": "‏{{path}} מציין את תיקיית הנתונים של ה-REPL; יש לשמור אותה באמצעות --output DIRECTORY",
+      "description": "הרצת JavaScript בסשן ה-REPL במכשיר",
+      "directory": "‏{{path}} היא תיקייה בתיקיית הנתונים של ה-REPL; יש לשמור אותה באמצעות --output DIRECTORY",
+      "reset": {
+        "description": "איפוס הסשן"
+      },
+      "run": {
+        "arguments": "הארגומנט הראשון הוא FILE אם הוא מציין קובץ קיים, ואחרת CODE; אפשרויות מופיעות לפניו.",
+        "description": "הרצת ביטוי או תוכנית JavaScript במכשיר",
+        "details": "‏CODE הוא ביטוי שערכו מוצג. FILE, או קלט סטנדרטי שניתן באמצעות - או ללא ארגומנט, הוא תוכנית, ומוצג רק פלט המסוף שלה.",
+        "extraArguments": "‏{{argument}} אינו קובץ, ו-CODE לא מקבל ARG.",
+        "images": "תיקיית תמונות (ברירת מחדל: תיקייה זמנית חדשה)"
+      }
+    },
+    "sideload": {
+      "description": "התקנה צדדית של Swipt",
+      "install": {
+        "description": "התקנת Swipt",
+        "force": "התקנה על גבי אותה גרסה או גרסה חדשה יותר"
+      },
+      "passcode": "הגדרת ביטול נעילה אוטומטי עם קוד הגישה הזה",
+      "setup": {
+        "description": "הגדרת Swipt"
+      },
+      "uninstall": {
+        "description": "הסרת Swipt"
+      },
+      "update": {
+        "description": "עדכון או חידוש של Swipt",
+        "passcode": "ביטול נעילת המכשיר עם קוד הגישה הזה"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "קריאה לפעולת Swiplet",
+        "input": "קלט JSON, @FILE או -",
+        "invalidInput": "‏--input אינו JSON: {{error}}"
+      },
+      "dataDirectory": "‏{{path}} מציין את תיקיית הנתונים של {{swiplet}}; יש לשמור אותה באמצעות --output DIRECTORY",
+      "description": "ניהול ה-Swiplet במכשיר",
+      "directory": "‏{{path}} היא תיקייה בתיקיית הנתונים של {{swiplet}}; יש לשמור אותה באמצעות --output DIRECTORY",
+      "install": {
+        "description": "התקנת ארכיון Swiplet",
+        "notFound": "אין ארכיון בנתיב {{path}}"
+      },
+      "list": {
+        "actions": "פעולות",
+        "description": "הצגת רשימת ה-Swiplet",
+        "id": "ID",
+        "service": "שירות",
+        "status": "מצב",
+        "title": "כותרת",
+        "version": "גרסה"
+      },
+      "remove": {
+        "description": "הסרת Swiplet",
+        "removed": "‏{{name}} הוסר"
+      },
+      "service": {
+        "description": "ניהול שירותי Swiplet",
+        "disable": {
+          "description": "כיבוי שירות Swiplet"
+        },
+        "enable": {
+          "description": "הפעלת שירות Swiplet"
+        },
+        "watch": {
+          "description": "מעקב אחר שירותי Swiplet"
+        },
+        "watchState": "מעקב אחר המצב"
+      },
+      "show": {
+        "description": "הצגת Swiplet",
+        "input": "קלט: {{schema}}",
+        "notFound": "אין Swiplet עם המזהה {{id}}.",
+        "output": "פלט: {{schema}}",
+        "service": "שירות: {{status}}"
+      }
+    },
+    "version": {
+      "description": "הצגת הגרסה"
+    }
+  },
+  "connection": {
+    "added": "‏{{device}} נוסף",
+    "ambiguous": "יש יותר ממכשיר אחד: {{devices}}; יש לבחור מכשיר באמצעות -d",
+    "driverNotStopped": "מנהל ההתקן ב-{{computer}} לא נעצר.",
+    "invalidURL": "‏{{text}} אינו כתובת URL.",
+    "none": "אין מכשיר; יש להפעיל את ״Swipt״ › ״מפתחים״ › ״רשת מקומית״ או לחבר מכשיר באמצעות \"swipt device add URL\".",
+    "noneOnNetwork": "אף מכשיר לא מפרסם את Swipt ברשת המקומית; יש להפעיל את ״Swipt״ › ״מפתחים״ › ״רשת מקומית״ או לחבר מכשיר באמצעות \"swipt device add URL\".",
+    "notFound": "אין מכשיר בשם {{device}}.",
+    "notFoundHint": "אין מכשיר בשם {{device}}; הפקודה \"swipt device list\" מציגה את רשימת המכשירים.",
+    "offline": "לא מקוון",
+    "problem": {
+      "developerModeOff": "מצב מפתחים כבוי",
+      "deviceUnsupported": "המכשיר אינו נתמך",
+      "diskImageMissing": "תמונת הדיסק חסרה",
+      "diskImageMountFailed": "טעינת תמונת הדיסק נכשלה",
+      "pairingRejected": "הקישור נדחה",
+      "screenInUse": "המסך בשימוש",
+      "unreachable": "לא נגיש",
+      "vpnPeerAddressMissing": "חסרה כתובת העמית של ה-VPN"
+    },
+    "removed": "‏{{name}} הוסר",
+    "requiresToken": "נדרש אסימון",
+    "requiresTokenHint": "‏{{device}} דורש אסימון: swipt device add {{url}}",
+    "state": {
+      "connecting": "מתחבר",
+      "failed": "נכשל",
+      "preparing": "בהכנה",
+      "running": "פעיל",
+      "stopped": "נעצר"
+    },
+    "unsupportedURL": "‏{{text}} אינו כתובת URL מסוג http או https."
+  },
+  "deploy": {
+    "installed": "‏{{id}} {{version}} הותקן",
+    "replaced": "‏{{id}} {{version}} הוחלף"
+  },
+  "driver": {
+    "alreadyRunning": "מנהל ההתקן כבר פועל במחשב זה; יש לעצור אותו קודם.",
+    "ambiguousName": "יש יותר ממכשיר iPhone או iPad אחד בשם {{name}}; יש לבחור מכשיר לפי UDID",
+    "appleMobileDeviceServiceMissing": "השירות Apple Mobile Device Service לא פועל; יש להתקין את היישום ״מכשירי Apple״ מ-Microsoft Store",
+    "chooseDevice": "בחירת מכשיר",
+    "chooseDeviceHint": "יש לבחור מכשיר באמצעות -d NAME|UDID",
+    "connectedDevices": "‏{{reason}}; מכשירי iPhone ו-iPad מחוברים:",
+    "lookingForDevices": "מחפש מכשירים",
+    "missing": "מנהל ההתקן חסר; יש להתקין אותו באמצעות \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "אין iPhone או iPad בשם {{name}}",
+    "noDevice": "אין iPhone או iPad שמחובר למחשב זה או שנמצא ברשת המקומית; יש לחבר מכשיר באמצעות כבל USB ולבטל את נעילתו.",
+    "pairing": "מקשר ל-{{device}}",
+    "trustPrompt": "יש להקיש על ״מתן אמון״ ב-{{device}} ולהזין את קוד הגישה שלו כדי לתת אמון במחשב זה",
+    "usbmuxdMissing": "‏usbmuxd לא פועל; יש להתקין את usbmuxd ולהפעיל אותו"
+  },
+  "error": "שגיאה: {{message}}",
+  "flags": {
+    "device": "המכשיר שבו יש להשתמש",
+    "nightly": "שימוש בגרסת nightly",
+    "noSetup": "בלי לקשר את Swipt, לתת אמון במפתח שלו או לפרסם את ה-API שלו",
+    "noSetupAPI": "בלי לפרסם את ה-API ברשת המקומית",
+    "noSetupPair": "בלי לקשר את Swipt",
+    "passcodeType": "‏pin (4 או 6 ספרות, ברירת מחדל), numeric או alphanumeric",
+    "team": "מזהה הצוות; חובה אם יש יותר מצוות אחד"
+  },
+  "metro": {
+    "boolean": "ערך בוליאני",
+    "contextArgument": "הארגומנט {{index}} של require.context חייב להיות {{expected}}",
+    "contextRegExp": "הארגומנט {{index}} של require.context חייב להיות ליטרל של ביטוי רגולרי.",
+    "oneOf": "אחד מהערכים {{values}}",
+    "string": "מחרוזת",
+    "workletsMismatch": "בפרויקט מותקן react-native-worklets {{version}}, אבל Swipt מריץ את {{expected}}; יש להתקין את react-native-worklets@{{expected}} או להסיר אותו."
+  },
+  "noThanks": "לא, תודה",
+  "output": {
+    "navigate": "ניווט",
+    "select": "בחירה",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} מאז {{time}}",
+    "serviceStatus": {
+      "failed": "נכשל",
+      "running": "פועל",
+      "starting": "בהפעלה",
+      "stopped": "נעצר",
+      "turnedOff": "מושבת",
+      "turnedOn": "מופעל"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "קוד אלפאנומרי מותאם אישית",
+    "alphanumericDetail": "אלפאנומרי",
+    "empty": "יש להזין את קוד הגישה.",
+    "invalidAlphanumeric": "קוד גישה מכיל עד 64 תווי ASCII שניתנים להדפסה.",
+    "invalidNumeric": "קוד ספרתי מכיל ספרות בלבד.",
+    "invalidPin": "קוד גישה מסוג pin מכיל 4 או 6 ספרות; קוד מותאם אישית דורש --passcode-type numeric או alphanumeric",
+    "invalidType": "הארגומנט {{value}} של --passcode-type אינו חוקי: הערכים האפשריים הם {{types}}",
+    "masked": "[הקלט מוסתר]",
+    "numeric": "קוד ספרתי מותאם אישית",
+    "numericDetail": "ספרתי",
+    "pin": "קוד גישה בן 4 או 6 ספרות",
+    "pinDetail": "‏4 או 6 ספרות",
+    "prompt": "קוד הגישה של המכשיר",
+    "setUp": "להגדיר ביטול נעילה אוטומטי? כך Swipt יוכל לבטל את נעילת המכשיר הזה בעצמו."
+  },
+  "project": {
+    "assetConflict": "‏{{source}} ו-{{asset}} יהיו שניהם assets/{{name}} ב-Swiplet.",
+    "conditionalActions": "ההרחבה מגדירה פעולות שונות בהתאם ל-available(); יש להגדיר את אותן הפעולות בכל מערכת ולבדוק את available() בתוך run או בתוך פעולה.",
+    "databaseAtLoad": "מסד הנתונים נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה.",
+    "interfaceImport": "הממשק מייבא את {{file}} בזמן ריצה; יש לייבא את הטיפוס שלו באמצעות `import type`.",
+    "interfaceOnly": "‏{{name}} פועל רק בממשק של ה-Swiplet.",
+    "invalidExposure": "הפעולה {{action}} יכולה לחשוף את עצמה רק ל-\"shortcuts\".",
+    "invalidExtension": "הייצוא המוגדר כברירת מחדל של ההרחבה אינו התוצאה של defineExtension.",
+    "invalidID": "‏\"swiplet.id\" ב-package.json חייב להכיל 1 עד 128 אותיות קטנות, ספרות, נקודות, קווים תחתונים ומקפים, ולהתחיל באות או בספרה.",
+    "invalidLocalizedNames": "‏\"swiplet.localizedNames\" ב-package.json חייב למפות שפות לשמות.",
+    "invalidMinimumAPILevel": "‏\"swiplet.minimumAPILevel\" ב-package.json חייב להיות מספר שלם מ-{{oldest}} עד {{level}}, רמת ה-API של @swipt/api.",
+    "invalidMinimumIOSVersion": "‏\"swiplet.minimumIOSVersion\" ב-package.json חייב להיות מספר גרסה החל מ-{{version}}, גרסת ה-iOS המינימלית של @swipt/api.",
+    "invalidName": "‏\"swiplet.name\" ב-package.json חייב להיות מחרוזת לא ריקה.",
+    "invalidSchema": "סכמת {{side}} של הפעולה {{action}} לא מיישמת את Standard JSON Schema; יש להשתמש בספרייה שמיישמת אותו, כגון Zod 4.",
+    "invalidString": "‏\"{{field}}\" ב-package.json חייב להיות מחרוזת.",
+    "invalidVersionCode": "‏\"swiplet.versionCode\" ב-package.json חייב להיות מספר שלם חיובי.",
+    "missingTitle": "לפעולה {{action}} נדרשת כותרת.",
+    "storageAtLoad": "האחסון נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה.",
+    "unprovidedModule": "‏Swipt לא מספק את \"{{module}}\" להרחבות; יש לארוז אותו בתוך extension.js.",
+    "usedAtLoad": "‏{{name}} נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה."
+  },
+  "serve": {
+    "cancel": "ביטול",
+    "checking": "בודק את {{device}}",
+    "conflictingTokens": "לא ניתן להשתמש יחד באפשרות --token ובאפשרות --random-token.",
+    "invalidToken": "אסימון מורכב מתו ASCII אחד או יותר שניתן להדפסה, ללא רווחים.",
+    "localNetwork": "רשת מקומית",
+    "noAutoUnlock": "הנעילה של {{device}} לא מבוטלת באופן אוטומטי; יש להגדיר את קוד הגישה שלו באמצעות --passcode. כדי לעצור את מנהל ההתקן, יש להקיש Ctrl-C.",
+    "quitSwipt": "יציאה מ-Swipt",
+    "quittingSwipt": "יוצא מ-Swipt ב-{{device}}",
+    "served": "מנהל ההתקן ב-{{computer}} כבר משרת את {{device}}; יש לעצור קודם את מנהל ההתקן הזה.",
+    "servedPrompt": "מנהל ההתקן ב-{{computer}} כבר משרת את {{device}}. לעצור את מנהל ההתקן הזה?",
+    "starting": "מפעיל את מנהל ההתקן עבור {{device}}",
+    "stopDriver": "עצירת מנהל ההתקן ב-{{computer}}",
+    "stopHint": "כדי לעצור את מנהל ההתקן, יש להקיש Ctrl-C.",
+    "stoppingDriver": "עוצר את מנהל ההתקן ב-{{computer}}",
+    "swiptRunning": "מנהל ההתקן לא יכול לשלוט ב-{{device}} כל עוד Swipt פועל בו; יש לצאת קודם מ-Swipt.",
+    "swiptRunningPrompt": "מנהל ההתקן לא יכול לשלוט ב-{{device}} כל עוד Swipt פועל בו. לצאת מ-Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "יותר מצוות אחד התקין את Swipt בהתקנה צדדית ב-{{device}}; יש לבחור צוות באמצעות --team ID:",
+    "certificateFailed": "‏Xcode לא הצליח ליצור אישור פיתוח עבור הצוות {{team}}; יש להוסיף אישור ב-{{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "בודק את Swipt ב-{{device}}",
+    "checkingRelease": "בודק את הגרסה האחרונה",
+    "chooseTeam": "בחירת צוות",
+    "chooseTeamHint": "יש לבחור צוות באמצעות --team ID:",
+    "diskImageFailed": "לא ניתן להכין את תמונת הדיסק למפתחים ב-{{device}}: {{error}}",
+    "downgrade": "חזרה לגרסה קודמת",
+    "downgradePrompt": "להחזיר את Swipt ב-{{device}} מגרסה {{version}} לגרסה {{releaseVersion}}? Swipt מאפס את הנתונים שלו כשהגרסה הישנה יותר לא יכולה לקרוא אותם.",
+    "downgradeToStablePrompt": "להחזיר את Swipt ב-{{device}} מגרסת nightly {{version}} לגרסה היציבה {{releaseVersion}}? Swipt מאפס את הנתונים שלו כשהגרסה הישנה יותר לא יכולה לקרוא אותם.",
+    "downloading": "מוריד את Swipt {{version}} ({{build}}) מ-{{release}}",
+    "expiration": "תוקף החתימה יפוג {{expiration}}.",
+    "installed": "‏{{build}} הותקן ב-{{device}}.",
+    "installing": "מתקין ב-{{device}}",
+    "invalidTeam": "הארגומנט {{value}} של --team אינו חוקי: יש להזין את מזהה הצוות בן 10 התווים שמוצג ב-{{accounts}}",
+    "laterThanRelease": "‏{{build}} ב-{{device}} חדש יותר מ-{{release}} ({{releaseBuild}}).",
+    "locked": "‏{{device}}: {{message}}; יש לבטל את נעילת המכשיר או להעביר את --passcode ולהריץ שוב.",
+    "looking": "מחפש את Swipt במכשירים",
+    "needsMacOS": "התקנה או עדכון של Swipt דורשים macOS; יש להתקין אותו מ-Mac ואז להגדיר אותו כאן באמצעות \"swipt sideload setup\".",
+    "noAccount": "ב-Xcode אין חשבון; יש להתחבר ב-{{accounts}} או לבחור צוות באמצעות --team ID",
+    "noAccountForTeam": "ב-Xcode אין חשבון עבור הצוות {{team}}; יש להתחבר באמצעות חשבון Apple של הצוות ב-{{accounts}}.",
+    "noCertificate": "ב-Xcode אין אישור פיתוח; יש להוסיף אישור ב-{{accounts}} › Manage Certificates או לבחור צוות באמצעות --team ID",
+    "noneInstalled": "‏Swipt לא מותקן בהתקנה צדדית באף iPhone או iPad.",
+    "noneInstalledHint": "‏Swipt לא מותקן בהתקנה צדדית באף iPhone או iPad; יש להתקין אותו באמצעות \"swipt sideload install\".",
+    "notInstalled": "‏Swipt לא מותקן בהתקנה צדדית ב-{{device}}.",
+    "notInstalledByTeam": "הצוות {{team}} לא התקין את Swipt בהתקנה צדדית ב-{{device}}.",
+    "notInstalledByTeamHint": "הצוות {{team}} לא התקין את Swipt בהתקנה צדדית ב-{{device}}; יש להתקין אותו באמצעות \"swipt sideload install\".",
+    "notInstalledHint": "‏Swipt לא מותקן בהתקנה צדדית ב-{{device}}; יש להתקין אותו באמצעות \"swipt sideload install\".",
+    "notOnNetwork": "‏{{device}} לא נמצא ברשת המקומית; כתובות ה-URL של ה-API מופיעות ב״Swipt״ › ״מפתחים״ › ״רשת מקומית״.",
+    "opening": "פותח את Swipt ב-{{device}}",
+    "openingSettings": "פותח את ״הגדרות״ ב-{{device}}",
+    "opensAfterUnlock": "‏Swipt ייפתח אחרי ביטול הנעילה של {{device}}.",
+    "pairingFailed": "הקישור נכשל, ולכן Swipt יבצע את הקישור ב״הגדרות״: {{error}}",
+    "preparingDiskImage": "מכין את תמונת הדיסק למפתחים ב-{{device}}",
+    "preparingSigning": "מכין חתימה עבור Swipt עם הצוות {{team}} באמצעות Xcode",
+    "removed": "‏{{build}} הוסר מ-{{device}}",
+    "removing": "מסיר את Swipt מ-{{device}}",
+    "renewalNeedsDowngrade": "‏{{build}} ב-{{device}} זקוק לחתימה חדשה, אבל {{release}} ({{releaseBuild}}) ישן יותר; יש להשתמש באפשרות --nightly או לחזור לגרסה קודמת באמצעות \"swipt sideload install --force\".",
+    "resigning": "חותם מחדש על Swipt",
+    "running": "‏{{app}} פועל.",
+    "settingUpAutoUnlock": "מגדיר ביטול נעילה אוטומטי",
+    "trusted": "ניתן אמון ב-{{developer}}.",
+    "trusting": "נותן אמון ב-{{developer}} ב״הגדרות״",
+    "unlockPrompt": "יש לבטל את נעילת המכשיר כדי להמשיך.",
+    "unlocking": "מבטל את נעילת המכשיר",
+    "untrusted": "המפתח של Swipt עדיין לא מהימן; יש לתת בו אמון בדף ״הגדרות״ שנפתח ב-{{device}} ואז לפתוח את Swipt.",
+    "upToDate": "‏{{build}} ב-{{device}} הוא כבר {{release}}.",
+    "updated": "‏{{build}} עודכן ב-{{device}}.",
+    "waiting": "ממתין ל-{{device}}",
+    "xcodeMissing": "‏xcodebuild זקוק ל-Xcode; יש להתקין אותו ולבחור אותו באמצעות xcode-select",
+    "xcodebuildMissing": "‏xcodebuild חסר; יש להתקין את Xcode."
+  }
+}

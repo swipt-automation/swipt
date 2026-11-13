@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { strFromU8, unzipSync } from "fflate";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { errorMessage } from "../../../output";
 import { idPattern } from "../../../project";
 import { defineCommand } from "../../command";
@@ -29,9 +29,7 @@ function stringField(
 ) {
   const value = record[name];
   if (value !== undefined && typeof value !== "string") {
-    throw new Error(
-      tr('"{field}" in package.json must be a string.', { field }),
-    );
+    throw new Error(t("project.invalidString", { field }));
   }
   return value;
 }
@@ -45,11 +43,7 @@ function loadIcon(icon: unknown): Icon | undefined {
     typeof icon.symbol !== "string" ||
     (icon.color !== undefined && typeof icon.color !== "string")
   ) {
-    throw new Error(
-      tr(
-        '"source.icon" in package.json must have a symbol and may have a color.',
-      ),
-    );
+    throw new Error(t("commands.project.source.invalidIcon"));
   }
   return {
     symbol: icon.symbol,
@@ -67,9 +61,7 @@ function workspacePatterns(workspaces: unknown) {
   return patterns.map((pattern: unknown, index) => {
     if (typeof pattern !== "string") {
       throw new Error(
-        tr('"{field}" in package.json must be a string.', {
-          field: `${field}[${index}]`,
-        }),
+        t("project.invalidString", { field: `${field}[${index}]` }),
       );
     }
     return pattern;
@@ -87,11 +79,7 @@ function loadSource(root: string) {
   const url = stringField(config, "url", "source.url");
   const localizedNames = config.localizedNames ?? {};
   if (!isStringRecord(localizedNames)) {
-    throw new Error(
-      tr(
-        '"source.localizedNames" in package.json must map languages to names.',
-      ),
-    );
+    throw new Error(t("commands.project.source.invalidLocalizedNames"));
   }
   const icon = loadIcon(config.icon);
   let prefix: URL | undefined;
@@ -99,9 +87,7 @@ function loadSource(root: string) {
     try {
       prefix = new URL(url.endsWith("/") ? url : `${url}/`);
     } catch {
-      throw new Error(
-        tr('"source.url" in package.json isn\'t an absolute URL.'),
-      );
+      throw new Error(t("commands.project.source.invalidURL"));
     }
   }
   const workspaces = workspacePatterns(manifest.workspaces);
@@ -127,7 +113,7 @@ function workspaceSwiplets(source: ReturnType<typeof loadSource>) {
       const built = path.join(source.root, directory, "dist", `${id}.swiplet`);
       if (!fs.existsSync(built)) {
         throw new Error(
-          tr("{file} is missing; build {directory} first.", {
+          t("commands.project.source.notBuilt", {
             file: path.relative(source.root, built),
             directory,
           }),
@@ -170,18 +156,14 @@ function sourceCommand(root: string, given: string[]) {
       ? given.map((file) => path.resolve(file))
       : workspaceSwiplets(source);
   if (files.length === 0) {
-    throw new Error(
-      tr(
-        "package.json lists no workspaces with swiplets; name the swiplets to list.",
-      ),
-    );
+    throw new Error(t("commands.project.source.noWorkspaces"));
   }
   const swiplets = new Map<string, ReturnType<typeof readSwiplet>>();
   for (const read of files.map(readSwiplet)) {
     const first = swiplets.get(read.id);
     if (first !== undefined) {
       throw new Error(
-        tr("{id} is both {first} and {second}", {
+        t("commands.project.source.duplicateID", {
           id: read.id,
           first: first.file,
           second: read.file,
@@ -244,7 +226,7 @@ function sourceCommand(root: string, given: string[]) {
 export const source = defineCommand({
   name: "source",
   use: "source [SWIPLET...]",
-  short: tr("Collect the built swiplets into dist/ with a swiplets.json"),
+  short: t("commands.project.source.description"),
   args: [0, Infinity],
   run: ({ args }) => sourceCommand(process.cwd(), args),
 });

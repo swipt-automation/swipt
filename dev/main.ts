@@ -11,7 +11,6 @@ import { installAndOpen, installPasscode } from "@swipt/cli/sideload";
 import { bundleId, swiptApps } from "@swipt/cli/swipt-app";
 
 import { buildExpoModulesCore } from "./expo-modules-core";
-import { syncLocales } from "./strings";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = path.join(
@@ -202,7 +201,6 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
         ":!.gitignore",
         ":!.golangci.yml",
         ":!.prettierignore",
-        ":!dev/strings.ts",
         ":!*_test.go",
       ],
       inputs: [...toolchain, ...flags],
@@ -225,7 +223,6 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
 const commands = [
   ["frameworks", "Install the React Native frameworks"],
   ["install [-d NAME|UDID]", "Build Swipt and install it on the device"],
-  ["strings", "Sync cli/locales with the strings of the CLI"],
 ];
 
 const usage = `usage: bun dev COMMAND
@@ -252,9 +249,6 @@ async function main() {
       break;
     case "install":
       await installApp({ options, signal: interrupt.signal });
-      break;
-    case "strings":
-      syncLocales(path.join(root, "cli"));
       break;
     default:
       console.log(usage);

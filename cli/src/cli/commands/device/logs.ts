@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 
 import { UsageError } from "../../../client";
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { printLog } from "../../../output";
 import { LogEntrySchema, LogLevel } from "../../../proto/common_pb";
 import { type Context, defineCommand } from "../../command";
@@ -40,13 +40,10 @@ function parseDuration(text: string | undefined, option: string) {
     const unit = match === null ? undefined : durationUnits.get(match[2]);
     if (match === null || unit === undefined) {
       throw new UsageError(
-        tr(
-          "invalid argument {value} for {option}: it's a duration such as 30s or 1m30s",
-          {
-            value: JSON.stringify(text),
-            option,
-          },
-        ),
+        t("commands.device.logs.invalidDuration", {
+          value: JSON.stringify(text),
+          option,
+        }),
       );
     }
     total += Number(match[1]) * unit;
@@ -61,7 +58,7 @@ function parseCount(text: string | undefined, option: string) {
   }
   if (!/^\d+$/.test(text) || Number(text) > 0xffffffff) {
     throw new UsageError(
-      tr("invalid argument {value} for {option}: it's a number", {
+      t("commands.device.logs.invalidNumber", {
         value: JSON.stringify(text),
         option,
       }),
@@ -85,7 +82,7 @@ async function readLogs(
   const since = parseDuration(options.since, "--since");
   const level = levels.get(options.level ?? "info");
   if (level === undefined) {
-    throw new UsageError(tr("--level is error, warn, info or debug"));
+    throw new UsageError(t("commands.device.logs.invalidLevel"));
   }
   await session(context, async (client) => {
     for await (const response of client.logs.readLogs(
@@ -105,30 +102,30 @@ async function readLogs(
 
 export const logs = defineCommand({
   name: "logs",
-  short: tr("Print the logs"),
+  short: t("commands.device.logs.description"),
   args: [0, 0],
   options: {
     ...deviceOption,
-    follow: { type: "boolean", help: tr("follow new entries") },
+    follow: { type: "boolean", help: t("commands.device.logs.follow") },
     tail: {
       type: "string",
       value: "COUNT",
-      help: tr("number of past entries (default 100)"),
+      help: t("commands.device.logs.count"),
     },
     since: {
       type: "string",
       value: "DURATION",
-      help: tr("maximum age"),
+      help: t("commands.device.logs.since"),
     },
     level: {
       type: "string",
       value: "LEVEL",
-      help: tr("minimum level (default info)"),
+      help: t("commands.device.logs.level"),
     },
     swiplet: {
       type: "string",
       value: "ID",
-      help: tr("swiplet ID"),
+      help: t("commands.device.logs.swiplet"),
     },
   },
   run: readLogs,

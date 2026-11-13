@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { UsageError } from "../../../client";
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import type { FileInfo } from "../../../proto/common_pb";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
@@ -63,15 +63,7 @@ class FileSink {
 }
 
 const printSaved = (target: string, count: number) =>
-  console.error(
-    tr(
-      {
-        one: "saved {count} file to {path}",
-        other: "saved {count} files to {path}",
-      },
-      { count, path: target },
-    ),
-  );
+  console.error(t("commands.data.read.saved", { count, path: target }));
 
 const readFile =
   (target: ResolveTarget) =>
@@ -167,13 +159,13 @@ export const read = (operand: string, target: ResolveTarget) => {
   return defineCommand({
     name: "read",
     use: `read ${operand}PATH`,
-    short: tr("Read a data file or directory"),
+    short: t("commands.data.read.description"),
     args: [before + 1, before + 1],
     options: {
       output: {
         type: "string",
         value: "PATH",
-        help: tr("destination"),
+        help: t("commands.data.read.output"),
       },
     },
     run: readFile(target),

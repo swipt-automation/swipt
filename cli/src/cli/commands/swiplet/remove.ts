@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
@@ -8,13 +8,15 @@ const removeSwiplet = (context: Context<{ device?: string }>) =>
       { swipletId: context.args[0] },
       { signal: context.signal },
     );
-    console.log(tr("removed {name}", { name: context.args[0] }, "Swiplet"));
+    console.log(
+      t("commands.swiplet.remove.removed", { name: context.args[0] }),
+    );
   });
 
 export const remove = defineCommand({
   name: "remove",
   use: "remove ID",
-  short: tr("Remove a swiplet"),
+  short: t("commands.swiplet.remove.description"),
   args: [1, 1],
   run: removeSwiplet,
 });

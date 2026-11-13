@@ -1,0 +1,393 @@
+{
+  "availability": {
+    "advice": "available()でこれらを確認するか、これらを使用するコードを@availableでマークするか、package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
+    "apiLevel": "APIレベル{{level}}",
+    "entryNeeds": "{{location}}: {{name}}はSwipletのエントリポイントであり、{{requirement}}が必要です。package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
+    "importNeeds": "{{location}}: {{name}}をインポートするには{{requirement}}が必要です。package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
+    "invalidEntry": "{{location}}: @availableに\"{{entry}}\"が含まれています。@availableには\"apiLevel <level>\"と\"iOS <version>\"をコンマ区切りで指定します。",
+    "needs": "{{location}}: {{name}}には{{requirement}}が必要です。",
+    "repeatedEntry": "{{location}}: @availableで{{kind}}が2回指定されています。"
+  },
+  "cli": {
+    "commands": "コマンド:",
+    "exactArgs_other": "{{count}}個の引数が必要ですが、{{received}}個指定されました",
+    "help": "ヘルプ",
+    "helpHint": "使用法を確認するには\"swipt help\"を実行してください。",
+    "minimumArgs_other": "{{count}}個以上の引数が必要ですが、{{received}}個指定されました",
+    "missingCommand": "コマンドが指定されていません。",
+    "options": "オプション:",
+    "rangeArgs_other": "{{least}}〜{{count}}個の引数が必要ですが、{{received}}個指定されました",
+    "unauthenticated": "{{message}}。Swipt＞“デベロッパ”または\"swipt driver\"に表示されるURLで接続してください: swipt device add {{url}}",
+    "unimplemented": "{{url}}のSwiptにはこのコマンドがありません。Swiptをアップデートしてください。",
+    "unknownCommand": "{{parent}}に{{name}}というコマンドはありません",
+    "unknownOption": "{{option}}は{{command}}のオプションではありません。",
+    "unreachable": "{{url}}のSwiptに接続できません: {{message}}",
+    "usage": "使用法: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "データディレクトリを残してすべてのデータファイルを削除"
+      },
+      "list": {
+        "description": "データファイルの一覧を表示",
+        "recursive": "サブディレクトリを含める"
+      },
+      "read": {
+        "description": "データファイルまたはディレクトリを読み取る",
+        "output": "保存先",
+        "saved_other": "{{count}}個のファイルを{{path}}に保存しました"
+      },
+      "remove": {
+        "description": "データファイルを削除",
+        "recursive": "ディレクトリの内容を含める"
+      },
+      "replDescription": "REPLのデータディレクトリ内のファイルを管理",
+      "swipletDescription": "Swipletのデータディレクトリ内のファイルを管理",
+      "write": {
+        "description": "データファイルを書き込む"
+      }
+    },
+    "description": "Swiptコマンドラインツール",
+    "device": {
+      "add": {
+        "description": "URLでデバイスを追加（デバイスがリモートにある場合やトークンが必要な場合に必須）"
+      },
+      "description": "デバイスを管理し、ログを読み取る",
+      "list": {
+        "description": "デバイスの一覧を表示し、ローカルネットワークで見つかったデバイスを追加"
+      },
+      "logs": {
+        "count": "過去のエントリの数（デフォルトは100）",
+        "description": "ログを出力",
+        "follow": "新しいエントリを継続して表示",
+        "invalidDuration": "{{option}}の引数{{value}}は無効です: 30sや1m30sなどの時間を指定してください",
+        "invalidLevel": "--levelにはerror、warn、info、またはdebugを指定してください",
+        "invalidNumber": "{{option}}の引数{{value}}は無効です: 数値を指定してください",
+        "level": "最小レベル（デフォルトはinfo）",
+        "since": "最大経過時間",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "デバイスの登録を解除"
+      },
+      "stop": {
+        "description": "Swipt APIの提供を停止",
+        "stopped": "停止済み"
+      }
+    },
+    "driver": {
+      "description": "このコンピュータからデバイスのSwipt APIとMCPを提供",
+      "details": "デバイスを同時に制御できるのは、デバイス上のSwiptか、1台のコンピュータ上のドライバのどちらか1つだけです。",
+      "passcode": "デバイスのロックを自動的に解除するパスコード。空にすると自動ロック解除をオフにします",
+      "randomToken": "APIクライアントにランダムなトークンを要求",
+      "token": "APIクライアントにこのトークンを要求"
+    },
+    "project": {
+      "build": {
+        "description": "プロジェクトをdist/<swiplet.id>.swipletにバンドル"
+      },
+      "create": {
+        "description": "新規または空のディレクトリにSwipletプロジェクトを作成",
+        "notEmpty": "{{directory}}は空ではありません。"
+      },
+      "deploy": {
+        "description": "プロジェクトをビルドしてデバイスにインストール"
+      },
+      "description": "Swipletプロジェクトの作成、ビルド、およびデプロイ",
+      "develop": {
+        "deployed": "{{elapsed}}でビルドとデプロイが完了しました。{{directory}}を監視中",
+        "description": "Swipletプロジェクトをビルドしてインストールし、変更に合わせて更新",
+        "quiet": "ログを表示しない",
+        "unchanged": "{{elapsed}}でビルドが完了しました。変更なし"
+      },
+      "source": {
+        "description": "ビルド済みのSwipletをswiplets.jsonとともにdist/に収集",
+        "duplicateID": "{{id}}は{{first}}と{{second}}の両方に該当します",
+        "invalidIcon": "package.jsonの\"source.icon\"にはsymbolが必須で、colorは任意です。",
+        "invalidLocalizedNames": "package.jsonの\"source.localizedNames\"は言語と名前の対応付けである必要があります。",
+        "invalidURL": "package.jsonの\"source.url\"は絶対URLではありません。",
+        "noWorkspaces": "package.jsonにSwipletを含むワークスペースが記載されていません。一覧に含めるSwipletを指定してください。",
+        "notBuilt": "{{file}}が見つかりません。先に{{directory}}をビルドしてください。"
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "グローバルとモジュールのTypeScript宣言を出力"
+      },
+      "dataDirectory": "{{path}}はREPLのデータディレクトリを指しています。--output DIRECTORYで保存してください",
+      "description": "デバイス上のREPLセッションでJavaScriptを実行",
+      "directory": "{{path}}はREPLのデータディレクトリ内のディレクトリです。--output DIRECTORYで保存してください",
+      "reset": {
+        "description": "セッションをリセット"
+      },
+      "run": {
+        "arguments": "最初の引数は、既存のファイルを指す場合はFILE、それ以外の場合はCODEとして扱われます。オプションはその前に指定します。",
+        "description": "デバイス上でJavaScriptの式またはプログラムを実行",
+        "details": "CODEは式で、その値が出力されます。FILE、または-の指定か引数なしで渡す標準入力はプログラムで、そのコンソール出力のみが出力されます。",
+        "extraArguments": "{{argument}}はファイルではなく、CODEにはARGを指定できません。",
+        "images": "画像ディレクトリ（デフォルト: 新しい一時ディレクトリ）"
+      }
+    },
+    "sideload": {
+      "description": "Swiptをサイドロード",
+      "install": {
+        "description": "Swiptをインストール",
+        "force": "同じまたはより新しいビルドに上書きインストール"
+      },
+      "passcode": "このパスコードで自動ロック解除を設定",
+      "setup": {
+        "description": "Swiptを設定"
+      },
+      "uninstall": {
+        "description": "Swiptを削除"
+      },
+      "update": {
+        "description": "Swiptのアップデートまたは署名の更新",
+        "passcode": "このパスコードでデバイスのロックを解除"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swipletアクションを呼び出す",
+        "input": "入力のJSON、@FILE、または-",
+        "invalidInput": "--inputがJSONではありません: {{error}}"
+      },
+      "dataDirectory": "{{path}}は{{swiplet}}のデータディレクトリを指しています。--output DIRECTORYで保存してください",
+      "description": "デバイス上のSwipletを管理",
+      "directory": "{{path}}は{{swiplet}}のデータディレクトリ内のディレクトリです。--output DIRECTORYで保存してください",
+      "install": {
+        "description": "Swipletアーカイブをインストール",
+        "notFound": "{{path}}にアーカイブがありません"
+      },
+      "list": {
+        "actions": "アクション",
+        "description": "Swipletの一覧を表示",
+        "id": "ID",
+        "service": "サービス",
+        "status": "状態",
+        "title": "タイトル",
+        "version": "バージョン"
+      },
+      "remove": {
+        "description": "Swipletを削除",
+        "removed": "{{name}}を削除しました"
+      },
+      "service": {
+        "description": "Swipletサービスを管理",
+        "disable": {
+          "description": "Swipletサービスをオフにする"
+        },
+        "enable": {
+          "description": "Swipletサービスをオンにする"
+        },
+        "watch": {
+          "description": "Swipletサービスを監視"
+        },
+        "watchState": "状態を監視"
+      },
+      "show": {
+        "description": "Swipletを表示",
+        "input": "入力: {{schema}}",
+        "notFound": "Swiplet {{id}}はありません。",
+        "output": "出力: {{schema}}",
+        "service": "サービス: {{status}}"
+      }
+    },
+    "version": {
+      "description": "バージョンを出力"
+    }
+  },
+  "connection": {
+    "added": "{{device}}を追加しました",
+    "ambiguous": "複数のデバイスがあります: {{devices}}。-dで1つ選択してください",
+    "driverNotStopped": "{{computer}}のドライバが停止しませんでした。",
+    "invalidURL": "{{text}}はURLではありません。",
+    "none": "デバイスがありません。Swipt＞“デベロッパ”＞“ローカルネットワーク”をオンにするか、\"swipt device add URL\"で接続してください。",
+    "noneOnNetwork": "ローカルネットワーク上でSwiptを公開しているデバイスがありません。Swipt＞“デベロッパ”＞“ローカルネットワーク”をオンにするか、\"swipt device add URL\"で接続してください。",
+    "notFound": "デバイス{{device}}はありません。",
+    "notFoundHint": "デバイス{{device}}はありません。\"swipt device list\"で一覧を表示できます。",
+    "offline": "オフライン",
+    "problem": {
+      "developerModeOff": "デベロッパモードがオフです",
+      "deviceUnsupported": "デバイスはサポートされていません",
+      "diskImageMissing": "ディスクイメージがありません",
+      "diskImageMountFailed": "ディスクイメージをマウントできませんでした",
+      "pairingRejected": "ペアリングが拒否されました",
+      "screenInUse": "画面は使用中です",
+      "unreachable": "接続できません",
+      "vpnPeerAddressMissing": "VPNピアアドレスがありません"
+    },
+    "removed": "{{name}}の登録を解除しました",
+    "requiresToken": "トークンが必要です",
+    "requiresTokenHint": "{{device}}にはトークンが必要です: swipt device add {{url}}",
+    "state": {
+      "connecting": "接続中",
+      "failed": "失敗",
+      "preparing": "準備中",
+      "running": "接続済み",
+      "stopped": "停止済み"
+    },
+    "unsupportedURL": "{{text}}はhttpまたはhttpsのURLではありません。"
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}}をインストールしました",
+    "replaced": "{{id}} {{version}}を置き換えました"
+  },
+  "driver": {
+    "alreadyRunning": "このコンピュータでドライバがすでに実行中です。先にドライバを停止してください。",
+    "ambiguousName": "{{name}}という名前のiPhoneまたはiPadが複数あります。UDIDで選択してください",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Serviceが実行されていません。Microsoft Storeから“Appleデバイス”アプリをインストールしてください",
+    "chooseDevice": "デバイスを選択",
+    "chooseDeviceHint": "-d NAME|UDIDでデバイスを選択してください",
+    "connectedDevices": "{{reason}}。接続されているiPhoneとiPad:",
+    "lookingForDevices": "デバイスを検索中",
+    "missing": "ドライバが見つかりません。\"npm install -g @swipt/cli --include=optional\"でインストールしてください。",
+    "nameNotFound": "{{name}}という名前のiPhoneまたはiPadはありません",
+    "noDevice": "このコンピュータに接続されているiPhoneまたはiPadも、ローカルネットワークで見つかったものもありません。USBケーブルでデバイスを接続し、ロックを解除してください。",
+    "pairing": "{{device}}とペアリング中",
+    "trustPrompt": "{{device}}で“信頼”をタップし、パスコードを入力してこのコンピュータを信頼してください",
+    "usbmuxdMissing": "usbmuxdが実行されていません。usbmuxdをインストールして起動してください"
+  },
+  "error": "エラー: {{message}}",
+  "flags": {
+    "device": "使用するデバイス",
+    "nightly": "nightlyビルドを使用",
+    "noSetup": "Swiptのペアリング、デベロッパの信頼、およびAPIの公開を行わない",
+    "noSetupAPI": "ローカルネットワークにAPIを公開しない",
+    "noSetupPair": "Swiptをペアリングしない",
+    "passcodeType": "pin（4桁または6桁の数字、デフォルト）、numeric、またはalphanumeric",
+    "team": "チームID（複数ある場合は必須）"
+  },
+  "metro": {
+    "boolean": "ブール値",
+    "contextArgument": "require.contextの{{index}}番目の引数は{{expected}}である必要があります",
+    "contextRegExp": "require.contextの{{index}}番目の引数は正規表現リテラルである必要があります。",
+    "oneOf": "{{values}}のいずれか",
+    "string": "文字列",
+    "workletsMismatch": "プロジェクトのreact-native-workletsは{{version}}ですが、Swiptで実行されるのは{{expected}}です。react-native-worklets@{{expected}}をインストールするか、削除してください。"
+  },
+  "noThanks": "いいえ",
+  "output": {
+    "navigate": "移動",
+    "select": "選択",
+    "service": "{{enabled}}、{{status}}",
+    "serviceSince": "{{enabled}}、{{status}}（{{time}}から）",
+    "serviceStatus": {
+      "failed": "失敗",
+      "running": "実行中",
+      "starting": "起動中",
+      "stopped": "停止済み",
+      "turnedOff": "オフ",
+      "turnedOn": "オン"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "カスタムの英数字コード",
+    "alphanumericDetail": "英数字",
+    "empty": "パスコードを入力してください。",
+    "invalidAlphanumeric": "パスコードに使用できるのは、印刷可能なASCII文字で64文字までです。",
+    "invalidNumeric": "数字コードには数字のみ使用できます。",
+    "invalidPin": "pinのパスコードは4桁または6桁の数字です。カスタムのパスコードには--passcode-type numericまたはalphanumericが必要です",
+    "invalidType": "--passcode-typeの引数{{value}}は無効です: {{types}}のいずれかを指定してください",
+    "masked": "[入力内容は非表示]",
+    "numeric": "カスタムの数字コード",
+    "numericDetail": "数字",
+    "pin": "4桁または6桁のパスコード",
+    "pinDetail": "4桁または6桁",
+    "prompt": "デバイスのパスコード",
+    "setUp": "自動ロック解除を設定しますか? 設定すると、Swiptがこのデバイスのロックを自動的に解除できるようになります。"
+  },
+  "project": {
+    "assetConflict": "{{source}}と{{asset}}はどちらもSwiplet内のassets/{{name}}になります。",
+    "conditionalActions": "拡張機能がavailable()に応じて異なるアクションを定義しています。すべてのシステムで同じアクションを定義し、runまたはアクションの中でavailable()を確認してください。",
+    "databaseAtLoad": "extension.jsの読み込み中にデータベースが使用されています。runまたはアクションの中で使用してください。",
+    "interfaceImport": "インターフェイスで実行時に{{file}}をインポートしています。`import type`で型をインポートしてください。",
+    "interfaceOnly": "{{name}}はSwipletのインターフェイスでのみ動作します。",
+    "invalidExposure": "アクション{{action}}を公開できるのは\"shortcuts\"のみです。",
+    "invalidExtension": "拡張機能のデフォルトエクスポートがdefineExtensionの結果ではありません。",
+    "invalidID": "package.jsonの\"swiplet.id\"は、英小文字、数字、ピリオド、アンダースコア、およびハイフンからなる1〜128文字で、英小文字または数字で始まる必要があります。",
+    "invalidLocalizedNames": "package.jsonの\"swiplet.localizedNames\"は言語と名前の対応付けである必要があります。",
+    "invalidMinimumAPILevel": "package.jsonの\"swiplet.minimumAPILevel\"は、{{oldest}}から@swipt/apiのAPIレベルである{{level}}までの整数である必要があります。",
+    "invalidMinimumIOSVersion": "package.jsonの\"swiplet.minimumIOSVersion\"は、@swipt/apiの最小iOSバージョンである{{version}}以上のバージョン番号である必要があります。",
+    "invalidName": "package.jsonの\"swiplet.name\"は空でない文字列である必要があります。",
+    "invalidSchema": "アクション{{action}}の{{side}}スキーマはStandard JSON Schemaを実装していません。Zod 4など、実装しているライブラリを使用してください。",
+    "invalidString": "package.jsonの\"{{field}}\"は文字列である必要があります。",
+    "invalidVersionCode": "package.jsonの\"swiplet.versionCode\"は正の整数である必要があります。",
+    "missingTitle": "アクション{{action}}にはタイトルが必要です。",
+    "storageAtLoad": "extension.jsの読み込み中にストレージが使用されています。runまたはアクションの中で使用してください。",
+    "unprovidedModule": "Swiptは\"{{module}}\"を拡張機能に提供していません。extension.jsにバンドルしてください。",
+    "usedAtLoad": "extension.jsの読み込み中に{{name}}が使用されています。runまたはアクションの中で使用してください。"
+  },
+  "serve": {
+    "cancel": "キャンセル",
+    "checking": "{{device}}を確認中",
+    "conflictingTokens": "--tokenと--random-tokenは同時に使用できません。",
+    "invalidToken": "トークンは、スペースを含まない1文字以上の印刷可能なASCII文字です。",
+    "localNetwork": "ローカルネットワーク",
+    "noAutoUnlock": "{{device}}のロックは自動的に解除されません。--passcodeでパスコードを設定してください。Ctrl-Cでドライバを停止します。",
+    "quitSwipt": "Swiptを終了",
+    "quittingSwipt": "{{device}}のSwiptを終了中",
+    "served": "{{computer}}のドライバがすでに{{device}}を制御しています。先にそのドライバを停止してください。",
+    "servedPrompt": "{{computer}}のドライバがすでに{{device}}を制御しています。そのドライバを停止しますか?",
+    "starting": "{{device}}のドライバを起動中",
+    "stopDriver": "{{computer}}のドライバを停止",
+    "stopHint": "Ctrl-Cでドライバを停止します。",
+    "stoppingDriver": "{{computer}}のドライバを停止中",
+    "swiptRunning": "{{device}}でSwiptが実行されているため、ドライバはこのデバイスを制御できません。先にSwiptを終了してください。",
+    "swiptRunningPrompt": "{{device}}でSwiptが実行されているため、ドライバはこのデバイスを制御できません。Swiptを終了しますか?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}}には複数のチームによってSwiptがサイドロードされています。--team IDで1つ選択してください:",
+    "certificateFailed": "Xcodeでチーム{{team}}の開発証明書を作成できませんでした。{{accounts}} › Manage Certificatesで追加してください（{{errors}}）。",
+    "checking": "{{device}}のSwiptを確認中",
+    "checkingRelease": "最新リリースを確認中",
+    "chooseTeam": "チームを選択",
+    "chooseTeamHint": "--team IDでチームを選択してください:",
+    "diskImageFailed": "{{device}}のデベロッパディスクイメージを準備できませんでした: {{error}}",
+    "downgrade": "ダウングレード",
+    "downgradePrompt": "{{device}}のSwiptを{{version}}から{{releaseVersion}}にダウングレードしますか? 古いバージョンがデータを読み込めない場合、Swiptのデータはリセットされます。",
+    "downgradeToStablePrompt": "{{device}}のSwiptをnightlyビルド{{version}}から安定版{{releaseVersion}}にダウングレードしますか? 古いバージョンがデータを読み込めない場合、Swiptのデータはリセットされます。",
+    "downloading": "{{release}}からSwipt {{version}}（{{build}}）をダウンロード中",
+    "expiration": "署名の有効期限は{{expiration}}に切れます。",
+    "installed": "{{device}}に{{build}}をインストールしました。",
+    "installing": "{{device}}にインストール中",
+    "invalidTeam": "--teamの引数{{value}}は無効です: {{accounts}}に表示される10文字のチームIDを指定してください",
+    "laterThanRelease": "{{device}}の{{build}}は{{release}}（{{releaseBuild}}）より新しいバージョンです。",
+    "locked": "{{device}}: {{message}}。ロックを解除するか--passcodeを指定してから、もう一度実行してください。",
+    "looking": "デバイス上のSwiptを検索中",
+    "needsMacOS": "SwiptのインストールやアップデートにはmacOSが必要です。Macでインストールしたあと、ここで\"swipt sideload setup\"で設定してください。",
+    "noAccount": "Xcodeにアカウントがありません。{{accounts}}でサインインするか、--team IDでチームを選択してください",
+    "noAccountForTeam": "Xcodeにチーム{{team}}のアカウントがありません。{{accounts}}で、そのチームのApple Accountでサインインしてください。",
+    "noCertificate": "Xcodeに開発証明書がありません。{{accounts}} › Manage Certificatesで追加するか、--team IDでチームを選択してください",
+    "noneInstalled": "どのiPhoneまたはiPadにもSwiptはサイドロードされていません。",
+    "noneInstalledHint": "どのiPhoneまたはiPadにもSwiptはサイドロードされていません。\"swipt sideload install\"でインストールしてください。",
+    "notInstalled": "{{device}}にSwiptはサイドロードされていません。",
+    "notInstalledByTeam": "{{device}}にチーム{{team}}によるSwiptはサイドロードされていません。",
+    "notInstalledByTeamHint": "{{device}}にチーム{{team}}によるSwiptはサイドロードされていません。\"swipt sideload install\"でインストールしてください。",
+    "notInstalledHint": "{{device}}にSwiptはサイドロードされていません。\"swipt sideload install\"でインストールしてください。",
+    "notOnNetwork": "ローカルネットワークで{{device}}が見つかりませんでした。API URLはSwipt＞“デベロッパ”＞“ローカルネットワーク”で確認してください。",
+    "opening": "{{device}}でSwiptを開いています",
+    "openingSettings": "{{device}}で“設定”を開いています",
+    "opensAfterUnlock": "{{device}}のロックが解除されると開きます。",
+    "pairingFailed": "ペアリングに失敗したため、Swiptは代わりに“設定”でペアリングします: {{error}}",
+    "preparingDiskImage": "{{device}}のデベロッパディスクイメージを準備中",
+    "preparingSigning": "Xcodeを介してチーム{{team}}でSwiptの署名を準備中",
+    "removed": "{{device}}から{{build}}を削除しました",
+    "removing": "{{device}}からSwiptを削除中",
+    "renewalNeedsDowngrade": "{{device}}の{{build}}には新しい署名が必要ですが、{{release}}（{{releaseBuild}}）のほうが古いバージョンです。--nightlyを使用するか、\"swipt sideload install --force\"でダウングレードしてください。",
+    "resigning": "Swiptを再署名中",
+    "running": "{{app}}は実行中です。",
+    "settingUpAutoUnlock": "自動ロック解除を設定中",
+    "trusted": "{{developer}}を信頼しました。",
+    "trusting": "“設定”で{{developer}}を信頼中",
+    "unlockPrompt": "続けるにはデバイスのロックを解除してください。",
+    "unlocking": "デバイスのロックを解除中",
+    "untrusted": "デベロッパがまだ信頼されていません。{{device}}で開いた“設定”のページで信頼してから、Swiptを開いてください。",
+    "upToDate": "{{device}}の{{build}}はすでに{{release}}です。",
+    "updated": "{{device}}の{{build}}をアップデートしました。",
+    "waiting": "{{device}}を待機中",
+    "xcodeMissing": "xcodebuildにはXcodeが必要です。Xcodeをインストールし、xcode-selectで選択してください",
+    "xcodebuildMissing": "xcodebuildが見つかりません。Xcodeをインストールしてください。"
+  }
+}

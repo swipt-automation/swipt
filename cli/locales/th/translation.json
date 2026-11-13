@@ -1,0 +1,393 @@
+{
+  "availability": {
+    "advice": "ตรวจสอบสิ่งเหล่านี้ด้วย available() ทำเครื่องหมายโค้ดที่ใช้สิ่งเหล่านี้ด้วย @available หรือเพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
+    "apiLevel": "ระดับ API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} เป็นจุดเริ่มต้นของ Swiplet และต้องใช้ {{requirement}} เพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
+    "importNeeds": "{{location}}: การนำเข้า {{name}} ต้องใช้ {{requirement}} เพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
+    "invalidEntry": "{{location}}: @available มี \"{{entry}}\" ซึ่ง @available รองรับเฉพาะ \"apiLevel <level>\" และ \"iOS <version>\" โดยคั่นด้วยจุลภาค",
+    "needs": "{{location}}: {{name}} ต้องใช้ {{requirement}}",
+    "repeatedEntry": "{{location}}: @available ระบุ {{kind}} ซ้ำสองครั้ง"
+  },
+  "cli": {
+    "commands": "คำสั่ง:",
+    "exactArgs_other": "ต้องมีอาร์กิวเมนต์ {{count}} ตัว แต่ได้รับ {{received}} ตัว",
+    "help": "วิธีใช้",
+    "helpHint": "เรียกใช้ \"swipt help\" เพื่อดูวิธีใช้",
+    "minimumArgs_other": "ต้องมีอาร์กิวเมนต์อย่างน้อย {{count}} ตัว แต่ได้รับ {{received}} ตัว",
+    "missingCommand": "ไม่ได้ระบุคำสั่ง",
+    "options": "ตัวเลือก:",
+    "rangeArgs_other": "ต้องมีอาร์กิวเมนต์ {{least}} ถึง {{count}} ตัว แต่ได้รับ {{received}} ตัว",
+    "unauthenticated": "{{message}} เชื่อมต่อด้วย URL ที่ Swipt › นักพัฒนา หรือ \"swipt driver\" แสดง: swipt device add {{url}}",
+    "unimplemented": "Swipt ที่ {{url}} ไม่มีคำสั่งนี้ อัปเดต Swipt",
+    "unknownCommand": "ไม่รู้จักคำสั่ง {{name}} ของ {{parent}}",
+    "unknownOption": "{{option}} ไม่ใช่ตัวเลือกของ {{command}}",
+    "unreachable": "ไม่สามารถเชื่อมต่อกับ Swipt ที่ {{url}} ได้: {{message}}",
+    "usage": "วิธีใช้: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "ลบไฟล์ข้อมูลทั้งหมด โดยเก็บไดเรกทอรีข้อมูลไว้"
+      },
+      "list": {
+        "description": "แสดงรายการไฟล์ข้อมูล",
+        "recursive": "รวมไดเรกทอรีย่อย"
+      },
+      "read": {
+        "description": "อ่านไฟล์ข้อมูลหรือไดเรกทอรี",
+        "output": "ปลายทาง",
+        "saved_other": "บันทึกไฟล์ {{count}} ไฟล์ไปยัง {{path}} แล้ว"
+      },
+      "remove": {
+        "description": "ลบไฟล์ข้อมูล",
+        "recursive": "รวมเนื้อหาของไดเรกทอรี"
+      },
+      "replDescription": "จัดการไฟล์ในไดเรกทอรีข้อมูลของ REPL",
+      "swipletDescription": "จัดการไฟล์ในไดเรกทอรีข้อมูลของ Swiplet",
+      "write": {
+        "description": "เขียนไฟล์ข้อมูล"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "เพิ่มอุปกรณ์ด้วย URL จำเป็นเมื่ออุปกรณ์อยู่ระยะไกลหรือต้องใช้โทเค็น"
+      },
+      "description": "จัดการอุปกรณ์และอ่านบันทึก",
+      "list": {
+        "description": "แสดงรายการอุปกรณ์ และเพิ่มอุปกรณ์ที่พบบนเครือข่ายในพื้นที่"
+      },
+      "logs": {
+        "count": "จำนวนรายการย้อนหลัง (ค่าเริ่มต้น 100)",
+        "description": "แสดงบันทึก",
+        "follow": "ติดตามรายการใหม่",
+        "invalidDuration": "อาร์กิวเมนต์ {{value}} ของ {{option}} ไม่ถูกต้อง: ต้องเป็นระยะเวลา เช่น 30s หรือ 1m30s",
+        "invalidLevel": "--level ต้องเป็น error, warn, info หรือ debug",
+        "invalidNumber": "อาร์กิวเมนต์ {{value}} ของ {{option}} ไม่ถูกต้อง: ต้องเป็นตัวเลข",
+        "level": "ระดับต่ำสุด (ค่าเริ่มต้น info)",
+        "since": "ระยะเวลาย้อนหลังสูงสุด",
+        "swiplet": "ID ของ Swiplet"
+      },
+      "remove": {
+        "description": "ลืมอุปกรณ์"
+      },
+      "stop": {
+        "description": "หยุดให้บริการ API ของ Swipt",
+        "stopped": "หยุดทำงานแล้ว"
+      }
+    },
+    "driver": {
+      "description": "ให้บริการ API ของ Swipt และ MCP สำหรับอุปกรณ์จากคอมพิวเตอร์เครื่องนี้",
+      "details": "ควบคุมอุปกรณ์ได้ครั้งละหนึ่งฝ่ายเท่านั้น คือ Swipt บนอุปกรณ์ หรือไดรเวอร์บนคอมพิวเตอร์เครื่องหนึ่ง",
+      "passcode": "รหัสสำหรับปลดล็อคอุปกรณ์อัตโนมัติ เว้นว่างไว้เพื่อปิดการปลดล็อคอัตโนมัติ",
+      "randomToken": "กำหนดให้ไคลเอ็นต์ API ใช้โทเค็นแบบสุ่ม",
+      "token": "กำหนดให้ไคลเอ็นต์ API ใช้โทเค็นนี้"
+    },
+    "project": {
+      "build": {
+        "description": "รวมโปรเจ็กต์เป็นไฟล์ dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "สร้างโปรเจ็กต์ Swiplet ในไดเรกทอรีใหม่หรือไดเรกทอรีว่าง",
+        "notEmpty": "{{directory}} ไม่ว่าง"
+      },
+      "deploy": {
+        "description": "ทำการบิลด์โปรเจ็กต์แล้วติดตั้งลงบนอุปกรณ์"
+      },
+      "description": "สร้าง บิลด์ และปรับใช้โปรเจ็กต์ Swiplet",
+      "develop": {
+        "deployed": "บิลด์และปรับใช้เสร็จใน {{elapsed}} กำลังเฝ้าดู {{directory}}",
+        "description": "ทำการบิลด์และติดตั้งโปรเจ็กต์ Swiplet แล้วติดตามการเปลี่ยนแปลงต่อไป",
+        "quiet": "ไม่แสดงบันทึก",
+        "unchanged": "บิลด์เสร็จใน {{elapsed}} ไม่มีการเปลี่ยนแปลง"
+      },
+      "source": {
+        "description": "รวบรวม Swiplet ที่บิลด์แล้วไว้ใน dist/ พร้อม swiplets.json",
+        "duplicateID": "{{id}} เป็นทั้ง {{first}} และ {{second}}",
+        "invalidIcon": "\"source.icon\" ใน package.json ต้องมี symbol และสามารถมี color ได้",
+        "invalidLocalizedNames": "\"source.localizedNames\" ใน package.json ต้องเป็นการแมปจากภาษาไปยังชื่อ",
+        "invalidURL": "\"source.url\" ใน package.json ไม่ใช่ URL แบบสัมบูรณ์",
+        "noWorkspaces": "package.json ไม่ได้ระบุเวิร์กสเปซที่มี Swiplet ระบุชื่อ Swiplet ที่จะรวมไว้ในรายการ",
+        "notBuilt": "ไม่พบ {{file}} ทำการบิลด์ {{directory}} ก่อน"
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "แสดงการประกาศ TypeScript ของตัวแปรส่วนกลางและโมดูล"
+      },
+      "dataDirectory": "{{path}} คือไดเรกทอรีข้อมูลของ REPL บันทึกโดยใช้ --output DIRECTORY",
+      "description": "เรียกใช้ JavaScript ในเซสชั่น REPL บนอุปกรณ์",
+      "directory": "{{path}} เป็นไดเรกทอรีในไดเรกทอรีข้อมูลของ REPL บันทึกโดยใช้ --output DIRECTORY",
+      "reset": {
+        "description": "รีเซ็ตเซสชั่น"
+      },
+      "run": {
+        "arguments": "อาร์กิวเมนต์แรกจะเป็น FILE เมื่อระบุไฟล์ที่มีอยู่ และเป็น CODE ในกรณีอื่น โดยต้องใส่ตัวเลือกไว้ก่อนอาร์กิวเมนต์นี้",
+        "description": "เรียกใช้นิพจน์หรือโปรแกรม JavaScript บนอุปกรณ์",
+        "details": "CODE คือนิพจน์ซึ่งจะแสดงค่าของนิพจน์นั้น ส่วน FILE หรืออินพุตมาตรฐานที่ระบุเป็น - หรือไม่ระบุอาร์กิวเมนต์คือโปรแกรม และจะแสดงเฉพาะเอาต์พุตคอนโซลของโปรแกรมนั้น",
+        "extraArguments": "{{argument}} ไม่ใช่ไฟล์ และ CODE ไม่รับ ARG",
+        "images": "ไดเรกทอรีรูปภาพ (ค่าเริ่มต้น: ไดเรกทอรีชั่วคราวใหม่)"
+      }
+    },
+    "sideload": {
+      "description": "ติดตั้ง Swipt แบบไซด์โหลด",
+      "install": {
+        "description": "ติดตั้ง Swipt",
+        "force": "ติดตั้งทับบิลด์เดียวกันหรือบิลด์ที่ใหม่กว่า"
+      },
+      "passcode": "ตั้งค่าการปลดล็อคอัตโนมัติด้วยรหัสนี้",
+      "setup": {
+        "description": "ตั้งค่า Swipt"
+      },
+      "uninstall": {
+        "description": "ลบ Swipt"
+      },
+      "update": {
+        "description": "อัปเดตหรือต่ออายุ Swipt",
+        "passcode": "ปลดล็อคอุปกรณ์ด้วยรหัสนี้"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "เรียกใช้การทำงานของ Swiplet",
+        "input": "JSON อินพุต, @FILE หรือ -",
+        "invalidInput": "--input ไม่ใช่ JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} คือไดเรกทอรีข้อมูลของ {{swiplet}} บันทึกโดยใช้ --output DIRECTORY",
+      "description": "จัดการ Swiplet บนอุปกรณ์",
+      "directory": "{{path}} เป็นไดเรกทอรีในไดเรกทอรีข้อมูลของ {{swiplet}} บันทึกโดยใช้ --output DIRECTORY",
+      "install": {
+        "description": "ติดตั้งไฟล์เก็บถาวร Swiplet",
+        "notFound": "ไม่มีไฟล์เก็บถาวรที่ {{path}}"
+      },
+      "list": {
+        "actions": "การทำงาน",
+        "description": "แสดงรายการ Swiplet",
+        "id": "ID",
+        "service": "บริการ",
+        "status": "สถานะ",
+        "title": "ชื่อ",
+        "version": "เวอร์ชั่น"
+      },
+      "remove": {
+        "description": "ลบ Swiplet",
+        "removed": "ลบ {{name}} แล้ว"
+      },
+      "service": {
+        "description": "จัดการบริการ Swiplet",
+        "disable": {
+          "description": "ปิดบริการ Swiplet"
+        },
+        "enable": {
+          "description": "เปิดบริการ Swiplet"
+        },
+        "watch": {
+          "description": "เฝ้าดูบริการ Swiplet"
+        },
+        "watchState": "เฝ้าดูสถานะ"
+      },
+      "show": {
+        "description": "แสดง Swiplet",
+        "input": "อินพุต: {{schema}}",
+        "notFound": "ไม่มี Swiplet {{id}}",
+        "output": "เอาต์พุต: {{schema}}",
+        "service": "บริการ: {{status}}"
+      }
+    },
+    "version": {
+      "description": "แสดงเวอร์ชั่น"
+    }
+  },
+  "connection": {
+    "added": "เพิ่ม {{device}} แล้ว",
+    "ambiguous": "มีอุปกรณ์มากกว่าหนึ่งเครื่อง: {{devices}} เลือกเครื่องโดยใช้ -d",
+    "driverNotStopped": "ไดรเวอร์บน {{computer}} ไม่หยุดทำงาน",
+    "invalidURL": "{{text}} ไม่ใช่ URL",
+    "none": "ไม่มีอุปกรณ์ เปิด Swipt › นักพัฒนา › เครือข่ายในพื้นที่ หรือเชื่อมต่ออุปกรณ์โดยใช้ \"swipt device add URL\"",
+    "noneOnNetwork": "ไม่มีอุปกรณ์ที่เผยแพร่ Swipt บนเครือข่ายในพื้นที่ เปิด Swipt › นักพัฒนา › เครือข่ายในพื้นที่ หรือเชื่อมต่ออุปกรณ์โดยใช้ \"swipt device add URL\"",
+    "notFound": "ไม่มีอุปกรณ์ {{device}}",
+    "notFoundHint": "ไม่มีอุปกรณ์ {{device}} ดูรายการอุปกรณ์ได้ด้วย \"swipt device list\"",
+    "offline": "ออฟไลน์",
+    "problem": {
+      "developerModeOff": "โหมดนักพัฒนาปิดอยู่",
+      "deviceUnsupported": "ไม่รองรับอุปกรณ์นี้",
+      "diskImageMissing": "ไม่มีภาพดิสก์",
+      "diskImageMountFailed": "ไม่สามารถเมานท์ภาพดิสก์ได้",
+      "pairingRejected": "การจับคู่ถูกปฏิเสธ",
+      "screenInUse": "หน้าจอกำลังถูกใช้งาน",
+      "unreachable": "ไม่สามารถเชื่อมต่อได้",
+      "vpnPeerAddressMissing": "ไม่พบที่อยู่เพียร์ของ VPN"
+    },
+    "removed": "ลบ {{name}} แล้ว",
+    "requiresToken": "ต้องใช้โทเค็น",
+    "requiresTokenHint": "{{device}} ต้องใช้โทเค็น: swipt device add {{url}}",
+    "state": {
+      "connecting": "กำลังเชื่อมต่อ",
+      "failed": "ล้มเหลว",
+      "preparing": "กำลังเตรียมการ",
+      "running": "เชื่อมต่ออยู่",
+      "stopped": "หยุดทำงานแล้ว"
+    },
+    "unsupportedURL": "{{text}} ไม่ใช่ URL แบบ http หรือ https"
+  },
+  "deploy": {
+    "installed": "ติดตั้ง {{id}} {{version}} แล้ว",
+    "replaced": "แทนที่ {{id}} {{version}} แล้ว"
+  },
+  "driver": {
+    "alreadyRunning": "ไดรเวอร์กำลังทำงานอยู่แล้วบนคอมพิวเตอร์เครื่องนี้ หยุดไดรเวอร์ก่อน",
+    "ambiguousName": "มี iPhone หรือ iPad มากกว่าหนึ่งเครื่องที่ชื่อ {{name}} เลือกเครื่องด้วย UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service ไม่ได้ทำงานอยู่ ติดตั้งแอปอุปกรณ์ Apple จาก Microsoft Store",
+    "chooseDevice": "เลือกอุปกรณ์",
+    "chooseDeviceHint": "เลือกอุปกรณ์โดยใช้ -d NAME|UDID",
+    "connectedDevices": "{{reason}} iPhone และ iPad ที่เชื่อมต่อ:",
+    "lookingForDevices": "กำลังค้นหาอุปกรณ์",
+    "missing": "ไม่พบไดรเวอร์ ติดตั้งโดยใช้ \"npm install -g @swipt/cli --include=optional\"",
+    "nameNotFound": "ไม่มี iPhone หรือ iPad ชื่อ {{name}}",
+    "noDevice": "ไม่มี iPhone หรือ iPad ที่เชื่อมต่อกับคอมพิวเตอร์เครื่องนี้หรือพบบนเครือข่ายในพื้นที่ เชื่อมต่ออุปกรณ์ด้วยสาย USB แล้วปลดล็อค",
+    "pairing": "กำลังจับคู่กับ {{device}}",
+    "trustPrompt": "แตะ “เชื่อถือ” บน {{device}} แล้วป้อนรหัสเพื่อเชื่อถือคอมพิวเตอร์เครื่องนี้",
+    "usbmuxdMissing": "usbmuxd ไม่ได้ทำงานอยู่ ติดตั้ง usbmuxd แล้วเริ่มการทำงาน"
+  },
+  "error": "ข้อผิดพลาด: {{message}}",
+  "flags": {
+    "device": "อุปกรณ์ที่จะใช้",
+    "nightly": "ใช้บิลด์ nightly",
+    "noSetup": "ไม่จับคู่ Swipt ไม่เชื่อถือนักพัฒนา และไม่เผยแพร่ API",
+    "noSetupAPI": "ไม่เผยแพร่ API ไปยังเครือข่ายในพื้นที่",
+    "noSetupPair": "ไม่จับคู่ Swipt",
+    "passcodeType": "pin (4 หรือ 6 หลัก ค่าเริ่มต้น), numeric หรือ alphanumeric",
+    "team": "ID ทีม จำเป็นต้องระบุหากมีมากกว่าหนึ่งทีม"
+  },
+  "metro": {
+    "boolean": "บูลีน",
+    "contextArgument": "อาร์กิวเมนต์ที่ {{index}} ของ require.context ต้องเป็น{{expected}}",
+    "contextRegExp": "อาร์กิวเมนต์ที่ {{index}} ของ require.context ต้องเป็นลิเทอรัลนิพจน์ทั่วไป",
+    "oneOf": "ค่าใดค่าหนึ่งใน {{values}}",
+    "string": "สตริง",
+    "workletsMismatch": "โปรเจ็กต์มี react-native-worklets {{version}} แต่ Swipt ใช้ {{expected}} ติดตั้ง react-native-worklets@{{expected}} หรือเอาออก"
+  },
+  "noThanks": "ไม่ ขอบคุณ",
+  "output": {
+    "navigate": "เลื่อน",
+    "select": "เลือก",
+    "service": "{{enabled}} {{status}}",
+    "serviceSince": "{{enabled}} {{status}} ตั้งแต่ {{time}}",
+    "serviceStatus": {
+      "failed": "ล้มเหลว",
+      "running": "กำลังทำงาน",
+      "starting": "กำลังเริ่ม",
+      "stopped": "หยุดทำงานแล้ว",
+      "turnedOff": "ปิด",
+      "turnedOn": "เปิด"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "รหัสตัวอักษรและตัวเลขที่กำหนดเอง",
+    "alphanumericDetail": "ตัวอักษรและตัวเลข",
+    "empty": "ป้อนรหัส",
+    "invalidAlphanumeric": "รหัสต้องเป็นอักขระ ASCII ที่พิมพ์ได้ไม่เกิน 64 อักขระ",
+    "invalidNumeric": "รหัสตัวเลขต้องมีเฉพาะตัวเลขเท่านั้น",
+    "invalidPin": "รหัส pin มี 4 หรือ 6 หลัก รหัสที่กำหนดเองต้องใช้ --passcode-type numeric หรือ alphanumeric",
+    "invalidType": "อาร์กิวเมนต์ {{value}} ของ --passcode-type ไม่ถูกต้อง: ต้องเป็น {{types}}",
+    "masked": "[อินพุตถูกซ่อนไว้]",
+    "numeric": "รหัสตัวเลขที่กำหนดเอง",
+    "numericDetail": "ตัวเลข",
+    "pin": "รหัส 4 หรือ 6 หลัก",
+    "pinDetail": "4 หรือ 6 หลัก",
+    "prompt": "รหัสอุปกรณ์",
+    "setUp": "ตั้งค่าการปลดล็อคอัตโนมัติหรือไม่ จากนั้น Swipt จะปลดล็อคอุปกรณ์นี้ได้ด้วยตัวเอง"
+  },
+  "project": {
+    "assetConflict": "{{source}} และ {{asset}} จะเป็น assets/{{name}} ทั้งคู่ใน Swiplet",
+    "conditionalActions": "ส่วนขยายกำหนดการทำงานที่แตกต่างกันตาม available() ให้กำหนดการทำงานเดียวกันในทุกระบบ และตรวจสอบ available() ภายใน run หรือการทำงาน",
+    "databaseAtLoad": "ฐานข้อมูลถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน",
+    "interfaceImport": "อินเทอร์เฟซนำเข้า {{file}} ขณะทำงาน นำเข้าประเภทของไฟล์ด้วย `import type`",
+    "interfaceOnly": "{{name}} ใช้งานได้เฉพาะในอินเทอร์เฟซของ Swiplet",
+    "invalidExposure": "การทำงาน {{action}} เปิดให้ใช้ได้เฉพาะกับ \"shortcuts\" เท่านั้น",
+    "invalidExtension": "การส่งออกเริ่มต้นของส่วนขยายไม่ใช่ผลลัพธ์ของ defineExtension",
+    "invalidID": "\"swiplet.id\" ใน package.json ต้องประกอบด้วยตัวอักษรพิมพ์เล็ก ตัวเลข จุด ขีดล่าง และขีดกลาง 1 ถึง 128 อักขระ และขึ้นต้นด้วยตัวอักษรหรือตัวเลข",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" ใน package.json ต้องเป็นการแมปจากภาษาไปยังชื่อ",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" ใน package.json ต้องเป็นจำนวนเต็มตั้งแต่ {{oldest}} ถึง {{level}} ซึ่งเป็นระดับ API ของ @swipt/api",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" ใน package.json ต้องเป็นหมายเลขเวอร์ชั่นตั้งแต่ {{version}} ขึ้นไป ซึ่งเป็นเวอร์ชั่น iOS ขั้นต่ำของ @swipt/api",
+    "invalidName": "\"swiplet.name\" ใน package.json ต้องเป็นสตริงที่ไม่ว่าง",
+    "invalidSchema": "สคีมา {{side}} ของการทำงาน {{action}} ไม่รองรับ Standard JSON Schema ใช้ไลบรารีที่รองรับ เช่น Zod 4",
+    "invalidString": "\"{{field}}\" ใน package.json ต้องเป็นสตริง",
+    "invalidVersionCode": "\"swiplet.versionCode\" ใน package.json ต้องเป็นจำนวนเต็มบวก",
+    "missingTitle": "การทำงาน {{action}} ต้องมีชื่อ",
+    "storageAtLoad": "พื้นที่จัดเก็บถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน",
+    "unprovidedModule": "Swipt ไม่มี \"{{module}}\" ให้ส่วนขยาย รวมโมดูลนี้ไว้ใน extension.js",
+    "usedAtLoad": "{{name}} ถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน"
+  },
+  "serve": {
+    "cancel": "ยกเลิก",
+    "checking": "กำลังตรวจสอบ {{device}}",
+    "conflictingTokens": "ใช้ --token และ --random-token พร้อมกันไม่ได้",
+    "invalidToken": "โทเค็นต้องเป็นอักขระ ASCII ที่พิมพ์ได้อย่างน้อยหนึ่งอักขระและไม่มีช่องว่าง",
+    "localNetwork": "เครือข่ายในพื้นที่",
+    "noAutoUnlock": "{{device}} จะไม่ปลดล็อคอัตโนมัติ ตั้งรหัสโดยใช้ --passcode กด Ctrl-C เพื่อหยุดไดรเวอร์",
+    "quitSwipt": "ออกจาก Swipt",
+    "quittingSwipt": "กำลังออกจาก Swipt บน {{device}}",
+    "served": "ไดรเวอร์บน {{computer}} ให้บริการ {{device}} อยู่แล้ว หยุดไดรเวอร์นั้นก่อน",
+    "servedPrompt": "ไดรเวอร์บน {{computer}} ให้บริการ {{device}} อยู่แล้ว หยุดไดรเวอร์นั้นหรือไม่",
+    "starting": "กำลังเริ่มไดรเวอร์สำหรับ {{device}}",
+    "stopDriver": "หยุดไดรเวอร์บน {{computer}}",
+    "stopHint": "กด Ctrl-C เพื่อหยุดไดรเวอร์",
+    "stoppingDriver": "กำลังหยุดไดรเวอร์บน {{computer}}",
+    "swiptRunning": "ไดรเวอร์ควบคุม {{device}} ไม่ได้ในขณะที่ Swipt ทำงานอยู่บนอุปกรณ์นั้น ออกจาก Swipt ก่อน",
+    "swiptRunningPrompt": "ไดรเวอร์ควบคุม {{device}} ไม่ได้ในขณะที่ Swipt ทำงานอยู่บนอุปกรณ์นั้น ออกจาก Swipt หรือไม่"
+  },
+  "sideload": {
+    "ambiguousTeam": "มีมากกว่าหนึ่งทีมที่ติดตั้ง Swipt แบบไซด์โหลดไว้บน {{device}} เลือกทีมโดยใช้ --team ID:",
+    "certificateFailed": "Xcode ไม่สามารถสร้างใบรับรองการพัฒนาสำหรับทีม {{team}} ได้ เพิ่มใบรับรองที่ {{accounts}} › Manage Certificates ({{errors}})",
+    "checking": "กำลังตรวจสอบ Swipt บน {{device}}",
+    "checkingRelease": "กำลังตรวจสอบเวอร์ชั่นล่าสุด",
+    "chooseTeam": "เลือกทีม",
+    "chooseTeamHint": "เลือกทีมโดยใช้ --team ID:",
+    "diskImageFailed": "ไม่สามารถเตรียมภาพดิสก์นักพัฒนาบน {{device}} ได้: {{error}}",
+    "downgrade": "ดาวน์เกรด",
+    "downgradePrompt": "ดาวน์เกรด Swipt บน {{device}} จาก {{version}} เป็น {{releaseVersion}} หรือไม่ Swipt จะรีเซ็ตข้อมูลของตัวเองเมื่อเวอร์ชั่นที่เก่ากว่าอ่านข้อมูลนั้นไม่ได้",
+    "downgradeToStablePrompt": "ดาวน์เกรด Swipt บน {{device}} จากบิลด์ nightly {{version}} เป็นเวอร์ชั่นเสถียร {{releaseVersion}} หรือไม่ Swipt จะรีเซ็ตข้อมูลของตัวเองเมื่อเวอร์ชั่นที่เก่ากว่าอ่านข้อมูลนั้นไม่ได้",
+    "downloading": "กำลังดาวน์โหลด Swipt {{version}} ({{build}}) จาก {{release}}",
+    "expiration": "การเซ็นชื่อจะหมดอายุ{{expiration}}",
+    "installed": "ติดตั้ง {{build}} บน {{device}} แล้ว",
+    "installing": "กำลังติดตั้งบน {{device}}",
+    "invalidTeam": "อาร์กิวเมนต์ {{value}} ของ --team ไม่ถูกต้อง: ต้องเป็น ID ทีม 10 อักขระที่แสดงใน {{accounts}}",
+    "laterThanRelease": "{{build}} บน {{device}} ใหม่กว่า {{release}} ({{releaseBuild}})",
+    "locked": "{{device}}: {{message}} ปลดล็อคอุปกรณ์หรือระบุ --passcode แล้วเรียกใช้อีกครั้ง",
+    "looking": "กำลังค้นหา Swipt บนอุปกรณ์",
+    "needsMacOS": "การติดตั้งหรืออัปเดต Swipt ต้องใช้ macOS ติดตั้งจาก Mac แล้วตั้งค่าที่นี่โดยใช้ \"swipt sideload setup\"",
+    "noAccount": "Xcode ไม่มีบัญชี ลงชื่อเข้าที่ {{accounts}} หรือเลือกทีมโดยใช้ --team ID",
+    "noAccountForTeam": "Xcode ไม่มีบัญชีของทีม {{team}} ลงชื่อเข้าด้วยบัญชี Apple ของทีมที่ {{accounts}}",
+    "noCertificate": "Xcode ไม่มีใบรับรองการพัฒนา เพิ่มใบรับรองที่ {{accounts}} › Manage Certificates หรือเลือกทีมโดยใช้ --team ID",
+    "noneInstalled": "ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน iPhone หรือ iPad เครื่องใดเลย",
+    "noneInstalledHint": "ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน iPhone หรือ iPad เครื่องใดเลย ติดตั้งโดยใช้ \"swipt sideload install\"",
+    "notInstalled": "ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน {{device}}",
+    "notInstalledByTeam": "ทีม {{team}} ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน {{device}}",
+    "notInstalledByTeamHint": "ทีม {{team}} ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน {{device}} ติดตั้งโดยใช้ \"swipt sideload install\"",
+    "notInstalledHint": "ไม่ได้ติดตั้ง Swipt แบบไซด์โหลดไว้บน {{device}} ติดตั้งโดยใช้ \"swipt sideload install\"",
+    "notOnNetwork": "ไม่พบ {{device}} บนเครือข่ายในพื้นที่ ดู URL ของ API ได้ที่ Swipt › นักพัฒนา › เครือข่ายในพื้นที่",
+    "opening": "กำลังเปิด Swipt บน {{device}}",
+    "openingSettings": "กำลังเปิดแอปการตั้งค่าบน {{device}}",
+    "opensAfterUnlock": "จะเปิดเมื่อปลดล็อค {{device}} แล้ว",
+    "pairingFailed": "การจับคู่ล้มเหลว Swipt จึงจะจับคู่ในการตั้งค่าแทน: {{error}}",
+    "preparingDiskImage": "กำลังเตรียมภาพดิสก์นักพัฒนาบน {{device}}",
+    "preparingSigning": "กำลังเตรียมการเซ็นชื่อสำหรับ Swipt ด้วยทีม {{team}} ผ่าน Xcode",
+    "removed": "ลบ {{build}} ออกจาก {{device}} แล้ว",
+    "removing": "กำลังลบ Swipt ออกจาก {{device}}",
+    "renewalNeedsDowngrade": "{{build}} บน {{device}} ต้องเซ็นชื่อใหม่ แต่ {{release}} ({{releaseBuild}}) เก่ากว่า ใช้ --nightly หรือดาวน์เกรดโดยใช้ \"swipt sideload install --force\"",
+    "resigning": "กำลังเซ็นชื่อ Swipt ใหม่",
+    "running": "{{app}} กำลังทำงาน",
+    "settingUpAutoUnlock": "กำลังตั้งค่าการปลดล็อคอัตโนมัติ",
+    "trusted": "เชื่อถือ {{developer}} แล้ว",
+    "trusting": "กำลังเชื่อถือ {{developer}} ในการตั้งค่า",
+    "unlockPrompt": "ปลดล็อคอุปกรณ์เพื่อดำเนินการต่อ",
+    "unlocking": "กำลังปลดล็อคอุปกรณ์",
+    "untrusted": "ยังไม่ได้เชื่อถือนักพัฒนา เชื่อถือในหน้าการตั้งค่าที่เปิดอยู่บน {{device}} แล้วเปิด Swipt",
+    "upToDate": "{{build}} บน {{device}} เป็น {{release}} อยู่แล้ว",
+    "updated": "อัปเดต {{build}} บน {{device}} แล้ว",
+    "waiting": "กำลังรอ {{device}}",
+    "xcodeMissing": "xcodebuild ต้องใช้ Xcode ติดตั้งแล้วเลือกโดยใช้ xcode-select",
+    "xcodebuildMissing": "ไม่พบ xcodebuild ติดตั้ง Xcode"
+  }
+}

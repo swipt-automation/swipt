@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Controleer ze met available(), markeer de code die ze gebruikt met @available of verhoog \"swiplet.minimumAPILevel\" of \"swiplet.minimumIOSVersion\" in package.json.",
+    "apiLevel": "API-niveau {{level}}",
+    "entryNeeds": "{{location}}: {{name}} is een Swiplet-ingangspunt en vereist {{requirement}}. Verhoog \"swiplet.minimumAPILevel\" of \"swiplet.minimumIOSVersion\" in package.json.",
+    "importNeeds": "{{location}}: het importeren van {{name}} vereist {{requirement}}. Verhoog \"swiplet.minimumAPILevel\" of \"swiplet.minimumIOSVersion\" in package.json.",
+    "invalidEntry": "{{location}}: @available bevat \"{{entry}}\". @available accepteert \"apiLevel <level>\" en \"iOS <version>\", gescheiden door komma's.",
+    "needs": "{{location}}: {{name}} vereist {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available noemt {{kind}} twee keer."
+  },
+  "cli": {
+    "commands": "opdrachten:",
+    "exactArgs_one": "accepteert {{count}} argument, {{received}} ontvangen",
+    "exactArgs_other": "accepteert {{count}} argumenten, {{received}} ontvangen",
+    "help": "toon help",
+    "helpHint": "Voer \"swipt help\" uit voor gebruiksinformatie.",
+    "minimumArgs_one": "accepteert minstens {{count}} argument, {{received}} ontvangen",
+    "minimumArgs_other": "accepteert minstens {{count}} argumenten, {{received}} ontvangen",
+    "missingCommand": "Er ontbreekt een opdracht.",
+    "options": "opties:",
+    "rangeArgs_one": "accepteert {{least}} tot en met {{count}} argument, {{received}} ontvangen",
+    "rangeArgs_other": "accepteert {{least}} tot en met {{count}} argumenten, {{received}} ontvangen",
+    "unauthenticated": "{{message}}. Maak verbinding met de URL die Swipt › 'Ontwikkelaar' of \"swipt driver\" toont: swipt device add {{url}}",
+    "unimplemented": "Swipt op {{url}} heeft deze opdracht niet. Werk Swipt bij.",
+    "unknownCommand": "onbekende opdracht {{name}} voor {{parent}}",
+    "unknownOption": "{{option}} is geen optie van {{command}}.",
+    "unreachable": "Swipt op {{url}} is onbereikbaar: {{message}}",
+    "usage": "gebruik: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Verwijder alle gegevensbestanden en behoud de gegevensmap"
+      },
+      "list": {
+        "description": "Toon gegevensbestanden",
+        "recursive": "neem submappen op"
+      },
+      "read": {
+        "description": "Lees een gegevensbestand of -map",
+        "output": "bestemming",
+        "saved_one": "{{count}} bestand is bewaard in {{path}}",
+        "saved_other": "{{count}} bestanden zijn bewaard in {{path}}"
+      },
+      "remove": {
+        "description": "Verwijder een gegevensbestand",
+        "recursive": "neem de inhoud van mappen op"
+      },
+      "replDescription": "Beheer de bestanden in de gegevensmap van de REPL",
+      "swipletDescription": "Beheer de bestanden in de gegevensmap van een Swiplet",
+      "write": {
+        "description": "Schrijf een gegevensbestand"
+      }
+    },
+    "description": "Swipt-opdrachtregeltool",
+    "device": {
+      "add": {
+        "description": "Voeg een apparaat toe via de URL. Nodig als het apparaat niet op het lokale netwerk staat of een token vereist"
+      },
+      "description": "Beheer de apparaten en lees de logs ervan",
+      "list": {
+        "description": "Toon de apparaten en voeg de apparaten toe die op het lokale netwerk zijn gevonden"
+      },
+      "logs": {
+        "count": "aantal eerdere items (standaard 100)",
+        "description": "Toon de logs",
+        "follow": "volg nieuwe items",
+        "invalidDuration": "ongeldig argument {{value}} voor {{option}}: dit moet een tijdsduur zijn, zoals 30s of 1m30s",
+        "invalidLevel": "--level is error, warn, info of debug",
+        "invalidNumber": "ongeldig argument {{value}} voor {{option}}: dit moet een getal zijn",
+        "level": "minimumniveau (standaard info)",
+        "since": "maximale ouderdom van items",
+        "swiplet": "Swiplet-ID"
+      },
+      "remove": {
+        "description": "Vergeet een apparaat"
+      },
+      "stop": {
+        "description": "Stop met het aanbieden van de Swipt-API",
+        "stopped": "gestopt"
+      }
+    },
+    "driver": {
+      "description": "Bied de Swipt-API en MCP voor een apparaat aan vanaf deze computer",
+      "details": "Het apparaat kan maar door één tegelijk worden bestuurd: Swipt op het apparaat of de driver op één computer.",
+      "passcode": "toegangscode om het apparaat automatisch te ontgrendelen (laat leeg om dit uit te schakelen)",
+      "randomToken": "een willekeurig token van API-clients vereisen",
+      "token": "dit token van API-clients vereisen"
+    },
+    "project": {
+      "build": {
+        "description": "Bundel het project in dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Maak een Swiplet-project in een nieuwe of lege map",
+        "notEmpty": "{{directory}} is niet leeg."
+      },
+      "deploy": {
+        "description": "Bouw het project en installeer het op het apparaat"
+      },
+      "description": "Maak, bouw en implementeer Swiplet-projecten",
+      "develop": {
+        "deployed": "gebouwd en geïmplementeerd in {{elapsed}}. {{directory}} wordt gevolgd",
+        "description": "Bouw en installeer een Swiplet-project en volg het terwijl het verandert",
+        "quiet": "toon geen logs",
+        "unchanged": "gebouwd in {{elapsed}}. Er is niets gewijzigd"
+      },
+      "source": {
+        "description": "Verzamel de gebouwde Swiplets in dist/ met een swiplets.json",
+        "duplicateID": "{{id}} is zowel {{first}} als {{second}}",
+        "invalidIcon": "\"source.icon\" in package.json moet een symbol hebben en mag een color hebben.",
+        "invalidLocalizedNames": "\"source.localizedNames\" in package.json moet talen toewijzen aan namen.",
+        "invalidURL": "\"source.url\" in package.json is geen absolute URL.",
+        "noWorkspaces": "package.json vermeldt geen werkruimten met Swiplets. Geef de op te nemen Swiplets op.",
+        "notBuilt": "{{file}} ontbreekt. Bouw eerst {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Toon de TypeScript-declaraties van de globale variabelen en modules"
+      },
+      "dataDirectory": "{{path}} verwijst naar de gegevensmap van de REPL. Bewaar deze met --output DIRECTORY",
+      "description": "Voer JavaScript uit in de REPL-sessie op het apparaat",
+      "directory": "{{path}} is een map in de gegevensmap van de REPL. Bewaar deze met --output DIRECTORY",
+      "reset": {
+        "description": "Stel de sessie opnieuw in"
+      },
+      "run": {
+        "arguments": "Het eerste argument is FILE als het een bestaand bestand aanduidt en anders CODE. Opties staan ervoor.",
+        "description": "Voer een JavaScript-expressie of -programma uit op het apparaat",
+        "details": "CODE is een expressie waarvan de waarde wordt getoond. FILE, of standaardinvoer opgegeven als - of zonder argument, is een programma, en alleen de console-uitvoer daarvan wordt getoond.",
+        "extraArguments": "{{argument}} is geen bestand en CODE accepteert geen ARG.",
+        "images": "afbeeldingsmap (standaard: een nieuwe tijdelijke map)"
+      }
+    },
+    "sideload": {
+      "description": "Sideload Swipt",
+      "install": {
+        "description": "Installeer Swipt",
+        "force": "installeer over dezelfde of een nieuwere build"
+      },
+      "passcode": "stel automatische ontgrendeling in met deze toegangscode",
+      "setup": {
+        "description": "Stel Swipt in"
+      },
+      "uninstall": {
+        "description": "Verwijder Swipt"
+      },
+      "update": {
+        "description": "Werk Swipt bij of vernieuw het",
+        "passcode": "ontgrendel het apparaat met deze toegangscode"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Voer een Swiplet-actie uit",
+        "input": "invoer als JSON, @FILE of -",
+        "invalidInput": "--input is geen JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} verwijst naar de gegevensmap van {{swiplet}}. Bewaar deze met --output DIRECTORY",
+      "description": "Beheer de Swiplets op het apparaat",
+      "directory": "{{path}} is een map in de gegevensmap van {{swiplet}}. Bewaar deze met --output DIRECTORY",
+      "install": {
+        "description": "Installeer een Swiplet-archief",
+        "notFound": "Er is geen archief op {{path}}"
+      },
+      "list": {
+        "actions": "ACTIES",
+        "description": "Toon de Swiplets",
+        "id": "ID",
+        "service": "DIENST",
+        "status": "STATUS",
+        "title": "TITEL",
+        "version": "VERSIE"
+      },
+      "remove": {
+        "description": "Verwijder een Swiplet",
+        "removed": "{{name}} is verwijderd"
+      },
+      "service": {
+        "description": "Beheer Swiplet-diensten",
+        "disable": {
+          "description": "Deactiveer een Swiplet-dienst"
+        },
+        "enable": {
+          "description": "Activeer een Swiplet-dienst"
+        },
+        "watch": {
+          "description": "Volg Swiplet-diensten"
+        },
+        "watchState": "volg de status"
+      },
+      "show": {
+        "description": "Toon een Swiplet",
+        "input": "invoer: {{schema}}",
+        "notFound": "Er is geen Swiplet {{id}}.",
+        "output": "uitvoer: {{schema}}",
+        "service": "dienst: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Toon de versie"
+    }
+  },
+  "connection": {
+    "added": "{{device}} is toegevoegd",
+    "ambiguous": "Er zijn meerdere apparaten: {{devices}}. Kies er een met -d",
+    "driverNotStopped": "De driver op {{computer}} is niet gestopt.",
+    "invalidURL": "{{text}} is geen URL.",
+    "none": "Er is geen apparaat. Schakel Swipt › 'Ontwikkelaar' › 'Lokaal netwerk' in of maak verbinding met een apparaat via \"swipt device add URL\".",
+    "noneOnNetwork": "Geen enkel apparaat publiceert Swipt op het lokale netwerk. Schakel Swipt › 'Ontwikkelaar' › 'Lokaal netwerk' in of maak verbinding met een apparaat via \"swipt device add URL\".",
+    "notFound": "Er is geen apparaat {{device}}.",
+    "notFoundHint": "Er is geen apparaat {{device}}. \"swipt device list\" toont de apparaten.",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "ontwikkelaarsmodus is uit",
+      "deviceUnsupported": "apparaat wordt niet ondersteund",
+      "diskImageMissing": "schijfkopie ontbreekt",
+      "diskImageMountFailed": "activeren van schijfkopie is mislukt",
+      "pairingRejected": "koppeling geweigerd",
+      "screenInUse": "scherm is in gebruik",
+      "unreachable": "onbereikbaar",
+      "vpnPeerAddressMissing": "VPN-peeradres ontbreekt"
+    },
+    "removed": "{{name}} is verwijderd",
+    "requiresToken": "token vereist",
+    "requiresTokenHint": "{{device}} vereist een token: swipt device add {{url}}",
+    "state": {
+      "connecting": "verbinding maken",
+      "failed": "mislukt",
+      "preparing": "voorbereiden",
+      "running": "actief",
+      "stopped": "gestopt"
+    },
+    "unsupportedURL": "{{text}} is geen http- of https-URL."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} is geïnstalleerd",
+    "replaced": "{{id}} {{version}} is vervangen"
+  },
+  "driver": {
+    "alreadyRunning": "De driver is al actief op deze computer. Stop hem eerst.",
+    "ambiguousName": "Meerdere iPhone- of iPad-apparaten heten {{name}}. Kies er een op UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service is niet actief. Installeer de app Apple Apparaten via de Microsoft Store",
+    "chooseDevice": "Kies een apparaat",
+    "chooseDeviceHint": "Kies een apparaat met -d NAME|UDID",
+    "connectedDevices": "{{reason}}. Verbonden iPhone- en iPad-apparaten:",
+    "lookingForDevices": "zoeken naar apparaten",
+    "missing": "De driver ontbreekt. Installeer hem met \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Geen enkele iPhone of iPad heet {{name}}",
+    "noDevice": "Er is geen iPhone of iPad met deze computer verbonden of op het lokale netwerk gevonden. Sluit er een aan met een USB-kabel en ontgrendel het.",
+    "pairing": "koppelen met {{device}}",
+    "trustPrompt": "tik op {{device}} op 'Vertrouw' en voer de toegangscode in om deze computer te vertrouwen",
+    "usbmuxdMissing": "usbmuxd is niet actief. Installeer usbmuxd en start het"
+  },
+  "error": "fout: {{message}}",
+  "flags": {
+    "device": "het te gebruiken apparaat",
+    "nightly": "gebruik nightly build",
+    "noSetup": "koppel Swipt niet, vertrouw de ontwikkelaar niet en publiceer de API niet",
+    "noSetupAPI": "publiceer de API niet op het lokale netwerk",
+    "noSetupPair": "koppel Swipt niet",
+    "passcodeType": "pin (4 of 6 cijfers, standaard), numeric of alphanumeric",
+    "team": "team-ID, vereist bij meerdere teams"
+  },
+  "metro": {
+    "boolean": "een booleaanse waarde",
+    "contextArgument": "Argument {{index}} van require.context moet {{expected}} zijn",
+    "contextRegExp": "Argument {{index}} van require.context moet een letterlijke reguliere expressie zijn.",
+    "oneOf": "een van {{values}}",
+    "string": "een tekenreeks",
+    "workletsMismatch": "Het project heeft react-native-worklets {{version}}, maar Swipt gebruikt {{expected}}. Installeer react-native-worklets@{{expected}} of verwijder het."
+  },
+  "noThanks": "Nee, bedankt",
+  "output": {
+    "navigate": "navigeer",
+    "select": "selecteer",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} sinds {{time}}",
+    "serviceStatus": {
+      "failed": "mislukt",
+      "running": "actief",
+      "starting": "wordt gestart",
+      "stopped": "gestopt",
+      "turnedOff": "gedeactiveerd",
+      "turnedOn": "geactiveerd"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Aangepaste alfanumerieke code",
+    "alphanumericDetail": "alfanumeriek",
+    "empty": "Voer de toegangscode in.",
+    "invalidAlphanumeric": "Een toegangscode bevat maximaal 64 afdrukbare ASCII-tekens.",
+    "invalidNumeric": "Een numerieke code bevat alleen cijfers.",
+    "invalidPin": "Een toegangscode van het type pin bestaat uit 4 of 6 cijfers. Voor een aangepaste code is --passcode-type numeric of alphanumeric vereist",
+    "invalidType": "ongeldig argument {{value}} voor --passcode-type: dit moet een van deze waarden zijn: {{types}}",
+    "masked": "[invoer is verborgen]",
+    "numeric": "Aangepaste numerieke code",
+    "numericDetail": "numeriek",
+    "pin": "Toegangscode van 4 of 6 cijfers",
+    "pinDetail": "4 of 6 cijfers",
+    "prompt": "Toegangscode van apparaat",
+    "setUp": "Automatische ontgrendeling instellen? Swipt kan dit apparaat dan zelf ontgrendelen."
+  },
+  "project": {
+    "assetConflict": "{{source}} en {{asset}} zouden in de Swiplet allebei assets/{{name}} worden.",
+    "conditionalActions": "De extensie definieert verschillende acties afhankelijk van available(). Definieer op elk systeem dezelfde acties en controleer available() binnen run of een actie.",
+    "databaseAtLoad": "Tijdens het laden van extension.js wordt de database gebruikt. Gebruik deze binnen run of een actie.",
+    "interfaceImport": "De interface importeert {{file}} tijdens de uitvoering. Importeer het type met `import type`.",
+    "interfaceOnly": "{{name}} werkt alleen in de Swiplet-interface.",
+    "invalidExposure": "De actie {{action}} kan zich alleen beschikbaar stellen aan \"shortcuts\".",
+    "invalidExtension": "De standaardexport van de extensie is niet het resultaat van defineExtension.",
+    "invalidID": "\"swiplet.id\" in package.json moet bestaan uit 1 tot en met 128 kleine letters, cijfers, punten, onderstrepingstekens en koppeltekens en beginnen met een letter of cijfer.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" in package.json moet talen toewijzen aan namen.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" in package.json moet een geheel getal zijn van {{oldest}} tot en met {{level}}, het API-niveau van @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" in package.json moet een versienummer zijn vanaf {{version}}, de minimale iOS-versie van @swipt/api.",
+    "invalidName": "\"swiplet.name\" in package.json moet een niet-lege tekenreeks zijn.",
+    "invalidSchema": "Het {{side}}-schema van de actie {{action}} implementeert Standard JSON Schema niet. Gebruik een bibliotheek die dat wel doet, zoals Zod 4.",
+    "invalidString": "\"{{field}}\" in package.json moet een tekenreeks zijn.",
+    "invalidVersionCode": "\"swiplet.versionCode\" in package.json moet een positief geheel getal zijn.",
+    "missingTitle": "De actie {{action}} heeft een titel nodig.",
+    "storageAtLoad": "Tijdens het laden van extension.js wordt de opslag gebruikt. Gebruik deze binnen run of een actie.",
+    "unprovidedModule": "Swipt biedt \"{{module}}\" niet aan extensies aan. Bundel het in extension.js.",
+    "usedAtLoad": "Tijdens het laden van extension.js wordt {{name}} gebruikt. Gebruik dit binnen run of een actie."
+  },
+  "serve": {
+    "cancel": "Annuleer",
+    "checking": "{{device}} controleren",
+    "conflictingTokens": "--token en --random-token kunnen niet samen worden gebruikt.",
+    "invalidToken": "Een token bestaat uit een of meer afdrukbare ASCII-tekens zonder spaties.",
+    "localNetwork": "Lokaal netwerk",
+    "noAutoUnlock": "{{device}} wordt niet automatisch ontgrendeld. Stel de toegangscode in met --passcode. Ctrl-C stopt de driver.",
+    "quitSwipt": "Stop Swipt",
+    "quittingSwipt": "Swipt stoppen op {{device}}",
+    "served": "De driver op {{computer}} bedient {{device}} al. Stop die driver eerst.",
+    "servedPrompt": "De driver op {{computer}} bedient {{device}} al. Die driver stoppen?",
+    "starting": "driver starten voor {{device}}",
+    "stopDriver": "Stop de driver op {{computer}}",
+    "stopHint": "Ctrl-C stopt de driver.",
+    "stoppingDriver": "driver stoppen op {{computer}}",
+    "swiptRunning": "De driver kan {{device}} niet besturen terwijl Swipt erop actief is. Stop Swipt eerst.",
+    "swiptRunningPrompt": "De driver kan {{device}} niet besturen terwijl Swipt erop actief is. Swipt stoppen?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Swipt is op {{device}} door meerdere teams gesideload. Kies er een met --team ID:",
+    "certificateFailed": "Xcode kon geen ontwikkelaarscertificaat maken voor team {{team}}. Voeg er een toe via {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "Swipt controleren op {{device}}",
+    "checkingRelease": "nieuwste versie controleren",
+    "chooseTeam": "Kies een team",
+    "chooseTeamHint": "Kies een team met --team ID:",
+    "diskImageFailed": "voorbereiden van ontwikkelaarsschijfkopie op {{device}} is mislukt: {{error}}",
+    "downgrade": "Downgrade",
+    "downgradePrompt": "Swipt op {{device}} downgraden van {{version}} naar {{releaseVersion}}? Swipt reset zijn gegevens als de oudere versie ze niet kan lezen.",
+    "downgradeToStablePrompt": "Swipt op {{device}} downgraden van nightly build {{version}} naar stabiele versie {{releaseVersion}}? Swipt reset zijn gegevens als de oudere versie ze niet kan lezen.",
+    "downloading": "Swipt {{version}} ({{build}}) downloaden van {{release}}",
+    "expiration": "De ondertekening verloopt {{expiration}}.",
+    "installed": "{{build}} is geïnstalleerd op {{device}}.",
+    "installing": "installeren op {{device}}",
+    "invalidTeam": "ongeldig argument {{value}} voor --team: dit moet de team-ID van 10 tekens zijn die in {{accounts}} wordt weergegeven",
+    "laterThanRelease": "{{build}} op {{device}} is nieuwer dan {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}. Ontgrendel het apparaat of geef --passcode op en voer dit daarna opnieuw uit.",
+    "looking": "zoeken naar Swipt op de apparaten",
+    "needsMacOS": "Voor het installeren of bijwerken van Swipt is macOS nodig. Installeer het vanaf een Mac en stel het daarna hier in met \"swipt sideload setup\".",
+    "noAccount": "Xcode heeft geen account. Log via {{accounts}} in of kies een team met --team ID",
+    "noAccountForTeam": "Xcode heeft geen account voor team {{team}}. Log via {{accounts}} in met het Apple Account van dit team.",
+    "noCertificate": "Xcode heeft geen ontwikkelaarscertificaat. Voeg er een toe via {{accounts}} › Manage Certificates of kies een team met --team ID",
+    "noneInstalled": "Swipt is op geen enkele iPhone of iPad gesideload.",
+    "noneInstalledHint": "Swipt is op geen enkele iPhone of iPad gesideload. Installeer het met \"swipt sideload install\".",
+    "notInstalled": "Swipt is niet gesideload op {{device}}.",
+    "notInstalledByTeam": "Swipt is niet door team {{team}} gesideload op {{device}}.",
+    "notInstalledByTeamHint": "Swipt is niet door team {{team}} gesideload op {{device}}. Installeer het met \"swipt sideload install\".",
+    "notInstalledHint": "Swipt is niet gesideload op {{device}}. Installeer het met \"swipt sideload install\".",
+    "notOnNetwork": "{{device}} is niet gevonden op het lokale netwerk. Je vindt de API-URL's via Swipt › 'Ontwikkelaar' › 'Lokaal netwerk'.",
+    "opening": "Swipt openen op {{device}}",
+    "openingSettings": "Instellingen openen op {{device}}",
+    "opensAfterUnlock": "Swipt wordt geopend zodra {{device}} is ontgrendeld.",
+    "pairingFailed": "Koppelen is mislukt, dus Swipt koppelt in plaats daarvan in Instellingen: {{error}}",
+    "preparingDiskImage": "ontwikkelaarsschijfkopie voorbereiden op {{device}}",
+    "preparingSigning": "ondertekening voor Swipt voorbereiden met team {{team}} via Xcode",
+    "removed": "{{build}} is van {{device}} verwijderd",
+    "removing": "Swipt van {{device}} verwijderen",
+    "renewalNeedsDowngrade": "{{build}} op {{device}} moet opnieuw worden ondertekend, maar {{release}} ({{releaseBuild}}) is ouder. Gebruik --nightly of downgrade met \"swipt sideload install --force\".",
+    "resigning": "Swipt opnieuw ondertekenen",
+    "running": "{{app}} is actief.",
+    "settingUpAutoUnlock": "automatische ontgrendeling instellen",
+    "trusted": "{{developer}} wordt vertrouwd.",
+    "trusting": "{{developer}} vertrouwen in Instellingen",
+    "unlockPrompt": "Ontgrendel het apparaat om door te gaan.",
+    "unlocking": "apparaat ontgrendelen",
+    "untrusted": "De ontwikkelaar van Swipt wordt nog niet vertrouwd. Vertrouw deze op de pagina in Instellingen die op {{device}} is geopend en open daarna Swipt.",
+    "upToDate": "{{build}} op {{device}} is al {{release}}.",
+    "updated": "{{build}} is bijgewerkt op {{device}}.",
+    "waiting": "wachten op {{device}}",
+    "xcodeMissing": "xcodebuild heeft Xcode nodig. Installeer Xcode en selecteer het met xcode-select",
+    "xcodebuildMissing": "xcodebuild ontbreekt. Installeer Xcode."
+  }
+}

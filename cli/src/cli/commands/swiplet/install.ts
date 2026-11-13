@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { deploy, printDeployed } from "../../deploy";
 import { session } from "../../session";
@@ -8,7 +8,7 @@ import { session } from "../../session";
 async function installArchive(context: Context<{ device?: string }>) {
   const [archive] = context.args;
   if (!fs.existsSync(archive)) {
-    throw new Error(tr("There is no archive at {path}", { path: archive }));
+    throw new Error(t("commands.swiplet.install.notFound", { path: archive }));
   }
   await session(context, async (client) =>
     printDeployed(await deploy(client, archive, context.signal), true),
@@ -18,7 +18,7 @@ async function installArchive(context: Context<{ device?: string }>) {
 export const install = defineCommand({
   name: "install",
   use: "install ARCHIVE",
-  short: tr("Install a swiplet archive"),
+  short: t("commands.swiplet.install.description"),
   args: [1, 1],
   run: installArchive,
 });

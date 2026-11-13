@@ -2,7 +2,7 @@ import password from "@inquirer/password";
 import select from "@inquirer/select";
 
 import { UsageError } from "./client";
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import { errorMessage, selectTheme } from "./output";
 
 export const passcodeTypes = ["pin", "numeric", "alphanumeric"];
@@ -21,7 +21,7 @@ export function passcodeOf(options: PasscodeOptions): Passcode | undefined {
   const type = options["passcode-type"] ?? "pin";
   if (!passcodeTypes.includes(type)) {
     throw new UsageError(
-      tr("invalid argument {value} for --passcode-type: it's {types}", {
+      t("passcode.invalidType", {
         value: JSON.stringify(type),
         types: passcodeTypes.join(", "),
       }),
@@ -33,19 +33,13 @@ export function passcodeOf(options: PasscodeOptions): Passcode | undefined {
   }
   const digits = /^\d+$/.test(passcode);
   if (type === "pin" && !(digits && [4, 6].includes(passcode.length))) {
-    throw new UsageError(
-      tr(
-        "A pin passcode is 4 or 6 digits; a custom one needs --passcode-type numeric or alphanumeric",
-      ),
-    );
+    throw new UsageError(t("passcode.invalidPin"));
   }
   if (type === "numeric" && !digits) {
-    throw new UsageError(tr("A numeric passcode is digits only."));
+    throw new UsageError(t("passcode.invalidNumeric"));
   }
   if (!/^[\x20-\x7e]{1,64}$/.test(passcode)) {
-    throw new UsageError(
-      tr("A passcode is up to 64 printable ASCII characters."),
-    );
+    throw new UsageError(t("passcode.invalidAlphanumeric"));
   }
   return { passcode, type };
 }
@@ -53,27 +47,25 @@ export function passcodeOf(options: PasscodeOptions): Passcode | undefined {
 export async function askPasscode(context: { signal: AbortSignal }) {
   const type = await select<string | null>(
     {
-      message: tr(
-        "Set up auto-unlock? Swipt can then unlock this device by itself.",
-      ),
+      message: t("passcode.setUp"),
       theme: selectTheme,
       choices: [
         {
-          name: tr("4 or 6 digit passcode"),
-          short: tr("4 or 6 digits"),
+          name: t("passcode.pin"),
+          short: t("passcode.pinDetail"),
           value: "pin",
         },
         {
-          name: tr("Custom numeric passcode"),
-          short: tr("numeric"),
+          name: t("passcode.numeric"),
+          short: t("passcode.numericDetail"),
           value: "numeric",
         },
         {
-          name: tr("Custom alphanumeric passcode"),
-          short: tr("alphanumeric"),
+          name: t("passcode.alphanumeric"),
+          short: t("passcode.alphanumericDetail"),
           value: "alphanumeric",
         },
-        { name: tr("No Thanks"), value: null },
+        { name: t("noThanks"), value: null },
       ],
     },
     { output: process.stderr, signal: context.signal },
@@ -86,12 +78,12 @@ export async function askPasscode(context: { signal: AbortSignal }) {
     options(
       await password(
         {
-          message: tr("Device passcode"),
-          theme: { style: { maskedText: tr("[input is masked]") } },
+          message: t("passcode.prompt"),
+          theme: { style: { maskedText: t("passcode.masked") } },
           validate(passcode) {
             try {
               passcodeOf(options(passcode));
-              return passcode !== "" || tr("Enter the passcode.");
+              return passcode !== "" || t("passcode.empty");
             } catch (error) {
               return errorMessage(error);
             }

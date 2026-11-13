@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { add } from "./add";
 import { list } from "./list";
@@ -8,6 +8,6 @@ import { stop } from "./stop";
 
 export const device = defineCommand({
   name: "device",
-  short: tr("Manage the devices and read their logs"),
+  short: t("commands.device.description"),
   commands: [list, add, remove, stop, logs],
 });

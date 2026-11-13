@@ -1,0 +1,393 @@
+{
+  "availability": {
+    "advice": "Semak ketersediaannya dengan available(), tandakan kod yang menggunakannya dengan @available, atau naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
+    "apiLevel": "tahap API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} ialah titik masuk Swiplet dan memerlukan {{requirement}}; naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
+    "importNeeds": "{{location}}: mengimport {{name}} memerlukan {{requirement}}; naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
+    "invalidEntry": "{{location}}: @available mengandungi \"{{entry}}\"; @available menerima \"apiLevel <level>\" dan \"iOS <version>\" yang dipisahkan dengan koma.",
+    "needs": "{{location}}: {{name}} memerlukan {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available menyatakan {{kind}} dua kali."
+  },
+  "cli": {
+    "commands": "arahan:",
+    "exactArgs_other": "memerlukan {{count}} argumen, tetapi {{received}} diterima",
+    "help": "bantuan",
+    "helpHint": "Jalankan \"swipt help\" untuk melihat cara penggunaan.",
+    "minimumArgs_other": "memerlukan sekurang-kurangnya {{count}} argumen, tetapi {{received}} diterima",
+    "missingCommand": "Tiada arahan diberikan.",
+    "options": "pilihan:",
+    "rangeArgs_other": "memerlukan antara {{least}} hingga {{count}} argumen, tetapi {{received}} diterima",
+    "unauthenticated": "{{message}}; sambung dengan URL yang ditunjukkan oleh Swipt › Pembangun atau \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "Swipt di {{url}} tidak mempunyai arahan ini; kemas kini Swipt.",
+    "unknownCommand": "arahan {{name}} tidak diketahui untuk {{parent}}",
+    "unknownOption": "{{option}} bukan pilihan bagi {{command}}.",
+    "unreachable": "Swipt di {{url}} tidak dapat dicapai: {{message}}",
+    "usage": "penggunaan: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Keluarkan setiap fail data dan kekalkan direktori data"
+      },
+      "list": {
+        "description": "Senaraikan fail data",
+        "recursive": "sertakan subdirektori"
+      },
+      "read": {
+        "description": "Baca fail data atau direktori",
+        "output": "destinasi",
+        "saved_other": "{{count}} fail disimpan ke {{path}}"
+      },
+      "remove": {
+        "description": "Keluarkan fail data",
+        "recursive": "sertakan kandungan direktori"
+      },
+      "replDescription": "Urus fail dalam direktori data REPL",
+      "swipletDescription": "Urus fail dalam direktori data Swiplet",
+      "write": {
+        "description": "Tulis fail data"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "Tambah peranti melalui URL; diperlukan apabila peranti berada jauh atau memerlukan token"
+      },
+      "description": "Urus peranti dan baca log peranti",
+      "list": {
+        "description": "Senaraikan peranti, serta tambah peranti yang ditemui pada rangkaian setempat"
+      },
+      "logs": {
+        "count": "bilangan entri lepas (lalai 100)",
+        "description": "Paparkan log",
+        "follow": "ikuti entri baharu",
+        "invalidDuration": "argumen {{value}} tidak sah untuk {{option}}: ia mestilah tempoh seperti 30s atau 1m30s",
+        "invalidLevel": "--level mestilah error, warn, info atau debug",
+        "invalidNumber": "argumen {{value}} tidak sah untuk {{option}}: ia mestilah nombor",
+        "level": "tahap minimum (lalai info)",
+        "since": "usia maksimum entri",
+        "swiplet": "ID Swiplet"
+      },
+      "remove": {
+        "description": "Lupakan peranti"
+      },
+      "stop": {
+        "description": "Hentikan penyediaan API Swipt",
+        "stopped": "berhenti"
+      }
+    },
+    "driver": {
+      "description": "Sediakan API Swipt dan MCP untuk peranti daripada komputer ini",
+      "details": "Hanya satu pihak boleh mengawal peranti pada satu masa: Swipt pada peranti itu, atau pemacu pada satu komputer.",
+      "passcode": "kod laluan untuk membuka kunci peranti secara automatik; kosongkan untuk mematikannya",
+      "randomToken": "wajibkan token rawak daripada klien API",
+      "token": "wajibkan token ini daripada klien API"
+    },
+    "project": {
+      "build": {
+        "description": "Himpunkan projek ke dalam dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Cipta projek Swiplet dalam direktori baharu atau kosong",
+        "notEmpty": "{{directory}} tidak kosong."
+      },
+      "deploy": {
+        "description": "Bina projek dan pasangkannya pada peranti"
+      },
+      "description": "Cipta, bina dan atur gerak projek Swiplet",
+      "develop": {
+        "deployed": "dibina dan diatur gerak dalam {{elapsed}}; memantau {{directory}}",
+        "description": "Bina, pasang dan ikuti projek Swiplet apabila ia berubah",
+        "quiet": "tanpa log",
+        "unchanged": "dibina dalam {{elapsed}}; tiada perubahan"
+      },
+      "source": {
+        "description": "Kumpulkan Swiplet yang telah dibina ke dalam dist/ dengan swiplets.json",
+        "duplicateID": "{{id}} ialah {{first}} dan juga {{second}}",
+        "invalidIcon": "\"source.icon\" dalam package.json mesti mempunyai symbol dan boleh mempunyai color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" dalam package.json mesti memetakan bahasa kepada nama.",
+        "invalidURL": "\"source.url\" dalam package.json bukan URL mutlak.",
+        "noWorkspaces": "package.json tidak menyenaraikan ruang kerja yang mengandungi Swiplet; namakan Swiplet yang hendak disenaraikan.",
+        "notBuilt": "{{file}} tiada; bina {{directory}} dahulu."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Paparkan pengisytiharan TypeScript bagi pemboleh ubah global dan modul"
+      },
+      "dataDirectory": "{{path}} merujuk kepada direktori data REPL; simpannya dengan --output DIRECTORY",
+      "description": "Jalankan JavaScript dalam sesi REPL pada peranti",
+      "directory": "{{path}} ialah direktori dalam direktori data REPL; simpannya dengan --output DIRECTORY",
+      "reset": {
+        "description": "Tetapkan semula sesi"
+      },
+      "run": {
+        "arguments": "Argumen pertama ialah FILE jika ia menamakan fail sedia ada dan CODE jika tidak; pilihan diletakkan sebelumnya.",
+        "description": "Jalankan ungkapan atau atur cara JavaScript pada peranti",
+        "details": "CODE ialah ungkapan yang nilainya dipaparkan. FILE, atau input standard yang diberikan sebagai - atau tanpa argumen, ialah atur cara, dan hanya output konsolnya dipaparkan.",
+        "extraArguments": "{{argument}} bukan fail, dan CODE tidak menerima ARG.",
+        "images": "direktori imej (lalai: direktori sementara baharu)"
+      }
+    },
+    "sideload": {
+      "description": "Muat sisi Swipt",
+      "install": {
+        "description": "Pasang Swipt",
+        "force": "pasang di atas binaan yang sama atau lebih baharu"
+      },
+      "passcode": "sediakan buka kunci automatik dengan kod laluan ini",
+      "setup": {
+        "description": "Sediakan Swipt"
+      },
+      "uninstall": {
+        "description": "Keluarkan Swipt"
+      },
+      "update": {
+        "description": "Kemas kini atau perbaharui Swipt",
+        "passcode": "buka kunci peranti dengan kod laluan ini"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Panggil tindakan Swiplet",
+        "input": "JSON input, @FILE atau -",
+        "invalidInput": "--input bukan JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} merujuk kepada direktori data {{swiplet}}; simpannya dengan --output DIRECTORY",
+      "description": "Urus Swiplet pada peranti",
+      "directory": "{{path}} ialah direktori dalam direktori data {{swiplet}}; simpannya dengan --output DIRECTORY",
+      "install": {
+        "description": "Pasang arkib Swiplet",
+        "notFound": "Tiada arkib di {{path}}"
+      },
+      "list": {
+        "actions": "TINDAKAN",
+        "description": "Senaraikan Swiplet",
+        "id": "ID",
+        "service": "PERKHIDMATAN",
+        "status": "STATUS",
+        "title": "TAJUK",
+        "version": "VERSI"
+      },
+      "remove": {
+        "description": "Keluarkan Swiplet",
+        "removed": "{{name}} dikeluarkan"
+      },
+      "service": {
+        "description": "Urus perkhidmatan Swiplet",
+        "disable": {
+          "description": "Matikan perkhidmatan Swiplet"
+        },
+        "enable": {
+          "description": "Hidupkan perkhidmatan Swiplet"
+        },
+        "watch": {
+          "description": "Pantau perkhidmatan Swiplet"
+        },
+        "watchState": "pantau keadaan"
+      },
+      "show": {
+        "description": "Tunjukkan Swiplet",
+        "input": "input: {{schema}}",
+        "notFound": "Tiada Swiplet {{id}}.",
+        "output": "output: {{schema}}",
+        "service": "perkhidmatan: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Paparkan versi"
+    }
+  },
+  "connection": {
+    "added": "{{device}} ditambah",
+    "ambiguous": "Terdapat lebih daripada satu peranti: {{devices}}; pilih satu peranti dengan -d",
+    "driverNotStopped": "Pemacu pada {{computer}} tidak berhenti.",
+    "invalidURL": "{{text}} bukan URL.",
+    "none": "Tiada peranti; hidupkan Swipt › Pembangun › Rangkaian Setempat, atau sambungkan satu peranti dengan \"swipt device add URL\".",
+    "noneOnNetwork": "Tiada peranti yang menerbitkan Swipt pada rangkaian setempat; hidupkan Swipt › Pembangun › Rangkaian Setempat, atau sambungkan satu peranti dengan \"swipt device add URL\".",
+    "notFound": "Tiada peranti {{device}}.",
+    "notFoundHint": "Tiada peranti {{device}}; \"swipt device list\" menyenaraikan semua peranti.",
+    "offline": "luar talian",
+    "problem": {
+      "developerModeOff": "mod pembangun tidak aktif",
+      "deviceUnsupported": "peranti tidak disokong",
+      "diskImageMissing": "imej cakera tiada",
+      "diskImageMountFailed": "gagal melekapkan imej cakera",
+      "pairingRejected": "permintaan pasangan ditolak",
+      "screenInUse": "skrin sedang digunakan",
+      "unreachable": "tidak dapat dicapai",
+      "vpnPeerAddressMissing": "alamat rakan setara VPN tiada"
+    },
+    "removed": "{{name}} dikeluarkan",
+    "requiresToken": "memerlukan token",
+    "requiresTokenHint": "{{device}} memerlukan token: swipt device add {{url}}",
+    "state": {
+      "connecting": "menyambung",
+      "failed": "gagal",
+      "preparing": "sedang disediakan",
+      "running": "aktif",
+      "stopped": "berhenti"
+    },
+    "unsupportedURL": "{{text}} bukan URL http atau https."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} dipasang",
+    "replaced": "{{id}} {{version}} digantikan"
+  },
+  "driver": {
+    "alreadyRunning": "Pemacu sudah berjalan pada komputer ini; hentikannya dahulu.",
+    "ambiguousName": "Lebih daripada satu iPhone atau iPad bernama {{name}}; pilih satu peranti melalui UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service tidak berjalan; pasang app Peranti Apple daripada Microsoft Store",
+    "chooseDevice": "Pilih peranti",
+    "chooseDeviceHint": "Pilih peranti dengan -d NAME|UDID",
+    "connectedDevices": "{{reason}}; peranti iPhone dan iPad yang disambungkan:",
+    "lookingForDevices": "mencari peranti",
+    "missing": "Pemacu tiada; pasangkannya dengan \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Tiada iPhone atau iPad bernama {{name}}",
+    "noDevice": "Tiada iPhone atau iPad yang disambungkan ke komputer ini atau ditemui pada rangkaian setempat; sambungkan satu peranti dengan kabel USB dan buka kuncinya.",
+    "pairing": "berpasangan dengan {{device}}",
+    "trustPrompt": "ketik Percaya pada {{device}} dan masukkan kod laluannya untuk mempercayai komputer ini",
+    "usbmuxdMissing": "usbmuxd tidak berjalan; pasang usbmuxd dan mulakannya"
+  },
+  "error": "ralat: {{message}}",
+  "flags": {
+    "device": "peranti yang hendak digunakan",
+    "nightly": "gunakan binaan nightly",
+    "noSetup": "jangan pasangkan Swipt, jangan percayai pembangunnya dan jangan terbitkan API-nya",
+    "noSetupAPI": "jangan terbitkan API kepada rangkaian setempat",
+    "noSetupPair": "jangan pasangkan Swipt",
+    "passcodeType": "pin (4 atau 6 digit, lalai), numeric atau alphanumeric",
+    "team": "ID pasukan, diperlukan jika terdapat lebih daripada satu pasukan"
+  },
+  "metro": {
+    "boolean": "boolean",
+    "contextArgument": "Argumen {{index}} bagi require.context mestilah {{expected}}",
+    "contextRegExp": "Argumen {{index}} bagi require.context mestilah literal ungkapan nalar.",
+    "oneOf": "salah satu daripada {{values}}",
+    "string": "rentetan",
+    "workletsMismatch": "Projek mempunyai react-native-worklets {{version}}, tetapi Swipt menjalankan {{expected}}; pasang react-native-worklets@{{expected}} atau keluarkannya."
+  },
+  "noThanks": "Tidak, Terima Kasih",
+  "output": {
+    "navigate": "navigasi",
+    "select": "pilih",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} sejak {{time}}",
+    "serviceStatus": {
+      "failed": "gagal",
+      "running": "berjalan",
+      "starting": "sedang dimulakan",
+      "stopped": "berhenti",
+      "turnedOff": "mati",
+      "turnedOn": "hidup"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Kod abjad angka tersuai",
+    "alphanumericDetail": "abjad angka",
+    "empty": "Masukkan kod laluan.",
+    "invalidAlphanumeric": "Kod laluan boleh mengandungi sehingga 64 aksara ASCII boleh cetak.",
+    "invalidNumeric": "Kod angka hanya boleh mengandungi digit.",
+    "invalidPin": "Kod laluan pin ialah 4 atau 6 digit; kod laluan tersuai memerlukan --passcode-type numeric atau alphanumeric",
+    "invalidType": "argumen {{value}} tidak sah untuk --passcode-type: ia mestilah {{types}}",
+    "masked": "[input disembunyikan]",
+    "numeric": "Kod angka tersuai",
+    "numericDetail": "angka",
+    "pin": "Kod laluan 4 atau 6 digit",
+    "pinDetail": "4 atau 6 digit",
+    "prompt": "Kod laluan peranti",
+    "setUp": "Sediakan buka kunci automatik? Swipt kemudiannya boleh membuka kunci peranti ini dengan sendiri."
+  },
+  "project": {
+    "assetConflict": "{{source}} dan {{asset}} kedua-duanya akan menjadi assets/{{name}} dalam Swiplet.",
+    "conditionalActions": "Sambungan mentakrifkan tindakan yang berbeza bergantung pada available(); takrifkan tindakan yang sama pada setiap sistem dan semak available() di dalam run atau tindakan.",
+    "databaseAtLoad": "Pangkalan data digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan.",
+    "interfaceImport": "Antara muka mengimport {{file}} pada masa jalan; import jenisnya dengan `import type`.",
+    "interfaceOnly": "{{name}} hanya berfungsi dalam antara muka Swiplet.",
+    "invalidExposure": "Tindakan {{action}} hanya boleh mendedahkan dirinya kepada \"shortcuts\".",
+    "invalidExtension": "Eksport lalai sambungan bukan hasil defineExtension.",
+    "invalidID": "\"swiplet.id\" dalam package.json mesti terdiri daripada 1 hingga 128 huruf kecil, digit, titik, garis bawah dan tanda sempang, serta bermula dengan huruf atau digit.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" dalam package.json mesti memetakan bahasa kepada nama.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" dalam package.json mestilah integer dari {{oldest}} hingga {{level}}, iaitu tahap API @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" dalam package.json mestilah nombor versi daripada {{version}} ke atas, iaitu versi iOS minimum @swipt/api.",
+    "invalidName": "\"swiplet.name\" dalam package.json mestilah rentetan yang tidak kosong.",
+    "invalidSchema": "Skema {{side}} bagi tindakan {{action}} tidak melaksanakan Standard JSON Schema; gunakan pustaka yang melaksanakannya, seperti Zod 4.",
+    "invalidString": "\"{{field}}\" dalam package.json mestilah rentetan.",
+    "invalidVersionCode": "\"swiplet.versionCode\" dalam package.json mestilah integer positif.",
+    "missingTitle": "Tindakan {{action}} memerlukan tajuk.",
+    "storageAtLoad": "Storan digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan.",
+    "unprovidedModule": "Swipt tidak menyediakan \"{{module}}\" kepada sambungan; himpunkannya ke dalam extension.js.",
+    "usedAtLoad": "{{name}} digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan."
+  },
+  "serve": {
+    "cancel": "Batal",
+    "checking": "menyemak {{device}}",
+    "conflictingTokens": "--token dan --random-token tidak boleh digunakan bersama.",
+    "invalidToken": "Token terdiri daripada satu atau lebih aksara ASCII boleh cetak tanpa ruang.",
+    "localNetwork": "Rangkaian setempat",
+    "noAutoUnlock": "Kunci {{device}} tidak dibuka secara automatik; tetapkan kod laluannya dengan --passcode. Tekan Ctrl-C untuk menghentikan pemacu.",
+    "quitSwipt": "Keluar Swipt",
+    "quittingSwipt": "keluar Swipt pada {{device}}",
+    "served": "Pemacu pada {{computer}} sudah melayani {{device}}; hentikan pemacu itu dahulu.",
+    "servedPrompt": "Pemacu pada {{computer}} sudah melayani {{device}}. Hentikan pemacu itu?",
+    "starting": "memulakan pemacu untuk {{device}}",
+    "stopDriver": "Hentikan pemacu pada {{computer}}",
+    "stopHint": "Tekan Ctrl-C untuk menghentikan pemacu.",
+    "stoppingDriver": "menghentikan pemacu pada {{computer}}",
+    "swiptRunning": "Pemacu tidak boleh mengawal {{device}} semasa Swipt berjalan padanya; keluar Swipt dahulu.",
+    "swiptRunningPrompt": "Pemacu tidak boleh mengawal {{device}} semasa Swipt berjalan padanya. Keluar Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Swipt dimuat sisi pada {{device}} oleh lebih daripada satu pasukan; pilih satu pasukan dengan --team ID:",
+    "certificateFailed": "Xcode tidak dapat mencipta sijil pembangunan untuk pasukan {{team}}; tambahkan satu sijil di {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "menyemak Swipt pada {{device}}",
+    "checkingRelease": "menyemak keluaran terkini",
+    "chooseTeam": "Pilih pasukan",
+    "chooseTeamHint": "Pilih pasukan dengan --team ID:",
+    "diskImageFailed": "gagal menyediakan imej cakera pembangun pada {{device}}: {{error}}",
+    "downgrade": "Turunkan Versi",
+    "downgradePrompt": "Turunkan versi Swipt pada {{device}} daripada {{version}} kepada {{releaseVersion}}? Swipt menetapkan semula datanya apabila versi yang lebih lama tidak dapat membacanya.",
+    "downgradeToStablePrompt": "Turunkan versi Swipt pada {{device}} daripada binaan nightly {{version}} kepada versi stabil {{releaseVersion}}? Swipt menetapkan semula datanya apabila versi yang lebih lama tidak dapat membacanya.",
+    "downloading": "memuat turun Swipt {{version}} ({{build}}) daripada {{release}}",
+    "expiration": "Penandatanganannya tamat tempoh {{expiration}}.",
+    "installed": "{{build}} dipasang pada {{device}}.",
+    "installing": "memasang pada {{device}}",
+    "invalidTeam": "argumen {{value}} tidak sah untuk --team: ia mestilah ID pasukan 10 aksara yang ditunjukkan di {{accounts}}",
+    "laterThanRelease": "{{build}} pada {{device}} lebih baharu daripada {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; buka kuncinya atau berikan --passcode, kemudian jalankan semula arahan ini.",
+    "looking": "mencari Swipt pada peranti",
+    "needsMacOS": "Swipt memerlukan macOS untuk dipasang atau dikemas kini; pasangkannya dari Mac, kemudian sediakannya di sini dengan \"swipt sideload setup\".",
+    "noAccount": "Xcode tidak mempunyai akaun; log masuk di {{accounts}}, atau pilih pasukan dengan --team ID",
+    "noAccountForTeam": "Xcode tidak mempunyai akaun untuk pasukan {{team}}; log masuk dengan Akaun Apple pasukan tersebut di {{accounts}}.",
+    "noCertificate": "Xcode tidak mempunyai sijil pembangunan; tambahkan satu sijil di {{accounts}} › Manage Certificates, atau pilih pasukan dengan --team ID",
+    "noneInstalled": "Swipt tidak dimuat sisi pada mana-mana iPhone atau iPad.",
+    "noneInstalledHint": "Swipt tidak dimuat sisi pada mana-mana iPhone atau iPad; pasangkannya dengan \"swipt sideload install\".",
+    "notInstalled": "Swipt tidak dimuat sisi pada {{device}}.",
+    "notInstalledByTeam": "Swipt tidak dimuat sisi pada {{device}} oleh pasukan {{team}}.",
+    "notInstalledByTeamHint": "Swipt tidak dimuat sisi pada {{device}} oleh pasukan {{team}}; pasangkannya dengan \"swipt sideload install\".",
+    "notInstalledHint": "Swipt tidak dimuat sisi pada {{device}}; pasangkannya dengan \"swipt sideload install\".",
+    "notOnNetwork": "{{device}} tidak ditemui pada rangkaian setempat; cari URL API peranti itu di Swipt › Pembangun › Rangkaian Setempat.",
+    "opening": "membuka Swipt pada {{device}}",
+    "openingSettings": "membuka Seting pada {{device}}",
+    "opensAfterUnlock": "Ia akan dibuka sebaik sahaja kunci {{device}} dibuka.",
+    "pairingFailed": "Gagal berpasangan, jadi Swipt akan berpasangan dalam Seting: {{error}}",
+    "preparingDiskImage": "menyediakan imej cakera pembangun pada {{device}}",
+    "preparingSigning": "menyediakan penandatanganan untuk Swipt dengan pasukan {{team}} melalui Xcode",
+    "removed": "{{build}} dikeluarkan daripada {{device}}",
+    "removing": "mengeluarkan Swipt daripada {{device}}",
+    "renewalNeedsDowngrade": "{{build}} pada {{device}} memerlukan penandatanganan baharu, tetapi {{release}} ({{releaseBuild}}) lebih lama; gunakan --nightly, atau turunkan versi dengan \"swipt sideload install --force\".",
+    "resigning": "menandatangani semula Swipt",
+    "running": "{{app}} sedang berjalan.",
+    "settingUpAutoUnlock": "menyediakan buka kunci automatik",
+    "trusted": "{{developer}} dipercayai.",
+    "trusting": "mempercayai {{developer}} dalam Seting",
+    "unlockPrompt": "Buka kunci peranti untuk meneruskan.",
+    "unlocking": "membuka kunci peranti",
+    "untrusted": "Pembangunnya belum dipercayai; percayai pembangun itu dalam halaman Seting yang dibuka pada {{device}}, kemudian buka Swipt.",
+    "upToDate": "{{build}} pada {{device}} sudah pun {{release}}.",
+    "updated": "{{build}} dikemas kini pada {{device}}.",
+    "waiting": "menunggu {{device}}",
+    "xcodeMissing": "xcodebuild memerlukan Xcode; pasangkannya dan pilihnya dengan xcode-select",
+    "xcodebuildMissing": "xcodebuild tiada; pasang Xcode."
+  }
+}

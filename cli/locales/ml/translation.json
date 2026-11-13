@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "available() ഉപയോഗിച്ച് ഇവ പരിശോധിക്കൂ, ഇവ ഉപയോഗിക്കുന്ന കോഡ് @available ഉപയോഗിച്ച് അടയാളപ്പെടുത്തൂ, അല്ലെങ്കിൽ package.json-ലെ \"swiplet.minimumAPILevel\" അല്ലെങ്കിൽ \"swiplet.minimumIOSVersion\" ഉയർത്തൂ.",
+    "apiLevel": "API ലെവൽ {{level}}",
+    "entryNeeds": "{{location}}: {{name}} Swiplet-ന്റെ ഒരു എൻട്രി പോയിന്റ് ആണ്, അതിന് {{requirement}} ആവശ്യമാണ്; package.json-ലെ \"swiplet.minimumAPILevel\" അല്ലെങ്കിൽ \"swiplet.minimumIOSVersion\" ഉയർത്തൂ.",
+    "importNeeds": "{{location}}: {{name}} ഇംപോർട്ട് ചെയ്യാൻ {{requirement}} ആവശ്യമാണ്; package.json-ലെ \"swiplet.minimumAPILevel\" അല്ലെങ്കിൽ \"swiplet.minimumIOSVersion\" ഉയർത്തൂ.",
+    "invalidEntry": "{{location}}: @available-ൽ \"{{entry}}\" ഉണ്ട്; കോമ ഉപയോഗിച്ച് വേർതിരിച്ച \"apiLevel <level>\", \"iOS <version>\" എന്നിവയാണ് ഇത് സ്വീകരിക്കുന്നത്.",
+    "needs": "{{location}}: {{name}}-ന് {{requirement}} ആവശ്യമാണ്.",
+    "repeatedEntry": "{{location}}: @available-ൽ {{kind}} രണ്ടുതവണ നൽകിയിട്ടുണ്ട്."
+  },
+  "cli": {
+    "commands": "കമാൻഡുകൾ:",
+    "exactArgs_one": "{{count}} ആർഗ്യുമെന്റ് ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "exactArgs_other": "{{count}} ആർഗ്യുമെന്റുകൾ ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "help": "സഹായം",
+    "helpHint": "ഉപയോഗരീതി അറിയാൻ \"swipt help\" റൺ ചെയ്യൂ.",
+    "minimumArgs_one": "കുറഞ്ഞത് {{count}} ആർഗ്യുമെന്റ് ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "minimumArgs_other": "കുറഞ്ഞത് {{count}} ആർഗ്യുമെന്റുകൾ ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "missingCommand": "കമാൻഡ് ഇല്ല.",
+    "options": "ഓപ്ഷനുകൾ:",
+    "rangeArgs_one": "{{least}} മുതൽ {{count}} വരെ ആർഗ്യുമെന്റ് ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "rangeArgs_other": "{{least}} മുതൽ {{count}} വരെ ആർഗ്യുമെന്റുകൾ ആവശ്യമാണ്, ലഭിച്ചത് {{received}}",
+    "unauthenticated": "{{message}}; Swipt › ഡെവലപ്പർ അല്ലെങ്കിൽ \"swipt driver\" കാണിക്കുന്ന URL ഉപയോഗിച്ച് കണക്റ്റ് ചെയ്യൂ: swipt device add {{url}}",
+    "unimplemented": "{{url}} എന്നതിലെ Swipt-ൽ ഈ കമാൻഡ് ഇല്ല; Swipt അപ്ഡേറ്റ് ചെയ്യൂ.",
+    "unknownCommand": "{{parent}} എന്നതിന് {{name}} എന്ന കമാൻഡ് അറിയില്ല",
+    "unknownOption": "{{option}} എന്നത് {{command}} എന്നതിന്റെ ഓപ്ഷനല്ല.",
+    "unreachable": "{{url}} എന്നതിലെ Swipt-ൽ എത്താനാകുന്നില്ല: {{message}}",
+    "usage": "ഉപയോഗം: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "ഡാറ്റ ഡയറക്ടറി നിലനിർത്തി എല്ലാ ഡാറ്റ ഫയലുകളും നീക്കം ചെയ്യൂ"
+      },
+      "list": {
+        "description": "ഡാറ്റ ഫയലുകൾ ലിസ്റ്റ് ചെയ്യൂ",
+        "recursive": "സബ്‌ഡയറക്ടറികൾ ഉൾപ്പെടുത്തൂ"
+      },
+      "read": {
+        "description": "ഡാറ്റ ഫയലോ ഡയറക്ടറിയോ വായിക്കൂ",
+        "output": "ലക്ഷ്യസ്ഥാനം",
+        "saved_one": "{{count}} ഫയൽ {{path}} എന്നതിലേക്ക് സേവ് ചെയ്തു",
+        "saved_other": "{{count}} ഫയലുകൾ {{path}} എന്നതിലേക്ക് സേവ് ചെയ്തു"
+      },
+      "remove": {
+        "description": "ഡാറ്റ ഫയൽ നീക്കം ചെയ്യൂ",
+        "recursive": "ഡയറക്ടറിയിലെ ഉള്ളടക്കം ഉൾപ്പെടുത്തൂ"
+      },
+      "replDescription": "REPL-ന്റെ ഡാറ്റ ഡയറക്ടറിയിലെ ഫയലുകൾ മാനേജ് ചെയ്യൂ",
+      "swipletDescription": "ഒരു Swiplet-ന്റെ ഡാറ്റ ഡയറക്ടറിയിലെ ഫയലുകൾ മാനേജ് ചെയ്യൂ",
+      "write": {
+        "description": "ഡാറ്റ ഫയൽ എഴുതൂ"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "URL ഉപയോഗിച്ച് ഡിവൈസ് ചേർക്കൂ; അത് റിമോട്ട് ആണെങ്കിലോ ടോക്കൺ ആവശ്യമാണെങ്കിലോ ഇത് ആവശ്യമാണ്"
+      },
+      "description": "ഡിവൈസുകൾ മാനേജ് ചെയ്യൂ, അവയുടെ ലോഗുകൾ വായിക്കൂ",
+      "list": {
+        "description": "ഡിവൈസുകൾ ലിസ്റ്റ് ചെയ്യൂ, ലോക്കൽ നെറ്റ്‌വർക്കിൽ കണ്ടെത്തിയവ ചേർക്കൂ"
+      },
+      "logs": {
+        "count": "മുൻ എൻട്രികളുടെ എണ്ണം (ഡിഫോൾട്ട് 100)",
+        "description": "ലോഗുകൾ പ്രിന്റ് ചെയ്യൂ",
+        "follow": "പുതിയ എൻട്രികൾ പിന്തുടരൂ",
+        "invalidDuration": "{{option}} എന്നതിന് {{value}} അസാധുവായ ആർഗ്യുമെന്റാണ്: ഇത് 30s അല്ലെങ്കിൽ 1m30s പോലുള്ള ദൈർഘ്യം ആയിരിക്കണം",
+        "invalidLevel": "--level എന്നത് error, warn, info അല്ലെങ്കിൽ debug ആയിരിക്കണം",
+        "invalidNumber": "{{option}} എന്നതിന് {{value}} അസാധുവായ ആർഗ്യുമെന്റാണ്: ഇത് ഒരു സംഖ്യ ആയിരിക്കണം",
+        "level": "ഏറ്റവും കുറഞ്ഞ ലെവൽ (ഡിഫോൾട്ട് info)",
+        "since": "പരമാവധി കാലയളവ്",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "ഡിവൈസ് മറക്കൂ"
+      },
+      "stop": {
+        "description": "Swipt API നൽകുന്നത് നിർത്തൂ",
+        "stopped": "നിർത്തി"
+      }
+    },
+    "driver": {
+      "description": "ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് ഒരു ഡിവൈസിനായി Swipt API-യും MCP-യും നൽകൂ",
+      "details": "ഒരേ സമയം ഒരു കക്ഷിക്ക് മാത്രമേ ഡിവൈസ് നിയന്ത്രിക്കാനാകൂ: ഡിവൈസിലെ Swipt, അല്ലെങ്കിൽ ഒരു കമ്പ്യൂട്ടറിലെ ഡ്രൈവർ.",
+      "passcode": "ഡിവൈസ് സ്വയം അൺലോക്ക് ചെയ്യാനുള്ള പാസ്‌കോഡ്; ശൂന്യമാക്കിയാൽ അത് ഓഫാകും",
+      "randomToken": "API ക്ലയന്റുകളിൽ നിന്ന് ക്രമരഹിതമായ ഒരു ടോക്കൺ ആവശ്യപ്പെടൂ",
+      "token": "API ക്ലയന്റുകളിൽ നിന്ന് ഈ ടോക്കൺ ആവശ്യപ്പെടൂ"
+    },
+    "project": {
+      "build": {
+        "description": "പ്രോജക്റ്റ് dist/<swiplet.id>.swiplet ആയി ബണ്ടിൽ ചെയ്യൂ"
+      },
+      "create": {
+        "description": "പുതിയതോ ശൂന്യമോ ആയ ഡയറക്ടറിയിൽ Swiplet പ്രോജക്റ്റ് സൃഷ്ടിക്കൂ",
+        "notEmpty": "{{directory}} ശൂന്യമല്ല."
+      },
+      "deploy": {
+        "description": "പ്രോജക്റ്റ് ബിൽഡ് ചെയ്ത് ഡിവൈസിൽ ഇൻസ്റ്റാൾ ചെയ്യൂ"
+      },
+      "description": "Swiplet പ്രോജക്റ്റുകൾ സൃഷ്ടിക്കൂ, ബിൽഡ് ചെയ്യൂ, ഡിപ്ലോയ് ചെയ്യൂ",
+      "develop": {
+        "deployed": "{{elapsed}} സമയത്തിൽ ബിൽഡ് ചെയ്ത് ഡിപ്ലോയ് ചെയ്തു; {{directory}} നിരീക്ഷിക്കുന്നു",
+        "description": "Swiplet പ്രോജക്റ്റ് ബിൽഡ് ചെയ്ത് ഇൻസ്റ്റാൾ ചെയ്യൂ, അത് മാറുന്നതിനനുസരിച്ച് പിന്തുടരൂ",
+        "quiet": "ലോഗുകൾ ഇല്ലാതെ",
+        "unchanged": "{{elapsed}} സമയത്തിൽ ബിൽഡ് ചെയ്തു; ഒന്നും മാറിയിട്ടില്ല"
+      },
+      "source": {
+        "description": "ബിൽഡ് ചെയ്ത Swiplet-കൾ swiplets.json സഹിതം dist/ എന്നതിലേക്ക് ശേഖരിക്കൂ",
+        "duplicateID": "{{id}} എന്നത് {{first}}, {{second}} എന്നിവ രണ്ടുമാണ്",
+        "invalidIcon": "package.json-ലെ \"source.icon\"-ൽ symbol ഉണ്ടായിരിക്കണം, color ഉണ്ടാകാം.",
+        "invalidLocalizedNames": "package.json-ലെ \"source.localizedNames\" ഭാഷകളെ പേരുകളിലേക്ക് മാപ്പ് ചെയ്യണം.",
+        "invalidURL": "package.json-ലെ \"source.url\" ഒരു കേവല URL അല്ല.",
+        "noWorkspaces": "package.json-ൽ Swiplet-കളുള്ള വർക്ക്‌സ്‌പേസുകൾ ലിസ്റ്റ് ചെയ്തിട്ടില്ല; ലിസ്റ്റ് ചെയ്യേണ്ട Swiplet-കളുടെ പേര് നൽകൂ.",
+        "notBuilt": "{{file}} ഇല്ല; ആദ്യം {{directory}} ബിൽഡ് ചെയ്യൂ."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "ഗ്ലോബലുകളുടെയും മൊഡ്യൂളുകളുടെയും TypeScript ഡിക്ലറേഷനുകൾ പ്രിന്റ് ചെയ്യൂ"
+      },
+      "dataDirectory": "{{path}} എന്നത് REPL-ന്റെ ഡാറ്റ ഡയറക്ടറിയെ സൂചിപ്പിക്കുന്നു; --output DIRECTORY ഉപയോഗിച്ച് ഇത് സേവ് ചെയ്യൂ",
+      "description": "ഡിവൈസിലെ REPL സെഷനിൽ JavaScript റൺ ചെയ്യൂ",
+      "directory": "{{path}} എന്നത് REPL-ന്റെ ഡാറ്റ ഡയറക്ടറിയിലെ ഒരു ഡയറക്ടറിയാണ്; --output DIRECTORY ഉപയോഗിച്ച് ഇത് സേവ് ചെയ്യൂ",
+      "reset": {
+        "description": "സെഷൻ റീസെറ്റ് ചെയ്യൂ"
+      },
+      "run": {
+        "arguments": "ആദ്യ ആർഗ്യുമെന്റ് നിലവിലുള്ള ഒരു ഫയലിനെ സൂചിപ്പിക്കുന്നുവെങ്കിൽ അത് FILE ആണ്, അല്ലെങ്കിൽ CODE; ഓപ്ഷനുകൾ അതിനു മുമ്പ് നൽകണം.",
+        "description": "ഡിവൈസിൽ JavaScript എക്സ്പ്രഷനോ പ്രോഗ്രാമോ റൺ ചെയ്യൂ",
+        "details": "CODE ഒരു എക്സ്പ്രഷനാണ്, അതിന്റെ മൂല്യം പ്രിന്റ് ചെയ്യും. FILE, അല്ലെങ്കിൽ - ആയി നൽകിയതോ ആർഗ്യുമെന്റ് ഇല്ലാത്തതോ ആയ സ്റ്റാൻഡേർഡ് ഇൻപുട്ട്, ഒരു പ്രോഗ്രാമാണ്, അതിന്റെ കൺസോൾ ഔട്ട്പുട്ട് മാത്രം പ്രിന്റ് ചെയ്യും.",
+        "extraArguments": "{{argument}} ഒരു ഫയലല്ല, CODE ഒരു ARG-യും സ്വീകരിക്കുന്നില്ല.",
+        "images": "ഇമേജ് ഡയറക്ടറി (ഡിഫോൾട്ട്: പുതിയ താൽക്കാലിക ഡയറക്ടറി)"
+      }
+    },
+    "sideload": {
+      "description": "Swipt സൈഡ്‌ലോഡ് ചെയ്യൂ",
+      "install": {
+        "description": "Swipt ഇൻസ്റ്റാൾ ചെയ്യൂ",
+        "force": "അതേ ബിൽഡിനോ പുതിയ ബിൽഡിനോ മുകളിൽ ഇൻസ്റ്റാൾ ചെയ്യൂ"
+      },
+      "passcode": "ഈ പാസ്‌കോഡ് ഉപയോഗിച്ച് ഓട്ടോമാറ്റിക് അൺലോക്ക് സജ്ജീകരിക്കൂ",
+      "setup": {
+        "description": "Swipt സജ്ജീകരിക്കൂ"
+      },
+      "uninstall": {
+        "description": "Swipt നീക്കം ചെയ്യൂ"
+      },
+      "update": {
+        "description": "Swipt അപ്ഡേറ്റ് ചെയ്യൂ അല്ലെങ്കിൽ സൈനിങ് പുതുക്കൂ",
+        "passcode": "ഈ പാസ്‌കോഡ് ഉപയോഗിച്ച് ഡിവൈസ് അൺലോക്ക് ചെയ്യൂ"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet ആക്ഷൻ വിളിക്കൂ",
+        "input": "ഇൻപുട്ട് JSON, @FILE അല്ലെങ്കിൽ -",
+        "invalidInput": "--input JSON അല്ല: {{error}}"
+      },
+      "dataDirectory": "{{path}} എന്നത് {{swiplet}} എന്നതിന്റെ ഡാറ്റ ഡയറക്ടറിയെ സൂചിപ്പിക്കുന്നു; --output DIRECTORY ഉപയോഗിച്ച് ഇത് സേവ് ചെയ്യൂ",
+      "description": "ഡിവൈസിലെ Swiplet-കൾ മാനേജ് ചെയ്യൂ",
+      "directory": "{{path}} എന്നത് {{swiplet}} എന്നതിന്റെ ഡാറ്റ ഡയറക്ടറിയിലെ ഒരു ഡയറക്ടറിയാണ്; --output DIRECTORY ഉപയോഗിച്ച് ഇത് സേവ് ചെയ്യൂ",
+      "install": {
+        "description": "Swiplet ആർക്കൈവ് ഇൻസ്റ്റാൾ ചെയ്യൂ",
+        "notFound": "{{path}} എന്നതിൽ ആർക്കൈവ് ഇല്ല"
+      },
+      "list": {
+        "actions": "ആക്ഷനുകൾ",
+        "description": "Swiplet-കൾ ലിസ്റ്റ് ചെയ്യൂ",
+        "id": "ID",
+        "service": "സർവീസ്",
+        "status": "നില",
+        "title": "ശീർഷകം",
+        "version": "പതിപ്പ്"
+      },
+      "remove": {
+        "description": "Swiplet നീക്കം ചെയ്യൂ",
+        "removed": "{{name}} നീക്കം ചെയ്തു"
+      },
+      "service": {
+        "description": "Swiplet സർവീസുകൾ മാനേജ് ചെയ്യൂ",
+        "disable": {
+          "description": "Swiplet സർവീസ് ഓഫാക്കൂ"
+        },
+        "enable": {
+          "description": "Swiplet സർവീസ് ഓണാക്കൂ"
+        },
+        "watch": {
+          "description": "Swiplet സർവീസുകൾ നിരീക്ഷിക്കൂ"
+        },
+        "watchState": "നില നിരീക്ഷിക്കൂ"
+      },
+      "show": {
+        "description": "Swiplet കാണിക്കൂ",
+        "input": "ഇൻപുട്ട്: {{schema}}",
+        "notFound": "{{id}} എന്ന Swiplet ഇല്ല.",
+        "output": "ഔട്ട്പുട്ട്: {{schema}}",
+        "service": "സർവീസ്: {{status}}"
+      }
+    },
+    "version": {
+      "description": "പതിപ്പ് പ്രിന്റ് ചെയ്യൂ"
+    }
+  },
+  "connection": {
+    "added": "{{device}} ചേർത്തു",
+    "ambiguous": "ഒന്നിലധികം ഡിവൈസുകളുണ്ട്: {{devices}}; -d ഉപയോഗിച്ച് ഒന്ന് തിരഞ്ഞെടുക്കൂ",
+    "driverNotStopped": "{{computer}} എന്നതിലെ ഡ്രൈവർ നിന്നില്ല.",
+    "invalidURL": "{{text}} ഒരു URL അല്ല.",
+    "none": "ഡിവൈസ് ഒന്നുമില്ല; Swipt › ഡെവലപ്പർ › ലോക്കൽ നെറ്റ്‌വർക്ക് ഓണാക്കൂ, അല്ലെങ്കിൽ \"swipt device add URL\" ഉപയോഗിച്ച് ഒരു ഡിവൈസ് കണക്റ്റ് ചെയ്യൂ.",
+    "noneOnNetwork": "ലോക്കൽ നെറ്റ്‌വർക്കിൽ ഒരു ഡിവൈസും Swipt പ്രസിദ്ധീകരിക്കുന്നില്ല; Swipt › ഡെവലപ്പർ › ലോക്കൽ നെറ്റ്‌വർക്ക് ഓണാക്കൂ, അല്ലെങ്കിൽ \"swipt device add URL\" ഉപയോഗിച്ച് ഒരു ഡിവൈസ് കണക്റ്റ് ചെയ്യൂ.",
+    "notFound": "{{device}} എന്ന ഡിവൈസ് ഇല്ല.",
+    "notFoundHint": "{{device}} എന്ന ഡിവൈസ് ഇല്ല; \"swipt device list\" അവ ലിസ്റ്റ് ചെയ്യും.",
+    "offline": "ഓഫ്‌ലൈൻ",
+    "problem": {
+      "developerModeOff": "ഡെവലപ്പർ മോഡ് ഓഫാണ്",
+      "deviceUnsupported": "ഡിവൈസ് പിന്തുണയ്ക്കുന്നില്ല",
+      "diskImageMissing": "ഡിസ്ക് ഇമേജ് ഇല്ല",
+      "diskImageMountFailed": "ഡിസ്ക് ഇമേജ് മൗണ്ട് ചെയ്യാനായില്ല",
+      "pairingRejected": "പെയറിങ് നിരസിച്ചു",
+      "screenInUse": "സ്ക്രീൻ ഉപയോഗത്തിലാണ്",
+      "unreachable": "എത്താനാകുന്നില്ല",
+      "vpnPeerAddressMissing": "VPN പിയർ വിലാസം ഇല്ല"
+    },
+    "removed": "{{name}} നീക്കം ചെയ്തു",
+    "requiresToken": "ടോക്കൺ ആവശ്യമാണ്",
+    "requiresTokenHint": "{{device}} എന്ന ഡിവൈസിന് ടോക്കൺ ആവശ്യമാണ്: swipt device add {{url}}",
+    "state": {
+      "connecting": "കണക്റ്റ് ചെയ്യുന്നു",
+      "failed": "പരാജയപ്പെട്ടു",
+      "preparing": "തയ്യാറാക്കുന്നു",
+      "running": "സജീവം",
+      "stopped": "നിർത്തി"
+    },
+    "unsupportedURL": "{{text}} ഒരു http അല്ലെങ്കിൽ https URL അല്ല."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} ഇൻസ്റ്റാൾ ചെയ്തു",
+    "replaced": "{{id}} {{version}} മാറ്റിസ്ഥാപിച്ചു"
+  },
+  "driver": {
+    "alreadyRunning": "ഈ കമ്പ്യൂട്ടറിൽ ഡ്രൈവർ ഇതിനകം പ്രവർത്തിക്കുന്നു; ആദ്യം അത് നിർത്തൂ.",
+    "ambiguousName": "{{name}} എന്ന പേരിൽ ഒന്നിലധികം iPhone അല്ലെങ്കിൽ iPad ഡിവൈസുകളുണ്ട്; UDID ഉപയോഗിച്ച് ഒന്ന് തിരഞ്ഞെടുക്കൂ",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service റൺ ചെയ്യുന്നില്ല; Microsoft Store-ൽ നിന്ന് Apple Devices ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യൂ",
+    "chooseDevice": "ഡിവൈസ് തിരഞ്ഞെടുക്കൂ",
+    "chooseDeviceHint": "-d NAME|UDID ഉപയോഗിച്ച് ഡിവൈസ് തിരഞ്ഞെടുക്കൂ",
+    "connectedDevices": "{{reason}}; കണക്റ്റ് ചെയ്ത iPhone, iPad ഡിവൈസുകൾ:",
+    "lookingForDevices": "ഡിവൈസുകൾക്കായി തിരയുന്നു",
+    "missing": "ഡ്രൈവർ കാണുന്നില്ല; \"npm install -g @swipt/cli --include=optional\" ഉപയോഗിച്ച് അത് ഇൻസ്റ്റാൾ ചെയ്യൂ.",
+    "nameNotFound": "{{name}} എന്ന പേരിൽ iPhone അല്ലെങ്കിൽ iPad ഡിവൈസ് ഇല്ല",
+    "noDevice": "ഈ കമ്പ്യൂട്ടറിലേക്ക് ഒരു iPhone അല്ലെങ്കിൽ iPad ഡിവൈസും കണക്റ്റ് ചെയ്തിട്ടില്ല, ലോക്കൽ നെറ്റ്‌വർക്കിലും കണ്ടെത്തിയില്ല; USB കേബിൾ ഉപയോഗിച്ച് ഒരു ഡിവൈസ് കണക്റ്റ് ചെയ്ത് അൺലോക്ക് ചെയ്യൂ.",
+    "pairing": "{{device}} എന്ന ഡിവൈസുമായി പെയർ ചെയ്യുന്നു",
+    "trustPrompt": "{{device}} എന്ന ഡിവൈസിൽ ‘വിശ്വസിക്കൂ’ ടാപ്പ് ചെയ്ത്, ഈ കമ്പ്യൂട്ടറിനെ വിശ്വസിക്കാൻ അതിന്റെ പാസ്‌കോഡ് നൽകൂ",
+    "usbmuxdMissing": "usbmuxd റൺ ചെയ്യുന്നില്ല; usbmuxd ഇൻസ്റ്റാൾ ചെയ്ത് അത് ആരംഭിക്കൂ"
+  },
+  "error": "പിശക്: {{message}}",
+  "flags": {
+    "device": "ഉപയോഗിക്കേണ്ട ഡിവൈസ്",
+    "nightly": "nightly ബിൽഡ് ഉപയോഗിക്കൂ",
+    "noSetup": "Swipt പെയർ ചെയ്യരുത്, അതിന്റെ ഡെവലപ്പറെ വിശ്വസിക്കരുത്, അതിന്റെ API പ്രസിദ്ധീകരിക്കരുത്",
+    "noSetupAPI": "ലോക്കൽ നെറ്റ്‌വർക്കിലേക്ക് API പ്രസിദ്ധീകരിക്കരുത്",
+    "noSetupPair": "Swipt പെയർ ചെയ്യരുത്",
+    "passcodeType": "pin (4 അല്ലെങ്കിൽ 6 അക്കങ്ങൾ, ഡിഫോൾട്ട്), numeric അല്ലെങ്കിൽ alphanumeric",
+    "team": "ടീം ID, ഒന്നിലധികം ഉണ്ടെങ്കിൽ ആവശ്യമാണ്"
+  },
+  "metro": {
+    "boolean": "ഒരു ബൂളിയൻ",
+    "contextArgument": "require.context-ന്റെ ആർഗ്യുമെന്റ് {{index}} {{expected}} ആയിരിക്കണം",
+    "contextRegExp": "require.context-ന്റെ ആർഗ്യുമെന്റ് {{index}} ഒരു റെഗുലർ എക്സ്പ്രഷൻ ലിറ്ററൽ ആയിരിക്കണം.",
+    "oneOf": "{{values}} എന്നിവയിൽ ഒന്ന്",
+    "string": "ഒരു സ്ട്രിങ്",
+    "workletsMismatch": "പ്രോജക്റ്റിൽ react-native-worklets {{version}} ആണ്, എന്നാൽ Swipt റൺ ചെയ്യുന്നത് {{expected}} ആണ്; react-native-worklets@{{expected}} ഇൻസ്റ്റാൾ ചെയ്യൂ അല്ലെങ്കിൽ അത് നീക്കം ചെയ്യൂ."
+  },
+  "noThanks": "വേണ്ട, നന്ദി",
+  "output": {
+    "navigate": "നീക്കൂ",
+    "select": "തിരഞ്ഞെടുക്കൂ",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} മുതൽ {{status}}",
+    "serviceStatus": {
+      "failed": "പരാജയപ്പെട്ടു",
+      "running": "പ്രവർത്തിക്കുന്നു",
+      "starting": "ആരംഭിക്കുന്നു",
+      "stopped": "നിർത്തി",
+      "turnedOff": "ഓഫ്",
+      "turnedOn": "ഓൺ"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "ഇഷ്ടാനുസൃത ആൽഫാന്യൂമെറിക് കോഡ്",
+    "alphanumericDetail": "ആൽഫാന്യൂമെറിക്",
+    "empty": "പാസ്‌കോഡ് നൽകൂ.",
+    "invalidAlphanumeric": "പാസ്‌കോഡിൽ പ്രിന്റ് ചെയ്യാവുന്ന 64 വരെ ASCII പ്രതീകങ്ങൾ ഉണ്ടാകാം.",
+    "invalidNumeric": "ന്യൂമെറിക് പാസ്‌കോഡിൽ അക്കങ്ങൾ മാത്രമേ ഉണ്ടാകൂ.",
+    "invalidPin": "pin പാസ്‌കോഡ് 4 അല്ലെങ്കിൽ 6 അക്കങ്ങളാണ്; ഇഷ്ടാനുസൃത പാസ്‌കോഡിന് --passcode-type numeric അല്ലെങ്കിൽ alphanumeric ആവശ്യമാണ്",
+    "invalidType": "--passcode-type എന്നതിന് {{value}} അസാധുവായ ആർഗ്യുമെന്റാണ്: ഇത് {{types}} ആയിരിക്കണം",
+    "masked": "[ഇൻപുട്ട് മറച്ചിരിക്കുന്നു]",
+    "numeric": "ഇഷ്ടാനുസൃത ന്യൂമെറിക് കോഡ്",
+    "numericDetail": "ന്യൂമെറിക്",
+    "pin": "4 അല്ലെങ്കിൽ 6 അക്ക പാസ്‌കോഡ്",
+    "pinDetail": "4 അല്ലെങ്കിൽ 6 അക്കങ്ങൾ",
+    "prompt": "ഡിവൈസ് പാസ്‌കോഡ്",
+    "setUp": "ഓട്ടോമാറ്റിക് അൺലോക്ക് സജ്ജീകരിക്കണോ? അങ്ങനെയെങ്കിൽ Swipt-ന് ഈ ഡിവൈസ് സ്വയം അൺലോക്ക് ചെയ്യാനാകും."
+  },
+  "project": {
+    "assetConflict": "{{source}}, {{asset}} എന്നിവ രണ്ടും Swiplet-ൽ assets/{{name}} ആയി മാറും.",
+    "conditionalActions": "available() അനുസരിച്ച് എക്സ്റ്റൻഷൻ വ്യത്യസ്ത ആക്ഷനുകൾ നിർവചിക്കുന്നു; എല്ലാ സിസ്റ്റത്തിലും ഒരേ ആക്ഷനുകൾ നിർവചിച്ച്, run-ന്റെയോ ഒരു ആക്ഷന്റെയോ ഉള്ളിൽ available() പരിശോധിക്കൂ.",
+    "databaseAtLoad": "extension.js ലോഡ് ചെയ്യുമ്പോൾ ഡാറ്റാബേസ് ഉപയോഗിക്കുന്നു; ഇത് run-ന്റെയോ ഒരു ആക്ഷന്റെയോ ഉള്ളിൽ ഉപയോഗിക്കൂ.",
+    "interfaceImport": "ഇന്റർഫേസ് റൺ ടൈമിൽ {{file}} ഇംപോർട്ട് ചെയ്യുന്നു; `import type` ഉപയോഗിച്ച് അതിന്റെ ടൈപ്പ് ഇംപോർട്ട് ചെയ്യൂ.",
+    "interfaceOnly": "{{name}} Swiplet ഇന്റർഫേസിൽ മാത്രമേ പ്രവർത്തിക്കൂ.",
+    "invalidExposure": "{{action}} എന്ന ആക്ഷന് സ്വയം \"shortcuts\"-ലേക്ക് മാത്രമേ ലഭ്യമാക്കാനാകൂ.",
+    "invalidExtension": "എക്സ്റ്റൻഷന്റെ ഡിഫോൾട്ട് എക്സ്പോർട്ട് defineExtension-ന്റെ ഫലമല്ല.",
+    "invalidID": "package.json-ലെ \"swiplet.id\" 1 മുതൽ 128 വരെ ചെറിയക്ഷരങ്ങൾ, അക്കങ്ങൾ, ഡോട്ടുകൾ, അണ്ടർസ്കോറുകൾ, ഹൈഫനുകൾ എന്നിവ ചേർന്നതും അക്ഷരത്തിലോ അക്കത്തിലോ ആരംഭിക്കുന്നതും ആയിരിക്കണം.",
+    "invalidLocalizedNames": "package.json-ലെ \"swiplet.localizedNames\" ഭാഷകളെ പേരുകളിലേക്ക് മാപ്പ് ചെയ്യണം.",
+    "invalidMinimumAPILevel": "package.json-ലെ \"swiplet.minimumAPILevel\" {{oldest}} മുതൽ @swipt/api-യുടെ API ലെവലായ {{level}} വരെയുള്ള ഒരു പൂർണ്ണസംഖ്യ ആയിരിക്കണം.",
+    "invalidMinimumIOSVersion": "package.json-ലെ \"swiplet.minimumIOSVersion\" @swipt/api-യുടെ ഏറ്റവും കുറഞ്ഞ iOS പതിപ്പായ {{version}} അല്ലെങ്കിൽ അതിൽ കൂടുതലുള്ള ഒരു പതിപ്പ് നമ്പർ ആയിരിക്കണം.",
+    "invalidName": "package.json-ലെ \"swiplet.name\" ശൂന്യമല്ലാത്ത സ്ട്രിങ് ആയിരിക്കണം.",
+    "invalidSchema": "{{action}} എന്ന ആക്ഷന്റെ {{side}} സ്കീമ Standard JSON Schema നടപ്പാക്കുന്നില്ല; അത് നടപ്പാക്കുന്ന ഒരു ലൈബ്രറി ഉപയോഗിക്കൂ, ഉദാഹരണത്തിന് Zod 4.",
+    "invalidString": "package.json-ലെ \"{{field}}\" ഒരു സ്ട്രിങ് ആയിരിക്കണം.",
+    "invalidVersionCode": "package.json-ലെ \"swiplet.versionCode\" ഒരു പോസിറ്റീവ് പൂർണ്ണസംഖ്യ ആയിരിക്കണം.",
+    "missingTitle": "{{action}} എന്ന ആക്ഷന് ഒരു ശീർഷകം ആവശ്യമാണ്.",
+    "storageAtLoad": "extension.js ലോഡ് ചെയ്യുമ്പോൾ സ്റ്റോറേജ് ഉപയോഗിക്കുന്നു; ഇത് run-ന്റെയോ ഒരു ആക്ഷന്റെയോ ഉള്ളിൽ ഉപയോഗിക്കൂ.",
+    "unprovidedModule": "Swipt എക്സ്റ്റൻഷനുകൾക്ക് \"{{module}}\" നൽകുന്നില്ല; അത് extension.js-ലേക്ക് ബണ്ടിൽ ചെയ്യൂ.",
+    "usedAtLoad": "extension.js ലോഡ് ചെയ്യുമ്പോൾ {{name}} ഉപയോഗിക്കുന്നു; ഇത് run-ന്റെയോ ഒരു ആക്ഷന്റെയോ ഉള്ളിൽ ഉപയോഗിക്കൂ."
+  },
+  "serve": {
+    "cancel": "റദ്ദാക്കൂ",
+    "checking": "{{device}} പരിശോധിക്കുന്നു",
+    "conflictingTokens": "--token, --random-token എന്നിവ ഒരുമിച്ച് ഉപയോഗിക്കാനാകില്ല.",
+    "invalidToken": "സ്‌പേസുകളില്ലാത്ത, പ്രിന്റ് ചെയ്യാവുന്ന ഒന്നോ അതിലധികമോ ASCII പ്രതീകങ്ങളാണ് ടോക്കൺ.",
+    "localNetwork": "ലോക്കൽ നെറ്റ്‌വർക്ക്",
+    "noAutoUnlock": "{{device}} സ്വയം അൺലോക്ക് ആകില്ല; --passcode ഉപയോഗിച്ച് അതിന്റെ പാസ്‌കോഡ് സജ്ജീകരിക്കൂ. ഡ്രൈവർ നിർത്താൻ Ctrl-C അമർത്തൂ.",
+    "quitSwipt": "Swipt അടയ്ക്കൂ",
+    "quittingSwipt": "{{device}} എന്ന ഡിവൈസിൽ Swipt അടയ്ക്കുന്നു",
+    "served": "{{computer}} എന്നതിലെ ഡ്രൈവർ ഇതിനകം {{device}} എന്ന ഡിവൈസിന് സേവനം നൽകുന്നുണ്ട്; ആദ്യം ആ ഡ്രൈവർ നിർത്തൂ.",
+    "servedPrompt": "{{computer}} എന്നതിലെ ഡ്രൈവർ ഇതിനകം {{device}} എന്ന ഡിവൈസിന് സേവനം നൽകുന്നുണ്ട്. ആ ഡ്രൈവർ നിർത്തണോ?",
+    "starting": "{{device}} എന്ന ഡിവൈസിനായി ഡ്രൈവർ ആരംഭിക്കുന്നു",
+    "stopDriver": "{{computer}} എന്നതിലെ ഡ്രൈവർ നിർത്തൂ",
+    "stopHint": "ഡ്രൈവർ നിർത്താൻ Ctrl-C അമർത്തൂ.",
+    "stoppingDriver": "{{computer}} എന്നതിലെ ഡ്രൈവർ നിർത്തുന്നു",
+    "swiptRunning": "{{device}} എന്ന ഡിവൈസിൽ Swipt റൺ ചെയ്യുമ്പോൾ ഡ്രൈവറിന് അത് നിയന്ത്രിക്കാനാകില്ല; ആദ്യം Swipt അടയ്ക്കൂ.",
+    "swiptRunningPrompt": "{{device}} എന്ന ഡിവൈസിൽ Swipt റൺ ചെയ്യുമ്പോൾ ഡ്രൈവറിന് അത് നിയന്ത്രിക്കാനാകില്ല. Swipt അടയ്ക്കണോ?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}} എന്ന ഡിവൈസിൽ ഒന്നിലധികം ടീമുകൾ Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടുണ്ട്; --team ID ഉപയോഗിച്ച് ഒന്ന് തിരഞ്ഞെടുക്കൂ:",
+    "certificateFailed": "{{team}} എന്ന ടീമിനായി ഡെവലപ്‌മെന്റ് സർട്ടിഫിക്കറ്റ് സൃഷ്ടിക്കാൻ Xcode-ന് കഴിഞ്ഞില്ല; {{accounts}} › Manage Certificates എന്നതിൽ ഒന്ന് ചേർക്കൂ ({{errors}}).",
+    "checking": "{{device}} എന്ന ഡിവൈസിൽ Swipt പരിശോധിക്കുന്നു",
+    "checkingRelease": "ഏറ്റവും പുതിയ റിലീസ് പരിശോധിക്കുന്നു",
+    "chooseTeam": "ടീം തിരഞ്ഞെടുക്കൂ",
+    "chooseTeamHint": "--team ID ഉപയോഗിച്ച് ടീം തിരഞ്ഞെടുക്കൂ:",
+    "diskImageFailed": "{{device}} എന്ന ഡിവൈസിൽ ഡെവലപ്പർ ഡിസ്ക് ഇമേജ് തയ്യാറാക്കാനായില്ല: {{error}}",
+    "downgrade": "ഡൗൺഗ്രേഡ് ചെയ്യൂ",
+    "downgradePrompt": "{{device}} എന്ന ഡിവൈസിലെ Swipt {{version}}-ൽ നിന്ന് {{releaseVersion}}-ലേക്ക് ഡൗൺഗ്രേഡ് ചെയ്യണോ? പഴയ പതിപ്പിന് ഡാറ്റ വായിക്കാൻ കഴിയാത്തപ്പോൾ Swipt അതിന്റെ ഡാറ്റ റീസെറ്റ് ചെയ്യും.",
+    "downgradeToStablePrompt": "{{device}} എന്ന ഡിവൈസിലെ Swipt, nightly ബിൽഡ് {{version}}-ൽ നിന്ന് സ്ഥിരതയുള്ള പതിപ്പ് {{releaseVersion}}-ലേക്ക് ഡൗൺഗ്രേഡ് ചെയ്യണോ? പഴയ പതിപ്പിന് ഡാറ്റ വായിക്കാൻ കഴിയാത്തപ്പോൾ Swipt അതിന്റെ ഡാറ്റ റീസെറ്റ് ചെയ്യും.",
+    "downloading": "{{release}} എന്നതിൽ നിന്ന് Swipt {{version}} ({{build}}) ഡൗൺലോഡ് ചെയ്യുന്നു",
+    "expiration": "ഇതിന്റെ സൈനിങ് {{expiration}} കാലഹരണപ്പെടും.",
+    "installed": "{{device}} എന്ന ഡിവൈസിൽ {{build}} ഇൻസ്റ്റാൾ ചെയ്തു.",
+    "installing": "{{device}} എന്ന ഡിവൈസിൽ ഇൻസ്റ്റാൾ ചെയ്യുന്നു",
+    "invalidTeam": "--team എന്നതിന് {{value}} അസാധുവായ ആർഗ്യുമെന്റാണ്: ഇത് {{accounts}} എന്നതിൽ കാണിക്കുന്ന 10 പ്രതീക ടീം ID ആയിരിക്കണം",
+    "laterThanRelease": "{{device}} എന്ന ഡിവൈസിലെ {{build}}, {{release}} ({{releaseBuild}}) എന്നതിനെക്കാൾ പുതിയതാണ്.",
+    "locked": "{{device}}: {{message}}; ഇത് അൺലോക്ക് ചെയ്യൂ അല്ലെങ്കിൽ --passcode നൽകൂ, തുടർന്ന് ഇത് വീണ്ടും റൺ ചെയ്യൂ.",
+    "looking": "ഡിവൈസുകളിൽ Swipt തിരയുന്നു",
+    "needsMacOS": "Swipt ഇൻസ്റ്റാൾ ചെയ്യാനോ അപ്ഡേറ്റ് ചെയ്യാനോ macOS ആവശ്യമാണ്; ഒരു Mac-ൽ നിന്ന് ഇത് ഇൻസ്റ്റാൾ ചെയ്ത്, തുടർന്ന് \"swipt sideload setup\" ഉപയോഗിച്ച് ഇവിടെ സജ്ജീകരിക്കൂ.",
+    "noAccount": "Xcode-ൽ അക്കൗണ്ട് ഇല്ല; {{accounts}} എന്നതിൽ സൈൻ ഇൻ ചെയ്യൂ, അല്ലെങ്കിൽ --team ID ഉപയോഗിച്ച് ടീം തിരഞ്ഞെടുക്കൂ",
+    "noAccountForTeam": "{{team}} എന്ന ടീമിനായി Xcode-ൽ അക്കൗണ്ട് ഇല്ല; {{accounts}} എന്നതിൽ അതിന്റെ Apple അക്കൗണ്ട് ഉപയോഗിച്ച് സൈൻ ഇൻ ചെയ്യൂ.",
+    "noCertificate": "Xcode-ൽ ഡെവലപ്‌മെന്റ് സർട്ടിഫിക്കറ്റ് ഇല്ല; {{accounts}} › Manage Certificates എന്നതിൽ ഒന്ന് ചേർക്കൂ, അല്ലെങ്കിൽ --team ID ഉപയോഗിച്ച് ടീം തിരഞ്ഞെടുക്കൂ",
+    "noneInstalled": "ഒരു iPhone അല്ലെങ്കിൽ iPad ഡിവൈസിലും Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല.",
+    "noneInstalledHint": "ഒരു iPhone അല്ലെങ്കിൽ iPad ഡിവൈസിലും Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല; \"swipt sideload install\" ഉപയോഗിച്ച് ഇത് ഇൻസ്റ്റാൾ ചെയ്യൂ.",
+    "notInstalled": "{{device}} എന്ന ഡിവൈസിൽ Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല.",
+    "notInstalledByTeam": "{{device}} എന്ന ഡിവൈസിൽ {{team}} എന്ന ടീം Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല.",
+    "notInstalledByTeamHint": "{{device}} എന്ന ഡിവൈസിൽ {{team}} എന്ന ടീം Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല; \"swipt sideload install\" ഉപയോഗിച്ച് ഇത് ഇൻസ്റ്റാൾ ചെയ്യൂ.",
+    "notInstalledHint": "{{device}} എന്ന ഡിവൈസിൽ Swipt സൈഡ്‌ലോഡ് ചെയ്തിട്ടില്ല; \"swipt sideload install\" ഉപയോഗിച്ച് ഇത് ഇൻസ്റ്റാൾ ചെയ്യൂ.",
+    "notOnNetwork": "ലോക്കൽ നെറ്റ്‌വർക്കിൽ {{device}} കണ്ടെത്തിയില്ല; അതിന്റെ API URL-കൾ Swipt › ഡെവലപ്പർ › ലോക്കൽ നെറ്റ്‌വർക്ക് എന്നതിൽ കാണാം.",
+    "opening": "{{device}} എന്ന ഡിവൈസിൽ Swipt തുറക്കുന്നു",
+    "openingSettings": "{{device}} എന്ന ഡിവൈസിൽ ‘ക്രമീകരണം’ തുറക്കുന്നു",
+    "opensAfterUnlock": "{{device}} എന്ന ഡിവൈസ് അൺലോക്ക് ചെയ്യുമ്പോൾ ഇത് തുറക്കും.",
+    "pairingFailed": "പെയറിങ് പരാജയപ്പെട്ടു, അതിനാൽ Swipt പകരം ‘ക്രമീകരണ’ത്തിൽ പെയർ ചെയ്യുന്നു: {{error}}",
+    "preparingDiskImage": "{{device}} എന്ന ഡിവൈസിൽ ഡെവലപ്പർ ഡിസ്ക് ഇമേജ് തയ്യാറാക്കുന്നു",
+    "preparingSigning": "Xcode വഴി {{team}} എന്ന ടീം ഉപയോഗിച്ച് Swipt-നുള്ള സൈനിങ് തയ്യാറാക്കുന്നു",
+    "removed": "{{device}} എന്ന ഡിവൈസിൽ നിന്ന് {{build}} നീക്കം ചെയ്തു",
+    "removing": "{{device}} എന്ന ഡിവൈസിൽ നിന്ന് Swipt നീക്കം ചെയ്യുന്നു",
+    "renewalNeedsDowngrade": "{{device}} എന്ന ഡിവൈസിലെ {{build}}-ന് പുതിയ സൈനിങ് ആവശ്യമാണ്, എന്നാൽ {{release}} ({{releaseBuild}}) പഴയതാണ്; --nightly ഉപയോഗിക്കൂ, അല്ലെങ്കിൽ \"swipt sideload install --force\" ഉപയോഗിച്ച് ഡൗൺഗ്രേഡ് ചെയ്യൂ.",
+    "resigning": "Swipt വീണ്ടും സൈൻ ചെയ്യുന്നു",
+    "running": "{{app}} പ്രവർത്തിക്കുന്നു.",
+    "settingUpAutoUnlock": "ഓട്ടോമാറ്റിക് അൺലോക്ക് സജ്ജീകരിക്കുന്നു",
+    "trusted": "{{developer}} എന്ന ഡെവലപ്പറെ വിശ്വസിച്ചു.",
+    "trusting": "‘ക്രമീകരണ’ത്തിൽ {{developer}} എന്ന ഡെവലപ്പറെ വിശ്വസിക്കുന്നു",
+    "unlockPrompt": "തുടരാൻ ഡിവൈസ് അൺലോക്ക് ചെയ്യൂ.",
+    "unlocking": "ഡിവൈസ് അൺലോക്ക് ചെയ്യുന്നു",
+    "untrusted": "ഇതിന്റെ ഡെവലപ്പറെ ഇതുവരെ വിശ്വസിച്ചിട്ടില്ല; {{device}} എന്ന ഡിവൈസിൽ തുറന്ന ‘ക്രമീകരണം’ പേജിൽ വിശ്വസിച്ച ശേഷം Swipt തുറക്കൂ.",
+    "upToDate": "{{device}} എന്ന ഡിവൈസിലെ {{build}} ഇതിനകം {{release}} ആണ്.",
+    "updated": "{{device}} എന്ന ഡിവൈസിൽ {{build}} അപ്ഡേറ്റ് ചെയ്തു.",
+    "waiting": "{{device}} എന്ന ഡിവൈസിനായി കാത്തിരിക്കുന്നു",
+    "xcodeMissing": "xcodebuild-ന് Xcode ആവശ്യമാണ്; ഇത് ഇൻസ്റ്റാൾ ചെയ്ത് xcode-select ഉപയോഗിച്ച് തിരഞ്ഞെടുക്കൂ",
+    "xcodebuildMissing": "xcodebuild ഇല്ല; Xcode ഇൻസ്റ്റാൾ ചെയ്യൂ."
+  }
+}

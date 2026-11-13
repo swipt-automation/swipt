@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { build } from "./build";
 import { create } from "./create";
@@ -8,6 +8,6 @@ import { source } from "./source";
 
 export const project = defineCommand({
   name: "project",
-  short: tr("Make, build and deploy swiplet projects"),
+  short: t("commands.project.description"),
   commands: [create, build, source, deploy, develop],
 });

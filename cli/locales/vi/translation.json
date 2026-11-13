@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Hãy kiểm tra chúng bằng available(), đánh dấu mã sử dụng chúng bằng @available, hoặc tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
+    "apiLevel": "mức API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} là điểm vào của Swiplet và cần {{requirement}}; hãy tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
+    "importNeeds": "{{location}}: việc nhập {{name}} cần {{requirement}}; hãy tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
+    "invalidEntry": "{{location}}: @available có \"{{entry}}\"; @available chỉ nhận \"apiLevel <level>\" và \"iOS <version>\", phân tách bằng dấu phẩy.",
+    "needs": "{{location}}: {{name}} cần {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available chỉ định {{kind}} hai lần."
+  },
+  "cli": {
+    "commands": "lệnh:",
+    "exactArgs_one": "cần {{count}} đối số, nhận được {{received}}",
+    "exactArgs_other": "cần {{count}} đối số, nhận được {{received}}",
+    "help": "trợ giúp",
+    "helpHint": "Chạy \"swipt help\" để xem cách sử dụng.",
+    "minimumArgs_one": "cần ít nhất {{count}} đối số, nhận được {{received}}",
+    "minimumArgs_other": "cần ít nhất {{count}} đối số, nhận được {{received}}",
+    "missingCommand": "Thiếu lệnh.",
+    "options": "tùy chọn:",
+    "rangeArgs_one": "cần từ {{least}} đến {{count}} đối số, nhận được {{received}}",
+    "rangeArgs_other": "cần từ {{least}} đến {{count}} đối số, nhận được {{received}}",
+    "unauthenticated": "{{message}}; hãy kết nối bằng URL mà Swipt > Nhà phát triển hoặc \"swipt driver\" hiển thị: swipt device add {{url}}",
+    "unimplemented": "Swipt tại {{url}} không có lệnh này; hãy cập nhật Swipt.",
+    "unknownCommand": "{{parent}} không có lệnh {{name}}",
+    "unknownOption": "{{option}} không phải là tùy chọn của {{command}}.",
+    "unreachable": "Không thể kết nối với Swipt tại {{url}}: {{message}}",
+    "usage": "cách dùng: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Xóa mọi tệp dữ liệu nhưng giữ lại thư mục dữ liệu"
+      },
+      "list": {
+        "description": "Liệt kê các tệp dữ liệu",
+        "recursive": "bao gồm các thư mục con"
+      },
+      "read": {
+        "description": "Đọc tệp hoặc thư mục dữ liệu",
+        "output": "vị trí đích",
+        "saved_one": "đã lưu {{count}} tệp vào {{path}}",
+        "saved_other": "đã lưu {{count}} tệp vào {{path}}"
+      },
+      "remove": {
+        "description": "Xóa tệp dữ liệu",
+        "recursive": "bao gồm nội dung thư mục"
+      },
+      "replDescription": "Quản lý các tệp trong thư mục dữ liệu của REPL",
+      "swipletDescription": "Quản lý các tệp trong thư mục dữ liệu của Swiplet",
+      "write": {
+        "description": "Ghi tệp dữ liệu"
+      }
+    },
+    "description": "Công cụ dòng lệnh Swipt",
+    "device": {
+      "add": {
+        "description": "Thêm thiết bị bằng URL; cần thiết khi thiết bị ở xa hoặc yêu cầu mã thông báo"
+      },
+      "description": "Quản lý các thiết bị và đọc nhật ký của thiết bị",
+      "list": {
+        "description": "Liệt kê các thiết bị, đồng thời thêm các thiết bị tìm thấy trên mạng cục bộ"
+      },
+      "logs": {
+        "count": "số mục trước đó (mặc định 100)",
+        "description": "In nhật ký",
+        "follow": "tiếp tục hiển thị các mục mới",
+        "invalidDuration": "đối số {{value}} không hợp lệ cho {{option}}: giá trị phải là một khoảng thời gian, chẳng hạn như 30s hoặc 1m30s",
+        "invalidLevel": "--level phải là error, warn, info hoặc debug",
+        "invalidNumber": "đối số {{value}} không hợp lệ cho {{option}}: giá trị phải là một số",
+        "level": "mức tối thiểu (mặc định info)",
+        "since": "độ cũ tối đa của mục nhật ký",
+        "swiplet": "ID Swiplet"
+      },
+      "remove": {
+        "description": "Quên thiết bị"
+      },
+      "stop": {
+        "description": "Ngừng cung cấp API Swipt",
+        "stopped": "đã dừng"
+      }
+    },
+    "driver": {
+      "description": "Cung cấp API Swipt và MCP cho thiết bị từ máy tính này",
+      "details": "Mỗi lúc chỉ một bên có thể điều khiển thiết bị: Swipt trên thiết bị, hoặc trình điều khiển trên một máy tính.",
+      "passcode": "mật mã để tự động mở khóa thiết bị; để trống sẽ tắt tự động mở khóa",
+      "randomToken": "yêu cầu mã thông báo ngẫu nhiên từ máy khách API",
+      "token": "yêu cầu mã thông báo này từ máy khách API"
+    },
+    "project": {
+      "build": {
+        "description": "Đóng gói dự án thành dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Tạo dự án Swiplet trong thư mục mới hoặc thư mục trống",
+        "notEmpty": "{{directory}} không trống."
+      },
+      "deploy": {
+        "description": "Xây dựng dự án và cài đặt trên thiết bị"
+      },
+      "description": "Tạo, xây dựng và triển khai các dự án Swiplet",
+      "develop": {
+        "deployed": "đã xây dựng và triển khai trong {{elapsed}}; đang theo dõi {{directory}}",
+        "description": "Xây dựng, cài đặt và theo dõi dự án Swiplet khi dự án thay đổi",
+        "quiet": "không hiển thị nhật ký",
+        "unchanged": "đã xây dựng trong {{elapsed}}; không có gì thay đổi"
+      },
+      "source": {
+        "description": "Thu thập các Swiplet đã xây dựng vào dist/ cùng với swiplets.json",
+        "duplicateID": "{{id}} vừa là {{first}} vừa là {{second}}",
+        "invalidIcon": "\"source.icon\" trong package.json phải có symbol và có thể có color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" trong package.json phải ánh xạ ngôn ngữ với tên.",
+        "invalidURL": "\"source.url\" trong package.json không phải là URL tuyệt đối.",
+        "noWorkspaces": "package.json không liệt kê không gian làm việc nào có Swiplet; hãy nêu tên các Swiplet cần liệt kê.",
+        "notBuilt": "Thiếu {{file}}; hãy xây dựng {{directory}} trước."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "In các khai báo TypeScript của các biến toàn cục và mô-đun"
+      },
+      "dataDirectory": "{{path}} chỉ đến thư mục dữ liệu của REPL; hãy lưu bằng --output DIRECTORY",
+      "description": "Chạy JavaScript trong phiên REPL trên thiết bị",
+      "directory": "{{path}} là một thư mục trong thư mục dữ liệu của REPL; hãy lưu bằng --output DIRECTORY",
+      "reset": {
+        "description": "Đặt lại phiên"
+      },
+      "run": {
+        "arguments": "Đối số đầu tiên là FILE nếu chỉ đến một tệp hiện có, nếu không thì là CODE; các tùy chọn đặt trước đối số này.",
+        "description": "Chạy biểu thức hoặc chương trình JavaScript trên thiết bị",
+        "details": "CODE là biểu thức có giá trị được in ra. FILE, hoặc đầu vào chuẩn được cho dưới dạng - hoặc không có đối số, là chương trình và chỉ đầu ra bảng điều khiển của chương trình được in ra.",
+        "extraArguments": "{{argument}} không phải là tệp và CODE không nhận ARG.",
+        "images": "thư mục hình ảnh (mặc định: một thư mục tạm thời mới)"
+      }
+    },
+    "sideload": {
+      "description": "Sideload Swipt",
+      "install": {
+        "description": "Cài đặt Swipt",
+        "force": "cài đặt đè lên cùng bản dựng hoặc bản dựng mới hơn"
+      },
+      "passcode": "thiết lập tự động mở khóa bằng mật mã này",
+      "setup": {
+        "description": "Thiết lập Swipt"
+      },
+      "uninstall": {
+        "description": "Xóa Swipt"
+      },
+      "update": {
+        "description": "Cập nhật hoặc gia hạn Swipt",
+        "passcode": "mở khóa thiết bị bằng mật mã này"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Gọi tác vụ Swiplet",
+        "input": "JSON đầu vào, @FILE hoặc -",
+        "invalidInput": "--input không phải là JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} chỉ đến thư mục dữ liệu của {{swiplet}}; hãy lưu bằng --output DIRECTORY",
+      "description": "Quản lý các Swiplet trên thiết bị",
+      "directory": "{{path}} là một thư mục trong thư mục dữ liệu của {{swiplet}}; hãy lưu bằng --output DIRECTORY",
+      "install": {
+        "description": "Cài đặt tệp lưu trữ Swiplet",
+        "notFound": "Không có tệp lưu trữ tại {{path}}"
+      },
+      "list": {
+        "actions": "TÁC VỤ",
+        "description": "Liệt kê các Swiplet",
+        "id": "ID",
+        "service": "DỊCH VỤ",
+        "status": "TRẠNG THÁI",
+        "title": "TIÊU ĐỀ",
+        "version": "PHIÊN BẢN"
+      },
+      "remove": {
+        "description": "Xóa Swiplet",
+        "removed": "đã xóa {{name}}"
+      },
+      "service": {
+        "description": "Quản lý các dịch vụ Swiplet",
+        "disable": {
+          "description": "Tắt dịch vụ Swiplet"
+        },
+        "enable": {
+          "description": "Bật dịch vụ Swiplet"
+        },
+        "watch": {
+          "description": "Theo dõi các dịch vụ Swiplet"
+        },
+        "watchState": "theo dõi trạng thái"
+      },
+      "show": {
+        "description": "Hiển thị Swiplet",
+        "input": "đầu vào: {{schema}}",
+        "notFound": "Không có Swiplet {{id}}.",
+        "output": "đầu ra: {{schema}}",
+        "service": "dịch vụ: {{status}}"
+      }
+    },
+    "version": {
+      "description": "In phiên bản"
+    }
+  },
+  "connection": {
+    "added": "đã thêm {{device}}",
+    "ambiguous": "Có nhiều thiết bị: {{devices}}; hãy chọn một thiết bị bằng -d",
+    "driverNotStopped": "Trình điều khiển trên {{computer}} không dừng.",
+    "invalidURL": "{{text}} không phải là URL.",
+    "none": "Không có thiết bị; hãy bật Swipt > Nhà phát triển > Mạng cục bộ hoặc kết nối một thiết bị bằng \"swipt device add URL\".",
+    "noneOnNetwork": "Không có thiết bị nào công bố Swipt trên mạng cục bộ; hãy bật Swipt > Nhà phát triển > Mạng cục bộ hoặc kết nối một thiết bị bằng \"swipt device add URL\".",
+    "notFound": "Không có thiết bị {{device}}.",
+    "notFoundHint": "Không có thiết bị {{device}}; \"swipt device list\" liệt kê các thiết bị.",
+    "offline": "ngoại tuyến",
+    "problem": {
+      "developerModeOff": "chế độ nhà phát triển đang tắt",
+      "deviceUnsupported": "thiết bị không được hỗ trợ",
+      "diskImageMissing": "không có ảnh đĩa",
+      "diskImageMountFailed": "không thể gắn ảnh đĩa",
+      "pairingRejected": "ghép đôi bị từ chối",
+      "screenInUse": "màn hình đang được sử dụng",
+      "unreachable": "không thể kết nối",
+      "vpnPeerAddressMissing": "thiếu địa chỉ ngang hàng của VPN"
+    },
+    "removed": "đã xóa {{name}}",
+    "requiresToken": "cần mã thông báo",
+    "requiresTokenHint": "{{device}} cần mã thông báo: swipt device add {{url}}",
+    "state": {
+      "connecting": "đang kết nối",
+      "failed": "không thành công",
+      "preparing": "đang chuẩn bị",
+      "running": "đã kết nối",
+      "stopped": "đã dừng"
+    },
+    "unsupportedURL": "{{text}} không phải là URL http hoặc https."
+  },
+  "deploy": {
+    "installed": "đã cài đặt {{id}} {{version}}",
+    "replaced": "đã thay thế {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Trình điều khiển đang chạy trên máy tính này rồi; hãy dừng nó trước.",
+    "ambiguousName": "Có nhiều iPhone hoặc iPad tên {{name}}; hãy chọn một thiết bị theo UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service không chạy; hãy cài đặt ứng dụng Thiết bị Apple từ Microsoft Store",
+    "chooseDevice": "Chọn thiết bị",
+    "chooseDeviceHint": "Hãy chọn thiết bị bằng -d NAME|UDID",
+    "connectedDevices": "{{reason}}; các thiết bị iPhone và iPad đã kết nối:",
+    "lookingForDevices": "đang tìm thiết bị",
+    "missing": "Thiếu trình điều khiển; hãy cài đặt bằng \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Không có iPhone hoặc iPad nào tên {{name}}",
+    "noDevice": "Không có iPhone hoặc iPad nào được kết nối với máy tính này hoặc được tìm thấy trên mạng cục bộ; hãy kết nối một thiết bị bằng cáp USB và mở khóa.",
+    "pairing": "đang ghép đôi với {{device}}",
+    "trustPrompt": "hãy chạm vào Tin cậy trên {{device}} và nhập mật mã của thiết bị để tin cậy máy tính này",
+    "usbmuxdMissing": "usbmuxd không chạy; hãy cài đặt usbmuxd và khởi động"
+  },
+  "error": "lỗi: {{message}}",
+  "flags": {
+    "device": "thiết bị cần sử dụng",
+    "nightly": "sử dụng bản dựng nightly",
+    "noSetup": "không ghép đôi Swipt, không tin cậy nhà phát triển của Swipt và không công bố API của Swipt",
+    "noSetupAPI": "không công bố API lên mạng cục bộ",
+    "noSetupPair": "không ghép đôi Swipt",
+    "passcodeType": "pin (4 hoặc 6 chữ số, mặc định), numeric hoặc alphanumeric",
+    "team": "ID nhóm, bắt buộc nếu có nhiều nhóm"
+  },
+  "metro": {
+    "boolean": "một giá trị boolean",
+    "contextArgument": "Đối số {{index}} của require.context phải là {{expected}}",
+    "contextRegExp": "Đối số {{index}} của require.context phải là một biểu thức chính quy dạng literal.",
+    "oneOf": "một trong các giá trị {{values}}",
+    "string": "một chuỗi",
+    "workletsMismatch": "Dự án có react-native-worklets {{version}} nhưng Swipt chạy {{expected}}; hãy cài đặt react-native-worklets@{{expected}} hoặc xóa gói này."
+  },
+  "noThanks": "Không, cảm ơn",
+  "output": {
+    "navigate": "di chuyển",
+    "select": "chọn",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} từ {{time}}",
+    "serviceStatus": {
+      "failed": "không thành công",
+      "running": "đang chạy",
+      "starting": "đang khởi động",
+      "stopped": "đã dừng",
+      "turnedOff": "đã tắt",
+      "turnedOn": "đã bật"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Mã chữ số tùy chỉnh",
+    "alphanumericDetail": "mã chữ số",
+    "empty": "Hãy nhập mật mã.",
+    "invalidAlphanumeric": "Mật mã dài tối đa 64 ký tự ASCII in được.",
+    "invalidNumeric": "Mã số chỉ có thể chứa các chữ số.",
+    "invalidPin": "Mật mã pin gồm 4 hoặc 6 chữ số; mật mã tùy chỉnh cần --passcode-type numeric hoặc alphanumeric",
+    "invalidType": "đối số {{value}} không hợp lệ cho --passcode-type: giá trị phải là {{types}}",
+    "masked": "[đã ẩn nội dung nhập]",
+    "numeric": "Mã số tùy chỉnh",
+    "numericDetail": "mã số",
+    "pin": "Mật mã gồm 4 hoặc 6 chữ số",
+    "pinDetail": "4 hoặc 6 chữ số",
+    "prompt": "Mật mã thiết bị",
+    "setUp": "Thiết lập tự động mở khóa? Khi đó, Swipt có thể tự mở khóa thiết bị này."
+  },
+  "project": {
+    "assetConflict": "{{source}} và {{asset}} đều sẽ trở thành assets/{{name}} trong Swiplet.",
+    "conditionalActions": "Phần mở rộng định nghĩa các tác vụ khác nhau tùy theo available(); hãy định nghĩa cùng các tác vụ trên mọi hệ thống và kiểm tra available() bên trong run hoặc một tác vụ.",
+    "databaseAtLoad": "Cơ sở dữ liệu được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ.",
+    "interfaceImport": "Giao diện nhập {{file}} khi chạy; hãy nhập kiểu của tệp này bằng `import type`.",
+    "interfaceOnly": "{{name}} chỉ hoạt động trong giao diện Swiplet.",
+    "invalidExposure": "Tác vụ {{action}} chỉ có thể công khai với \"shortcuts\".",
+    "invalidExtension": "Nội dung xuất mặc định của phần mở rộng không phải là kết quả của defineExtension.",
+    "invalidID": "\"swiplet.id\" trong package.json phải gồm từ 1 đến 128 chữ cái thường, chữ số, dấu chấm, dấu gạch dưới và dấu gạch nối, bắt đầu bằng chữ cái hoặc chữ số.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" trong package.json phải ánh xạ ngôn ngữ với tên.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" trong package.json phải là số nguyên từ {{oldest}} đến {{level}} (mức API của @swipt/api).",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" trong package.json phải là số phiên bản từ {{version}} trở lên (phiên bản iOS tối thiểu của @swipt/api).",
+    "invalidName": "\"swiplet.name\" trong package.json phải là chuỗi không trống.",
+    "invalidSchema": "Lược đồ {{side}} của tác vụ {{action}} không triển khai Standard JSON Schema; hãy dùng một thư viện có triển khai, chẳng hạn như Zod 4.",
+    "invalidString": "\"{{field}}\" trong package.json phải là chuỗi.",
+    "invalidVersionCode": "\"swiplet.versionCode\" trong package.json phải là số nguyên dương.",
+    "missingTitle": "Tác vụ {{action}} cần có tiêu đề.",
+    "storageAtLoad": "Bộ lưu trữ được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ.",
+    "unprovidedModule": "Swipt không cung cấp \"{{module}}\" cho các phần mở rộng; hãy đóng gói mô-đun này vào extension.js.",
+    "usedAtLoad": "{{name}} được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ."
+  },
+  "serve": {
+    "cancel": "Hủy",
+    "checking": "đang kiểm tra {{device}}",
+    "conflictingTokens": "Không thể dùng --token và --random-token cùng lúc.",
+    "invalidToken": "Mã thông báo gồm một hoặc nhiều ký tự ASCII in được, không có dấu cách.",
+    "localNetwork": "Mạng cục bộ",
+    "noAutoUnlock": "{{device}} không được tự động mở khóa; hãy đặt mật mã bằng --passcode. Nhấn Ctrl-C để dừng trình điều khiển.",
+    "quitSwipt": "Thoát Swipt",
+    "quittingSwipt": "đang thoát Swipt trên {{device}}",
+    "served": "Trình điều khiển trên {{computer}} đang phục vụ {{device}}; hãy dừng trình điều khiển đó trước.",
+    "servedPrompt": "Trình điều khiển trên {{computer}} đang phục vụ {{device}}. Dừng trình điều khiển đó?",
+    "starting": "đang khởi động trình điều khiển cho {{device}}",
+    "stopDriver": "Dừng trình điều khiển trên {{computer}}",
+    "stopHint": "Nhấn Ctrl-C để dừng trình điều khiển.",
+    "stoppingDriver": "đang dừng trình điều khiển trên {{computer}}",
+    "swiptRunning": "Trình điều khiển không thể điều khiển {{device}} khi Swipt đang chạy trên thiết bị đó; hãy thoát Swipt trước.",
+    "swiptRunningPrompt": "Trình điều khiển không thể điều khiển {{device}} khi Swipt đang chạy trên thiết bị đó. Thoát Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Nhiều nhóm đã sideload Swipt trên {{device}}; hãy chọn một nhóm bằng --team ID:",
+    "certificateFailed": "Xcode không thể tạo chứng chỉ phát triển cho nhóm {{team}}; hãy thêm chứng chỉ tại {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "đang kiểm tra Swipt trên {{device}}",
+    "checkingRelease": "đang kiểm tra bản phát hành mới nhất",
+    "chooseTeam": "Chọn nhóm",
+    "chooseTeamHint": "Hãy chọn nhóm bằng --team ID:",
+    "diskImageFailed": "không thể chuẩn bị ảnh đĩa nhà phát triển trên {{device}}: {{error}}",
+    "downgrade": "Hạ cấp",
+    "downgradePrompt": "Hạ cấp Swipt trên {{device}} từ {{version}} xuống {{releaseVersion}}? Swipt sẽ đặt lại dữ liệu của mình khi phiên bản cũ hơn không đọc được dữ liệu đó.",
+    "downgradeToStablePrompt": "Hạ cấp Swipt trên {{device}} từ bản dựng nightly {{version}} xuống phiên bản ổn định {{releaseVersion}}? Swipt sẽ đặt lại dữ liệu của mình khi phiên bản cũ hơn không đọc được dữ liệu đó.",
+    "downloading": "đang tải xuống Swipt {{version}} ({{build}}) từ {{release}}",
+    "expiration": "Chữ ký hết hạn {{expiration}}.",
+    "installed": "Đã cài đặt {{build}} trên {{device}}.",
+    "installing": "đang cài đặt trên {{device}}",
+    "invalidTeam": "đối số {{value}} không hợp lệ cho --team: giá trị phải là ID nhóm gồm 10 ký tự hiển thị tại {{accounts}}",
+    "laterThanRelease": "{{build}} trên {{device}} mới hơn {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; hãy mở khóa thiết bị hoặc truyền --passcode, rồi chạy lại lệnh này.",
+    "looking": "đang tìm Swipt trên các thiết bị",
+    "needsMacOS": "Việc cài đặt hoặc cập nhật Swipt cần macOS; hãy cài đặt Swipt từ máy Mac, rồi thiết lập tại đây bằng \"swipt sideload setup\".",
+    "noAccount": "Xcode không có tài khoản; hãy đăng nhập tại {{accounts}} hoặc chọn nhóm bằng --team ID",
+    "noAccountForTeam": "Xcode không có tài khoản cho nhóm {{team}}; hãy đăng nhập bằng Tài khoản Apple của nhóm tại {{accounts}}.",
+    "noCertificate": "Xcode không có chứng chỉ phát triển; hãy thêm chứng chỉ tại {{accounts}} › Manage Certificates hoặc chọn nhóm bằng --team ID",
+    "noneInstalled": "Swipt chưa được sideload trên bất kỳ iPhone hoặc iPad nào.",
+    "noneInstalledHint": "Swipt chưa được sideload trên bất kỳ iPhone hoặc iPad nào; hãy cài đặt bằng \"swipt sideload install\".",
+    "notInstalled": "Swipt chưa được sideload trên {{device}}.",
+    "notInstalledByTeam": "Swipt chưa được nhóm {{team}} sideload trên {{device}}.",
+    "notInstalledByTeamHint": "Swipt chưa được nhóm {{team}} sideload trên {{device}}; hãy cài đặt bằng \"swipt sideload install\".",
+    "notInstalledHint": "Swipt chưa được sideload trên {{device}}; hãy cài đặt bằng \"swipt sideload install\".",
+    "notOnNetwork": "Không tìm thấy {{device}} trên mạng cục bộ; hãy tìm các URL API của thiết bị trong Swipt > Nhà phát triển > Mạng cục bộ.",
+    "opening": "đang mở Swipt trên {{device}}",
+    "openingSettings": "đang mở Cài đặt trên {{device}}",
+    "opensAfterUnlock": "Ứng dụng sẽ mở khi {{device}} được mở khóa.",
+    "pairingFailed": "Ghép đôi không thành công nên Swipt sẽ ghép đôi trong Cài đặt: {{error}}",
+    "preparingDiskImage": "đang chuẩn bị ảnh đĩa nhà phát triển trên {{device}}",
+    "preparingSigning": "đang chuẩn bị ký cho Swipt với nhóm {{team}} thông qua Xcode",
+    "removed": "đã xóa {{build}} khỏi {{device}}",
+    "removing": "đang xóa Swipt khỏi {{device}}",
+    "renewalNeedsDowngrade": "{{build}} trên {{device}} cần được ký mới nhưng {{release}} ({{releaseBuild}}) cũ hơn; hãy dùng --nightly hoặc hạ cấp bằng \"swipt sideload install --force\".",
+    "resigning": "đang ký lại Swipt",
+    "running": "{{app}} đang chạy.",
+    "settingUpAutoUnlock": "đang thiết lập tự động mở khóa",
+    "trusted": "{{developer}} đã được tin cậy.",
+    "trusting": "đang tin cậy {{developer}} trong Cài đặt",
+    "unlockPrompt": "Hãy mở khóa thiết bị để tiếp tục.",
+    "unlocking": "đang mở khóa thiết bị",
+    "untrusted": "Nhà phát triển của ứng dụng chưa được tin cậy; hãy tin cậy nhà phát triển trong trang Cài đặt đang mở trên {{device}}, rồi mở Swipt.",
+    "upToDate": "{{build}} trên {{device}} đã là {{release}}.",
+    "updated": "Đã cập nhật {{build}} trên {{device}}.",
+    "waiting": "đang chờ {{device}}",
+    "xcodeMissing": "xcodebuild cần Xcode; hãy cài đặt Xcode và chọn bằng xcode-select",
+    "xcodebuildMissing": "Thiếu xcodebuild; hãy cài đặt Xcode."
+  }
+}

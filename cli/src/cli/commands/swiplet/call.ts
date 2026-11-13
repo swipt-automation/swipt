@@ -4,7 +4,7 @@ import { fromJson, toJson } from "@bufbuild/protobuf";
 import { ValueSchema } from "@bufbuild/protobuf/wkt";
 
 import { UsageError } from "../../../client";
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { errorMessage, printLog, printScriptError } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { readStdin } from "../../io";
@@ -28,7 +28,7 @@ function readInput(value: string | undefined) {
     return fromJson(ValueSchema, JSON.parse(data));
   } catch (error) {
     throw new UsageError(
-      tr("--input isn't JSON: {error}", {
+      t("commands.swiplet.call.invalidInput", {
         error: errorMessage(error),
       }),
     );
@@ -69,13 +69,13 @@ const callAction = (context: Context<{ device?: string; input?: string }>) =>
 export const call = defineCommand({
   name: "call",
   use: "call ID ACTION",
-  short: tr("Call a swiplet action"),
+  short: t("commands.swiplet.call.description"),
   args: [2, 2],
   options: {
     input: {
       type: "string",
       value: "JSON",
-      help: tr("input JSON, @FILE or -"),
+      help: t("commands.swiplet.call.input"),
     },
   },
   run: callAction,

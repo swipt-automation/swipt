@@ -1,6 +1,6 @@
 import type { JsonObject } from "@bufbuild/protobuf";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { serviceText } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
@@ -9,7 +9,7 @@ const indented = (value: JsonObject) =>
   JSON.stringify(value, null, 2).replaceAll("\n", "\n  ");
 
 const notInstalled = (id: string) =>
-  new Error(tr("There is no swiplet {id}.", { id: JSON.stringify(id) }));
+  new Error(t("commands.swiplet.show.notFound", { id: JSON.stringify(id) }));
 
 const showSwiplet = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
@@ -24,7 +24,7 @@ const showSwiplet = (context: Context<{ device?: string }>) =>
     console.log(swiplet.id, JSON.stringify(swiplet.title), swiplet.version);
     if (swiplet.service) {
       console.log(
-        tr("service: {status}", {
+        t("commands.swiplet.show.service", {
           status: serviceText(swiplet.service),
         }),
       );
@@ -37,12 +37,12 @@ const showSwiplet = (context: Context<{ device?: string }>) =>
       }
       if (action.inputSchema) {
         console.log(
-          `  ${tr("input: {schema}", { schema: indented(action.inputSchema) })}`,
+          `  ${t("commands.swiplet.show.input", { schema: indented(action.inputSchema) })}`,
         );
       }
       if (action.outputSchema) {
         console.log(
-          `  ${tr("output: {schema}", { schema: indented(action.outputSchema) })}`,
+          `  ${t("commands.swiplet.show.output", { schema: indented(action.outputSchema) })}`,
         );
       }
     }
@@ -51,7 +51,7 @@ const showSwiplet = (context: Context<{ device?: string }>) =>
 export const show = defineCommand({
   name: "show",
   use: "show ID",
-  short: tr("Show a swiplet"),
+  short: t("commands.swiplet.show.description"),
   args: [1, 1],
   run: showSwiplet,
 });

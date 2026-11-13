@@ -10,7 +10,7 @@ import { build, type Metafile, type Plugin } from "esbuild";
 import { type Zippable, zipSync } from "fflate";
 
 import { AvailabilityChecker } from "./availability";
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import { loadEnvironment, metro } from "./metro";
 import { parseVersion, versionAtLeast } from "./version";
 
@@ -96,31 +96,21 @@ export function loadProject(root: string) {
   const manifest: Record<string, unknown> = isRecord(parsed) ? parsed : {};
   const config = isRecord(manifest.swiplet) ? manifest.swiplet : {};
   if (typeof config.id !== "string" || !idPattern.test(config.id)) {
-    throw new Error(
-      tr(
-        '"swiplet.id" in package.json must be 1 to 128 lowercase letters, digits, dots, underscores and hyphens starting with a letter or a digit.',
-      ),
-    );
+    throw new Error(t("project.invalidID"));
   }
   if (typeof config.name !== "string" || config.name === "") {
-    throw new Error(
-      tr('"swiplet.name" in package.json must be a nonempty string.'),
-    );
+    throw new Error(t("project.invalidName"));
   }
   const localizedNames = config.localizedNames ?? {};
   if (!isStringRecord(localizedNames)) {
-    throw new Error(
-      tr(
-        '"swiplet.localizedNames" in package.json must map languages to names.',
-      ),
-    );
+    throw new Error(t("project.invalidLocalizedNames"));
   }
   if (
     config.description !== undefined &&
     typeof config.description !== "string"
   ) {
     throw new Error(
-      tr('"{field}" in package.json must be a string.', {
+      t("project.invalidString", {
         field: "swiplet.description",
       }),
     );
@@ -131,9 +121,7 @@ export function loadProject(root: string) {
       !Number.isInteger(config.versionCode) ||
       config.versionCode < 1)
   ) {
-    throw new Error(
-      tr('"swiplet.versionCode" in package.json must be a positive integer.'),
-    );
+    throw new Error(t("project.invalidVersionCode"));
   }
   const apiManifest = require.resolve("@swipt/api/package.json", {
     paths: [root, import.meta.dirname],
@@ -157,13 +145,10 @@ export function loadProject(root: string) {
     )
   ) {
     throw new Error(
-      tr(
-        '"swiplet.minimumAPILevel" in package.json must be an integer from {oldest} to {level}, the API level of @swipt/api.',
-        {
-          oldest: oldestAPILevel,
-          level: apiLevel,
-        },
-      ),
+      t("project.invalidMinimumAPILevel", {
+        oldest: oldestAPILevel,
+        level: apiLevel,
+      }),
     );
   }
   const version = parseVersion(config.minimumIOSVersion);
@@ -178,15 +163,12 @@ export function loadProject(root: string) {
     )
   ) {
     throw new Error(
-      tr(
-        '"swiplet.minimumIOSVersion" in package.json must be a version number from {version}, the minimum iOS version of @swipt/api.',
-        { version: minimumIOSVersion },
-      ),
+      t("project.invalidMinimumIOSVersion", { version: minimumIOSVersion }),
     );
   }
   if (typeof config.app !== "string" || config.app === "") {
     throw new Error(
-      tr('"{field}" in package.json must be a string.', {
+      t("project.invalidString", {
         field: "swiplet.app",
       }),
     );
@@ -196,7 +178,7 @@ export function loadProject(root: string) {
     (typeof config.extension !== "string" || config.extension === "")
   ) {
     throw new Error(
-      tr('"{field}" in package.json must be a string.', {
+      t("project.invalidString", {
         field: "swiplet.extension",
       }),
     );
@@ -237,12 +219,9 @@ const typeImport = (extension: string): Plugin => ({
       return {
         errors: [
           {
-            text: tr(
-              "The interface imports {file} at runtime; import its type with `import type`.",
-              {
-                file: path.basename(extension),
-              },
-            ),
+            text: t("project.interfaceImport", {
+              file: path.basename(extension),
+            }),
           },
         ],
       };
@@ -396,11 +375,7 @@ function describeExtension(source: string): ExtensionDescription {
     evaluateExtension(source, result),
   );
   if (JSON.stringify(newer) !== JSON.stringify(older)) {
-    throw new Error(
-      tr(
-        "The extension defines different actions depending on available(); define the same actions on every system and check available() inside run or an action.",
-      ),
-    );
+    throw new Error(t("project.conditionalActions"));
   }
   return newer;
 }
@@ -424,24 +399,9 @@ function evaluateExtension(
       construct: fail,
     });
   };
-  const loading = (name: string) =>
-    failing(
-      tr(
-        "{name} is used while extension.js loads; use it inside run or an action.",
-        { name },
-      ),
-    );
-  const database = () =>
-    failing(
-      tr(
-        "The database is used while extension.js loads; use it inside run or an action.",
-      ),
-    );
-  const storage = failing(
-    tr(
-      "The storage is used while extension.js loads; use it inside run or an action.",
-    ),
-  );
+  const loading = (name: string) => failing(t("project.usedAtLoad", { name }));
+  const database = () => failing(t("project.databaseAtLoad"));
+  const storage = failing(t("project.storageAtLoad"));
   const modules: Record<string, unknown> = {
     "@swipt/api": { available: () => availableResult },
     "@swipt/api/swiplet": {
@@ -454,28 +414,13 @@ function evaluateExtension(
     },
     "@swipt/api/file-system": {
       get dataDirectory() {
-        throw new Error(
-          tr(
-            "{name} is used while extension.js loads; use it inside run or an action.",
-            { name: "dataDirectory" },
-          ),
-        );
+        throw new Error(t("project.usedAtLoad", { name: "dataDirectory" }));
       },
       get cacheDirectory() {
-        throw new Error(
-          tr(
-            "{name} is used while extension.js loads; use it inside run or an action.",
-            { name: "cacheDirectory" },
-          ),
-        );
+        throw new Error(t("project.usedAtLoad", { name: "cacheDirectory" }));
       },
       get assets() {
-        throw new Error(
-          tr(
-            "{name} is used while extension.js loads; use it inside run or an action.",
-            { name: "assets" },
-          ),
-        );
+        throw new Error(t("project.usedAtLoad", { name: "assets" }));
       },
     },
     "@swipt/api/accessibility": loading("accessibility"),
@@ -535,14 +480,14 @@ function evaluateExtension(
       },
       SQLiteProvider: () => {
         throw new Error(
-          tr("{name} works only in the swiplet interface.", {
+          t("project.interfaceOnly", {
             name: "SQLiteProvider",
           }),
         );
       },
       useSQLiteContext: () => {
         throw new Error(
-          tr("{name} works only in the swiplet interface.", {
+          t("project.interfaceOnly", {
             name: "useSQLiteContext",
           }),
         );
@@ -638,10 +583,7 @@ function evaluateExtension(
     (specifier) => {
       if (typeof specifier !== "string" || !Object.hasOwn(modules, specifier)) {
         throw new Error(
-          tr(
-            'Swipt doesn\'t provide "{module}" to extensions; bundle it into extension.js.',
-            { module: String(specifier) },
-          ),
+          t("project.unprovidedModule", { module: String(specifier) }),
         );
       }
       return modules[specifier];
@@ -654,9 +596,7 @@ function evaluateExtension(
     definitionKey,
   );
   if (definition === undefined) {
-    throw new Error(
-      tr("The extension's default export isn't the result of defineExtension."),
-    );
+    throw new Error(t("project.invalidExtension"));
   }
   const schema = (
     name: string,
@@ -670,10 +610,7 @@ function evaluateExtension(
     const convert = member(converter, side);
     if (typeof convert !== "function") {
       throw new Error(
-        tr(
-          "The {side} schema of the action {action} doesn't implement Standard JSON Schema; use a library that does, such as Zod 4.",
-          { side, action: JSON.stringify(name) },
-        ),
+        t("project.invalidSchema", { side, action: JSON.stringify(name) }),
       );
     }
     return convert.call(converter, { target: "draft-2020-12" });
@@ -683,7 +620,7 @@ function evaluateExtension(
       const title = member(action, "title");
       if (typeof title !== "string" || title === "") {
         throw new Error(
-          tr("The action {action} needs a title.", {
+          t("project.missingTitle", {
             action: JSON.stringify(name),
           }),
         );
@@ -696,7 +633,7 @@ function evaluateExtension(
         )
       ) {
         throw new Error(
-          tr('The action {action} can only expose itself to "shortcuts".', {
+          t("project.invalidExposure", {
             action: JSON.stringify(name),
           }),
         );
@@ -794,7 +731,7 @@ export async function buildProject(
     const target = path.join(folder, "assets", name);
     if (fs.existsSync(target)) {
       throw new Error(
-        tr("{source} and {asset} would both be assets/{name} in the swiplet.", {
+        t("project.assetConflict", {
           source: path.relative(root, source),
           asset: path.join("assets", name),
           name,

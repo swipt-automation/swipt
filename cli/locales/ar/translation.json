@@ -1,0 +1,413 @@
+{
+  "availability": {
+    "advice": "يرجى التحقق منها باستخدام available()، أو وضع العلامة @available على التعليمات البرمجية التي تستخدمها، أو رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
+    "apiLevel": "مستوى API {{level}}",
+    "entryNeeds": "{{location}}: يُعد {{name}} نقطة دخول في Swiplet ويحتاج إلى {{requirement}}؛ يرجى رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
+    "importNeeds": "{{location}}: يحتاج استيراد {{name}} إلى {{requirement}}؛ يرجى رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
+    "invalidEntry": "{{location}}: تتضمن العلامة @available القيمة \"{{entry}}\"؛ لكنها تقبل \"apiLevel <level>\" و\"iOS <version>\" مفصولة بفواصل.",
+    "needs": "{{location}}: يحتاج {{name}} إلى {{requirement}}.",
+    "repeatedEntry": "{{location}}: يرد {{kind}} مرتين في العلامة @available."
+  },
+  "cli": {
+    "commands": "الأوامر:",
+    "exactArgs_few": "يقبل {{count}} وسيطات، وتم تلقي {{received}}",
+    "exactArgs_many": "يقبل {{count}} وسيطة، وتم تلقي {{received}}",
+    "exactArgs_one": "يقبل وسيطة واحدة، وتم تلقي {{received}}",
+    "exactArgs_other": "يقبل {{count}} وسيطة، وتم تلقي {{received}}",
+    "exactArgs_two": "يقبل وسيطتين، وتم تلقي {{received}}",
+    "exactArgs_zero": "لا يقبل أي وسيطة، وتم تلقي {{received}}",
+    "help": "عرض المساعدة",
+    "helpHint": "يرجى تنفيذ \"swipt help\" لمعرفة طريقة الاستخدام.",
+    "minimumArgs_few": "يقبل {{count}} وسيطات على الأقل، وتم تلقي {{received}}",
+    "minimumArgs_many": "يقبل {{count}} وسيطة على الأقل، وتم تلقي {{received}}",
+    "minimumArgs_one": "يقبل وسيطة واحدة على الأقل، وتم تلقي {{received}}",
+    "minimumArgs_other": "يقبل {{count}} وسيطة على الأقل، وتم تلقي {{received}}",
+    "minimumArgs_two": "يقبل وسيطتين على الأقل، وتم تلقي {{received}}",
+    "minimumArgs_zero": "يقبل أي عدد من الوسيطات، وتم تلقي {{received}}",
+    "missingCommand": "لم يتم تحديد أمر.",
+    "options": "الخيارات:",
+    "rangeArgs_few": "يقبل من {{least}} إلى {{count}} وسيطات، وتم تلقي {{received}}",
+    "rangeArgs_many": "يقبل من {{least}} إلى {{count}} وسيطة، وتم تلقي {{received}}",
+    "rangeArgs_one": "يقبل من {{least}} إلى وسيطة واحدة، وتم تلقي {{received}}",
+    "rangeArgs_other": "يقبل من {{least}} إلى {{count}} وسيطة، وتم تلقي {{received}}",
+    "rangeArgs_two": "يقبل من {{least}} إلى وسيطتين، وتم تلقي {{received}}",
+    "rangeArgs_zero": "يقبل من {{least}} إلى {{count}} وسيطة، وتم تلقي {{received}}",
+    "unauthenticated": "{{message}}؛ يرجى الاتصال باستخدام عنوان URL الذي يعرضه Swipt > المطور أو \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "لا يتضمن Swipt على {{url}} هذا الأمر؛ يرجى تحديث Swipt.",
+    "unknownCommand": "الأمر {{name}} غير معروف في {{parent}}",
+    "unknownOption": "{{option}} ليس خيارًا في {{command}}.",
+    "unreachable": "يتعذر الوصول إلى Swipt على {{url}}: {{message}}",
+    "usage": "الاستخدام: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "إزالة جميع ملفات البيانات مع الاحتفاظ بدليل البيانات"
+      },
+      "list": {
+        "description": "عرض قائمة ملفات البيانات",
+        "recursive": "تضمين الأدلة الفرعية"
+      },
+      "read": {
+        "description": "قراءة ملف بيانات أو دليل",
+        "output": "الوجهة",
+        "saved_few": "تم حفظ {{count}} ملفات في {{path}}",
+        "saved_many": "تم حفظ {{count}} ملفًا في {{path}}",
+        "saved_one": "تم حفظ ملف واحد في {{path}}",
+        "saved_other": "تم حفظ {{count}} ملف في {{path}}",
+        "saved_two": "تم حفظ ملفين في {{path}}",
+        "saved_zero": "لم يتم حفظ أي ملف في {{path}}"
+      },
+      "remove": {
+        "description": "إزالة ملف بيانات",
+        "recursive": "تضمين محتويات الدليل"
+      },
+      "replDescription": "إدارة الملفات في دليل بيانات REPL",
+      "swipletDescription": "إدارة الملفات في دليل بيانات Swiplet",
+      "write": {
+        "description": "كتابة ملف بيانات"
+      }
+    },
+    "description": "واجهة سطر أوامر Swipt",
+    "device": {
+      "add": {
+        "description": "إضافة جهاز باستخدام عنوان URL الخاص به؛ يلزم ذلك عندما يكون الجهاز بعيدًا أو يتطلب رمزًا مميزًا"
+      },
+      "description": "إدارة الأجهزة وقراءة سجلاتها",
+      "list": {
+        "description": "عرض قائمة الأجهزة، مع إضافة الأجهزة التي يُعثر عليها على الشبكة المحلية"
+      },
+      "logs": {
+        "count": "عدد الإدخالات السابقة (الافتراضي ١٠٠)",
+        "description": "طباعة السجلات",
+        "follow": "متابعة الإدخالات الجديدة",
+        "invalidDuration": "الوسيطة {{value}} غير صالحة للخيار {{option}}: يجب أن تكون مدة مثل 30s أو 1m30s",
+        "invalidLevel": "يجب أن تكون قيمة --level هي error أو warn أو info أو debug",
+        "invalidNumber": "الوسيطة {{value}} غير صالحة للخيار {{option}}: يجب أن تكون رقمًا",
+        "level": "الحد الأدنى للمستوى (الافتراضي info)",
+        "since": "الحد الأقصى لعمر الإدخالات",
+        "swiplet": "معرِّف Swiplet"
+      },
+      "remove": {
+        "description": "نسيان جهاز"
+      },
+      "stop": {
+        "description": "إيقاف توفير API الخاص بـ Swipt",
+        "stopped": "متوقف"
+      }
+    },
+    "driver": {
+      "description": "توفير API الخاص بـ Swipt وMCP لجهاز من هذا الكمبيوتر",
+      "details": "يمكن لطرف واحد فقط التحكم في الجهاز في كل مرة: Swipt على الجهاز، أو برنامج التشغيل على كمبيوتر واحد.",
+      "passcode": "رمز الدخول لفتح قفل الجهاز تلقائيًا؛ اتركه فارغًا لإيقاف فتح القفل التلقائي",
+      "randomToken": "طلب رمز مميز عشوائي من عملاء API",
+      "token": "طلب هذا الرمز المميز من عملاء API"
+    },
+    "project": {
+      "build": {
+        "description": "حزم المشروع في dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "إنشاء مشروع Swiplet في دليل جديد أو فارغ",
+        "notEmpty": "{{directory}} ليس فارغًا."
+      },
+      "deploy": {
+        "description": "بناء المشروع وتثبيته على الجهاز"
+      },
+      "description": "إنشاء مشاريع Swiplet وبنائها ونشرها",
+      "develop": {
+        "deployed": "تم البناء والنشر في {{elapsed}}؛ تجري مراقبة {{directory}}",
+        "description": "بناء مشروع Swiplet وتثبيته ومتابعته عند تغيُّره",
+        "quiet": "بدون سجلات",
+        "unchanged": "تم البناء في {{elapsed}}؛ لم يتغير شيء"
+      },
+      "source": {
+        "description": "جمع Swiplet المبنية في dist/ مع ملف swiplets.json",
+        "duplicateID": "{{id}} يشير إلى كل من {{first}} و{{second}}",
+        "invalidIcon": "يجب أن يتضمن \"source.icon\" في package.json الحقل symbol ويمكن أن يتضمن الحقل color.",
+        "invalidLocalizedNames": "يجب أن يربط \"source.localizedNames\" في package.json اللغات بالأسماء.",
+        "invalidURL": "\"source.url\" في package.json ليس عنوان URL مطلقًا.",
+        "noWorkspaces": "لا يسرد package.json أي مساحات عمل تحتوي على Swiplet؛ يرجى تحديد كل Swiplet تريد إدراجه.",
+        "notBuilt": "{{file}} غير موجود؛ يرجى بناء {{directory}} أولًا."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "طباعة تعريفات TypeScript للمتغيرات العامة والوحدات"
+      },
+      "dataDirectory": "{{path}} يشير إلى دليل بيانات REPL؛ يرجى حفظه باستخدام --output DIRECTORY",
+      "description": "تشغيل JavaScript في جلسة REPL على الجهاز",
+      "directory": "{{path}} دليل داخل دليل بيانات REPL؛ يرجى حفظه باستخدام --output DIRECTORY",
+      "reset": {
+        "description": "إعادة تعيين الجلسة"
+      },
+      "run": {
+        "arguments": "تكون الوسيطة الأولى FILE إذا كانت تشير إلى ملف موجود، وإلا فهي CODE؛ وتأتي الخيارات قبلها.",
+        "description": "تشغيل تعبير أو برنامج JavaScript على الجهاز",
+        "details": "CODE تعبير تتم طباعة قيمته. أما FILE، أو الإدخال القياسي المحدد بـ - أو بعدم تمرير أي وسيطة، فهو برنامج، ولا تتم طباعة سوى مخرجات وحدة التحكم الخاصة به.",
+        "extraArguments": "{{argument}} ليس ملفًا، ولا يقبل CODE أي ARG.",
+        "images": "دليل الصور (الافتراضي: دليل مؤقت جديد)"
+      }
+    },
+    "sideload": {
+      "description": "تثبيت Swipt جانبيًا",
+      "install": {
+        "description": "تثبيت Swipt",
+        "force": "التثبيت فوق الإصدار نفسه أو إصدار أحدث"
+      },
+      "passcode": "إعداد فتح القفل التلقائي باستخدام رمز الدخول هذا",
+      "setup": {
+        "description": "إعداد Swipt"
+      },
+      "uninstall": {
+        "description": "إزالة Swipt"
+      },
+      "update": {
+        "description": "تحديث Swipt أو تجديده",
+        "passcode": "فتح قفل الجهاز باستخدام رمز الدخول هذا"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "استدعاء إجراء Swiplet",
+        "input": "الإدخال: JSON أو @FILE أو -",
+        "invalidInput": "--input ليس بتنسيق JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} يشير إلى دليل بيانات {{swiplet}}؛ يرجى حفظه باستخدام --output DIRECTORY",
+      "description": "إدارة Swiplet على الجهاز",
+      "directory": "{{path}} دليل داخل دليل بيانات {{swiplet}}؛ يرجى حفظه باستخدام --output DIRECTORY",
+      "install": {
+        "description": "تثبيت أرشيف Swiplet",
+        "notFound": "لا يوجد أرشيف في {{path}}"
+      },
+      "list": {
+        "actions": "الإجراءات",
+        "description": "عرض قائمة Swiplet",
+        "id": "ID",
+        "service": "الخدمة",
+        "status": "الحالة",
+        "title": "العنوان",
+        "version": "الإصدار"
+      },
+      "remove": {
+        "description": "إزالة Swiplet",
+        "removed": "تمت إزالة {{name}}"
+      },
+      "service": {
+        "description": "إدارة خدمات Swiplet",
+        "disable": {
+          "description": "إيقاف خدمة Swiplet"
+        },
+        "enable": {
+          "description": "تشغيل خدمة Swiplet"
+        },
+        "watch": {
+          "description": "مراقبة خدمات Swiplet"
+        },
+        "watchState": "مراقبة الحالة"
+      },
+      "show": {
+        "description": "إظهار Swiplet",
+        "input": "الإدخال: {{schema}}",
+        "notFound": "لا يوجد Swiplet {{id}}.",
+        "output": "الناتج: {{schema}}",
+        "service": "الخدمة: {{status}}"
+      }
+    },
+    "version": {
+      "description": "طباعة الإصدار"
+    }
+  },
+  "connection": {
+    "added": "تمت إضافة {{device}}",
+    "ambiguous": "يوجد أكثر من جهاز: {{devices}}؛ يرجى اختيار أحدها باستخدام -d",
+    "driverNotStopped": "لم يتوقف برنامج التشغيل على {{computer}}.",
+    "invalidURL": "{{text}} ليس عنوان URL.",
+    "none": "لا يوجد جهاز؛ يرجى تشغيل Swipt > المطور > الشبكة المحلية، أو توصيل جهاز باستخدام \"swipt device add URL\".",
+    "noneOnNetwork": "لا يوجد جهاز ينشر Swipt على الشبكة المحلية؛ يرجى تشغيل Swipt > المطور > الشبكة المحلية، أو توصيل جهاز باستخدام \"swipt device add URL\".",
+    "notFound": "لا يوجد جهاز {{device}}.",
+    "notFoundHint": "لا يوجد جهاز {{device}}؛ يمكنك عرض الأجهزة باستخدام \"swipt device list\".",
+    "offline": "غير متصل",
+    "problem": {
+      "developerModeOff": "نمط المطور متوقف",
+      "deviceUnsupported": "الجهاز غير مدعوم",
+      "diskImageMissing": "صورة القرص مفقودة",
+      "diskImageMountFailed": "فشل تحميل صورة القرص",
+      "pairingRejected": "تم رفض الإقران",
+      "screenInUse": "الشاشة قيد الاستخدام",
+      "unreachable": "يتعذر الوصول إليه",
+      "vpnPeerAddressMissing": "عنوان نظير شبكة VPN مفقود"
+    },
+    "removed": "تمت إزالة {{name}}",
+    "requiresToken": "يتطلب رمزًا مميزًا",
+    "requiresTokenHint": "يتطلب {{device}} رمزًا مميزًا: swipt device add {{url}}",
+    "state": {
+      "connecting": "يجري الاتصال",
+      "failed": "فشل",
+      "preparing": "يجري التحضير",
+      "running": "نشط",
+      "stopped": "متوقف"
+    },
+    "unsupportedURL": "{{text}} ليس عنوان URL من نوع http أو https."
+  },
+  "deploy": {
+    "installed": "تم تثبيت {{id}} {{version}}",
+    "replaced": "تم استبدال {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "برنامج التشغيل قيد التشغيل بالفعل على هذا الكمبيوتر؛ يرجى إيقافه أولاً.",
+    "ambiguousName": "يوجد أكثر من iPhone أو iPad باسم {{name}}؛ يرجى اختيار أحدها باستخدام UDID",
+    "appleMobileDeviceServiceMissing": "خدمة Apple Mobile Device Service لا تعمل؛ يرجى تثبيت تطبيق أجهزة Apple من Microsoft Store",
+    "chooseDevice": "اختر جهازًا",
+    "chooseDeviceHint": "يرجى اختيار جهاز باستخدام -d NAME|UDID",
+    "connectedDevices": "{{reason}}؛ أجهزة iPhone وiPad المتصلة:",
+    "lookingForDevices": "يجري البحث عن أجهزة",
+    "missing": "برنامج التشغيل غير موجود؛ يرجى تثبيته باستخدام \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "لا يوجد iPhone أو iPad باسم {{name}}",
+    "noDevice": "لا يوجد iPhone أو iPad متصل بهذا الكمبيوتر ولم يتم العثور على أي جهاز على الشبكة المحلية؛ يرجى توصيل جهاز باستخدام كبل USB وفتح قفله.",
+    "pairing": "يجري الإقران مع {{device}}",
+    "trustPrompt": "يرجى الضغط على “وثوق” في {{device}} وإدخال رمز الدخول الخاص به للوثوق بهذا الكمبيوتر",
+    "usbmuxdMissing": "usbmuxd لا يعمل؛ يرجى تثبيت usbmuxd وتشغيله"
+  },
+  "error": "خطأ: {{message}}",
+  "flags": {
+    "device": "الجهاز المراد استخدامه",
+    "nightly": "استخدام إصدار nightly",
+    "noSetup": "عدم إقران Swipt أو الوثوق بمطوره أو نشر API الخاص به",
+    "noSetupAPI": "عدم نشر API على الشبكة المحلية",
+    "noSetupPair": "عدم إقران Swipt",
+    "passcodeType": "pin (٤ أو ٦ أرقام، الافتراضي) أو numeric أو alphanumeric",
+    "team": "معرِّف الفريق، مطلوب إذا كان هناك أكثر من فريق"
+  },
+  "metro": {
+    "boolean": "قيمة منطقية",
+    "contextArgument": "يجب أن تكون الوسيطة {{index}} من require.context {{expected}}",
+    "contextRegExp": "يجب أن تكون الوسيطة {{index}} من require.context قيمة حرفية لتعبير نمطي.",
+    "oneOf": "إحدى القيم {{values}}",
+    "string": "سلسلة نصية",
+    "workletsMismatch": "يستخدم المشروع react-native-worklets {{version}}، لكن Swipt يشغِّل {{expected}}؛ يرجى تثبيت react-native-worklets@{{expected}} أو إزالته."
+  },
+  "noThanks": "لا، شكرًا",
+  "output": {
+    "navigate": "تنقُّل",
+    "select": "اختيار",
+    "service": "{{enabled}}، {{status}}",
+    "serviceSince": "{{enabled}}، {{status}} منذ {{time}}",
+    "serviceStatus": {
+      "failed": "فشلت",
+      "running": "قيد التشغيل",
+      "starting": "يجري بدء التشغيل",
+      "stopped": "متوقفة",
+      "turnedOff": "معطَّلة",
+      "turnedOn": "ممكَّنة"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "رمز أبجدي رقمي مخصص",
+    "alphanumericDetail": "أبجدي رقمي",
+    "empty": "أدخل رمز الدخول.",
+    "invalidAlphanumeric": "يتكون رمز الدخول من ٦٤ حرف ASCII قابلًا للطباعة كحد أقصى.",
+    "invalidNumeric": "يتكون رمز الدخول الرقمي من أرقام فقط.",
+    "invalidPin": "يتكون رمز الدخول pin من ٤ أو ٦ أرقام؛ ويتطلب الرمز المخصص --passcode-type numeric أو alphanumeric",
+    "invalidType": "الوسيطة {{value}} غير صالحة للخيار --passcode-type: يجب أن تكون {{types}}",
+    "masked": "[الإدخال مخفي]",
+    "numeric": "رمز رقمي مخصص",
+    "numericDetail": "رقمي",
+    "pin": "رمز دخول من ٤ أو ٦ أرقام",
+    "pinDetail": "٤ أو ٦ أرقام",
+    "prompt": "رمز دخول الجهاز",
+    "setUp": "هل تريد إعداد فتح القفل التلقائي؟ سيتمكن Swipt بعد ذلك من فتح قفل هذا الجهاز بنفسه."
+  },
+  "project": {
+    "assetConflict": "سيصبح كل من {{source}} و{{asset}} بالمسار assets/{{name}} في Swiplet.",
+    "conditionalActions": "يعرّف الملحق إجراءات مختلفة بحسب available()؛ يرجى تعريف الإجراءات نفسها على كل نظام والتحقق من available() داخل run أو داخل إجراء.",
+    "databaseAtLoad": "يجري استخدام قاعدة البيانات أثناء تحميل extension.js؛ يرجى استخدامها داخل run أو داخل إجراء.",
+    "interfaceImport": "تستورد الواجهة {{file}} في وقت التشغيل؛ يرجى استيراد نوعه باستخدام `import type`.",
+    "interfaceOnly": "لا يعمل {{name}} إلا في واجهة Swiplet.",
+    "invalidExposure": "لا يمكن للإجراء {{action}} أن يُظهر نفسه إلا لـ \"shortcuts\".",
+    "invalidExtension": "التصدير الافتراضي للملحق ليس ناتج defineExtension.",
+    "invalidID": "يجب أن يتكون \"swiplet.id\" في package.json من ١ إلى ١٢٨ من الأحرف الصغيرة والأرقام والنقاط والشرطات السفلية والواصلات، وأن يبدأ بحرف أو رقم.",
+    "invalidLocalizedNames": "يجب أن يربط \"swiplet.localizedNames\" في package.json اللغات بالأسماء.",
+    "invalidMinimumAPILevel": "يجب أن يكون \"swiplet.minimumAPILevel\" في package.json عددًا صحيحًا من {{oldest}} إلى {{level}}، وهو مستوى API للحزمة @swipt/api.",
+    "invalidMinimumIOSVersion": "يجب أن يكون \"swiplet.minimumIOSVersion\" في package.json رقم إصدار لا يقل عن {{version}}، وهو الحد الأدنى لإصدار iOS للحزمة @swipt/api.",
+    "invalidName": "يجب أن يكون \"swiplet.name\" في package.json سلسلة نصية غير فارغة.",
+    "invalidSchema": "لا ينفذ مخطط {{side}} للإجراء {{action}} معيار Standard JSON Schema؛ يرجى استخدام مكتبة تنفذه، مثل Zod 4.",
+    "invalidString": "يجب أن يكون \"{{field}}\" في package.json سلسلة نصية.",
+    "invalidVersionCode": "يجب أن يكون \"swiplet.versionCode\" في package.json عددًا صحيحًا موجبًا.",
+    "missingTitle": "يحتاج الإجراء {{action}} إلى عنوان.",
+    "storageAtLoad": "يجري استخدام وحدة التخزين أثناء تحميل extension.js؛ يرجى استخدامها داخل run أو داخل إجراء.",
+    "unprovidedModule": "لا يوفر Swipt \"{{module}}\" للملحقات؛ يرجى تضمينه في حزمة extension.js.",
+    "usedAtLoad": "يجري استخدام {{name}} أثناء تحميل extension.js؛ يرجى الاستخدام داخل run أو داخل إجراء."
+  },
+  "serve": {
+    "cancel": "إلغاء",
+    "checking": "يجري التحقق من {{device}}",
+    "conflictingTokens": "لا يمكن استخدام --token و--random-token معًا.",
+    "invalidToken": "يتكون الرمز المميز من حرف ASCII واحد أو أكثر قابل للطباعة بدون مسافات.",
+    "localNetwork": "الشبكة المحلية",
+    "noAutoUnlock": "لا يتم فتح قفل {{device}} تلقائيًا؛ يرجى تعيين رمز الدخول الخاص به باستخدام --passcode. يرجى الضغط على Ctrl-C لإيقاف برنامج التشغيل.",
+    "quitSwipt": "إنهاء Swipt",
+    "quittingSwipt": "يجري إنهاء Swipt على {{device}}",
+    "served": "برنامج التشغيل على {{computer}} يخدم {{device}} بالفعل؛ يرجى إيقاف برنامج التشغيل ذلك أولاً.",
+    "servedPrompt": "برنامج التشغيل على {{computer}} يخدم {{device}} بالفعل. هل تريد إيقاف برنامج التشغيل ذلك؟",
+    "starting": "يجري بدء برنامج التشغيل لـ {{device}}",
+    "stopDriver": "إيقاف برنامج التشغيل على {{computer}}",
+    "stopHint": "يرجى الضغط على Ctrl-C لإيقاف برنامج التشغيل.",
+    "stoppingDriver": "يجري إيقاف برنامج التشغيل على {{computer}}",
+    "swiptRunning": "لا يمكن لبرنامج التشغيل التحكم في {{device}} أثناء تشغيل Swipt عليه؛ يرجى إنهاء Swipt أولاً.",
+    "swiptRunningPrompt": "لا يمكن لبرنامج التشغيل التحكم في {{device}} أثناء تشغيل Swipt عليه. هل تريد إنهاء Swipt؟"
+  },
+  "sideload": {
+    "ambiguousTeam": "تم تثبيت Swipt جانبيًا على {{device}} بواسطة أكثر من فريق؛ يرجى اختيار أحدها باستخدام --team ID:",
+    "certificateFailed": "تعذر على Xcode إنشاء شهادة تطوير للفريق {{team}}؛ يرجى إضافة شهادة في {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "يجري التحقق من Swipt على {{device}}",
+    "checkingRelease": "يجري التحقق من أحدث إصدار",
+    "chooseTeam": "اختر فريقًا",
+    "chooseTeamHint": "يرجى اختيار فريق باستخدام --team ID:",
+    "diskImageFailed": "تعذر تحضير صورة قرص المطور على {{device}}: {{error}}",
+    "downgrade": "الرجوع إلى إصدار أقدم",
+    "downgradePrompt": "هل تريد إرجاع Swipt على {{device}} من الإصدار {{version}} إلى الإصدار الأقدم {{releaseVersion}}؟ يعيد Swipt تعيين بياناته عندما يتعذر على الإصدار الأقدم قراءتها.",
+    "downgradeToStablePrompt": "هل تريد إرجاع Swipt على {{device}} من إصدار nightly {{version}} إلى الإصدار المستقر {{releaseVersion}}؟ يعيد Swipt تعيين بياناته عندما يتعذر على الإصدار الأقدم قراءتها.",
+    "downloading": "يجري تنزيل Swipt {{version}} ({{build}}) من {{release}}",
+    "expiration": "تنتهي صلاحية توقيعه {{expiration}}.",
+    "installed": "تم تثبيت {{build}} على {{device}}.",
+    "installing": "يجري التثبيت على {{device}}",
+    "invalidTeam": "الوسيطة {{value}} غير صالحة للخيار --team: يجب أن تكون معرِّف الفريق المكون من ١٠ أحرف والمعروض في {{accounts}}",
+    "laterThanRelease": "{{build}} على {{device}} أحدث من {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}؛ يرجى فتح قفله أو تمرير --passcode، ثم إعادة تنفيذ هذا الأمر.",
+    "looking": "يجري البحث عن Swipt على الأجهزة",
+    "needsMacOS": "يتطلب تثبيت Swipt أو تحديثه macOS؛ يرجى تثبيته من جهاز Mac، ثم إعداده هنا باستخدام \"swipt sideload setup\".",
+    "noAccount": "لا يوجد في Xcode أي حساب؛ يرجى تسجيل الدخول في {{accounts}}، أو اختيار فريق باستخدام --team ID",
+    "noAccountForTeam": "لا يوجد في Xcode حساب للفريق {{team}}؛ يرجى تسجيل الدخول باستخدام حساب Apple الخاص به في {{accounts}}.",
+    "noCertificate": "لا توجد في Xcode شهادة تطوير؛ يرجى إضافة شهادة في {{accounts}} › Manage Certificates، أو اختيار فريق باستخدام --team ID",
+    "noneInstalled": "لم يتم تثبيت Swipt جانبيًا على أي iPhone أو iPad.",
+    "noneInstalledHint": "لم يتم تثبيت Swipt جانبيًا على أي iPhone أو iPad؛ يرجى تثبيته باستخدام \"swipt sideload install\".",
+    "notInstalled": "لم يتم تثبيت Swipt جانبيًا على {{device}}.",
+    "notInstalledByTeam": "لم يتم تثبيت Swipt جانبيًا على {{device}} بواسطة الفريق {{team}}.",
+    "notInstalledByTeamHint": "لم يتم تثبيت Swipt جانبيًا على {{device}} بواسطة الفريق {{team}}؛ يرجى تثبيته باستخدام \"swipt sideload install\".",
+    "notInstalledHint": "لم يتم تثبيت Swipt جانبيًا على {{device}}؛ يرجى تثبيته باستخدام \"swipt sideload install\".",
+    "notOnNetwork": "لم يتم العثور على {{device}} على الشبكة المحلية؛ يمكنك العثور على عناوين URL الخاصة بواجهة API في Swipt > المطور > الشبكة المحلية.",
+    "opening": "يجري فتح Swipt على {{device}}",
+    "openingSettings": "يجري فتح الإعدادات على {{device}}",
+    "opensAfterUnlock": "سيفتح بعد فتح قفل {{device}}.",
+    "pairingFailed": "فشل الإقران، لذا سيتم إقران Swipt في الإعدادات بدلًا من ذلك: {{error}}",
+    "preparingDiskImage": "يجري تحضير صورة قرص المطور على {{device}}",
+    "preparingSigning": "يجري تحضير توقيع Swipt باستخدام الفريق {{team}} عبر Xcode",
+    "removed": "تمت إزالة {{build}} من {{device}}",
+    "removing": "تجري إزالة Swipt من {{device}}",
+    "renewalNeedsDowngrade": "يحتاج {{build}} على {{device}} إلى توقيع جديد، لكن {{release}} ({{releaseBuild}}) أقدم؛ يرجى استخدام --nightly، أو الرجوع إلى إصدار أقدم باستخدام \"swipt sideload install --force\".",
+    "resigning": "تجري إعادة توقيع Swipt",
+    "running": "{{app}} قيد التشغيل.",
+    "settingUpAutoUnlock": "يجري إعداد فتح القفل التلقائي",
+    "trusted": "تم الوثوق بـ {{developer}}.",
+    "trusting": "يجري الوثوق بـ {{developer}} في الإعدادات",
+    "unlockPrompt": "يرجى فتح قفل الجهاز للمتابعة.",
+    "unlocking": "يجري فتح قفل الجهاز",
+    "untrusted": "لم يتم الوثوق بمطوره بعد؛ يرجى الوثوق به في صفحة الإعدادات المفتوحة على {{device}}، ثم فتح Swipt.",
+    "upToDate": "{{build}} على {{device}} هو بالفعل {{release}}.",
+    "updated": "تم تحديث {{build}} على {{device}}.",
+    "waiting": "في انتظار {{device}}",
+    "xcodeMissing": "يحتاج xcodebuild إلى Xcode؛ يرجى تثبيته وتحديده باستخدام xcode-select",
+    "xcodebuildMissing": "xcodebuild غير موجود؛ يرجى تثبيت Xcode."
+  }
+}

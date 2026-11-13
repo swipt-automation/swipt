@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
@@ -12,7 +12,7 @@ const printDeclarations = (context: Context<{ device?: string }>) =>
 
 export const api = defineCommand({
   name: "api",
-  short: tr("Print the TypeScript declarations of the globals and modules"),
+  short: t("commands.repl.api.description"),
   args: [0, 0],
   run: printDeclarations,
 });

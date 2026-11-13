@@ -4,7 +4,7 @@ import { type Timestamp, timestampDate } from "@bufbuild/protobuf/wkt";
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import {
   type LogEntry,
   LogLevel,
@@ -23,8 +23,8 @@ export const selectTheme = {
   style: {
     keysHelpTip: () =>
       [
-        [`↑↓`, tr("navigate")],
-        [`⏎`, tr("select")],
+        [`↑↓`, t("output.navigate")],
+        [`⏎`, t("output.select")],
       ]
         .map(
           ([key, action]) =>
@@ -162,7 +162,7 @@ export const failureText = (failure: ScriptError) =>
   ].join("\n");
 
 export function printScriptError(failure: ScriptError) {
-  console.error(tr("error: {message}", { message: failureText(failure) }));
+  console.error(t("error", { message: failureText(failure) }));
   return new FalseResult();
 }
 
@@ -177,15 +177,17 @@ export function printLog(entry: LogEntry, toStdout: boolean) {
 }
 
 const serviceStatuses = {
-  [ServiceStatus.UNSPECIFIED]: tr("stopped", {}, "service"),
-  [ServiceStatus.STOPPED]: tr("stopped", {}, "service"),
-  [ServiceStatus.STARTING]: tr("starting", {}, "service"),
-  [ServiceStatus.RUNNING]: tr("running", {}, "service"),
-  [ServiceStatus.FAILED]: tr("failed", {}, "service"),
+  [ServiceStatus.UNSPECIFIED]: t("output.serviceStatus.stopped"),
+  [ServiceStatus.STOPPED]: t("output.serviceStatus.stopped"),
+  [ServiceStatus.STARTING]: t("output.serviceStatus.starting"),
+  [ServiceStatus.RUNNING]: t("output.serviceStatus.running"),
+  [ServiceStatus.FAILED]: t("output.serviceStatus.failed"),
 };
 
 export const serviceEnabledText = (enabled: boolean | undefined) =>
-  enabled ? tr("turned on", {}, "service") : tr("turned off", {}, "service");
+  enabled
+    ? t("output.serviceStatus.turnedOn")
+    : t("output.serviceStatus.turnedOff");
 
 export const serviceStatusText = (status: ServiceStatus) =>
   serviceStatuses[status];
@@ -194,12 +196,12 @@ export function serviceText(state: ServiceState | undefined) {
   const enabled = serviceEnabledText(state?.enabled);
   const status = serviceStatuses[state?.status ?? ServiceStatus.UNSPECIFIED];
   let text = state?.since
-    ? tr("{enabled}, {status} since {time}", {
+    ? t("output.serviceSince", {
         enabled,
         status,
         time: clockTime(state.since),
       })
-    : tr("{enabled}, {status}", { enabled, status });
+    : t("output.service", { enabled, status });
   if (state?.error) {
     text += `: ${failureText(state.error)}`;
   }

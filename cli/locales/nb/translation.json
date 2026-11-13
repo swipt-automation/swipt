@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Kontroller dem med available(), merk koden som bruker dem, med @available, eller øk \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
+    "apiLevel": "API-nivå {{level}}",
+    "entryNeeds": "{{location}}: {{name}} er et Swiplet-inngangspunkt og krever {{requirement}}; øk \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
+    "importNeeds": "{{location}}: import av {{name}} krever {{requirement}}; øk \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
+    "invalidEntry": "{{location}}: @available har \"{{entry}}\"; den godtar \"apiLevel <level>\" og \"iOS <version>\", skilt med komma.",
+    "needs": "{{location}}: {{name}} krever {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available angir {{kind}} to ganger."
+  },
+  "cli": {
+    "commands": "kommandoer:",
+    "exactArgs_one": "godtar {{count}} argument, mottok {{received}}",
+    "exactArgs_other": "godtar {{count}} argumenter, mottok {{received}}",
+    "help": "hjelp",
+    "helpHint": "Kjør \"swipt help\" for å se bruk.",
+    "minimumArgs_one": "godtar minst {{count}} argument, mottok {{received}}",
+    "minimumArgs_other": "godtar minst {{count}} argumenter, mottok {{received}}",
+    "missingCommand": "En kommando mangler.",
+    "options": "alternativer:",
+    "rangeArgs_one": "godtar mellom {{least}} og {{count}} argument, mottok {{received}}",
+    "rangeArgs_other": "godtar mellom {{least}} og {{count}} argumenter, mottok {{received}}",
+    "unauthenticated": "{{message}}; koble til med URL‑en som Swipt › Utvikler eller \"swipt driver\" viser: swipt device add {{url}}",
+    "unimplemented": "Swipt på {{url}} har ikke denne kommandoen; oppdater Swipt.",
+    "unknownCommand": "ukjent kommando {{name}} for {{parent}}",
+    "unknownOption": "{{option}} er ikke et alternativ for {{command}}.",
+    "unreachable": "Swipt på {{url}} er utilgjengelig: {{message}}",
+    "usage": "bruk: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Fjern alle datafiler, men behold datakatalogen"
+      },
+      "list": {
+        "description": "List opp datafiler",
+        "recursive": "ta med underkataloger"
+      },
+      "read": {
+        "description": "Les en datafil eller katalog",
+        "output": "mål",
+        "saved_one": "lagret {{count}} fil i {{path}}",
+        "saved_other": "lagret {{count}} filer i {{path}}"
+      },
+      "remove": {
+        "description": "Fjern en datafil",
+        "recursive": "ta med kataloginnhold"
+      },
+      "replDescription": "Administrer filene i datakatalogen til REPL‑en",
+      "swipletDescription": "Administrer filene i datakatalogen til en Swiplet",
+      "write": {
+        "description": "Skriv en datafil"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "Legg til en enhet med URL‑en; nødvendig når enheten er ekstern eller krever token"
+      },
+      "description": "Administrer enhetene og les loggene deres",
+      "list": {
+        "description": "List opp enhetene, og legg til dem som blir funnet på det lokale nettverket"
+      },
+      "logs": {
+        "count": "antall tidligere oppføringer (standard 100)",
+        "description": "Skriv ut loggene",
+        "follow": "følg nye oppføringer",
+        "invalidDuration": "ugyldig argument {{value}} for {{option}}: det må være en varighet, for eksempel 30s eller 1m30s",
+        "invalidLevel": "--level må være error, warn, info eller debug",
+        "invalidNumber": "ugyldig argument {{value}} for {{option}}: det må være et tall",
+        "level": "laveste nivå (standard info)",
+        "since": "maksimal alder",
+        "swiplet": "Swiplet-ID"
+      },
+      "remove": {
+        "description": "Glem en enhet"
+      },
+      "stop": {
+        "description": "Slutt å tilby Swipt-API‑et",
+        "stopped": "stoppet"
+      }
+    },
+    "driver": {
+      "description": "Tilby Swipt-API‑et og MCP for en enhet fra denne datamaskinen",
+      "details": "Bare én part om gangen kan styre enheten: Swipt på enheten eller driveren på én datamaskin.",
+      "passcode": "kode for å låse opp enheten automatisk; la den stå tom for å slå det av",
+      "randomToken": "krev et tilfeldig token fra API-klienter",
+      "token": "krev dette tokenet fra API-klienter"
+    },
+    "project": {
+      "build": {
+        "description": "Pakk prosjektet til dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Opprett et Swiplet-prosjekt i en ny eller tom katalog",
+        "notEmpty": "{{directory}} er ikke tom."
+      },
+      "deploy": {
+        "description": "Bygg prosjektet og installer det på enheten"
+      },
+      "description": "Opprett, bygg og distribuer Swiplet-prosjekter",
+      "develop": {
+        "deployed": "bygd og distribuert på {{elapsed}}; overvåker {{directory}}",
+        "description": "Bygg, installer og følg et Swiplet-prosjekt etter hvert som det endres",
+        "quiet": "uten logger",
+        "unchanged": "bygd på {{elapsed}}; ingen endringer"
+      },
+      "source": {
+        "description": "Samle de bygde Swiplets i dist/ med en swiplets.json",
+        "duplicateID": "{{id}} er både {{first}} og {{second}}",
+        "invalidIcon": "\"source.icon\" i package.json må ha symbol og kan ha color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" i package.json må tilordne språk til navn.",
+        "invalidURL": "\"source.url\" i package.json er ikke en absolutt URL.",
+        "noWorkspaces": "package.json viser ingen arbeidsområder med Swiplets; angi hvilke Swiplets som skal listes opp.",
+        "notBuilt": "{{file}} mangler; bygg {{directory}} først."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Skriv ut TypeScript-deklarasjonene for de globale variablene og modulene"
+      },
+      "dataDirectory": "{{path}} viser til datakatalogen til REPL‑en; lagre den med --output DIRECTORY",
+      "description": "Kjør JavaScript i REPL-økten på enheten",
+      "directory": "{{path}} er en katalog i datakatalogen til REPL‑en; lagre den med --output DIRECTORY",
+      "reset": {
+        "description": "Nullstill økten"
+      },
+      "run": {
+        "arguments": "Det første argumentet er FILE hvis det angir en eksisterende fil, og ellers CODE; alternativer står foran det.",
+        "description": "Kjør et JavaScript-uttrykk eller -program på enheten",
+        "details": "CODE er et uttrykk der verdien skrives ut. FILE, eller standardinndata angitt som - eller uten argument, er et program, og bare konsollutdataene fra det skrives ut.",
+        "extraArguments": "{{argument}} er ikke en fil, og CODE tar ingen ARG.",
+        "images": "bildekatalog (standard: en ny midlertidig katalog)"
+      }
+    },
+    "sideload": {
+      "description": "Sidelast Swipt",
+      "install": {
+        "description": "Installer Swipt",
+        "force": "installer over samme eller et nyere bygg"
+      },
+      "passcode": "konfigurer automatisk opplåsing med denne koden",
+      "setup": {
+        "description": "Konfigurer Swipt"
+      },
+      "uninstall": {
+        "description": "Fjern Swipt"
+      },
+      "update": {
+        "description": "Oppdater eller forny Swipt",
+        "passcode": "lås opp enheten med denne koden"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Kjør en Swiplet-handling",
+        "input": "inndata som JSON, @FILE eller -",
+        "invalidInput": "--input er ikke JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} viser til datakatalogen til {{swiplet}}; lagre den med --output DIRECTORY",
+      "description": "Administrer Swiplets på enheten",
+      "directory": "{{path}} er en katalog i datakatalogen til {{swiplet}}; lagre den med --output DIRECTORY",
+      "install": {
+        "description": "Installer et Swiplet-arkiv",
+        "notFound": "Det finnes ikke noe arkiv på {{path}}"
+      },
+      "list": {
+        "actions": "HANDLINGER",
+        "description": "List opp Swiplets",
+        "id": "ID",
+        "service": "TJENESTE",
+        "status": "STATUS",
+        "title": "TITTEL",
+        "version": "VERSJON"
+      },
+      "remove": {
+        "description": "Fjern en Swiplet",
+        "removed": "fjernet {{name}}"
+      },
+      "service": {
+        "description": "Administrer Swiplet-tjenester",
+        "disable": {
+          "description": "Slå av en Swiplet-tjeneste"
+        },
+        "enable": {
+          "description": "Slå på en Swiplet-tjeneste"
+        },
+        "watch": {
+          "description": "Overvåk Swiplet-tjenester"
+        },
+        "watchState": "overvåk tilstanden"
+      },
+      "show": {
+        "description": "Vis en Swiplet",
+        "input": "inndata: {{schema}}",
+        "notFound": "Det finnes ingen Swiplet {{id}}.",
+        "output": "utdata: {{schema}}",
+        "service": "tjeneste: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Skriv ut versjonen"
+    }
+  },
+  "connection": {
+    "added": "la til {{device}}",
+    "ambiguous": "Det finnes flere enheter: {{devices}}; velg én med -d",
+    "driverNotStopped": "Driveren på {{computer}} stoppet ikke.",
+    "invalidURL": "{{text}} er ikke en URL.",
+    "none": "Det finnes ingen enhet; slå på Swipt › Utvikler › Lokalt nettverk, eller koble til en med \"swipt device add URL\".",
+    "noneOnNetwork": "Ingen enheter publiserer Swipt på det lokale nettverket; slå på Swipt › Utvikler › Lokalt nettverk, eller koble til en med \"swipt device add URL\".",
+    "notFound": "Enheten {{device}} finnes ikke.",
+    "notFoundHint": "Enheten {{device}} finnes ikke; \"swipt device list\" viser enhetene.",
+    "offline": "frakoblet",
+    "problem": {
+      "developerModeOff": "utviklermodus er av",
+      "deviceUnsupported": "enheten støttes ikke",
+      "diskImageMissing": "diskbilde mangler",
+      "diskImageMountFailed": "montering av diskbilde mislyktes",
+      "pairingRejected": "sammenkobling avvist",
+      "screenInUse": "skjermen er i bruk",
+      "unreachable": "utilgjengelig",
+      "vpnPeerAddressMissing": "VPN-motpartsadresse mangler"
+    },
+    "removed": "fjernet {{name}}",
+    "requiresToken": "krever token",
+    "requiresTokenHint": "{{device}} krever token: swipt device add {{url}}",
+    "state": {
+      "connecting": "kobler til",
+      "failed": "mislykket",
+      "preparing": "forbereder",
+      "running": "aktiv",
+      "stopped": "stoppet"
+    },
+    "unsupportedURL": "{{text}} er ikke en http- eller https-URL."
+  },
+  "deploy": {
+    "installed": "installerte {{id}} {{version}}",
+    "replaced": "erstattet {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Driveren kjører allerede på denne datamaskinen; stopp den først.",
+    "ambiguousName": "Flere iPhone- eller iPad-enheter heter {{name}}; velg én med UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service kjører ikke; installer appen Apple-enheter fra Microsoft Store",
+    "chooseDevice": "Velg en enhet",
+    "chooseDeviceHint": "Velg en enhet med -d NAME|UDID",
+    "connectedDevices": "{{reason}}; tilkoblede iPhone- og iPad-enheter:",
+    "lookingForDevices": "leter etter enheter",
+    "missing": "Driveren mangler; installer den med \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Ingen iPhone eller iPad heter {{name}}",
+    "noDevice": "Ingen iPhone eller iPad er koblet til denne datamaskinen eller funnet på det lokale nettverket; koble til en enhet med en USB-kabel, og lås den opp.",
+    "pairing": "kobler sammen med {{device}}",
+    "trustPrompt": "på {{device}}: trykk på «Stol på», og oppgi koden for å stole på denne datamaskinen",
+    "usbmuxdMissing": "usbmuxd kjører ikke; installer usbmuxd og start det"
+  },
+  "error": "feil: {{message}}",
+  "flags": {
+    "device": "enheten som skal brukes",
+    "nightly": "bruk nightly-bygg",
+    "noSetup": "ikke koble Swipt sammen med enheten, ikke stol på utvikleren og ikke publiser API‑et",
+    "noSetupAPI": "ikke publiser API‑et på det lokale nettverket",
+    "noSetupPair": "ikke koble Swipt sammen med enheten",
+    "passcodeType": "pin (4 eller 6 sifre, standard), numeric eller alphanumeric",
+    "team": "team-ID, kreves hvis det er flere"
+  },
+  "metro": {
+    "boolean": "en boolsk verdi",
+    "contextArgument": "Argument {{index}} til require.context må være {{expected}}",
+    "contextRegExp": "Argument {{index}} til require.context må være en literal med regulært uttrykk.",
+    "oneOf": "én av {{values}}",
+    "string": "en streng",
+    "workletsMismatch": "Prosjektet har react-native-worklets {{version}}, men Swipt kjører {{expected}}; installer react-native-worklets@{{expected}} eller fjern pakken."
+  },
+  "noThanks": "Nei takk",
+  "output": {
+    "navigate": "naviger",
+    "select": "velg",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} siden {{time}}",
+    "serviceStatus": {
+      "failed": "mislykket",
+      "running": "kjører",
+      "starting": "starter",
+      "stopped": "stoppet",
+      "turnedOff": "av",
+      "turnedOn": "på"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Tilpasset alfanumerisk kode",
+    "alphanumericDetail": "alfanumerisk kode",
+    "empty": "Oppgi koden.",
+    "invalidAlphanumeric": "En kode kan ha opptil 64 utskrivbare ASCII-tegn.",
+    "invalidNumeric": "En tallkode kan bare inneholde sifre.",
+    "invalidPin": "En pin-kode er 4 eller 6 sifre; en tilpasset kode krever --passcode-type numeric eller alphanumeric",
+    "invalidType": "ugyldig argument {{value}} for --passcode-type: det må være {{types}}",
+    "masked": "[inndata er skjult]",
+    "numeric": "Tilpasset tallkode",
+    "numericDetail": "tallkode",
+    "pin": "4- eller 6-sifret kode",
+    "pinDetail": "4 eller 6 sifre",
+    "prompt": "Enhetskode",
+    "setUp": "Vil du konfigurere automatisk opplåsing? Da kan Swipt låse opp enheten selv."
+  },
+  "project": {
+    "assetConflict": "{{source}} og {{asset}} ville begge blitt assets/{{name}} i Swipleten.",
+    "conditionalActions": "Utvidelsen definerer ulike handlinger avhengig av available(); definer de samme handlingene på alle systemer, og kontroller available() i run eller en handling.",
+    "databaseAtLoad": "Databasen brukes mens extension.js lastes inn; bruk den i run eller en handling.",
+    "interfaceImport": "Grensesnittet importerer {{file}} ved kjøretid; importer typen med `import type`.",
+    "interfaceOnly": "{{name}} fungerer bare i Swiplet-grensesnittet.",
+    "invalidExposure": "Handlingen {{action}} kan bare gjøre seg tilgjengelig for \"shortcuts\".",
+    "invalidExtension": "Standardeksporten i utvidelsen er ikke resultatet av defineExtension.",
+    "invalidID": "\"swiplet.id\" i package.json må bestå av 1 til 128 små bokstaver, sifre, punktum, understreker og bindestreker og begynne med en bokstav eller et siffer.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" i package.json må tilordne språk til navn.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" i package.json må være et heltall fra {{oldest}} til {{level}}, som er API-nivået til @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" i package.json må være et versjonsnummer fra og med {{version}}, som er minsteversjonen av iOS for @swipt/api.",
+    "invalidName": "\"swiplet.name\" i package.json må være en streng som ikke er tom.",
+    "invalidSchema": "{{side}}-skjemaet for handlingen {{action}} implementerer ikke Standard JSON Schema; bruk et bibliotek som gjør det, for eksempel Zod 4.",
+    "invalidString": "\"{{field}}\" i package.json må være en streng.",
+    "invalidVersionCode": "\"swiplet.versionCode\" i package.json må være et positivt heltall.",
+    "missingTitle": "Handlingen {{action}} må ha en tittel.",
+    "storageAtLoad": "Lagringen brukes mens extension.js lastes inn; bruk den i run eller en handling.",
+    "unprovidedModule": "Swipt gir ikke utvidelser tilgang til \"{{module}}\"; pakk modulen inn i extension.js.",
+    "usedAtLoad": "{{name}} brukes mens extension.js lastes inn; bruk den i run eller en handling."
+  },
+  "serve": {
+    "cancel": "Avbryt",
+    "checking": "kontrollerer {{device}}",
+    "conflictingTokens": "--token og --random-token kan ikke brukes sammen.",
+    "invalidToken": "Et token består av ett eller flere utskrivbare ASCII-tegn uten mellomrom.",
+    "localNetwork": "Lokalt nettverk",
+    "noAutoUnlock": "{{device}} låses ikke opp automatisk; angi koden med --passcode. Trykk på Ctrl-C for å stoppe driveren.",
+    "quitSwipt": "Avslutt Swipt",
+    "quittingSwipt": "avslutter Swipt på {{device}}",
+    "served": "Driveren på {{computer}} betjener allerede {{device}}; stopp den driveren først.",
+    "servedPrompt": "Driveren på {{computer}} betjener allerede {{device}}. Vil du stoppe den driveren?",
+    "starting": "starter driveren for {{device}}",
+    "stopDriver": "Stopp driveren på {{computer}}",
+    "stopHint": "Trykk på Ctrl-C for å stoppe driveren.",
+    "stoppingDriver": "stopper driveren på {{computer}}",
+    "swiptRunning": "Driveren kan ikke styre {{device}} mens Swipt kjører på den; avslutt Swipt først.",
+    "swiptRunningPrompt": "Driveren kan ikke styre {{device}} mens Swipt kjører på den. Vil du avslutte Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Swipt er sidelastet på {{device}} av mer enn ett team; velg ett med --team ID:",
+    "certificateFailed": "Xcode kunne ikke opprette et utviklingssertifikat for team {{team}}; legg til et i {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "kontrollerer Swipt på {{device}}",
+    "checkingRelease": "ser etter nyeste utgivelse",
+    "chooseTeam": "Velg et team",
+    "chooseTeamHint": "Velg et team med --team ID:",
+    "diskImageFailed": "kunne ikke forberede utviklerdiskbildet på {{device}}: {{error}}",
+    "downgrade": "Nedgrader",
+    "downgradePrompt": "Vil du nedgradere Swipt på {{device}} fra {{version}} til {{releaseVersion}}? Swipt tilbakestiller dataene sine når den eldre versjonen ikke kan lese dem.",
+    "downgradeToStablePrompt": "Vil du nedgradere Swipt på {{device}} fra nightly-bygg {{version}} til stabil versjon {{releaseVersion}}? Swipt tilbakestiller dataene sine når den eldre versjonen ikke kan lese dem.",
+    "downloading": "laster ned Swipt {{version}} ({{build}}) fra {{release}}",
+    "expiration": "Signeringen utløper {{expiration}}.",
+    "installed": "{{build}} er installert på {{device}}.",
+    "installing": "installerer på {{device}}",
+    "invalidTeam": "ugyldig argument {{value}} for --team: det må være team-ID‑en på 10 tegn som vises i {{accounts}}",
+    "laterThanRelease": "{{build}} på {{device}} er nyere enn {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; lås opp enheten eller bruk --passcode, og kjør dette på nytt.",
+    "looking": "leter etter Swipt på enhetene",
+    "needsMacOS": "Installering eller oppdatering av Swipt krever macOS; installer Swipt fra en Mac, og konfigurer den deretter her med \"swipt sideload setup\".",
+    "noAccount": "Xcode har ingen konto; logg på i {{accounts}}, eller velg et team med --team ID",
+    "noAccountForTeam": "Xcode har ingen konto for team {{team}}; logg på med Apple-kontoen til teamet i {{accounts}}.",
+    "noCertificate": "Xcode har ikke noe utviklingssertifikat; legg til et i {{accounts}} › Manage Certificates, eller velg et team med --team ID",
+    "noneInstalled": "Swipt er ikke sidelastet på noen iPhone eller iPad.",
+    "noneInstalledHint": "Swipt er ikke sidelastet på noen iPhone eller iPad; installer Swipt med \"swipt sideload install\".",
+    "notInstalled": "Swipt er ikke sidelastet på {{device}}.",
+    "notInstalledByTeam": "Swipt er ikke sidelastet på {{device}} av team {{team}}.",
+    "notInstalledByTeamHint": "Swipt er ikke sidelastet på {{device}} av team {{team}}; installer Swipt med \"swipt sideload install\".",
+    "notInstalledHint": "Swipt er ikke sidelastet på {{device}}; installer Swipt med \"swipt sideload install\".",
+    "notOnNetwork": "Fant ikke {{device}} på det lokale nettverket; finn API-URL‑ene i Swipt › Utvikler › Lokalt nettverk.",
+    "opening": "åpner Swipt på {{device}}",
+    "openingSettings": "åpner Innstillinger på {{device}}",
+    "opensAfterUnlock": "Den åpnes når {{device}} er låst opp.",
+    "pairingFailed": "Sammenkoblingen mislyktes, så Swipt kobler sammen i Innstillinger i stedet: {{error}}",
+    "preparingDiskImage": "forbereder utviklerdiskbildet på {{device}}",
+    "preparingSigning": "forbereder signering av Swipt med team {{team}} via Xcode",
+    "removed": "fjernet {{build}} fra {{device}}",
+    "removing": "fjerner Swipt fra {{device}}",
+    "renewalNeedsDowngrade": "{{build}} på {{device}} må signeres på nytt, men {{release}} ({{releaseBuild}}) er eldre; bruk --nightly, eller nedgrader med \"swipt sideload install --force\".",
+    "resigning": "signerer Swipt på nytt",
+    "running": "{{app}} kjører.",
+    "settingUpAutoUnlock": "konfigurerer automatisk opplåsing",
+    "trusted": "{{developer}} er klarert.",
+    "trusting": "klarerer {{developer}} i Innstillinger",
+    "unlockPrompt": "Lås opp enheten for å fortsette.",
+    "unlocking": "låser opp enheten",
+    "untrusted": "Utvikleren er ikke klarert ennå; stol på utvikleren på siden i Innstillinger som er åpnet på {{device}}, og åpne deretter Swipt.",
+    "upToDate": "{{build}} på {{device}} er allerede {{release}}.",
+    "updated": "{{build}} er oppdatert på {{device}}.",
+    "waiting": "venter på {{device}}",
+    "xcodeMissing": "xcodebuild krever Xcode; installer det og velg det med xcode-select",
+    "xcodebuildMissing": "xcodebuild mangler; installer Xcode."
+  }
+}

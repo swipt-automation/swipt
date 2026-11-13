@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { clear } from "./clear";
 import { list } from "./list";
@@ -12,8 +12,8 @@ export const data = (operand: string, target: ResolveTarget) =>
     name: "data",
     short:
       operand === ""
-        ? tr("Manage the files in the data directory of the REPL")
-        : tr("Manage the files in the data directory of a swiplet"),
+        ? t("commands.data.replDescription")
+        : t("commands.data.swipletDescription"),
     commands: [
       list(operand, target),
       read(operand, target),

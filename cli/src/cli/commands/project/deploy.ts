@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { buildProject } from "../../../project";
 import { type Context, defineCommand } from "../../command";
 import { deploy as deploySwiplet, printDeployed } from "../../deploy";
@@ -17,7 +17,7 @@ async function deployProject(context: Context<{ device?: string }>) {
 export const deploy = defineCommand({
   name: "deploy",
   use: "deploy [PROJECT]",
-  short: tr("Build the project and install it on the device"),
+  short: t("commands.project.deploy.description"),
   args: [0, 1],
   options: deviceOption,
   run: deployProject,

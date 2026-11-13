@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { create } from "@bufbuild/protobuf";
 
 import type { Client } from "../client";
-import { tr } from "../i18n";
+import { t } from "../i18n";
 import {
   type DeploySwipletResponse,
   SwipletSchema,
@@ -36,12 +36,6 @@ export const printDeployed = (
 ) =>
   (toStdout ? console.log : console.error)(
     replaced
-      ? tr("replaced {id} {version}", {
-          id: swiplet.id,
-          version: swiplet.version,
-        })
-      : tr("installed {id} {version}", {
-          id: swiplet.id,
-          version: swiplet.version,
-        }),
+      ? t("deploy.replaced", { id: swiplet.id, version: swiplet.version })
+      : t("deploy.installed", { id: swiplet.id, version: swiplet.version }),
   );

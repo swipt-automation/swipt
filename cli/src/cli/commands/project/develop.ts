@@ -7,7 +7,7 @@ import { create } from "@bufbuild/protobuf";
 import { AvailabilityChecker } from "../../../availability";
 import { unauthenticated } from "../../../client";
 import { attach } from "../../../connection";
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { Ignorer, relativePath } from "../../../ignore";
 import { errorMessage, printLog, serviceText } from "../../../output";
 import { buildProject, loadProject } from "../../../project";
@@ -49,7 +49,7 @@ async function follow(
       const message = errorMessage(error);
       if (!signal.aborted && message !== reported) {
         reported = message;
-        console.error(tr("error: {message}", { message }));
+        console.error(t("error", { message }));
       }
     }
     try {
@@ -110,7 +110,7 @@ async function developProject(
     }
     if (built.digest === deployed) {
       console.error(
-        tr("built in {elapsed}; nothing changed", {
+        t("commands.project.develop.unchanged", {
           elapsed: elapsed(started),
         }),
       );
@@ -131,7 +131,7 @@ async function developProject(
     deployed = built.digest;
     printDeployed(result, false);
     console.error(
-      tr("built and deployed in {elapsed}; watching {directory}", {
+      t("commands.project.develop.deployed", {
         elapsed: elapsed(started),
         directory: root,
       }),
@@ -188,11 +188,11 @@ async function developProject(
 export const develop = defineCommand({
   name: "develop",
   use: "develop [PROJECT]",
-  short: tr("Build, install and follow a swiplet project as it changes"),
+  short: t("commands.project.develop.description"),
   args: [0, 1],
   options: {
     ...deviceOption,
-    "no-logs": { type: "boolean", help: tr("without logs") },
+    "no-logs": { type: "boolean", help: t("commands.project.develop.quiet") },
   },
   run: developProject,
 });

@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { sideloadOptions } from "../flags";
 import { install } from "./install";
@@ -8,7 +8,7 @@ import { update } from "./update";
 
 export const sideload = defineCommand({
   name: "sideload",
-  short: tr("Sideload Swipt"),
+  short: t("commands.sideload.description"),
   options: sideloadOptions,
   commands: [install, update, setup, uninstall],
 });

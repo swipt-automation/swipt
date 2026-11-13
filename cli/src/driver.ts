@@ -6,7 +6,7 @@ import path from "node:path";
 import readline from "node:readline";
 
 import { label, sameName } from "./connection";
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import { type PromptContext, choose, interactive, step } from "./output";
 import type { Passcode } from "./passcode";
 
@@ -46,11 +46,9 @@ const diskImage = () =>
 
 const usbmuxdHint =
   process.platform === "linux"
-    ? tr("usbmuxd isn't running; install usbmuxd and start it")
+    ? t("driver.usbmuxdMissing")
     : process.platform === "win32"
-      ? tr(
-          "Apple Mobile Device Service isn't running; install Apple Devices from the Microsoft Store",
-        )
+      ? t("driver.appleMobileDeviceServiceMissing")
       : undefined;
 
 interface Failure {
@@ -68,7 +66,7 @@ export class DriverError extends Error {
       code === "usbmuxd_unavailable" && usbmuxdHint !== undefined
         ? `${usbmuxdHint} (${message})`
         : code === "driver_running"
-          ? tr("The driver is already running on this computer; stop it first.")
+          ? t("driver.alreadyRunning")
           : message,
     );
     this.code = code;
@@ -86,9 +84,7 @@ function start(args: string[], { input, signal }: Invocation = {}) {
     throw new Error(
       fromSource
         ? `${file} is missing; build it with "make driver".`
-        : tr(
-            'The driver is missing; install it with "npm install -g @swipt/cli --include=optional".',
-          ),
+        : t("driver.missing"),
     );
   }
   const child = spawn(file, args, {
@@ -249,7 +245,7 @@ async function findDevice(
 ) {
   const given = context.options.device;
   const listed = await step(
-    tr("looking for devices"),
+    t("driver.lookingForDevices"),
     () => driver<Device[]>(["device", "list"]),
     { transient: true },
   );
@@ -267,21 +263,17 @@ async function findDevice(
     return matches[0];
   }
   if (devices.length === 0) {
-    throw new Error(
-      tr(
-        "No iPhone or iPad is connected to this computer or found on the local network; connect one with a USB cable and unlock it.",
-      ),
-    );
+    throw new Error(t("driver.noDevice"));
   }
   const reason = !given
-    ? tr("Choose a device with -d NAME|UDID")
+    ? t("driver.chooseDeviceHint")
     : matches.length === 0
-      ? tr("No iPhone or iPad is named {name}", { name: given })
-      : tr("More than one iPhone or iPad is named {name}; choose one by UDID", {
+      ? t("driver.nameNotFound", { name: given })
+      : t("driver.ambiguousName", {
           name: given,
         });
   const failed = new Error(
-    `${tr("{reason}; connected iPhone and iPad devices:", { reason })}\n${devices.map(deviceLine).join("\n")}`,
+    `${t("driver.connectedDevices", { reason })}\n${devices.map(deviceLine).join("\n")}`,
   );
   if (matches.length === 0) {
     throw failed;
@@ -292,7 +284,7 @@ async function findDevice(
       : matches;
   return choose(
     context,
-    tr("Choose a device"),
+    t("driver.chooseDevice"),
     choices.map((device) => ({
       name: `${device.name}  ${device.udid}`,
       short: device.name,
@@ -310,11 +302,8 @@ export async function trustedDevice(
   if (!device.paired) {
     await step(
       device.virtual
-        ? tr("pairing with {device}", { device: device.name })
-        : tr(
-            "tap Trust on {device} and enter its passcode to trust this computer",
-            { device: device.name },
-          ),
+        ? t("driver.pairing", { device: device.name })
+        : t("driver.trustPrompt", { device: device.name }),
       () => onDevice(device, "trust"),
       { transient: device.virtual },
     );

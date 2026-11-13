@@ -1,0 +1,405 @@
+{
+  "availability": {
+    "advice": "Patikrinkite juos naudodami available(), juos naudojantį kodą pažymėkite @available arba padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
+    "apiLevel": "API lygis {{level}}",
+    "entryNeeds": "{{location}}: {{name}} yra „Swiplet” įėjimo taškas ir reikalauja: {{requirement}}; padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
+    "importNeeds": "{{location}}: modulio {{name}} importavimas reikalauja: {{requirement}}; padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
+    "invalidEntry": "{{location}}: @available turi \"{{entry}}\"; jis priima kableliais atskirtus įrašus \"apiLevel <level>\" ir \"iOS <version>\".",
+    "needs": "{{location}}: {{name}} reikalauja: {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available du kartus nurodo {{kind}}."
+  },
+  "cli": {
+    "commands": "komandos:",
+    "exactArgs_few": "reikia {{count}} argumentų, gauta: {{received}}",
+    "exactArgs_many": "reikia {{count}} argumento, gauta: {{received}}",
+    "exactArgs_one": "reikia {{count}} argumento, gauta: {{received}}",
+    "exactArgs_other": "reikia {{count}} argumentų, gauta: {{received}}",
+    "help": "pagalba",
+    "helpHint": "Paleiskite \"swipt help\", kad pamatytumėte naudojimo informaciją.",
+    "minimumArgs_few": "reikia bent {{count}} argumentų, gauta: {{received}}",
+    "minimumArgs_many": "reikia bent {{count}} argumento, gauta: {{received}}",
+    "minimumArgs_one": "reikia bent {{count}} argumento, gauta: {{received}}",
+    "minimumArgs_other": "reikia bent {{count}} argumentų, gauta: {{received}}",
+    "missingCommand": "Trūksta komandos.",
+    "options": "parinktys:",
+    "rangeArgs_few": "reikia nuo {{least}} iki {{count}} argumentų, gauta: {{received}}",
+    "rangeArgs_many": "reikia nuo {{least}} iki {{count}} argumento, gauta: {{received}}",
+    "rangeArgs_one": "reikia nuo {{least}} iki {{count}} argumento, gauta: {{received}}",
+    "rangeArgs_other": "reikia nuo {{least}} iki {{count}} argumentų, gauta: {{received}}",
+    "unauthenticated": "{{message}}; prisijunkite naudodami URL adresą, kurį rodo „Swipt” › „Kūrėjas” arba \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "„Swipt” adresu {{url}} neturi šios komandos; atnaujinkite „Swipt”.",
+    "unknownCommand": "nežinoma {{parent}} komanda {{name}}",
+    "unknownOption": "{{option}} nėra {{command}} parinktis.",
+    "unreachable": "„Swipt” adresu {{url}} nepasiekiama: {{message}}",
+    "usage": "naudojimas: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Pašalinti visus duomenų failus, paliekant duomenų katalogą"
+      },
+      "list": {
+        "description": "Išvardyti duomenų failus",
+        "recursive": "įtraukti pakatalogius"
+      },
+      "read": {
+        "description": "Skaityti duomenų failą arba katalogą",
+        "output": "paskirties vieta",
+        "saved_few": "išsaugoti {{count}} failai į {{path}}",
+        "saved_many": "išsaugota {{count}} failo į {{path}}",
+        "saved_one": "išsaugotas {{count}} failas į {{path}}",
+        "saved_other": "išsaugota {{count}} failų į {{path}}"
+      },
+      "remove": {
+        "description": "Pašalinti duomenų failą",
+        "recursive": "įtraukti katalogo turinį"
+      },
+      "replDescription": "Tvarkyti REPL duomenų katalogo failus",
+      "swipletDescription": "Tvarkyti „Swiplet” duomenų katalogo failus",
+      "write": {
+        "description": "Įrašyti duomenų failą"
+      }
+    },
+    "description": "„Swipt” komandų eilutės įrankis",
+    "device": {
+      "add": {
+        "description": "Pridėti įrenginį pagal jo URL adresą; būtina, kai įrenginys nuotolinis arba reikia žetono"
+      },
+      "description": "Tvarkyti įrenginius ir skaityti jų žurnalus",
+      "list": {
+        "description": "Išvardyti įrenginius ir pridėti vietiniame tinkle rastus"
+      },
+      "logs": {
+        "count": "ankstesnių įrašų skaičius (numatytasis 100)",
+        "description": "Išvesti žurnalus",
+        "follow": "toliau rodyti naujus įrašus",
+        "invalidDuration": "netinkamas {{option}} argumentas {{value}}: turi būti trukmė, pvz., 30s arba 1m30s",
+        "invalidLevel": "--level turi būti error, warn, info arba debug",
+        "invalidNumber": "netinkamas {{option}} argumentas {{value}}: turi būti skaičius",
+        "level": "mažiausias lygis (numatytasis info)",
+        "since": "didžiausias įrašų senumas",
+        "swiplet": "„Swiplet” ID"
+      },
+      "remove": {
+        "description": "Pamiršti įrenginį"
+      },
+      "stop": {
+        "description": "Sustabdyti „Swipt” API teikimą",
+        "stopped": "sustabdyta"
+      }
+    },
+    "driver": {
+      "description": "Teikti „Swipt” API ir MCP įrenginiui iš šio kompiuterio",
+      "details": "Vienu metu įrenginį gali valdyti tik viena pusė: „Swipt” įrenginyje arba tvarkyklė viename kompiuteryje.",
+      "passcode": "prieigos kodas įrenginiui atrakinti automatiškai; palikite tuščią, kad tai išjungtumėte",
+      "randomToken": "reikalauti atsitiktinio žetono iš API klientų",
+      "token": "reikalauti šio žetono iš API klientų"
+    },
+    "project": {
+      "build": {
+        "description": "Supakuoti projektą į dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Sukurti „Swiplet” projektą naujame arba tuščiame kataloge",
+        "notEmpty": "Katalogas {{directory}} nėra tuščias."
+      },
+      "deploy": {
+        "description": "Sukompiliuoti projektą ir įdiegti jį įrenginyje"
+      },
+      "description": "Kurti, kompiliuoti ir diegti „Swiplet” projektus",
+      "develop": {
+        "deployed": "sukompiliuota ir įdiegta per {{elapsed}}; stebimas katalogas {{directory}}",
+        "description": "Sukompiliuoti ir įdiegti „Swiplet” projektą, o jam pasikeitus atnaujinti",
+        "quiet": "nerodyti žurnalų",
+        "unchanged": "sukompiliuota per {{elapsed}}; niekas nepasikeitė"
+      },
+      "source": {
+        "description": "Surinkti sukompiliuotus „Swiplet” į dist/ su swiplets.json",
+        "duplicateID": "{{id}} yra ir {{first}}, ir {{second}}",
+        "invalidIcon": "\"source.icon\" faile package.json turi būti nurodyta symbol ir gali būti nurodyta color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" faile package.json turi susieti kalbas su pavadinimais.",
+        "invalidURL": "\"source.url\" faile package.json nėra absoliutus URL adresas.",
+        "noWorkspaces": "package.json nenurodo darbo sričių su „Swiplet”; nurodykite „Swiplet”, kuriuos reikia įtraukti į sąrašą.",
+        "notBuilt": "Trūksta {{file}}; pirmiausia sukompiliuokite {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Išvesti globaliųjų kintamųjų ir modulių „TypeScript” deklaracijas"
+      },
+      "dataDirectory": "{{path}} nurodo REPL duomenų katalogą; išsaugokite jį naudodami --output DIRECTORY",
+      "description": "Vykdyti „JavaScript” kodą įrenginio REPL seanse",
+      "directory": "{{path}} yra katalogas REPL duomenų kataloge; išsaugokite jį naudodami --output DIRECTORY",
+      "reset": {
+        "description": "Nustatyti seansą iš naujo"
+      },
+      "run": {
+        "arguments": "Pirmasis argumentas yra FILE, jei nurodo esamą failą, o kitu atveju – CODE; parinktys pateikiamos prieš jį.",
+        "description": "Vykdyti „JavaScript” reiškinį arba programą įrenginyje",
+        "details": "CODE yra reiškinys, kurio reikšmė išvedama. FILE arba standartinė įvestis, nurodyta kaip - arba be argumento, yra programa, ir išvedama tik jos konsolės išvestis.",
+        "extraArguments": "{{argument}} nėra failas, o CODE nepriima ARG.",
+        "images": "vaizdų katalogas (numatytasis: naujas laikinas katalogas)"
+      }
+    },
+    "sideload": {
+      "description": "Įdiegti „Swipt” šoniniu būdu",
+      "install": {
+        "description": "Įdiegti „Swipt”",
+        "force": "įdiegti ant tos pačios arba naujesnės versijos"
+      },
+      "passcode": "nustatyti automatinį atrakinimą naudojant šį prieigos kodą",
+      "setup": {
+        "description": "Nustatyti „Swipt”"
+      },
+      "uninstall": {
+        "description": "Pašalinti „Swipt”"
+      },
+      "update": {
+        "description": "Atnaujinti „Swipt” arba pratęsti jos galiojimą",
+        "passcode": "atrakinti įrenginį šiuo prieigos kodu"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Iškviesti „Swiplet” veiksmą",
+        "input": "įvesties JSON, @FILE arba -",
+        "invalidInput": "--input nėra JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} nurodo „Swiplet” {{swiplet}} duomenų katalogą; išsaugokite jį naudodami --output DIRECTORY",
+      "description": "Tvarkyti įrenginyje esančius „Swiplet”",
+      "directory": "{{path}} yra katalogas „Swiplet” {{swiplet}} duomenų kataloge; išsaugokite jį naudodami --output DIRECTORY",
+      "install": {
+        "description": "Įdiegti „Swiplet” archyvą",
+        "notFound": "Kelyje {{path}} nėra archyvo"
+      },
+      "list": {
+        "actions": "VEIKSMAI",
+        "description": "Išvardyti „Swiplet”",
+        "id": "ID",
+        "service": "PASLAUGA",
+        "status": "BŪSENA",
+        "title": "PAVADINIMAS",
+        "version": "VERSIJA"
+      },
+      "remove": {
+        "description": "Pašalinti „Swiplet”",
+        "removed": "pašalintas „Swiplet” {{name}}"
+      },
+      "service": {
+        "description": "Tvarkyti „Swiplet” paslaugas",
+        "disable": {
+          "description": "Išjungti „Swiplet” paslaugą"
+        },
+        "enable": {
+          "description": "Įjungti „Swiplet” paslaugą"
+        },
+        "watch": {
+          "description": "Stebėti „Swiplet” paslaugas"
+        },
+        "watchState": "stebėti būseną"
+      },
+      "show": {
+        "description": "Rodyti „Swiplet”",
+        "input": "įvestis: {{schema}}",
+        "notFound": "Nėra „Swiplet” {{id}}.",
+        "output": "išvestis: {{schema}}",
+        "service": "paslauga: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Išvesti versiją"
+    }
+  },
+  "connection": {
+    "added": "pridėtas įrenginys {{device}}",
+    "ambiguous": "Yra keli įrenginiai: {{devices}}; pasirinkite vieną naudodami -d",
+    "driverNotStopped": "Tvarkyklė kompiuteryje {{computer}} nesustojo.",
+    "invalidURL": "{{text}} nėra URL adresas.",
+    "none": "Nėra įrenginio; įjunkite „Swipt” › „Kūrėjas” › „Vietinis tinklas” arba prijunkite įrenginį naudodami \"swipt device add URL\".",
+    "noneOnNetwork": "Joks įrenginys neskelbia „Swipt” vietiniame tinkle; įjunkite „Swipt” › „Kūrėjas” › „Vietinis tinklas” arba prijunkite įrenginį naudodami \"swipt device add URL\".",
+    "notFound": "Nėra įrenginio {{device}}.",
+    "notFoundHint": "Nėra įrenginio {{device}}; juos išvardija \"swipt device list\".",
+    "offline": "neprisijungęs",
+    "problem": {
+      "developerModeOff": "kūrėjo režimas išjungtas",
+      "deviceUnsupported": "įrenginys nepalaikomas",
+      "diskImageMissing": "nėra disko vaizdo",
+      "diskImageMountFailed": "nepavyko prijungti disko vaizdo",
+      "pairingRejected": "susiejimas atmestas",
+      "screenInUse": "ekranas naudojamas",
+      "unreachable": "nepasiekiamas",
+      "vpnPeerAddressMissing": "trūksta VPN mazgo adreso"
+    },
+    "removed": "pašalintas įrenginys {{name}}",
+    "requiresToken": "reikia žetono",
+    "requiresTokenHint": "Įrenginiui {{device}} reikia žetono: swipt device add {{url}}",
+    "state": {
+      "connecting": "jungiamas",
+      "failed": "klaida",
+      "preparing": "ruošiamas",
+      "running": "aktyvus",
+      "stopped": "sustabdytas"
+    },
+    "unsupportedURL": "{{text}} nėra http arba https URL adresas."
+  },
+  "deploy": {
+    "installed": "įdiegta {{id}} {{version}}",
+    "replaced": "pakeista {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Tvarkyklė jau veikia šiame kompiuteryje; pirmiausia ją sustabdykite.",
+    "ambiguousName": "Keli „iPhone” ar „iPad” įrenginiai pavadinti {{name}}; pasirinkite vieną pagal UDID",
+    "appleMobileDeviceServiceMissing": "Tarnyba „Apple Mobile Device Service” neveikia; įdiekite programą „Apple įrenginiai” iš „Microsoft Store”",
+    "chooseDevice": "Pasirinkite įrenginį",
+    "chooseDeviceHint": "Pasirinkite įrenginį naudodami -d NAME|UDID",
+    "connectedDevices": "{{reason}}; prijungti „iPhone” ir „iPad” įrenginiai:",
+    "lookingForDevices": "ieškoma įrenginių",
+    "missing": "Tvarkyklės nėra; įdiekite ją naudodami \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Nėra „iPhone” ar „iPad” įrenginio, pavadinto {{name}}",
+    "noDevice": "Prie šio kompiuterio neprijungtas joks „iPhone” ar „iPad” įrenginys ir vietiniame tinkle jo nerasta; prijunkite įrenginį USB laidu ir jį atrakinkite.",
+    "pairing": "susiejama su įrenginiu {{device}}",
+    "trustPrompt": "įrenginyje {{device}} bakstelėkite „Pasitikėti” ir įveskite jo prieigos kodą, kad pasitikėtumėte šiuo kompiuteriu",
+    "usbmuxdMissing": "usbmuxd neveikia; įdiekite usbmuxd ir jį paleiskite"
+  },
+  "error": "klaida: {{message}}",
+  "flags": {
+    "device": "naudojamas įrenginys",
+    "nightly": "naudoti naktinę versiją",
+    "noSetup": "nesusieti „Swipt”, nepasitikėti jos kūrėju ir neskelbti jos API",
+    "noSetupAPI": "neskelbti API vietiniame tinkle",
+    "noSetupPair": "nesusieti „Swipt”",
+    "passcodeType": "pin (4 arba 6 skaitmenys, numatytoji reikšmė), numeric arba alphanumeric",
+    "team": "komandos ID, privaloma, jei komandų yra kelios"
+  },
+  "metro": {
+    "boolean": "loginė reikšmė",
+    "contextArgument": "require.context argumentas Nr. {{index}} turi būti {{expected}}",
+    "contextRegExp": "require.context argumentas Nr. {{index}} turi būti reguliariojo reiškinio literalas.",
+    "oneOf": "viena iš reikšmių: {{values}}",
+    "string": "eilutė",
+    "workletsMismatch": "Projekte yra react-native-worklets {{version}}, bet „Swipt” naudoja {{expected}}; įdiekite react-native-worklets@{{expected}} arba jį pašalinkite."
+  },
+  "noThanks": "Ne, ačiū",
+  "output": {
+    "navigate": "naršyti",
+    "select": "pasirinkti",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} nuo {{time}}",
+    "serviceStatus": {
+      "failed": "klaida",
+      "running": "veikia",
+      "starting": "paleidžiama",
+      "stopped": "sustabdyta",
+      "turnedOff": "išjungta",
+      "turnedOn": "įjungta"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Pasirinktinis raidinis-skaitinis kodas",
+    "alphanumericDetail": "raidinis-skaitinis",
+    "empty": "Įveskite prieigos kodą.",
+    "invalidAlphanumeric": "Prieigos kodą sudaro iki 64 spausdinamų ASCII simbolių.",
+    "invalidNumeric": "Skaitinį kodą sudaro tik skaitmenys.",
+    "invalidPin": "pin prieigos kodą sudaro 4 arba 6 skaitmenys; pasirinktiniam kodui reikia --passcode-type numeric arba alphanumeric",
+    "invalidType": "netinkamas --passcode-type argumentas {{value}}: turi būti {{types}}",
+    "masked": "[įvestis paslėpta]",
+    "numeric": "Pasirinktinis skaitinis kodas",
+    "numericDetail": "skaitinis",
+    "pin": "4 arba 6 skaitmenų prieigos kodas",
+    "pinDetail": "4 arba 6 skaitmenys",
+    "prompt": "Įrenginio prieigos kodas",
+    "setUp": "Nustatyti automatinį atrakinimą? Tada „Swipt” galės pati atrakinti šį įrenginį."
+  },
+  "project": {
+    "assetConflict": "„Swiplet” viduje tiek {{source}}, tiek {{asset}} taptų assets/{{name}}.",
+    "conditionalActions": "Plėtinys apibrėžia skirtingus veiksmus priklausomai nuo available(); visose sistemose apibrėžkite tuos pačius veiksmus, o available() tikrinkite run arba veiksmo viduje.",
+    "databaseAtLoad": "Kol įkeliamas extension.js, naudojama duomenų bazė; ją naudokite run arba veiksmo viduje.",
+    "interfaceImport": "Sąsaja vykdymo metu importuoja {{file}}; importuokite jo tipą naudodami `import type`.",
+    "interfaceOnly": "{{name}} veikia tik „Swiplet” sąsajoje.",
+    "invalidExposure": "Veiksmas {{action}} gali būti pasiekiamas tik per \"shortcuts\".",
+    "invalidExtension": "Plėtinio numatytasis eksportas nėra defineExtension rezultatas.",
+    "invalidID": "\"swiplet.id\" faile package.json turi būti sudarytas iš 1–128 mažųjų raidžių, skaitmenų, taškų, pabraukimo ženklų ir brūkšnelių ir prasidėti raide arba skaitmeniu.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" faile package.json turi susieti kalbas su pavadinimais.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" faile package.json turi būti sveikasis skaičius nuo {{oldest}} iki {{level}} (@swipt/api API lygis).",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" faile package.json turi būti versijos numeris nuo {{version}} (minimali @swipt/api „iOS” versija).",
+    "invalidName": "\"swiplet.name\" faile package.json turi būti netuščia eilutė.",
+    "invalidSchema": "Veiksmo {{action}} {{side}} schema neįgyvendina „Standard JSON Schema”; naudokite ją įgyvendinančią biblioteką, pvz., „Zod 4”.",
+    "invalidString": "\"{{field}}\" faile package.json turi būti eilutė.",
+    "invalidVersionCode": "\"swiplet.versionCode\" faile package.json turi būti teigiamas sveikasis skaičius.",
+    "missingTitle": "Veiksmui {{action}} reikia pavadinimo.",
+    "storageAtLoad": "Kol įkeliamas extension.js, naudojama saugojimo vieta; ją naudokite run arba veiksmo viduje.",
+    "unprovidedModule": "„Swipt” neteikia \"{{module}}\" plėtiniams; supakuokite jį į extension.js.",
+    "usedAtLoad": "Kol įkeliamas extension.js, naudojama: {{name}}; tai naudokite run arba veiksmo viduje."
+  },
+  "serve": {
+    "cancel": "Atšaukti",
+    "checking": "tikrinamas įrenginys {{device}}",
+    "conflictingTokens": "--token ir --random-token negalima naudoti kartu.",
+    "invalidToken": "Žetoną sudaro vienas ar daugiau spausdinamų ASCII simbolių be tarpų.",
+    "localNetwork": "Vietinis tinklas",
+    "noAutoUnlock": "Įrenginys {{device}} neatrakinamas automatiškai; nustatykite jo prieigos kodą naudodami --passcode. Norėdami sustabdyti tvarkyklę, paspauskite Ctrl-C.",
+    "quitSwipt": "Išeiti iš „Swipt”",
+    "quittingSwipt": "išeinama iš „Swipt” įrenginyje {{device}}",
+    "served": "Tvarkyklė kompiuteryje {{computer}} jau aptarnauja įrenginį {{device}}; pirmiausia sustabdykite tą tvarkyklę.",
+    "servedPrompt": "Tvarkyklė kompiuteryje {{computer}} jau aptarnauja įrenginį {{device}}. Sustabdyti tą tvarkyklę?",
+    "starting": "paleidžiama tvarkyklė įrenginiui {{device}}",
+    "stopDriver": "Sustabdyti tvarkyklę kompiuteryje {{computer}}",
+    "stopHint": "Norėdami sustabdyti tvarkyklę, paspauskite Ctrl-C.",
+    "stoppingDriver": "stabdoma tvarkyklė kompiuteryje {{computer}}",
+    "swiptRunning": "Tvarkyklė negali valdyti įrenginio {{device}}, kol jame veikia „Swipt”; pirmiausia išeikite iš „Swipt”.",
+    "swiptRunningPrompt": "Tvarkyklė negali valdyti įrenginio {{device}}, kol jame veikia „Swipt”. Išeiti iš „Swipt”?"
+  },
+  "sideload": {
+    "ambiguousTeam": "„Swipt” įrenginyje {{device}} šoniniu būdu įdiegė kelios komandos; pasirinkite vieną naudodami --team ID:",
+    "certificateFailed": "„Xcode” nepavyko sukurti komandos {{team}} kūrimo sertifikato; pridėkite jį skiltyje {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "įrenginyje {{device}} tikrinama „Swipt”",
+    "checkingRelease": "tikrinama naujausia laida",
+    "chooseTeam": "Pasirinkite komandą",
+    "chooseTeamHint": "Pasirinkite komandą naudodami --team ID:",
+    "diskImageFailed": "nepavyko paruošti kūrėjo disko vaizdo įrenginyje {{device}}: {{error}}",
+    "downgrade": "Grąžinti senesnę versiją",
+    "downgradePrompt": "Grąžinti senesnę „Swipt” versiją {{releaseVersion}} vietoj {{version}} įrenginyje {{device}}? „Swipt” iš naujo nustato savo duomenis, kai senesnė versija negali jų nuskaityti.",
+    "downgradeToStablePrompt": "Grąžinti stabilią „Swipt” versiją {{releaseVersion}} vietoj naktinės versijos {{version}} įrenginyje {{device}}? „Swipt” iš naujo nustato savo duomenis, kai senesnė versija negali jų nuskaityti.",
+    "downloading": "atsisiunčiama „Swipt” {{version}} ({{build}}) iš {{release}}",
+    "expiration": "Jos parašas nustos galioti {{expiration}}.",
+    "installed": "{{build}} įdiegta įrenginyje {{device}}.",
+    "installing": "diegiama įrenginyje {{device}}",
+    "invalidTeam": "netinkamas --team argumentas {{value}}: turi būti 10 simbolių komandos ID, rodomas skiltyje {{accounts}}",
+    "laterThanRelease": "{{build}} įrenginyje {{device}} yra naujesnė nei {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; atrakinkite įrenginį arba nurodykite --passcode, tada paleiskite komandą dar kartą.",
+    "looking": "ieškoma „Swipt” įrenginiuose",
+    "needsMacOS": "Norint įdiegti arba atnaujinti „Swipt”, reikia „macOS”; įdiekite ją iš „Mac” kompiuterio, tada nustatykite čia naudodami \"swipt sideload setup\".",
+    "noAccount": "Programoje „Xcode” nėra paskyros; prisijunkite skiltyje {{accounts}} arba pasirinkite komandą naudodami --team ID",
+    "noAccountForTeam": "Programoje „Xcode” nėra komandos {{team}} paskyros; prisijunkite jos „Apple” paskyra skiltyje {{accounts}}.",
+    "noCertificate": "Programoje „Xcode” nėra kūrimo sertifikato; pridėkite jį skiltyje {{accounts}} › Manage Certificates arba pasirinkite komandą naudodami --team ID",
+    "noneInstalled": "„Swipt” neįdiegta šoniniu būdu jokiame „iPhone” ar „iPad” įrenginyje.",
+    "noneInstalledHint": "„Swipt” neįdiegta šoniniu būdu jokiame „iPhone” ar „iPad” įrenginyje; įdiekite ją naudodami \"swipt sideload install\".",
+    "notInstalled": "„Swipt” neįdiegta šoniniu būdu įrenginyje {{device}}.",
+    "notInstalledByTeam": "„Swipt” neįdiegta šoniniu būdu įrenginyje {{device}} komandos {{team}} vardu.",
+    "notInstalledByTeamHint": "„Swipt” neįdiegta šoniniu būdu įrenginyje {{device}} komandos {{team}} vardu; įdiekite ją naudodami \"swipt sideload install\".",
+    "notInstalledHint": "„Swipt” neįdiegta šoniniu būdu įrenginyje {{device}}; įdiekite ją naudodami \"swipt sideload install\".",
+    "notOnNetwork": "Įrenginys {{device}} nerastas vietiniame tinkle; jo API URL adresus rasite skiltyje „Swipt” › „Kūrėjas” › „Vietinis tinklas”.",
+    "opening": "įrenginyje {{device}} atidaroma „Swipt”",
+    "openingSettings": "įrenginyje {{device}} atidaroma programa „Nustatymai”",
+    "opensAfterUnlock": "Ji atsidarys, kai įrenginys {{device}} bus atrakintas.",
+    "pairingFailed": "Susieti nepavyko, todėl „Swipt” susies programoje „Nustatymai”: {{error}}",
+    "preparingDiskImage": "įrenginyje {{device}} ruošiamas kūrėjo disko vaizdas",
+    "preparingSigning": "per „Xcode” ruošiamas „Swipt” pasirašymas komandos {{team}} vardu",
+    "removed": "{{build}} pašalinta iš įrenginio {{device}}",
+    "removing": "„Swipt” šalinama iš įrenginio {{device}}",
+    "renewalNeedsDowngrade": "Įrenginyje {{device}} esančiai {{build}} reikia naujo parašo, bet {{release}} ({{releaseBuild}}) yra senesnė; naudokite --nightly arba grąžinkite senesnę versiją naudodami \"swipt sideload install --force\".",
+    "resigning": "iš naujo pasirašoma „Swipt”",
+    "running": "{{app}} veikia.",
+    "settingUpAutoUnlock": "nustatomas automatinis atrakinimas",
+    "trusted": "Kūrėju {{developer}} pasitikima.",
+    "trusting": "programoje „Nustatymai” pasitikima kūrėju {{developer}}",
+    "unlockPrompt": "Atrakinkite įrenginį, kad galėtumėte tęsti.",
+    "unlocking": "atrakinamas įrenginys",
+    "untrusted": "Jos kūrėju dar nepasitikima; pasitikėkite juo programos „Nustatymai” puslapyje, atidarytame įrenginyje {{device}}, tada atidarykite „Swipt”.",
+    "upToDate": "{{build}} įrenginyje {{device}} jau yra {{release}}.",
+    "updated": "{{build}} atnaujinta įrenginyje {{device}}.",
+    "waiting": "laukiama įrenginio {{device}}",
+    "xcodeMissing": "xcodebuild reikia „Xcode”; įdiekite programą ir pasirinkite ją naudodami xcode-select",
+    "xcodebuildMissing": "Trūksta xcodebuild; įdiekite „Xcode”."
+  }
+}

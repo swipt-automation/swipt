@@ -1,13 +1,11 @@
 import * as connection from "../../../connection";
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 
 export const add = defineCommand({
   name: "add",
   use: "add URL",
-  short: tr(
-    "Add a device by its URL; needed when it's remote or requires a token",
-  ),
+  short: t("commands.device.add.description"),
   args: [1, 1],
   run: connection.add,
 });

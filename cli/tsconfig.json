@@ -4,5 +4,5 @@
     "lib": ["ESNext"],
     "types": ["node"]
   },
-  "include": ["src", "tsdown.config.ts"]
+  "include": ["src", "tsdown.config.ts", "i18next.config.ts"]
 }

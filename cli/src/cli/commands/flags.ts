@@ -1,4 +1,4 @@
-import { tr } from "../../i18n";
+import { t } from "../../i18n";
 import type { Options } from "../command";
 
 export const deviceOption: Options = {
@@ -6,7 +6,7 @@ export const deviceOption: Options = {
     type: "string",
     short: "d",
     value: "NAME|URL",
-    help: tr("the device to use"),
+    help: t("flags.device"),
   },
 };
 
@@ -15,7 +15,7 @@ export const udidDeviceOption: Options = {
     type: "string",
     short: "d",
     value: "NAME|UDID",
-    help: tr("the device to use"),
+    help: t("flags.device"),
   },
 };
 
@@ -24,7 +24,7 @@ export const sideloadOptions: Options = {
   team: {
     type: "string",
     value: "ID",
-    help: tr("team ID, required if more than one"),
+    help: t("flags.team"),
   },
 };
 
@@ -33,26 +33,26 @@ export const passcodeOptions = (help: string): Options => ({
   "passcode-type": {
     type: "string",
     value: "TYPE",
-    help: tr("pin (4 or 6 digits, default), numeric or alphanumeric"),
+    help: t("flags.passcodeType"),
   },
 });
 
 export const nightlyOption: Options = {
-  nightly: { type: "boolean", help: tr("use nightly build") },
+  nightly: { type: "boolean", help: t("flags.nightly") },
 };
 
 export const setupStepOptions: Options = {
-  "no-setup-pair": { type: "boolean", help: tr("don't pair Swipt") },
+  "no-setup-pair": { type: "boolean", help: t("flags.noSetupPair") },
   "no-setup-api": {
     type: "boolean",
-    help: tr("don't publish the API to the local network"),
+    help: t("flags.noSetupAPI"),
   },
 };
 
 export const setupOptions: Options = {
   "no-setup": {
     type: "boolean",
-    help: tr("don't pair Swipt, trust its developer or publish its API"),
+    help: t("flags.noSetup"),
   },
   ...setupStepOptions,
 };

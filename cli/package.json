@@ -28,7 +28,8 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "strings": "i18next-cli types && i18next-cli status && i18next-cli status --unused && i18next-cli lint"
   },
   "publishConfig": {
     "access": "public"
@@ -46,6 +47,7 @@
     "bonjour-service": "^1.4.4",
     "esbuild": "^0.28.2",
     "fflate": "^0.8.3",
+    "i18next": "^27.1.1",
     "image-size": "^2.0.4",
     "multicast-dns": "^7.2.5",
     "react-native-worklets": "0.13.0",
@@ -67,6 +69,7 @@
     "@types/babel__core": "^7.20.5",
     "@types/multicast-dns": "^7.2.4",
     "@types/node": "^24.19.2",
+    "i18next-cli": "^1.87.0",
     "tsdown": "^0.23.7"
   }
 }

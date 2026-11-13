@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "available()తో వీటిని చెక్ చేయండి, వీటిని ఉపయోగించే కోడ్‌ను @availableతో మార్క్ చేయండి, లేదా package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
+    "apiLevel": "API స్థాయి {{level}}",
+    "entryNeeds": "{{location}}: {{name}} Swiplet ఎంట్రీ పాయింట్, దానికి {{requirement}} అవసరం; package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
+    "importNeeds": "{{location}}: {{name}}ను ఇంపోర్ట్ చేయడానికి {{requirement}} అవసరం; package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
+    "invalidEntry": "{{location}}: @availableలో \"{{entry}}\" ఉంది; ఇది కామాలతో వేరు చేసిన \"apiLevel <level>\", \"iOS <version>\"లను స్వీకరిస్తుంది.",
+    "needs": "{{location}}: {{name}}కు {{requirement}} అవసరం.",
+    "repeatedEntry": "{{location}}: @availableలో {{kind}} రెండుసార్లు ఉంది."
+  },
+  "cli": {
+    "commands": "కమాండ్‌లు:",
+    "exactArgs_one": "{{count}} ఆర్గ్యుమెంట్ అవసరం, {{received}} అందాయి",
+    "exactArgs_other": "{{count}} ఆర్గ్యుమెంట్‌లు అవసరం, {{received}} అందాయి",
+    "help": "సహాయం",
+    "helpHint": "వినియోగ వివరాల కోసం \"swipt help\"ను రన్ చేయండి.",
+    "minimumArgs_one": "కనీసం {{count}} ఆర్గ్యుమెంట్ అవసరం, {{received}} అందాయి",
+    "minimumArgs_other": "కనీసం {{count}} ఆర్గ్యుమెంట్‌లు అవసరం, {{received}} అందాయి",
+    "missingCommand": "కమాండ్ లేదు.",
+    "options": "ఆప్షన్‌లు:",
+    "rangeArgs_one": "{{least}} నుండి {{count}} వరకు ఆర్గ్యుమెంట్ అవసరం, {{received}} అందాయి",
+    "rangeArgs_other": "{{least}} నుండి {{count}} వరకు ఆర్గ్యుమెంట్‌లు అవసరం, {{received}} అందాయి",
+    "unauthenticated": "{{message}}; Swipt › ‘డెవలపర్’ లేదా \"swipt driver\" చూపించే URLతో కనెక్ట్ చేయండి: swipt device add {{url}}",
+    "unimplemented": "{{url}}లోని Swiptలో ఈ కమాండ్ లేదు; Swiptను అప్‌డేట్ చేయండి.",
+    "unknownCommand": "{{parent}}కు {{name}} అనే కమాండ్ తెలియదు",
+    "unknownOption": "{{option}} అనేది {{command}} ఆప్షన్ కాదు.",
+    "unreachable": "{{url}}లోని Swiptను చేరుకోలేకపోయింది: {{message}}",
+    "usage": "వినియోగం: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "డేటా డైరెక్టరీని ఉంచి, అన్ని డేటా ఫైల్‌లను తీసివేయండి"
+      },
+      "list": {
+        "description": "డేటా ఫైల్‌లను లిస్ట్ చేయండి",
+        "recursive": "సబ్‌డైరెక్టరీలను చేర్చండి"
+      },
+      "read": {
+        "description": "డేటా ఫైల్ లేదా డైరెక్టరీని చదవండి",
+        "output": "గమ్యస్థానం",
+        "saved_one": "{{count}} ఫైల్ {{path}}లో సేవ్ చేయబడింది",
+        "saved_other": "{{count}} ఫైల్‌లు {{path}}లో సేవ్ చేయబడ్డాయి"
+      },
+      "remove": {
+        "description": "డేటా ఫైల్‌ను తీసివేయండి",
+        "recursive": "డైరెక్టరీ కంటెంట్‌లను చేర్చండి"
+      },
+      "replDescription": "REPL డేటా డైరెక్టరీలోని ఫైల్‌లను మేనేజ్ చేయండి",
+      "swipletDescription": "Swiplet డేటా డైరెక్టరీలోని ఫైల్‌లను మేనేజ్ చేయండి",
+      "write": {
+        "description": "డేటా ఫైల్‌ను రాయండి"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "URL ద్వారా డివైజ్‌ను జోడించండి; అది రిమోట్‌గా ఉన్నప్పుడు లేదా టోకెన్ అవసరమైనప్పుడు ఇది అవసరం"
+      },
+      "description": "డివైజ్‌లను మేనేజ్ చేయండి, వాటి లాగ్‌లను చదవండి",
+      "list": {
+        "description": "డివైజ్‌లను లిస్ట్ చేసి, లోకల్ నెట్‌వర్క్‌లో కనుగొన్నవాటిని జోడించండి"
+      },
+      "logs": {
+        "count": "గత ఎంట్రీల సంఖ్య (డిఫాల్ట్ 100)",
+        "description": "లాగ్‌లను ప్రింట్ చేయండి",
+        "follow": "కొత్త ఎంట్రీలను అనుసరించండి",
+        "invalidDuration": "{{option}}కు {{value}} చెల్లని ఆర్గ్యుమెంట్: ఇది 30s లేదా 1m30s వంటి వ్యవధి అయి ఉండాలి",
+        "invalidLevel": "--level అనేది error, warn, info లేదా debug అయి ఉండాలి",
+        "invalidNumber": "{{option}}కు {{value}} చెల్లని ఆర్గ్యుమెంట్: ఇది సంఖ్య అయి ఉండాలి",
+        "level": "కనిష్ఠ స్థాయి (డిఫాల్ట్ info)",
+        "since": "గరిష్ఠ కాలవ్యవధి",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "డివైజ్‌ను మర్చిపోండి"
+      },
+      "stop": {
+        "description": "Swipt APIని అందించడం ఆపండి",
+        "stopped": "ఆగిపోయింది"
+      }
+    },
+    "driver": {
+      "description": "ఈ కంప్యూటర్ నుండి డివైజ్ కోసం Swipt API మరియు MCPని అందించండి",
+      "details": "ఒకసారి ఒక్క పక్షం మాత్రమే డివైజ్‌ను నియంత్రించగలదు: డివైజ్‌లోని Swipt, లేదా ఒక కంప్యూటర్‌లోని డ్రైవర్.",
+      "passcode": "డివైజ్‌ను ఆటోమేటిక్‌గా అన్‌లాక్ చేయడానికి పాస్‌కోడ్; ఖాళీగా ఉంచితే అది ఆఫ్ అవుతుంది",
+      "randomToken": "API క్లయింట్‌ల నుండి ర్యాండమ్ టోకెన్‌ను కోరండి",
+      "token": "API క్లయింట్‌ల నుండి ఈ టోకెన్‌ను కోరండి"
+    },
+    "project": {
+      "build": {
+        "description": "ప్రాజెక్ట్‌ను dist/<swiplet.id>.swipletగా బండిల్ చేయండి"
+      },
+      "create": {
+        "description": "కొత్త లేదా ఖాళీ డైరెక్టరీలో Swiplet ప్రాజెక్ట్‌ను క్రియేట్ చేయండి",
+        "notEmpty": "{{directory}} ఖాళీగా లేదు."
+      },
+      "deploy": {
+        "description": "ప్రాజెక్ట్‌ను బిల్డ్ చేసి డివైజ్‌లో ఇన్‌స్టాల్ చేయండి"
+      },
+      "description": "Swiplet ప్రాజెక్ట్‌లను క్రియేట్ చేయండి, బిల్డ్ చేయండి, డిప్లాయ్ చేయండి",
+      "develop": {
+        "deployed": "{{elapsed}}లో బిల్డ్, డిప్లాయ్ చేయబడింది; {{directory}} గమనించబడుతోంది",
+        "description": "Swiplet ప్రాజెక్ట్‌ను బిల్డ్ చేసి, ఇన్‌స్టాల్ చేసి, అది మారుతున్నప్పుడు అనుసరించండి",
+        "quiet": "లాగ్‌లు లేకుండా",
+        "unchanged": "{{elapsed}}లో బిల్డ్ చేయబడింది; ఏదీ మారలేదు"
+      },
+      "source": {
+        "description": "బిల్డ్ చేసిన Swipletలను swiplets.jsonతో పాటు dist/లో సేకరించండి",
+        "duplicateID": "{{id}} అనేది {{first}}, {{second}} రెండూ అవుతుంది",
+        "invalidIcon": "package.jsonలోని \"source.icon\"లో symbol తప్పనిసరిగా ఉండాలి, color ఉండవచ్చు.",
+        "invalidLocalizedNames": "package.jsonలోని \"source.localizedNames\" భాషలను పేర్లకు మ్యాప్ చేయాలి.",
+        "invalidURL": "package.jsonలోని \"source.url\" అబ్సల్యూట్ URL కాదు.",
+        "noWorkspaces": "package.jsonలో Swipletలు ఉన్న వర్క్‌స్పేస్‌లు ఏవీ లిస్ట్ చేయలేదు; లిస్ట్ చేయాల్సిన Swipletల పేర్లను ఇవ్వండి.",
+        "notBuilt": "{{file}} లేదు; ముందుగా {{directory}}ను బిల్డ్ చేయండి."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "గ్లోబల్‌లు, మాడ్యూల్‌ల TypeScript డిక్లరేషన్‌లను ప్రింట్ చేయండి"
+      },
+      "dataDirectory": "{{path}} అనేది REPL డేటా డైరెక్టరీని సూచిస్తుంది; --output DIRECTORYతో దాన్ని సేవ్ చేయండి",
+      "description": "డివైజ్‌లోని REPL సెషన్‌లో JavaScriptను రన్ చేయండి",
+      "directory": "{{path}} అనేది REPL డేటా డైరెక్టరీలోని డైరెక్టరీ; --output DIRECTORYతో దాన్ని సేవ్ చేయండి",
+      "reset": {
+        "description": "సెషన్‌ను రీసెట్ చేయండి"
+      },
+      "run": {
+        "arguments": "మొదటి ఆర్గ్యుమెంట్ ఇప్పటికే ఉన్న ఫైల్‌ను సూచిస్తే అది FILE, లేకపోతే CODE; ఆప్షన్‌లను దానికి ముందు ఇవ్వండి.",
+        "description": "డివైజ్‌లో JavaScript ఎక్స్‌ప్రెషన్ లేదా ప్రోగ్రామ్‌ను రన్ చేయండి",
+        "details": "CODE అనేది ఎక్స్‌ప్రెషన్, దాని విలువ ప్రింట్ చేయబడుతుంది. FILE, లేదా - గా ఇచ్చిన లేదా ఆర్గ్యుమెంట్ లేని స్టాండర్డ్ ఇన్‌పుట్, ప్రోగ్రామ్ అవుతుంది, దాని కన్సోల్ అవుట్‌పుట్ మాత్రమే ప్రింట్ చేయబడుతుంది.",
+        "extraArguments": "{{argument}} ఫైల్ కాదు, CODE ఏ ARGనూ తీసుకోదు.",
+        "images": "ఇమేజ్ డైరెక్టరీ (డిఫాల్ట్: కొత్త తాత్కాలిక డైరెక్టరీ)"
+      }
+    },
+    "sideload": {
+      "description": "Swiptను సైడ్‌లోడ్ చేయండి",
+      "install": {
+        "description": "Swiptను ఇన్‌స్టాల్ చేయండి",
+        "force": "అదే లేదా కొత్త బిల్డ్‌పై ఇన్‌స్టాల్ చేయండి"
+      },
+      "passcode": "ఈ పాస్‌కోడ్‌తో ఆటోమేటిక్ అన్‌లాక్‌ను సెటప్ చేయండి",
+      "setup": {
+        "description": "Swiptను సెటప్ చేయండి"
+      },
+      "uninstall": {
+        "description": "Swiptను తీసివేయండి"
+      },
+      "update": {
+        "description": "Swiptను అప్‌డేట్ లేదా రెన్యూ చేయండి",
+        "passcode": "ఈ పాస్‌కోడ్‌తో డివైజ్‌ను అన్‌లాక్ చేయండి"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet యాక్షన్‌ను కాల్ చేయండి",
+        "input": "ఇన్‌పుట్ JSON, @FILE లేదా -",
+        "invalidInput": "--input JSON కాదు: {{error}}"
+      },
+      "dataDirectory": "{{path}} అనేది {{swiplet}} డేటా డైరెక్టరీని సూచిస్తుంది; --output DIRECTORYతో దాన్ని సేవ్ చేయండి",
+      "description": "డివైజ్‌లోని Swipletలను మేనేజ్ చేయండి",
+      "directory": "{{path}} అనేది {{swiplet}} డేటా డైరెక్టరీలోని డైరెక్టరీ; --output DIRECTORYతో దాన్ని సేవ్ చేయండి",
+      "install": {
+        "description": "Swiplet ఆర్కైవ్‌ను ఇన్‌స్టాల్ చేయండి",
+        "notFound": "{{path}}లో ఆర్కైవ్ లేదు"
+      },
+      "list": {
+        "actions": "యాక్షన్‌లు",
+        "description": "Swipletలను లిస్ట్ చేయండి",
+        "id": "ID",
+        "service": "సర్వీస్",
+        "status": "స్టేటస్",
+        "title": "టైటిల్",
+        "version": "వెర్షన్"
+      },
+      "remove": {
+        "description": "Swipletను తీసివేయండి",
+        "removed": "{{name}} తీసివేయబడింది"
+      },
+      "service": {
+        "description": "Swiplet సర్వీస్‌లను మేనేజ్ చేయండి",
+        "disable": {
+          "description": "Swiplet సర్వీస్‌ను ఆఫ్ చేయండి"
+        },
+        "enable": {
+          "description": "Swiplet సర్వీస్‌ను ఆన్ చేయండి"
+        },
+        "watch": {
+          "description": "Swiplet సర్వీస్‌లను గమనించండి"
+        },
+        "watchState": "స్టేటస్‌ను గమనించండి"
+      },
+      "show": {
+        "description": "Swipletను చూపించండి",
+        "input": "ఇన్‌పుట్: {{schema}}",
+        "notFound": "{{id}} Swiplet లేదు.",
+        "output": "అవుట్‌పుట్: {{schema}}",
+        "service": "సర్వీస్: {{status}}"
+      }
+    },
+    "version": {
+      "description": "వెర్షన్‌ను ప్రింట్ చేయండి"
+    }
+  },
+  "connection": {
+    "added": "{{device}} జోడించబడింది",
+    "ambiguous": "ఒకటి కంటే ఎక్కువ డివైజ్‌లు ఉన్నాయి: {{devices}}; -dతో ఒకదాన్ని ఎంచుకోండి",
+    "driverNotStopped": "{{computer}}లోని డ్రైవర్ ఆగలేదు.",
+    "invalidURL": "{{text}} URL కాదు.",
+    "none": "డివైజ్ లేదు; Swipt › ‘డెవలపర్’ › ‘లోకల్ నెట్‌వర్క్’ను ఆన్ చేయండి, లేదా \"swipt device add URL\"తో డివైజ్‌ను కనెక్ట్ చేయండి.",
+    "noneOnNetwork": "లోకల్ నెట్‌వర్క్‌లో ఏ డివైజ్ కూడా Swiptను పబ్లిష్ చేయడం లేదు; Swipt › ‘డెవలపర్’ › ‘లోకల్ నెట్‌వర్క్’ను ఆన్ చేయండి, లేదా \"swipt device add URL\"తో డివైజ్‌ను కనెక్ట్ చేయండి.",
+    "notFound": "{{device}} డివైజ్ లేదు.",
+    "notFoundHint": "{{device}} డివైజ్ లేదు; \"swipt device list\" వాటిని లిస్ట్ చేస్తుంది.",
+    "offline": "ఆఫ్‌లైన్",
+    "problem": {
+      "developerModeOff": "డెవలపర్ మోడ్ ఆఫ్‌లో ఉంది",
+      "deviceUnsupported": "డివైజ్‌కు సపోర్ట్ లేదు",
+      "diskImageMissing": "డిస్క్ ఇమేజ్ లేదు",
+      "diskImageMountFailed": "డిస్క్ ఇమేజ్‌ను మౌంట్ చేయడం సాధ్యపడలేదు",
+      "pairingRejected": "పెయిరింగ్ తిరస్కరించబడింది",
+      "screenInUse": "స్క్రీన్ వినియోగంలో ఉంది",
+      "unreachable": "చేరుకోలేకపోయింది",
+      "vpnPeerAddressMissing": "VPN పీర్ అడ్రస్ లేదు"
+    },
+    "removed": "{{name}} తీసివేయబడింది",
+    "requiresToken": "టోకెన్ అవసరం",
+    "requiresTokenHint": "{{device}}కు టోకెన్ అవసరం: swipt device add {{url}}",
+    "state": {
+      "connecting": "కనెక్ట్ అవుతోంది",
+      "failed": "విఫలమైంది",
+      "preparing": "సిద్ధమవుతోంది",
+      "running": "యాక్టివ్‌గా ఉంది",
+      "stopped": "ఆగిపోయింది"
+    },
+    "unsupportedURL": "{{text}} http లేదా https URL కాదు."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} ఇన్‌స్టాల్ చేయబడింది",
+    "replaced": "{{id}} {{version}} భర్తీ చేయబడింది"
+  },
+  "driver": {
+    "alreadyRunning": "ఈ కంప్యూటర్‌లో డ్రైవర్ ఇప్పటికే రన్ అవుతోంది; ముందుగా దాన్ని ఆపండి.",
+    "ambiguousName": "{{name}} పేరుతో ఒకటి కంటే ఎక్కువ iPhone లేదా iPad డివైజ్‌లు ఉన్నాయి; UDIDతో ఒకదాన్ని ఎంచుకోండి",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service రన్ కావడం లేదు; Microsoft Store నుండి Apple Devices యాప్‌ను ఇన్‌స్టాల్ చేయండి",
+    "chooseDevice": "డివైజ్‌ను ఎంచుకోండి",
+    "chooseDeviceHint": "-d NAME|UDIDతో డివైజ్‌ను ఎంచుకోండి",
+    "connectedDevices": "{{reason}}; కనెక్ట్ చేసిన iPhone మరియు iPad డివైజ్‌లు:",
+    "lookingForDevices": "డివైజ్‌ల కోసం వెతుకుతోంది",
+    "missing": "డ్రైవర్ కనుగొనబడలేదు; \"npm install -g @swipt/cli --include=optional\"తో దాన్ని ఇన్‌స్టాల్ చేయండి.",
+    "nameNotFound": "{{name}} పేరుతో iPhone లేదా iPad డివైజ్ లేదు",
+    "noDevice": "ఈ కంప్యూటర్‌కు ఏ iPhone లేదా iPad డివైజ్ కూడా కనెక్ట్ చేయబడలేదు, లోకల్ నెట్‌వర్క్‌లో కూడా కనుగొనబడలేదు; USB కేబుల్‌తో డివైజ్‌ను కనెక్ట్ చేసి, అన్‌లాక్ చేయండి.",
+    "pairing": "{{device}}తో పెయిర్ చేయబడుతోంది",
+    "trustPrompt": "{{device}}లో ‘విశ్వసించండి’ను ట్యాప్ చేసి, ఈ కంప్యూటర్‌ను విశ్వసించడానికి దాని పాస్‌కోడ్‌ను నమోదు చేయండి",
+    "usbmuxdMissing": "usbmuxd రన్ కావడం లేదు; usbmuxdను ఇన్‌స్టాల్ చేసి, దాన్ని ప్రారంభించండి"
+  },
+  "error": "ఎర్రర్: {{message}}",
+  "flags": {
+    "device": "ఉపయోగించాల్సిన డివైజ్",
+    "nightly": "nightly బిల్డ్‌ను ఉపయోగించండి",
+    "noSetup": "Swiptను పెయిర్ చేయవద్దు, దాని డెవలపర్‌ను విశ్వసించవద్దు, దాని APIని పబ్లిష్ చేయవద్దు",
+    "noSetupAPI": "లోకల్ నెట్‌వర్క్‌కు APIని పబ్లిష్ చేయవద్దు",
+    "noSetupPair": "Swiptను పెయిర్ చేయవద్దు",
+    "passcodeType": "pin (4 లేదా 6 అంకెలు, డిఫాల్ట్), numeric లేదా alphanumeric",
+    "team": "టీమ్ ID, ఒకటి కంటే ఎక్కువ ఉంటే అవసరం"
+  },
+  "metro": {
+    "boolean": "బూలియన్",
+    "contextArgument": "require.context {{index}}వ ఆర్గ్యుమెంట్ {{expected}} అయి ఉండాలి",
+    "contextRegExp": "require.context {{index}}వ ఆర్గ్యుమెంట్ రెగ్యులర్ ఎక్స్‌ప్రెషన్ లిటరల్ అయి ఉండాలి.",
+    "oneOf": "{{values}}లో ఒకటి",
+    "string": "స్ట్రింగ్",
+    "workletsMismatch": "ప్రాజెక్ట్‌లో react-native-worklets {{version}} ఉంది, కానీ Swipt {{expected}}ను రన్ చేస్తుంది; react-native-worklets@{{expected}}ను ఇన్‌స్టాల్ చేయండి లేదా దాన్ని తీసివేయండి."
+  },
+  "noThanks": "వద్దు, ధన్యవాదాలు",
+  "output": {
+    "navigate": "తరలించండి",
+    "select": "ఎంచుకోండి",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} నుండి {{status}}",
+    "serviceStatus": {
+      "failed": "విఫలమైంది",
+      "running": "రన్ అవుతోంది",
+      "starting": "ప్రారంభమవుతోంది",
+      "stopped": "ఆగిపోయింది",
+      "turnedOff": "ఆఫ్",
+      "turnedOn": "ఆన్"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "కస్టమ్ ఆల్ఫాన్యూమరిక్ కోడ్",
+    "alphanumericDetail": "ఆల్ఫాన్యూమరిక్",
+    "empty": "పాస్‌కోడ్‌ను నమోదు చేయండి.",
+    "invalidAlphanumeric": "పాస్‌కోడ్‌లో ప్రింట్ చేయగల ASCII అక్షరాలు 64 వరకు ఉంటాయి.",
+    "invalidNumeric": "న్యూమరిక్ పాస్‌కోడ్‌లో అంకెలు మాత్రమే ఉంటాయి.",
+    "invalidPin": "pin పాస్‌కోడ్ 4 లేదా 6 అంకెలు ఉంటుంది; కస్టమ్ పాస్‌కోడ్‌కు --passcode-type numeric లేదా alphanumeric అవసరం",
+    "invalidType": "--passcode-typeకు {{value}} చెల్లని ఆర్గ్యుమెంట్: ఇది {{types}} అయి ఉండాలి",
+    "masked": "[ఇన్‌పుట్ దాచబడింది]",
+    "numeric": "కస్టమ్ న్యూమరిక్ కోడ్",
+    "numericDetail": "న్యూమరిక్",
+    "pin": "4 లేదా 6 అంకెల పాస్‌కోడ్",
+    "pinDetail": "4 లేదా 6 అంకెలు",
+    "prompt": "డివైజ్ పాస్‌కోడ్",
+    "setUp": "ఆటోమేటిక్ అన్‌లాక్‌ను సెటప్ చేయాలా? అప్పుడు Swipt ఈ డివైజ్‌ను తనంతట తానుగా అన్‌లాక్ చేయగలదు."
+  },
+  "project": {
+    "assetConflict": "{{source}}, {{asset}} రెండూ Swipletలో assets/{{name}} అవుతాయి.",
+    "conditionalActions": "ఎక్స్‌టెన్షన్ available()పై ఆధారపడి వేర్వేరు యాక్షన్‌లను నిర్వచిస్తుంది; ప్రతి సిస్టమ్‌లో ఒకే యాక్షన్‌లను నిర్వచించి, run లేదా యాక్షన్ లోపల available()ను చెక్ చేయండి.",
+    "databaseAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు డేటాబేస్ ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి.",
+    "interfaceImport": "ఇంటర్‌ఫేస్ రన్ టైమ్‌లో {{file}}ను ఇంపోర్ట్ చేస్తుంది; `import type`తో దాని టైప్‌ను ఇంపోర్ట్ చేయండి.",
+    "interfaceOnly": "{{name}} Swiplet ఇంటర్‌ఫేస్‌లో మాత్రమే పని చేస్తుంది.",
+    "invalidExposure": "{{action}} యాక్షన్ తనను తాను \"shortcuts\"కు మాత్రమే అందుబాటులో ఉంచగలదు.",
+    "invalidExtension": "ఎక్స్‌టెన్షన్ డిఫాల్ట్ ఎక్స్‌పోర్ట్ defineExtension ఫలితం కాదు.",
+    "invalidID": "package.jsonలోని \"swiplet.id\" 1 నుండి 128 వరకు లోయర్‌కేస్ అక్షరాలు, అంకెలు, చుక్కలు, అండర్‌స్కోర్‌లు, హైఫన్‌లతో ఉండాలి, అక్షరం లేదా అంకెతో మొదలవ్వాలి.",
+    "invalidLocalizedNames": "package.jsonలోని \"swiplet.localizedNames\" భాషలను పేర్లకు మ్యాప్ చేయాలి.",
+    "invalidMinimumAPILevel": "package.jsonలోని \"swiplet.minimumAPILevel\" {{oldest}} నుండి @swipt/api API స్థాయి అయిన {{level}} వరకు ఉన్న పూర్ణాంకం అయి ఉండాలి.",
+    "invalidMinimumIOSVersion": "package.jsonలోని \"swiplet.minimumIOSVersion\" @swipt/api కనీస iOS వెర్షన్ అయిన {{version}} లేదా అంతకంటే ఎక్కువ వెర్షన్ నంబర్ అయి ఉండాలి.",
+    "invalidName": "package.jsonలోని \"swiplet.name\" ఖాళీ కాని స్ట్రింగ్ అయి ఉండాలి.",
+    "invalidSchema": "{{action}} యాక్షన్ {{side}} స్కీమా Standard JSON Schemaను అమలు చేయడం లేదు; దాన్ని అమలు చేసే లైబ్రరీని ఉపయోగించండి, ఉదాహరణకు Zod 4.",
+    "invalidString": "package.jsonలోని \"{{field}}\" స్ట్రింగ్ అయి ఉండాలి.",
+    "invalidVersionCode": "package.jsonలోని \"swiplet.versionCode\" ధన పూర్ణాంకం అయి ఉండాలి.",
+    "missingTitle": "{{action}} యాక్షన్‌కు టైటిల్ అవసరం.",
+    "storageAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు స్టోరేజ్ ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి.",
+    "unprovidedModule": "Swipt ఎక్స్‌టెన్షన్‌లకు \"{{module}}\"ను అందించదు; దాన్ని extension.jsలోకి బండిల్ చేయండి.",
+    "usedAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు {{name}} ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి."
+  },
+  "serve": {
+    "cancel": "రద్దు చేయండి",
+    "checking": "{{device}} చెక్ చేయబడుతోంది",
+    "conflictingTokens": "--token, --random-token లను కలిపి ఉపయోగించలేరు.",
+    "invalidToken": "టోకెన్‌లో స్పేస్‌లు లేని, ప్రింట్ చేయగల ఒకటి లేదా అంతకంటే ఎక్కువ ASCII అక్షరాలు ఉంటాయి.",
+    "localNetwork": "లోకల్ నెట్‌వర్క్",
+    "noAutoUnlock": "{{device}} ఆటోమేటిక్‌గా అన్‌లాక్ కాదు; --passcodeతో దాని పాస్‌కోడ్‌ను సెట్ చేయండి. డ్రైవర్‌ను ఆపడానికి Ctrl-C నొక్కండి.",
+    "quitSwipt": "Swipt నుండి నిష్క్రమించండి",
+    "quittingSwipt": "{{device}}లో Swipt నుండి నిష్క్రమిస్తోంది",
+    "served": "{{computer}}లోని డ్రైవర్ ఇప్పటికే {{device}}కు సేవలు అందిస్తోంది; ముందుగా ఆ డ్రైవర్‌ను ఆపండి.",
+    "servedPrompt": "{{computer}}లోని డ్రైవర్ ఇప్పటికే {{device}}కు సేవలు అందిస్తోంది. ఆ డ్రైవర్‌ను ఆపాలా?",
+    "starting": "{{device}} కోసం డ్రైవర్ ప్రారంభించబడుతోంది",
+    "stopDriver": "{{computer}}లోని డ్రైవర్‌ను ఆపండి",
+    "stopHint": "డ్రైవర్‌ను ఆపడానికి Ctrl-C నొక్కండి.",
+    "stoppingDriver": "{{computer}}లోని డ్రైవర్ ఆపబడుతోంది",
+    "swiptRunning": "{{device}}లో Swipt రన్ అవుతున్నప్పుడు డ్రైవర్ దాన్ని నియంత్రించలేదు; ముందుగా Swipt నుండి నిష్క్రమించండి.",
+    "swiptRunningPrompt": "{{device}}లో Swipt రన్ అవుతున్నప్పుడు డ్రైవర్ దాన్ని నియంత్రించలేదు. Swipt నుండి నిష్క్రమించాలా?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}}లో ఒకటి కంటే ఎక్కువ టీమ్‌ల ద్వారా Swipt సైడ్‌లోడ్ చేయబడింది; --team IDతో ఒకదాన్ని ఎంచుకోండి:",
+    "certificateFailed": "{{team}} టీమ్ కోసం Xcode డెవలప్‌మెంట్ సర్టిఫికెట్‌ను క్రియేట్ చేయలేకపోయింది; {{accounts}} › Manage Certificatesలో ఒకటి జోడించండి ({{errors}}).",
+    "checking": "{{device}}లో Swipt చెక్ చేయబడుతోంది",
+    "checkingRelease": "తాజా రిలీజ్ చెక్ చేయబడుతోంది",
+    "chooseTeam": "టీమ్‌ను ఎంచుకోండి",
+    "chooseTeamHint": "--team IDతో టీమ్‌ను ఎంచుకోండి:",
+    "diskImageFailed": "{{device}}లో డెవలపర్ డిస్క్ ఇమేజ్‌ను సిద్ధం చేయడం సాధ్యపడలేదు: {{error}}",
+    "downgrade": "డౌన్‌గ్రేడ్ చేయండి",
+    "downgradePrompt": "{{device}}లోని Swiptను {{version}} నుండి {{releaseVersion}}కు డౌన్‌గ్రేడ్ చేయాలా? పాత వెర్షన్ డేటాను చదవలేనప్పుడు Swipt తన డేటాను రీసెట్ చేస్తుంది.",
+    "downgradeToStablePrompt": "{{device}}లోని Swiptను nightly బిల్డ్ {{version}} నుండి స్థిరమైన వెర్షన్ {{releaseVersion}}కు డౌన్‌గ్రేడ్ చేయాలా? పాత వెర్షన్ డేటాను చదవలేనప్పుడు Swipt తన డేటాను రీసెట్ చేస్తుంది.",
+    "downloading": "{{release}} నుండి Swipt {{version}} ({{build}}) డౌన్‌లోడ్ చేయబడుతోంది",
+    "expiration": "దీని సైనింగ్ గడువు {{expiration}} ముగుస్తుంది.",
+    "installed": "{{device}}లో {{build}} ఇన్‌స్టాల్ చేయబడింది.",
+    "installing": "{{device}}లో ఇన్‌స్టాల్ చేయబడుతోంది",
+    "invalidTeam": "--teamకు {{value}} చెల్లని ఆర్గ్యుమెంట్: ఇది {{accounts}}లో కనిపించే 10 అక్షరాల టీమ్ ID అయి ఉండాలి",
+    "laterThanRelease": "{{device}}లోని {{build}}, {{release}} ({{releaseBuild}}) కంటే కొత్తది.",
+    "locked": "{{device}}: {{message}}; దాన్ని అన్‌లాక్ చేయండి లేదా --passcode ఇవ్వండి, ఆపై దీన్ని మళ్లీ రన్ చేయండి.",
+    "looking": "డివైజ్‌లలో Swipt కోసం వెతుకుతోంది",
+    "needsMacOS": "Swiptను ఇన్‌స్టాల్ లేదా అప్‌డేట్ చేయడానికి macOS అవసరం; Mac నుండి దాన్ని ఇన్‌స్టాల్ చేసి, ఆపై \"swipt sideload setup\"తో ఇక్కడ సెటప్ చేయండి.",
+    "noAccount": "Xcodeలో అకౌంట్ లేదు; {{accounts}}లో సైన్ ఇన్ చేయండి, లేదా --team IDతో టీమ్‌ను ఎంచుకోండి",
+    "noAccountForTeam": "{{team}} టీమ్ కోసం Xcodeలో అకౌంట్ లేదు; {{accounts}}లో దాని Apple అకౌంట్‌తో సైన్ ఇన్ చేయండి.",
+    "noCertificate": "Xcodeలో డెవలప్‌మెంట్ సర్టిఫికెట్ లేదు; {{accounts}} › Manage Certificatesలో ఒకటి జోడించండి, లేదా --team IDతో టీమ్‌ను ఎంచుకోండి",
+    "noneInstalled": "ఏ iPhone లేదా iPad డివైజ్‌లోనూ Swipt సైడ్‌లోడ్ చేయబడలేదు.",
+    "noneInstalledHint": "ఏ iPhone లేదా iPad డివైజ్‌లోనూ Swipt సైడ్‌లోడ్ చేయబడలేదు; \"swipt sideload install\"తో దాన్ని ఇన్‌స్టాల్ చేయండి.",
+    "notInstalled": "{{device}}లో Swipt సైడ్‌లోడ్ చేయబడలేదు.",
+    "notInstalledByTeam": "{{device}}లో {{team}} టీమ్ ద్వారా Swipt సైడ్‌లోడ్ చేయబడలేదు.",
+    "notInstalledByTeamHint": "{{device}}లో {{team}} టీమ్ ద్వారా Swipt సైడ్‌లోడ్ చేయబడలేదు; \"swipt sideload install\"తో దాన్ని ఇన్‌స్టాల్ చేయండి.",
+    "notInstalledHint": "{{device}}లో Swipt సైడ్‌లోడ్ చేయబడలేదు; \"swipt sideload install\"తో దాన్ని ఇన్‌స్టాల్ చేయండి.",
+    "notOnNetwork": "లోకల్ నెట్‌వర్క్‌లో {{device}} కనుగొనబడలేదు; దాని API URLలను Swipt › ‘డెవలపర్’ › ‘లోకల్ నెట్‌వర్క్’లో చూడండి.",
+    "opening": "{{device}}లో Swipt తెరవబడుతోంది",
+    "openingSettings": "{{device}}లో ‘సెట్టింగ్స్’ తెరవబడుతోంది",
+    "opensAfterUnlock": "{{device}} అన్‌లాక్ అయిన తర్వాత ఇది తెరుచుకుంటుంది.",
+    "pairingFailed": "పెయిరింగ్ విఫలమైంది, కాబట్టి Swipt బదులుగా ‘సెట్టింగ్స్’లో పెయిర్ అవుతుంది: {{error}}",
+    "preparingDiskImage": "{{device}}లో డెవలపర్ డిస్క్ ఇమేజ్ సిద్ధం చేయబడుతోంది",
+    "preparingSigning": "Xcode ద్వారా {{team}} టీమ్‌తో Swipt కోసం సైనింగ్ సిద్ధం చేయబడుతోంది",
+    "removed": "{{device}} నుండి {{build}} తీసివేయబడింది",
+    "removing": "{{device}} నుండి Swipt తీసివేయబడుతోంది",
+    "renewalNeedsDowngrade": "{{device}}లోని {{build}}కు కొత్త సైనింగ్ అవసరం, కానీ {{release}} ({{releaseBuild}}) పాతది; --nightlyని ఉపయోగించండి, లేదా \"swipt sideload install --force\"తో డౌన్‌గ్రేడ్ చేయండి.",
+    "resigning": "Swipt మళ్లీ సైన్ చేయబడుతోంది",
+    "running": "{{app}} రన్ అవుతోంది.",
+    "settingUpAutoUnlock": "ఆటోమేటిక్ అన్‌లాక్ సెటప్ అవుతోంది",
+    "trusted": "{{developer}}ను విశ్వసించడం జరిగింది.",
+    "trusting": "‘సెట్టింగ్స్’లో {{developer}}ను విశ్వసించడం జరుగుతోంది",
+    "unlockPrompt": "కొనసాగించడానికి డివైజ్‌ను అన్‌లాక్ చేయండి.",
+    "unlocking": "డివైజ్ అన్‌లాక్ అవుతోంది",
+    "untrusted": "దీని డెవలపర్‌ను ఇంకా విశ్వసించలేదు; {{device}}లో తెరిచిన ‘సెట్టింగ్స్’ పేజీలో విశ్వసించి, ఆపై Swiptను తెరవండి.",
+    "upToDate": "{{device}}లోని {{build}} ఇప్పటికే {{release}}.",
+    "updated": "{{device}}లో {{build}} అప్‌డేట్ చేయబడింది.",
+    "waiting": "{{device}} కోసం వేచి ఉంది",
+    "xcodeMissing": "xcodebuildకు Xcode అవసరం; దాన్ని ఇన్‌స్టాల్ చేసి xcode-selectతో ఎంచుకోండి",
+    "xcodebuildMissing": "xcodebuild లేదు; Xcodeను ఇన్‌స్టాల్ చేయండి."
+  }
+}

@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Оларды available() арқылы тексеріңіз, оларды пайдаланатын кодты @available арқылы белгілеңіз немесе package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
+    "apiLevel": "API деңгейі {{level}}",
+    "entryNeeds": "{{location}}: {{name}} – Swiplet кіру нүктесі, оған {{requirement}} қажет; package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
+    "importNeeds": "{{location}}: {{name}} импорттау үшін {{requirement}} қажет; package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
+    "invalidEntry": "{{location}}: @available ішінде \"{{entry}}\" бар; ол үтірмен бөлінген \"apiLevel <level>\" және \"iOS <version>\" жазбаларын қабылдайды.",
+    "needs": "{{location}}: {{name}} үшін {{requirement}} қажет.",
+    "repeatedEntry": "{{location}}: @available ішінде {{kind}} екі рет көрсетілген."
+  },
+  "cli": {
+    "commands": "пәрмендер:",
+    "exactArgs_one": "{{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "exactArgs_other": "{{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "help": "анықтама",
+    "helpHint": "Пайдалану жолын көру үшін \"swipt help\" пәрменін орындаңыз.",
+    "minimumArgs_one": "кемінде {{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "minimumArgs_other": "кемінде {{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "missingCommand": "Пәрмен көрсетілмеген.",
+    "options": "опциялар:",
+    "rangeArgs_one": "{{least}}–{{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "rangeArgs_other": "{{least}}–{{count}} аргумент қабылдайды, берілгені: {{received}}",
+    "unauthenticated": "{{message}}; Swipt › Әзірлеуші бөлімі немесе \"swipt driver\" көрсететін URL мекенжайы арқылы қосылыңыз: swipt device add {{url}}",
+    "unimplemented": "{{url}} мекенжайындағы Swipt қолданбасында бұл пәрмен жоқ; Swipt қолданбасын жаңартыңыз.",
+    "unknownCommand": "{{parent}} үшін {{name}} пәрмені белгісіз",
+    "unknownOption": "{{option}} – {{command}} пәрменінің опциясы емес.",
+    "unreachable": "{{url}} мекенжайындағы Swipt қолжетімсіз: {{message}}",
+    "usage": "қолданылуы: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Деректер каталогын сақтап, барлық деректер файлын жою"
+      },
+      "list": {
+        "description": "Деректер файлдарын тізімдеу",
+        "recursive": "ішкі каталогтарды қосу"
+      },
+      "read": {
+        "description": "Деректер файлын немесе каталогын оқу",
+        "output": "мақсатты орын",
+        "saved_one": "{{count}} файл {{path}} жолына сақталды",
+        "saved_other": "{{count}} файл {{path}} жолына сақталды"
+      },
+      "remove": {
+        "description": "Деректер файлын жою",
+        "recursive": "каталог мазмұнын қосу"
+      },
+      "replDescription": "REPL деректер каталогындағы файлдарды басқару",
+      "swipletDescription": "Swiplet деректер каталогындағы файлдарды басқару",
+      "write": {
+        "description": "Деректер файлын жазу"
+      }
+    },
+    "description": "Swipt пәрмен жолы құралы",
+    "device": {
+      "add": {
+        "description": "Құрылғыны URL мекенжайы бойынша қосу; ол қашықта болғанда немесе токен талап еткенде қажет"
+      },
+      "description": "Құрылғыларды басқару және олардың журналдарын оқу",
+      "list": {
+        "description": "Құрылғыларды тізімдеп, жергілікті желіде табылғандарын қосу"
+      },
+      "logs": {
+        "count": "бұрынғы жазбалар саны (әдепкі: 100)",
+        "description": "Журналдарды шығару",
+        "follow": "жаңа жазбаларды бақылау",
+        "invalidDuration": "{{option}} үшін {{value}} аргументі жарамсыз: ол 30s немесе 1m30s сияқты ұзақтық болуы керек",
+        "invalidLevel": "--level мәні error, warn, info немесе debug болуы керек",
+        "invalidNumber": "{{option}} үшін {{value}} аргументі жарамсыз: ол сан болуы керек",
+        "level": "ең төменгі деңгей (әдепкі: info)",
+        "since": "ең ұзақ уақыт аралығы",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "Құрылғыны ұмыту"
+      },
+      "stop": {
+        "description": "Swipt API интерфейсін ұсынуды тоқтату",
+        "stopped": "тоқтатылған"
+      }
+    },
+    "driver": {
+      "description": "Осы компьютерден құрылғы үшін Swipt API және MCP ұсыну",
+      "details": "Құрылғыны бір уақытта тек бір тарап басқара алады: құрылғыдағы Swipt немесе бір компьютердегі драйвер.",
+      "passcode": "құрылғының құлпын автоматты түрде ашуға арналған құпия код; мұны өшіру үшін бос қалдырыңыз",
+      "randomToken": "API клиенттерінен кездейсоқ токенді талап ету",
+      "token": "API клиенттерінен осы токенді талап ету"
+    },
+    "project": {
+      "build": {
+        "description": "Жобаны dist/<swiplet.id>.swiplet файлына жинақтау"
+      },
+      "create": {
+        "description": "Жаңа немесе бос каталогта Swiplet жобасын жасау",
+        "notEmpty": "{{directory}} каталогы бос емес."
+      },
+      "deploy": {
+        "description": "Жобаны құрастырып, құрылғыға орнату"
+      },
+      "description": "Swiplet жобаларын жасау, құрастыру және орналастыру",
+      "develop": {
+        "deployed": "{{elapsed}} ішінде құрастырылып, орналастырылды; {{directory}} каталогы бақылануда",
+        "description": "Swiplet жобасын құрастырып, орнату және өзгерген сайын жаңартып отыру",
+        "quiet": "журналдарсыз",
+        "unchanged": "{{elapsed}} ішінде құрастырылды; ештеңе өзгерген жоқ"
+      },
+      "source": {
+        "description": "Құрастырылған Swiplet файлдарын swiplets.json файлымен бірге dist/ ішіне жинау",
+        "duplicateID": "{{id}} бір мезгілде әрі {{first}}, әрі {{second}}",
+        "invalidIcon": "package.json файлындағы \"source.icon\" өрісінде symbol болуы керек, color болуы мүмкін.",
+        "invalidLocalizedNames": "package.json файлындағы \"source.localizedNames\" өрісі тілдерді атауларға сәйкестендіруі керек.",
+        "invalidURL": "package.json файлындағы \"source.url\" мәні абсолютті URL мекенжайы емес.",
+        "noWorkspaces": "package.json файлында Swiplet бар жұмыс кеңістіктері көрсетілмеген; тізімге қосылатын Swiplet атауларын көрсетіңіз.",
+        "notBuilt": "{{file}} жоқ; алдымен {{directory}} каталогын құрастырыңыз."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Жаһандық айнымалылар мен модульдердің TypeScript мәлімдемелерін шығару"
+      },
+      "dataDirectory": "{{path}} REPL деректер каталогын көрсетеді; оны --output DIRECTORY арқылы сақтаңыз",
+      "description": "Құрылғыдағы REPL сеансында JavaScript кодын орындау",
+      "directory": "{{path}} – REPL деректер каталогындағы каталог; оны --output DIRECTORY арқылы сақтаңыз",
+      "reset": {
+        "description": "Сеансты бастапқы күйге қайтару"
+      },
+      "run": {
+        "arguments": "Бірінші аргумент бар файлды көрсетсе, ол FILE болады, әйтпесе CODE; опциялар оның алдында беріледі.",
+        "description": "Құрылғыда JavaScript өрнегін немесе бағдарламасын орындау",
+        "details": "CODE – мәні шығарылатын өрнек. FILE немесе - түрінде не аргументсіз берілген стандартты кіріс – бағдарлама, оның тек консольдік шығысы шығарылады.",
+        "extraArguments": "{{argument}} – файл емес, ал CODE ешқандай ARG қабылдамайды.",
+        "images": "кескін каталогы (әдепкі: жаңа уақытша каталог)"
+      }
+    },
+    "sideload": {
+      "description": "Swipt қолданбасын бүйірден жүктеу",
+      "install": {
+        "description": "Swipt қолданбасын орнату",
+        "force": "бірдей немесе жаңарақ нұсқаның үстінен орнату"
+      },
+      "passcode": "құлыпты автоматты түрде ашуды осы құпия кодпен баптау",
+      "setup": {
+        "description": "Swipt қолданбасын баптау"
+      },
+      "uninstall": {
+        "description": "Swipt қолданбасын жою"
+      },
+      "update": {
+        "description": "Swipt қолданбасын жаңарту немесе мерзімін ұзарту",
+        "passcode": "құрылғының құлпын осы құпия кодпен ашу"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet әрекетін шақыру",
+        "input": "кіріс JSON, @FILE немесе -",
+        "invalidInput": "--input мәні JSON емес: {{error}}"
+      },
+      "dataDirectory": "{{path}} {{swiplet}} деректер каталогын көрсетеді; оны --output DIRECTORY арқылы сақтаңыз",
+      "description": "Құрылғыдағы Swiplet басқару",
+      "directory": "{{path}} – {{swiplet}} деректер каталогындағы каталог; оны --output DIRECTORY арқылы сақтаңыз",
+      "install": {
+        "description": "Swiplet архивін орнату",
+        "notFound": "{{path}} жолында архив жоқ"
+      },
+      "list": {
+        "actions": "ӘРЕКЕТТЕР",
+        "description": "Swiplet тізімін көрсету",
+        "id": "ID",
+        "service": "ҚЫЗМЕТ",
+        "status": "КҮЙІ",
+        "title": "АТАУЫ",
+        "version": "НҰСҚА"
+      },
+      "remove": {
+        "description": "Swiplet жою",
+        "removed": "{{name}} жойылды"
+      },
+      "service": {
+        "description": "Swiplet қызметтерін басқару",
+        "disable": {
+          "description": "Swiplet қызметін өшіру"
+        },
+        "enable": {
+          "description": "Swiplet қызметін қосу"
+        },
+        "watch": {
+          "description": "Swiplet қызметтерін бақылау"
+        },
+        "watchState": "күйді бақылау"
+      },
+      "show": {
+        "description": "Swiplet көрсету",
+        "input": "кіріс деректер: {{schema}}",
+        "notFound": "{{id}} деген Swiplet жоқ.",
+        "output": "шығыс деректер: {{schema}}",
+        "service": "қызмет: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Нұсқаны шығару"
+    }
+  },
+  "connection": {
+    "added": "{{device}} құрылғысы қосылды",
+    "ambiguous": "Бірнеше құрылғы бар: {{devices}}; -d арқылы біреуін таңдаңыз",
+    "driverNotStopped": "{{computer}} компьютеріндегі драйвер тоқтамады.",
+    "invalidURL": "{{text}} – URL мекенжайы емес.",
+    "none": "Құрылғы жоқ; Swipt › Әзірлеуші › Жергілікті желі опциясын қосыңыз немесе құрылғыны \"swipt device add URL\" пәрменімен жалғаңыз.",
+    "noneOnNetwork": "Жергілікті желіде Swipt жариялайтын құрылғы жоқ; Swipt › Әзірлеуші › Жергілікті желі опциясын қосыңыз немесе құрылғыны \"swipt device add URL\" пәрменімен жалғаңыз.",
+    "notFound": "{{device}} құрылғысы жоқ.",
+    "notFoundHint": "{{device}} құрылғысы жоқ; тізімін \"swipt device list\" пәрмені көрсетеді.",
+    "offline": "желіден тыс",
+    "problem": {
+      "developerModeOff": "әзірлеуші режимі өшірулі",
+      "deviceUnsupported": "құрылғыға қолдау көрсетілмейді",
+      "diskImageMissing": "диск бейнесі жоқ",
+      "diskImageMountFailed": "диск бейнесін қосу сәтсіз аяқталды",
+      "pairingRejected": "жұптау қабылданбады",
+      "screenInUse": "экран пайдаланылуда",
+      "unreachable": "қолжетімсіз",
+      "vpnPeerAddressMissing": "VPN екінші тарабының мекенжайы жоқ"
+    },
+    "removed": "{{name}} құрылғысы жойылды",
+    "requiresToken": "токен қажет",
+    "requiresTokenHint": "{{device}} құрылғысына токен қажет: swipt device add {{url}}",
+    "state": {
+      "connecting": "қосылуда",
+      "failed": "сәтсіз",
+      "preparing": "дайындалуда",
+      "running": "белсенді",
+      "stopped": "тоқтатылған"
+    },
+    "unsupportedURL": "{{text}} – http немесе https URL мекенжайы емес."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} орнатылды",
+    "replaced": "{{id}} {{version}} ауыстырылды"
+  },
+  "driver": {
+    "alreadyRunning": "Драйвер осы компьютерде әлдеқашан жұмыс істеп тұр; алдымен оны тоқтатыңыз.",
+    "ambiguousName": "{{name}} атты бірнеше iPhone немесе iPad бар; UDID арқылы біреуін таңдаңыз",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service қызметі іске қосылмаған; Microsoft Store дүкенінен «Apple құрылғылары» қолданбасын орнатыңыз",
+    "chooseDevice": "Бір құрылғыны таңдаңыз",
+    "chooseDeviceHint": "-d NAME|UDID арқылы құрылғыны таңдаңыз",
+    "connectedDevices": "{{reason}}; жалғанған iPhone және iPad құрылғылары:",
+    "lookingForDevices": "құрылғылар ізделуде",
+    "missing": "Драйвер жоқ; оны \"npm install -g @swipt/cli --include=optional\" пәрменімен орнатыңыз.",
+    "nameNotFound": "{{name}} атты iPhone немесе iPad жоқ",
+    "noDevice": "Осы компьютерге iPhone немесе iPad жалғанбаған және жергілікті желіде табылмады; құрылғыны USB кабелі арқылы жалғап, құлпын ашыңыз.",
+    "pairing": "{{device}} құрылғысымен жұпталуда",
+    "trustPrompt": "{{device}} құрылғысында «Сену» түймесін түртіп, осы компьютерге сенім білдіру үшін оның құпия кодын енгізіңіз",
+    "usbmuxdMissing": "usbmuxd іске қосылмаған; usbmuxd орнатып, оны іске қосыңыз"
+  },
+  "error": "қате: {{message}}",
+  "flags": {
+    "device": "пайдаланылатын құрылғы",
+    "nightly": "түнгі (nightly) нұсқаны пайдалану",
+    "noSetup": "Swipt қолданбасын жұптамау, оның әзірлеушісіне сенім білдірмеу және API интерфейсін жарияламау",
+    "noSetupAPI": "API интерфейсін жергілікті желіге жарияламау",
+    "noSetupPair": "Swipt қолданбасын жұптамау",
+    "passcodeType": "pin (4 немесе 6 цифр, әдепкі), numeric немесе alphanumeric",
+    "team": "топ ID мәні, бірнеше топ болса, міндетті"
+  },
+  "metro": {
+    "boolean": "логикалық мән",
+    "contextArgument": "require.context үшін {{index}}-аргумент {{expected}} болуы керек",
+    "contextRegExp": "require.context үшін {{index}}-аргумент тұрақты өрнек литералы болуы керек.",
+    "oneOf": "{{values}} мәндерінің бірі",
+    "string": "мәтін жолы",
+    "workletsMismatch": "Жобада react-native-worklets {{version}} бар, бірақ Swipt {{expected}} нұсқасымен жұмыс істейді; react-native-worklets@{{expected}} орнатыңыз немесе оны жойыңыз."
+  },
+  "noThanks": "Жоқ, рақмет",
+  "output": {
+    "navigate": "жылжу",
+    "select": "таңдау",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} уақытынан бастап {{status}}",
+    "serviceStatus": {
+      "failed": "сәтсіз",
+      "running": "жұмыс істеп тұр",
+      "starting": "іске қосылуда",
+      "stopped": "тоқтатылған",
+      "turnedOff": "өшірулі",
+      "turnedOn": "қосулы"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Сандар мен әріптерден құралған код",
+    "alphanumericDetail": "сандар мен әріптер",
+    "empty": "Құпия кодты енгізіңіз.",
+    "invalidAlphanumeric": "Құпия код басып шығарылатын 64 ASCII таңбасынан аспауы керек.",
+    "invalidNumeric": "Сандардан құралған кодта тек цифрлар болуы мүмкін.",
+    "invalidPin": "pin құпия коды – 4 немесе 6 цифр; басқа код үшін --passcode-type numeric немесе alphanumeric қажет",
+    "invalidType": "--passcode-type үшін {{value}} аргументі жарамсыз: ол {{types}} болуы керек",
+    "masked": "[енгізілген мән жасырылған]",
+    "numeric": "Сандардан құралған код",
+    "numericDetail": "сандар",
+    "pin": "4 немесе 6 таңбалы құпия код",
+    "pinDetail": "4 немесе 6 цифр",
+    "prompt": "Құрылғының құпия коды",
+    "setUp": "Құлыпты автоматты түрде ашуды баптау керек пе? Сонда Swipt осы құрылғының құлпын өзі аша алады."
+  },
+  "project": {
+    "assetConflict": "{{source}} және {{asset}} екеуі де Swiplet ішінде assets/{{name}} болады.",
+    "conditionalActions": "Кеңейтім available() нәтижесіне қарай әртүрлі әрекеттерді анықтайды; барлық жүйеде бірдей әрекеттерді анықтап, available() мәнін run ішінде немесе әрекет ішінде тексеріңіз.",
+    "databaseAtLoad": "extension.js жүктеліп жатқанда дерекқор пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз.",
+    "interfaceImport": "Интерфейс орындалу кезінде {{file}} файлын импорттайды; оның түрін `import type` арқылы импорттаңыз.",
+    "interfaceOnly": "{{name}} тек Swiplet интерфейсінде жұмыс істейді.",
+    "invalidExposure": "{{action}} әрекеті тек \"shortcuts\" үшін ашық бола алады.",
+    "invalidExtension": "Кеңейтімнің әдепкі экспорты defineExtension нәтижесі емес.",
+    "invalidID": "package.json файлындағы \"swiplet.id\" мәні кіші әріптерден, цифрлардан, нүктелерден, астын сызу белгілерінен және дефистерден тұратын 1–128 таңба болуы және әріппен не цифрмен басталуы керек.",
+    "invalidLocalizedNames": "package.json файлындағы \"swiplet.localizedNames\" өрісі тілдерді атауларға сәйкестендіруі керек.",
+    "invalidMinimumAPILevel": "package.json файлындағы \"swiplet.minimumAPILevel\" мәні {{oldest}}-ден @swipt/api пакетінің API деңгейіне ({{level}}) дейінгі бүтін сан болуы керек.",
+    "invalidMinimumIOSVersion": "package.json файлындағы \"swiplet.minimumIOSVersion\" мәні @swipt/api пакетінің ең төменгі iOS нұсқасынан ({{version}}) кем емес нұсқа нөмірі болуы керек.",
+    "invalidName": "package.json файлындағы \"swiplet.name\" мәні бос емес мәтін жолы болуы керек.",
+    "invalidSchema": "{{action}} әрекетінің {{side}} схемасы Standard JSON Schema стандартын іске асырмайды; оны іске асыратын кітапхананы пайдаланыңыз, мысалы Zod 4.",
+    "invalidString": "package.json файлындағы \"{{field}}\" мәні мәтін жолы болуы керек.",
+    "invalidVersionCode": "package.json файлындағы \"swiplet.versionCode\" мәні оң бүтін сан болуы керек.",
+    "missingTitle": "{{action}} әрекетіне атау қажет.",
+    "storageAtLoad": "extension.js жүктеліп жатқанда сақтау орны пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз.",
+    "unprovidedModule": "Swipt кеңейтімдерге \"{{module}}\" модулін бермейді; оны extension.js файлына жинақтаңыз.",
+    "usedAtLoad": "extension.js жүктеліп жатқанда {{name}} пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз."
+  },
+  "serve": {
+    "cancel": "Бас тарту",
+    "checking": "{{device}} құрылғысы тексерілуде",
+    "conflictingTokens": "--token және --random-token бірге қолданылмайды.",
+    "invalidToken": "Токен бос орынсыз бір немесе бірнеше басып шығарылатын ASCII таңбасынан тұрады.",
+    "localNetwork": "Жергілікті желі",
+    "noAutoUnlock": "{{device}} құрылғысының құлпы автоматты түрде ашылмайды; оның құпия кодын --passcode арқылы орнатыңыз. Драйверді тоқтату үшін Ctrl-C пернелерін басыңыз.",
+    "quitSwipt": "Swipt қолданбасынан шығу",
+    "quittingSwipt": "{{device}} құрылғысында Swipt қолданбасынан шығуда",
+    "served": "{{computer}} компьютеріндегі драйвер {{device}} құрылғысына әлдеқашан қызмет көрсетіп тұр; алдымен сол драйверді тоқтатыңыз.",
+    "servedPrompt": "{{computer}} компьютеріндегі драйвер {{device}} құрылғысына әлдеқашан қызмет көрсетіп тұр. Сол драйверді тоқтату керек пе?",
+    "starting": "{{device}} құрылғысы үшін драйвер іске қосылуда",
+    "stopDriver": "{{computer}} компьютеріндегі драйверді тоқтату",
+    "stopHint": "Драйверді тоқтату үшін Ctrl-C пернелерін басыңыз.",
+    "stoppingDriver": "{{computer}} компьютеріндегі драйвер тоқтатылуда",
+    "swiptRunning": "Swipt {{device}} құрылғысында жұмыс істеп тұрғанда, драйвер оны басқара алмайды; алдымен Swipt қолданбасынан шығыңыз.",
+    "swiptRunningPrompt": "Swipt {{device}} құрылғысында жұмыс істеп тұрғанда, драйвер оны басқара алмайды. Swipt қолданбасынан шығу керек пе?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}} құрылғысына Swipt қолданбасын бірнеше топ бүйірден жүктеген; --team ID арқылы біреуін таңдаңыз:",
+    "certificateFailed": "Xcode {{team}} тобы үшін әзірлеу сертификатын жасай алмады; оны {{accounts}} › Manage Certificates бөлімінде қосыңыз ({{errors}}).",
+    "checking": "{{device}} құрылғысында Swipt тексерілуде",
+    "checkingRelease": "соңғы шығарылым тексерілуде",
+    "chooseTeam": "Бір топты таңдаңыз",
+    "chooseTeamHint": "--team ID арқылы топ таңдаңыз:",
+    "diskImageFailed": "{{device}} құрылғысында әзірлеуші диск бейнесін дайындау мүмкін болмады: {{error}}",
+    "downgrade": "Нұсқаны төмендету",
+    "downgradePrompt": "{{device}} құрылғысындағы Swipt нұсқасын {{version}} нұсқасынан {{releaseVersion}} нұсқасына төмендету керек пе? Ескі нұсқа деректерді оқи алмаса, Swipt деректерін бастапқы күйге қайтарады.",
+    "downgradeToStablePrompt": "{{device}} құрылғысындағы Swipt нұсқасын түнгі (nightly) {{version}} нұсқасынан тұрақты {{releaseVersion}} нұсқасына төмендету керек пе? Ескі нұсқа деректерді оқи алмаса, Swipt деректерін бастапқы күйге қайтарады.",
+    "downloading": "{{release}} шығарылымынан Swipt {{version}} ({{build}}) жүктелуде",
+    "expiration": "Қолтаңбасының мерзімі {{expiration}} аяқталады.",
+    "installed": "{{build}} нұсқасы {{device}} құрылғысына орнатылды.",
+    "installing": "{{device}} құрылғысына орнатылуда",
+    "invalidTeam": "--team үшін {{value}} аргументі жарамсыз: ол {{accounts}} бөлімінде көрсетілген 10 таңбалы топ ID мәні болуы керек",
+    "laterThanRelease": "{{device}} құрылғысындағы {{build}} нұсқасы {{release}} ({{releaseBuild}}) шығарылымынан жаңарақ.",
+    "locked": "{{device}}: {{message}}; құрылғының құлпын ашыңыз немесе --passcode опциясын беріңіз де, пәрменді қайта орындаңыз.",
+    "looking": "құрылғылардан Swipt ізделуде",
+    "needsMacOS": "Swipt қолданбасын орнату немесе жаңарту үшін macOS қажет; оны Mac компьютерінен орнатып, кейін осы жерде \"swipt sideload setup\" пәрменімен баптаңыз.",
+    "noAccount": "Xcode қолданбасында аккаунт жоқ; {{accounts}} бөлімінде кіріңіз немесе --team ID арқылы топ таңдаңыз",
+    "noAccountForTeam": "Xcode қолданбасында {{team}} тобының аккаунты жоқ; {{accounts}} бөлімінде оның Apple аккаунтымен кіріңіз.",
+    "noCertificate": "Xcode қолданбасында әзірлеу сертификаты жоқ; оны {{accounts}} › Manage Certificates бөлімінде қосыңыз немесе --team ID арқылы топ таңдаңыз",
+    "noneInstalled": "Ешбір iPhone немесе iPad құрылғысына Swipt бүйірден жүктелмеген.",
+    "noneInstalledHint": "Ешбір iPhone немесе iPad құрылғысына Swipt бүйірден жүктелмеген; оны \"swipt sideload install\" пәрменімен орнатыңыз.",
+    "notInstalled": "{{device}} құрылғысына Swipt бүйірден жүктелмеген.",
+    "notInstalledByTeam": "{{device}} құрылғысына {{team}} тобы Swipt қолданбасын бүйірден жүктемеген.",
+    "notInstalledByTeamHint": "{{device}} құрылғысына {{team}} тобы Swipt қолданбасын бүйірден жүктемеген; оны \"swipt sideload install\" пәрменімен орнатыңыз.",
+    "notInstalledHint": "{{device}} құрылғысына Swipt бүйірден жүктелмеген; оны \"swipt sideload install\" пәрменімен орнатыңыз.",
+    "notOnNetwork": "{{device}} жергілікті желіде табылмады; оның API URL мекенжайларын Swipt › Әзірлеуші › Жергілікті желі бөлімінен табыңыз.",
+    "opening": "{{device}} құрылғысында Swipt ашылуда",
+    "openingSettings": "{{device}} құрылғысында Реттеулер ашылуда",
+    "opensAfterUnlock": "{{device}} құрылғысының құлпы ашылғанда, ол ашылады.",
+    "pairingFailed": "Жұптау сәтсіз аяқталды, сондықтан Swipt Реттеулерде жұпталады: {{error}}",
+    "preparingDiskImage": "{{device}} құрылғысында әзірлеуші диск бейнесі дайындалуда",
+    "preparingSigning": "Swipt қолтаңбасы Xcode арқылы {{team}} тобымен дайындалуда",
+    "removed": "{{device}} құрылғысынан {{build}} нұсқасы жойылды",
+    "removing": "{{device}} құрылғысынан Swipt жойылуда",
+    "renewalNeedsDowngrade": "{{device}} құрылғысындағы {{build}} нұсқасына жаңа қолтаңба қажет, бірақ {{release}} ({{releaseBuild}}) шығарылымы одан ескі; --nightly опциясын пайдаланыңыз немесе \"swipt sideload install --force\" пәрменімен нұсқаны төмендетіңіз.",
+    "resigning": "Swipt қолданбасына қайта қол қойылуда",
+    "running": "{{app}} жұмыс істеп тұр.",
+    "settingUpAutoUnlock": "құлыпты автоматты түрде ашу бапталуда",
+    "trusted": "{{developer}} әзірлеушісіне сенім білдірілді.",
+    "trusting": "Реттеулерде {{developer}} әзірлеушісіне сенім білдірілуде",
+    "unlockPrompt": "Жалғастыру үшін құрылғының құлпын ашыңыз.",
+    "unlocking": "құрылғының құлпы ашылуда",
+    "untrusted": "Оның әзірлеушісіне әлі сенім білдірілмеген; {{device}} құрылғысында ашылған Реттеулер бетінде оған сенім білдіріп, Swipt қолданбасын ашыңыз.",
+    "upToDate": "{{device}} құрылғысындағы {{build}} нұсқасы қазірдің өзінде {{release}} шығарылымы.",
+    "updated": "{{device}} құрылғысында {{build}} нұсқасына жаңартылды.",
+    "waiting": "{{device}} құрылғысы күтілуде",
+    "xcodeMissing": "xcodebuild үшін Xcode қажет; оны орнатып, xcode-select арқылы таңдаңыз",
+    "xcodebuildMissing": "xcodebuild жоқ; Xcode орнатыңыз."
+  }
+}

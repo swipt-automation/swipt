@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { readStdin, uploadChunk } from "../../io";
 import { session } from "../../session";
@@ -40,7 +40,7 @@ export const write = (operand: string, target: ResolveTarget) => {
   return defineCommand({
     name: "write",
     use: `write ${operand}PATH [FILE | -]`,
-    short: tr("Write a data file"),
+    short: t("commands.data.write.description"),
     args: [before + 1, before + 2],
     run: writeFile(target),
   });

@@ -1,6 +1,7 @@
 Swipt/
 Swipt.xcodeproj/
 cli/src/proto/
+cli/src/resources.d.ts
 cli/dist/
 internal/automation/runtime.js
 internal/automation/rewrite.js

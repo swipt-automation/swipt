@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "Ellenőrizze őket az available() segítségével, jelölje meg @available címkével az őket használó kódot, vagy emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
+    "apiLevel": "API-szint {{level}}",
+    "entryNeeds": "{{location}}: a(z) {{name}} a Swiplet belépési pontja, és {{requirement}} szükséges hozzá; emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
+    "importNeeds": "{{location}}: a(z) {{name}} importálásához {{requirement}} szükséges; emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
+    "invalidEntry": "{{location}}: az @available címke a következőt tartalmazza: \"{{entry}}\"; a címke vesszővel elválasztott \"apiLevel <level>\" és \"iOS <version>\" bejegyzéseket fogad el.",
+    "needs": "{{location}}: a(z) {{name}} használatához {{requirement}} szükséges.",
+    "repeatedEntry": "{{location}}: az @available címke kétszer adja meg a következőt: {{kind}}."
+  },
+  "cli": {
+    "commands": "parancsok:",
+    "exactArgs_one": "{{count}} argumentumot fogad el, de {{received}} érkezett",
+    "exactArgs_other": "{{count}} argumentumot fogad el, de {{received}} érkezett",
+    "help": "súgó megjelenítése",
+    "helpHint": "A használathoz futtassa a \"swipt help\" parancsot.",
+    "minimumArgs_one": "legalább {{count}} argumentumot fogad el, de {{received}} érkezett",
+    "minimumArgs_other": "legalább {{count}} argumentumot fogad el, de {{received}} érkezett",
+    "missingCommand": "Hiányzik egy parancs.",
+    "options": "kapcsolók:",
+    "rangeArgs_one": "{{least}} és {{count}} közötti számú argumentumot fogad el, de {{received}} érkezett",
+    "rangeArgs_other": "{{least}} és {{count}} közötti számú argumentumot fogad el, de {{received}} érkezett",
+    "unauthenticated": "{{message}}; csatlakozzon a Swipt › Fejlesztő menüben vagy a \"swipt driver\" által megjelenített URL-címmel: swipt device add {{url}}",
+    "unimplemented": "A(z) {{url}} címen lévő Swipt nem ismeri ezt a parancsot; frissítse a Swipt appot.",
+    "unknownCommand": "a(z) {{parent}} parancsnak nincs {{name}} nevű alparancsa",
+    "unknownOption": "A(z) {{option}} nem kapcsolója a(z) {{command}} parancsnak.",
+    "unreachable": "A(z) {{url}} címen lévő Swipt nem érhető el: {{message}}",
+    "usage": "használat: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Az összes adatfájl eltávolítása az adatkönyvtár megtartásával"
+      },
+      "list": {
+        "description": "Adatfájlok listázása",
+        "recursive": "alkönyvtárak belefoglalása"
+      },
+      "read": {
+        "description": "Adatfájl vagy -könyvtár olvasása",
+        "output": "célhely",
+        "saved_one": "{{count}} fájl mentve ide: {{path}}",
+        "saved_other": "{{count}} fájl mentve ide: {{path}}"
+      },
+      "remove": {
+        "description": "Adatfájl eltávolítása",
+        "recursive": "a könyvtár tartalmának belefoglalása"
+      },
+      "replDescription": "A REPL adatkönyvtárában lévő fájlok kezelése",
+      "swipletDescription": "Egy Swiplet adatkönyvtárában lévő fájlok kezelése",
+      "write": {
+        "description": "Adatfájl írása"
+      }
+    },
+    "description": "Swipt parancssori eszköz",
+    "device": {
+      "add": {
+        "description": "Eszköz hozzáadása az URL-címe alapján; távoli vagy tokent igénylő eszköz esetén szükséges"
+      },
+      "description": "Eszközök kezelése és naplóik olvasása",
+      "list": {
+        "description": "Eszközök listázása a helyi hálózaton talált eszközök hozzáadásával"
+      },
+      "logs": {
+        "count": "korábbi bejegyzések száma (alapértelmezés: 100)",
+        "description": "Naplók kiírása",
+        "follow": "új bejegyzések követése",
+        "invalidDuration": "érvénytelen argumentum a(z) {{option}} kapcsolóhoz: {{value}}; időtartamot kell megadni, például 30s vagy 1m30s",
+        "invalidLevel": "A --level értéke error, warn, info vagy debug lehet",
+        "invalidNumber": "érvénytelen argumentum a(z) {{option}} kapcsolóhoz: {{value}}; számot kell megadni",
+        "level": "minimális szint (alapértelmezés: info)",
+        "since": "a bejegyzések maximális kora",
+        "swiplet": "Swiplet-azonosító"
+      },
+      "remove": {
+        "description": "Eszköz elfelejtése"
+      },
+      "stop": {
+        "description": "A Swipt API biztosításának leállítása",
+        "stopped": "leállítva"
+      }
+    },
+    "driver": {
+      "description": "A Swipt API és az MCP biztosítása egy eszközhöz erről a számítógépről",
+      "details": "Egyszerre csak egy fél vezérelheti az eszközt: a rajta futó Swipt vagy egy számítógépen futó illesztőprogram.",
+      "passcode": "jelkód az eszköz automatikus feloldásához; ha üresen hagyja, az automatikus feloldás kikapcsol",
+      "randomToken": "véletlenszerű token megkövetelése az API-kliensektől",
+      "token": "ennek a tokennek a megkövetelése az API-kliensektől"
+    },
+    "project": {
+      "build": {
+        "description": "A projekt csomagolása a dist/<swiplet.id>.swiplet fájlba"
+      },
+      "create": {
+        "description": "Swiplet-projekt létrehozása új vagy üres könyvtárban",
+        "notEmpty": "A(z) {{directory}} könyvtár nem üres."
+      },
+      "deploy": {
+        "description": "A projekt összeállítása és telepítése az eszközre"
+      },
+      "description": "Swiplet-projektek létrehozása, összeállítása és üzembe helyezése",
+      "develop": {
+        "deployed": "összeállítva és üzembe helyezve {{elapsed}} alatt; a(z) {{directory}} figyelése",
+        "description": "Swiplet-projekt összeállítása, telepítése és a változásainak követése",
+        "quiet": "naplók nélkül",
+        "unchanged": "összeállítva {{elapsed}} alatt; nincs változás"
+      },
+      "source": {
+        "description": "Az összeállított Swipletek összegyűjtése a dist/ mappába egy swiplets.json fájllal",
+        "duplicateID": "A(z) {{id}} azonosítóhoz a(z) {{first}} és a(z) {{second}} is tartozik",
+        "invalidIcon": "A package.json \"source.icon\" mezőjében kötelező a symbol, a color pedig megadható.",
+        "invalidLocalizedNames": "A package.json \"source.localizedNames\" mezőjének a nyelveket kell a nevekhez rendelnie.",
+        "invalidURL": "A package.json \"source.url\" mezője nem abszolút URL.",
+        "noWorkspaces": "A package.json nem sorol fel Swipleteket tartalmazó munkaterületeket; nevezze meg a listázandó Swipleteket.",
+        "notBuilt": "A(z) {{file}} fájl hiányzik; előbb állítsa össze a(z) {{directory}} könyvtárat."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "A globális változók és a modulok TypeScript-deklarációinak kiírása"
+      },
+      "dataDirectory": "A(z) {{path}} a REPL adatkönyvtárát jelöli; mentse az --output DIRECTORY kapcsolóval",
+      "description": "JavaScript futtatása az eszköz REPL-munkamenetében",
+      "directory": "A(z) {{path}} a REPL adatkönyvtárának egyik könyvtára; mentse az --output DIRECTORY kapcsolóval",
+      "reset": {
+        "description": "Munkamenet alaphelyzetbe állítása"
+      },
+      "run": {
+        "arguments": "Az első argumentum FILE, ha létező fájlt nevez meg, egyébként CODE; a kapcsolók elé kerülnek.",
+        "description": "JavaScript-kifejezés vagy -program futtatása az eszközön",
+        "details": "A CODE egy kifejezés, amelynek az értéke kiíródik. A FILE vagy a - értékkel, illetve argumentum nélkül megadott szabványos bemenet program, és csak a konzolkimenete íródik ki.",
+        "extraArguments": "A(z) {{argument}} nem fájl, a CODE pedig nem fogad ARG értéket.",
+        "images": "képkönyvtár (alapértelmezés: új ideiglenes könyvtár)"
+      }
+    },
+    "sideload": {
+      "description": "A Swipt telepítése oldaltöltéssel",
+      "install": {
+        "description": "A Swipt telepítése",
+        "force": "telepítés ugyanazon vagy újabb build fölé"
+      },
+      "passcode": "automatikus feloldás beállítása ezzel a jelkóddal",
+      "setup": {
+        "description": "A Swipt beállítása"
+      },
+      "uninstall": {
+        "description": "A Swipt eltávolítása"
+      },
+      "update": {
+        "description": "A Swipt frissítése vagy megújítása",
+        "passcode": "az eszköz feloldása ezzel a jelkóddal"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet-művelet meghívása",
+        "input": "bemeneti JSON, @FILE vagy -",
+        "invalidInput": "Az --input értéke nem JSON: {{error}}"
+      },
+      "dataDirectory": "A(z) {{path}} a(z) {{swiplet}} adatkönyvtárát jelöli; mentse az --output DIRECTORY kapcsolóval",
+      "description": "Az eszközön lévő Swipletek kezelése",
+      "directory": "A(z) {{path}} a(z) {{swiplet}} adatkönyvtárának egyik könyvtára; mentse az --output DIRECTORY kapcsolóval",
+      "install": {
+        "description": "Swiplet-archívum telepítése",
+        "notFound": "A(z) {{path}} helyen nincs archívum"
+      },
+      "list": {
+        "actions": "MŰVELETEK",
+        "description": "Swipletek listázása",
+        "id": "ID",
+        "service": "SZOLGÁLTATÁS",
+        "status": "ÁLLAPOT",
+        "title": "CÍM",
+        "version": "VERZIÓ"
+      },
+      "remove": {
+        "description": "Swiplet eltávolítása",
+        "removed": "{{name}} eltávolítva"
+      },
+      "service": {
+        "description": "Swiplet-szolgáltatások kezelése",
+        "disable": {
+          "description": "Swiplet-szolgáltatás kikapcsolása"
+        },
+        "enable": {
+          "description": "Swiplet-szolgáltatás bekapcsolása"
+        },
+        "watch": {
+          "description": "Swiplet-szolgáltatások figyelése"
+        },
+        "watchState": "állapot figyelése"
+      },
+      "show": {
+        "description": "Swiplet megjelenítése",
+        "input": "bemenet: {{schema}}",
+        "notFound": "Nincs {{id}} azonosítójú Swiplet.",
+        "output": "kimenet: {{schema}}",
+        "service": "szolgáltatás: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Verzió kiírása"
+    }
+  },
+  "connection": {
+    "added": "{{device}} hozzáadva",
+    "ambiguous": "Több eszköz is van: {{devices}}; válasszon egyet a -d kapcsolóval",
+    "driverNotStopped": "A(z) {{computer}} számítógépen futó illesztőprogram nem állt le.",
+    "invalidURL": "A(z) {{text}} nem URL.",
+    "none": "Nincs eszköz; kapcsolja be a Swipt › Fejlesztő › Helyi hálózat lehetőséget, vagy csatlakoztasson egyet a \"swipt device add URL\" paranccsal.",
+    "noneOnNetwork": "Egyetlen eszköz sem teszi közzé a Swipt appot a helyi hálózaton; kapcsolja be a Swipt › Fejlesztő › Helyi hálózat lehetőséget, vagy csatlakoztasson egy eszközt a \"swipt device add URL\" paranccsal.",
+    "notFound": "Nincs {{device}} nevű eszköz.",
+    "notFoundHint": "Nincs {{device}} nevű eszköz; a \"swipt device list\" parancs listázza az eszközöket.",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "fejlesztői mód kikapcsolva",
+      "deviceUnsupported": "az eszköz nem támogatott",
+      "diskImageMissing": "nincs lemezkép",
+      "diskImageMountFailed": "a lemezkép csatolása sikertelen",
+      "pairingRejected": "párosítás elutasítva",
+      "screenInUse": "a képernyő használatban van",
+      "unreachable": "nem érhető el",
+      "vpnPeerAddressMissing": "hiányzik a VPN-partner címe"
+    },
+    "removed": "{{name}} eltávolítva",
+    "requiresToken": "tokent igényel",
+    "requiresTokenHint": "A(z) {{device}} eszköz tokent igényel: swipt device add {{url}}",
+    "state": {
+      "connecting": "csatlakozás",
+      "failed": "sikertelen",
+      "preparing": "előkészítés",
+      "running": "aktív",
+      "stopped": "leállítva"
+    },
+    "unsupportedURL": "A(z) {{text}} nem http- vagy https-URL."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} telepítve",
+    "replaced": "{{id}} {{version}} lecserélve"
+  },
+  "driver": {
+    "alreadyRunning": "Az illesztőprogram már fut ezen a számítógépen; előbb állítsa le.",
+    "ambiguousName": "Több iPhone vagy iPad neve is {{name}}; válasszon egyet UDID alapján",
+    "appleMobileDeviceServiceMissing": "Az Apple Mobile Device Service nem fut; telepítse az Apple-eszközök appot a Microsoft Store-ból",
+    "chooseDevice": "Válasszon eszközt",
+    "chooseDeviceHint": "Válasszon eszközt a -d NAME|UDID kapcsolóval",
+    "connectedDevices": "{{reason}}; csatlakoztatott iPhone- és iPad-eszközök:",
+    "lookingForDevices": "eszközök keresése",
+    "missing": "Az illesztőprogram hiányzik; telepítse a \"npm install -g @swipt/cli --include=optional\" paranccsal.",
+    "nameNotFound": "Nincs {{name}} nevű iPhone vagy iPad",
+    "noDevice": "Ehhez a számítógéphez nincs iPhone vagy iPad csatlakoztatva, és a helyi hálózaton sem található; csatlakoztasson egyet USB-kábellel, és oldja fel.",
+    "pairing": "párosítás a(z) {{device}} eszközzel",
+    "trustPrompt": "koppintson a Megbízható gombra a(z) {{device}} eszközön, és adja meg a jelkódját, hogy megbízhatónak jelölje ezt a számítógépet",
+    "usbmuxdMissing": "Az usbmuxd nem fut; telepítse az usbmuxd-t, és indítsa el"
+  },
+  "error": "hiba: {{message}}",
+  "flags": {
+    "device": "a használandó eszköz",
+    "nightly": "nightly build használata",
+    "noSetup": "a Swipt párosítása, a fejlesztő megbízhatónak jelölése és az API közzététele nélkül",
+    "noSetupAPI": "az API helyi hálózaton való közzététele nélkül",
+    "noSetupPair": "a Swipt párosítása nélkül",
+    "passcodeType": "pin (4 vagy 6 számjegy, alapértelmezett), numeric vagy alphanumeric",
+    "team": "csapatazonosító, több csapat esetén kötelező"
+  },
+  "metro": {
+    "boolean": "logikai érték",
+    "contextArgument": "A require.context {{index}}. argumentuma csak {{expected}} lehet",
+    "contextRegExp": "A require.context {{index}}. argumentuma csak reguláriskifejezés-literál lehet.",
+    "oneOf": "a(z) {{values}} értékek egyike",
+    "string": "karakterlánc",
+    "workletsMismatch": "A projektben a react-native-worklets {{version}} van, de a Swipt a(z) {{expected}} verziót futtatja; telepítse a react-native-worklets@{{expected}} csomagot, vagy távolítsa el."
+  },
+  "noThanks": "Köszönöm, nem",
+  "output": {
+    "navigate": "mozgás",
+    "select": "kiválasztás",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} {{time}} óta",
+    "serviceStatus": {
+      "failed": "sikertelen",
+      "running": "fut",
+      "starting": "indul",
+      "stopped": "leállítva",
+      "turnedOff": "kikapcsolva",
+      "turnedOn": "bekapcsolva"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Egyéni alfanumerikus kód",
+    "alphanumericDetail": "alfanumerikus",
+    "empty": "Adja meg a jelkódot.",
+    "invalidAlphanumeric": "A jelkód legfeljebb 64 nyomtatható ASCII-karakterből állhat.",
+    "invalidNumeric": "A numerikus kód csak számjegyekből állhat.",
+    "invalidPin": "A pin típusú jelkód 4 vagy 6 számjegyből áll; az egyénihez a --passcode-type numeric vagy alphanumeric kapcsoló szükséges",
+    "invalidType": "érvénytelen argumentum a --passcode-type kapcsolóhoz: {{value}}; a lehetséges értékek: {{types}}",
+    "masked": "[a bemenet rejtve van]",
+    "numeric": "Egyéni numerikus kód",
+    "numericDetail": "numerikus",
+    "pin": "4 vagy 6 számjegyű jelkód",
+    "pinDetail": "4 vagy 6 számjegy",
+    "prompt": "Eszköz jelkódja",
+    "setUp": "Beállítja az automatikus feloldást? Így a Swipt önállóan fel tudja oldani ezt az eszközt."
+  },
+  "project": {
+    "assetConflict": "A(z) {{source}} és a(z) {{asset}} egyaránt az assets/{{name}} helyre kerülne a Swipletben.",
+    "conditionalActions": "A bővítmény az available() eredményétől függően eltérő műveleteket definiál; minden rendszeren ugyanazokat a műveleteket definiálja, és az available() értékét a run vagy egy művelet belsejében ellenőrizze.",
+    "databaseAtLoad": "Az adatbázis nem használható az extension.js betöltése közben; használja a run vagy egy művelet belsejében.",
+    "interfaceImport": "A felület futásidőben importálja a(z) {{file}} fájlt; a típusát az `import type` használatával importálja.",
+    "interfaceOnly": "A(z) {{name}} csak a Swiplet felületén működik.",
+    "invalidExposure": "A(z) {{action}} művelet csak a \"shortcuts\" számára teheti magát elérhetővé.",
+    "invalidExtension": "A bővítmény alapértelmezett exportja nem a defineExtension eredménye.",
+    "invalidID": "A package.json \"swiplet.id\" mezője 1–128 kisbetűből, számjegyből, pontból, aláhúzásjelből és kötőjelből állhat, és betűvel vagy számjeggyel kell kezdődnie.",
+    "invalidLocalizedNames": "A package.json \"swiplet.localizedNames\" mezőjének a nyelveket kell a nevekhez rendelnie.",
+    "invalidMinimumAPILevel": "A package.json \"swiplet.minimumAPILevel\" mezőjének {{oldest}} és {{level}} (a(z) @swipt/api csomag API-szintje) közötti egész számnak kell lennie.",
+    "invalidMinimumIOSVersion": "A package.json \"swiplet.minimumIOSVersion\" mezőjének {{version}} (a(z) @swipt/api csomag minimális iOS-verziója) vagy annál nagyobb verziószámnak kell lennie.",
+    "invalidName": "A package.json \"swiplet.name\" mezőjének nem üres karakterláncnak kell lennie.",
+    "invalidSchema": "A(z) {{action}} művelet {{side}} sémája nem valósítja meg a Standard JSON Schema szabványt; használjon ezt megvalósító könyvtárat, például a Zod 4-et.",
+    "invalidString": "A package.json \"{{field}}\" mezőjének karakterláncnak kell lennie.",
+    "invalidVersionCode": "A package.json \"swiplet.versionCode\" mezőjének pozitív egész számnak kell lennie.",
+    "missingTitle": "A(z) {{action}} műveletnek címre van szüksége.",
+    "storageAtLoad": "A tárhely nem használható az extension.js betöltése közben; használja a run vagy egy művelet belsejében.",
+    "unprovidedModule": "A Swipt nem biztosítja a(z) \"{{module}}\" modult a bővítményeknek; csomagolja be az extension.js fájlba.",
+    "usedAtLoad": "Az extension.js betöltése közben nem használható a következő: {{name}}; használja a run vagy egy művelet belsejében."
+  },
+  "serve": {
+    "cancel": "Mégsem",
+    "checking": "a(z) {{device}} ellenőrzése",
+    "conflictingTokens": "A --token és a --random-token nem használható együtt.",
+    "invalidToken": "A token egy vagy több nyomtatható ASCII-karakterből áll, szóközök nélkül.",
+    "localNetwork": "Helyi hálózat",
+    "noAutoUnlock": "A(z) {{device}} nem oldódik fel automatikusan; állítsa be a jelkódját a --passcode kapcsolóval. Az illesztőprogram leállításához nyomja le a Ctrl-C billentyűkombinációt.",
+    "quitSwipt": "Kilépés a Swipt appból",
+    "quittingSwipt": "kilépés a Swipt appból a(z) {{device}} eszközön",
+    "served": "A(z) {{computer}} számítógépen futó illesztőprogram már kiszolgálja a(z) {{device}} eszközt; előbb állítsa le azt az illesztőprogramot.",
+    "servedPrompt": "A(z) {{computer}} számítógépen futó illesztőprogram már kiszolgálja a(z) {{device}} eszközt. Leállítja azt az illesztőprogramot?",
+    "starting": "az illesztőprogram indítása a(z) {{device}} eszközhöz",
+    "stopDriver": "Az illesztőprogram leállítása a(z) {{computer}} számítógépen",
+    "stopHint": "Az illesztőprogram leállításához nyomja le a Ctrl-C billentyűkombinációt.",
+    "stoppingDriver": "az illesztőprogram leállítása a(z) {{computer}} számítógépen",
+    "swiptRunning": "Az illesztőprogram nem tudja vezérelni a(z) {{device}} eszközt, amíg azon fut a Swipt; előbb lépjen ki a Swipt appból.",
+    "swiptRunningPrompt": "Az illesztőprogram nem tudja vezérelni a(z) {{device}} eszközt, amíg azon fut a Swipt. Kilép a Swipt appból?"
+  },
+  "sideload": {
+    "ambiguousTeam": "A Swipt appot több csapat is telepítette oldaltöltéssel a(z) {{device}} eszközre; válasszon egyet a --team ID kapcsolóval:",
+    "certificateFailed": "Az Xcode nem tudott fejlesztési tanúsítványt létrehozni a(z) {{team}} csapathoz; adjon hozzá egyet itt: {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "a Swipt ellenőrzése a(z) {{device}} eszközön",
+    "checkingRelease": "a legújabb kiadás ellenőrzése",
+    "chooseTeam": "Válasszon csapatot",
+    "chooseTeamHint": "Válasszon csapatot a --team ID kapcsolóval:",
+    "diskImageFailed": "a fejlesztői lemezkép előkészítése a(z) {{device}} eszközön sikertelen: {{error}}",
+    "downgrade": "Visszatérés régebbi verzióra",
+    "downgradePrompt": "Visszatér a(z) {{device}} eszközön a Swipt {{version}} verziójáról a régebbi {{releaseVersion}} verzióra? A Swipt alaphelyzetbe állítja az adatait, ha a régebbi verzió nem tudja beolvasni őket.",
+    "downgradeToStablePrompt": "Visszatér a(z) {{device}} eszközön a Swipt {{version}} nightly buildjéről a(z) {{releaseVersion}} stabil verzióra? A Swipt alaphelyzetbe állítja az adatait, ha a régebbi verzió nem tudja beolvasni őket.",
+    "downloading": "a Swipt {{version}} ({{build}}) letöltése a(z) {{release}} kiadásból",
+    "expiration": "Az aláírása {{expiration}} lejár.",
+    "installed": "A {{build}} telepítve a(z) {{device}} eszközre.",
+    "installing": "telepítés a(z) {{device}} eszközre",
+    "invalidTeam": "érvénytelen argumentum a --team kapcsolóhoz: {{value}}; az itt látható 10 karakteres csapatazonosítót kell megadni: {{accounts}}",
+    "laterThanRelease": "A(z) {{device}} eszközön lévő {{build}} újabb, mint a(z) {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; oldja fel az eszközt, vagy adja meg a --passcode kapcsolót, majd futtassa újra a parancsot.",
+    "looking": "a Swipt keresése az eszközökön",
+    "needsMacOS": "A Swipt telepítéséhez vagy frissítéséhez macOS szükséges; telepítse egy Macről, majd állítsa be itt a \"swipt sideload setup\" paranccsal.",
+    "noAccount": "Az Xcode-ban nincs fiók; jelentkezzen be itt: {{accounts}}, vagy válasszon csapatot a --team ID kapcsolóval",
+    "noAccountForTeam": "Az Xcode-ban nincs fiók a(z) {{team}} csapathoz; jelentkezzen be a csapat Apple-fiókjával itt: {{accounts}}.",
+    "noCertificate": "Az Xcode-ban nincs fejlesztési tanúsítvány; adjon hozzá egyet itt: {{accounts}} › Manage Certificates, vagy válasszon csapatot a --team ID kapcsolóval",
+    "noneInstalled": "A Swipt egyetlen iPhone- vagy iPad-eszközön sincs telepítve oldaltöltéssel.",
+    "noneInstalledHint": "A Swipt egyetlen iPhone- vagy iPad-eszközön sincs telepítve oldaltöltéssel; telepítse a \"swipt sideload install\" paranccsal.",
+    "notInstalled": "A Swipt nincs telepítve oldaltöltéssel a(z) {{device}} eszközön.",
+    "notInstalledByTeam": "A(z) {{team}} csapat nem telepítette oldaltöltéssel a Swipt appot a(z) {{device}} eszközre.",
+    "notInstalledByTeamHint": "A(z) {{team}} csapat nem telepítette oldaltöltéssel a Swipt appot a(z) {{device}} eszközre; telepítse a \"swipt sideload install\" paranccsal.",
+    "notInstalledHint": "A Swipt nincs telepítve oldaltöltéssel a(z) {{device}} eszközön; telepítse a \"swipt sideload install\" paranccsal.",
+    "notOnNetwork": "A(z) {{device}} nem található a helyi hálózaton; az API-URL-jeit a Swipt › Fejlesztő › Helyi hálózat helyen találja.",
+    "opening": "a Swipt megnyitása a(z) {{device}} eszközön",
+    "openingSettings": "a Beállítások megnyitása a(z) {{device}} eszközön",
+    "opensAfterUnlock": "A(z) {{device}} eszköz feloldása után nyílik meg.",
+    "pairingFailed": "A párosítás sikertelen, ezért a Swipt inkább a Beállításokban párosít: {{error}}",
+    "preparingDiskImage": "a fejlesztői lemezkép előkészítése a(z) {{device}} eszközön",
+    "preparingSigning": "a Swipt aláírásának előkészítése a(z) {{team}} csapattal az Xcode segítségével",
+    "removed": "a {{build}} eltávolítva a(z) {{device}} eszközről",
+    "removing": "a Swipt eltávolítása a(z) {{device}} eszközről",
+    "renewalNeedsDowngrade": "A(z) {{device}} eszközön lévő {{build}} új aláírást igényel, de a(z) {{release}} ({{releaseBuild}}) régebbi; használja a --nightly kapcsolót, vagy térjen vissza régebbi verzióra a \"swipt sideload install --force\" paranccsal.",
+    "resigning": "a Swipt újraaláírása",
+    "running": "A(z) {{app}} fut.",
+    "settingUpAutoUnlock": "automatikus feloldás beállítása",
+    "trusted": "A(z) {{developer}} fejlesztő megbízható.",
+    "trusting": "a(z) {{developer}} fejlesztő megbízhatónak jelölése a Beállításokban",
+    "unlockPrompt": "A folytatáshoz oldja fel az eszközt.",
+    "unlocking": "az eszköz feloldása",
+    "untrusted": "A fejlesztő még nem megbízható; jelölje megbízhatónak a(z) {{device}} eszközön megnyílt Beállításokban, majd nyissa meg a Swipt appot.",
+    "upToDate": "A(z) {{device}} eszközön lévő {{build}} már a(z) {{release}} kiadás.",
+    "updated": "A {{build}} frissítve a(z) {{device}} eszközön.",
+    "waiting": "várakozás a(z) {{device}} eszközre",
+    "xcodeMissing": "Az xcodebuild működéséhez Xcode szükséges; telepítse, és válassza ki az xcode-select paranccsal",
+    "xcodebuildMissing": "Az xcodebuild hiányzik; telepítse az Xcode-ot."
+  }
+}

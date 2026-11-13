@@ -1,0 +1,405 @@
+{
+  "availability": {
+    "advice": "Sprawdź je za pomocą available(), oznacz kod, który ich używa, za pomocą @available albo zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
+    "apiLevel": "poziom API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} jest punktem wejścia Swipletu i wymaga: {{requirement}}; zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
+    "importNeeds": "{{location}}: import {{name}} wymaga: {{requirement}}; zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
+    "invalidEntry": "{{location}}: @available zawiera \"{{entry}}\"; dozwolone są wpisy \"apiLevel <level>\" i \"iOS <version>\" rozdzielone przecinkami.",
+    "needs": "{{location}}: {{name}} wymaga: {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available dwukrotnie podaje {{kind}}."
+  },
+  "cli": {
+    "commands": "polecenia:",
+    "exactArgs_few": "przyjmuje {{count}} argumenty, otrzymano {{received}}",
+    "exactArgs_many": "przyjmuje {{count}} argumentów, otrzymano {{received}}",
+    "exactArgs_one": "przyjmuje {{count}} argument, otrzymano {{received}}",
+    "exactArgs_other": "przyjmuje {{count}} argumentu, otrzymano {{received}}",
+    "help": "pomoc",
+    "helpHint": "Uruchom \"swipt help\", aby wyświetlić sposób użycia.",
+    "minimumArgs_few": "przyjmuje co najmniej {{count}} argumenty, otrzymano {{received}}",
+    "minimumArgs_many": "przyjmuje co najmniej {{count}} argumentów, otrzymano {{received}}",
+    "minimumArgs_one": "przyjmuje co najmniej {{count}} argument, otrzymano {{received}}",
+    "minimumArgs_other": "przyjmuje co najmniej {{count}} argumentu, otrzymano {{received}}",
+    "missingCommand": "Brak polecenia.",
+    "options": "opcje:",
+    "rangeArgs_few": "przyjmuje od {{least}} do {{count}} argumentów, otrzymano {{received}}",
+    "rangeArgs_many": "przyjmuje od {{least}} do {{count}} argumentów, otrzymano {{received}}",
+    "rangeArgs_one": "przyjmuje od {{least}} do {{count}} argumentu, otrzymano {{received}}",
+    "rangeArgs_other": "przyjmuje od {{least}} do {{count}} argumentu, otrzymano {{received}}",
+    "unauthenticated": "{{message}}; połącz się za pomocą adresu URL wyświetlanego w sekcji Swipt › Deweloper lub przez \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "Aplikacja Swipt pod adresem {{url}} nie ma tego polecenia; uaktualnij aplikację Swipt.",
+    "unknownCommand": "nieznane polecenie {{name}} w {{parent}}",
+    "unknownOption": "{{option}} nie jest opcją polecenia {{command}}.",
+    "unreachable": "Aplikacja Swipt pod adresem {{url}} jest nieosiągalna: {{message}}",
+    "usage": "użycie: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Usuń wszystkie pliki danych, zachowując katalog danych"
+      },
+      "list": {
+        "description": "Wyświetl listę plików danych",
+        "recursive": "uwzględnij podkatalogi"
+      },
+      "read": {
+        "description": "Odczytaj plik danych lub katalog",
+        "output": "miejsce docelowe",
+        "saved_few": "zachowano {{count}} pliki w lokalizacji {{path}}",
+        "saved_many": "zachowano {{count}} plików w lokalizacji {{path}}",
+        "saved_one": "zachowano {{count}} plik w lokalizacji {{path}}",
+        "saved_other": "zachowano {{count}} pliku w lokalizacji {{path}}"
+      },
+      "remove": {
+        "description": "Usuń plik danych",
+        "recursive": "uwzględnij zawartość katalogu"
+      },
+      "replDescription": "Zarządzaj plikami w katalogu danych REPL",
+      "swipletDescription": "Zarządzaj plikami w katalogu danych Swipletu",
+      "write": {
+        "description": "Zapisz plik danych"
+      }
+    },
+    "description": "Narzędzie wiersza poleceń Swipt",
+    "device": {
+      "add": {
+        "description": "Dodaj urządzenie na podstawie adresu URL; konieczne, gdy urządzenie jest zdalne lub wymaga tokenu"
+      },
+      "description": "Zarządzaj urządzeniami i odczytuj ich dzienniki",
+      "list": {
+        "description": "Wyświetl listę urządzeń, dodając te znalezione w sieci lokalnej"
+      },
+      "logs": {
+        "count": "liczba wcześniejszych wpisów (domyślnie 100)",
+        "description": "Wyświetl dzienniki",
+        "follow": "śledź nowe wpisy",
+        "invalidDuration": "nieprawidłowy argument {{value}} opcji {{option}}: wymagany jest czas trwania, np. 30s lub 1m30s",
+        "invalidLevel": "--level może mieć wartość error, warn, info lub debug",
+        "invalidNumber": "nieprawidłowy argument {{value}} opcji {{option}}: wymagana jest liczba",
+        "level": "poziom minimalny (domyślnie info)",
+        "since": "maksymalny wiek wpisów",
+        "swiplet": "ID Swipletu"
+      },
+      "remove": {
+        "description": "Zapomnij urządzenie"
+      },
+      "stop": {
+        "description": "Zatrzymaj udostępnianie API Swipt",
+        "stopped": "zatrzymane"
+      }
+    },
+    "driver": {
+      "description": "Udostępnij API Swipt i MCP dla urządzenia z tego komputera",
+      "details": "Urządzeniem może naraz sterować tylko jedna strona: aplikacja Swipt na urządzeniu albo sterownik na jednym komputerze.",
+      "passcode": "kod do automatycznego odblokowywania urządzenia; pozostaw pusty, aby wyłączyć automatyczne odblokowywanie",
+      "randomToken": "wymagaj losowego tokenu od klientów API",
+      "token": "wymagaj tego tokenu od klientów API"
+    },
+    "project": {
+      "build": {
+        "description": "Spakuj projekt do dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Utwórz projekt Swipletu w nowym lub pustym katalogu",
+        "notEmpty": "Katalog {{directory}} nie jest pusty."
+      },
+      "deploy": {
+        "description": "Zbuduj projekt i zainstaluj go na urządzeniu"
+      },
+      "description": "Twórz, buduj i wdrażaj projekty Swipletów",
+      "develop": {
+        "deployed": "zbudowano i wdrożono w czasie {{elapsed}}; obserwowanie katalogu {{directory}}",
+        "description": "Zbuduj i zainstaluj projekt Swipletu oraz śledź jego zmiany",
+        "quiet": "bez dzienników",
+        "unchanged": "zbudowano w czasie {{elapsed}}; nic się nie zmieniło"
+      },
+      "source": {
+        "description": "Zbierz zbudowane Swiplety w dist/ wraz z plikiem swiplets.json",
+        "duplicateID": "{{id}} to jednocześnie {{first}} i {{second}}",
+        "invalidIcon": "\"source.icon\" w package.json musi zawierać symbol i może zawierać color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" w package.json musi przypisywać nazwy do języków.",
+        "invalidURL": "\"source.url\" w package.json nie jest bezwzględnym adresem URL.",
+        "noWorkspaces": "package.json nie wymienia obszarów roboczych ze Swipletami; podaj Swiplety do umieszczenia na liście.",
+        "notBuilt": "Brak {{file}}; najpierw zbuduj {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Wyświetl deklaracje TypeScript zmiennych globalnych i modułów"
+      },
+      "dataDirectory": "{{path}} wskazuje katalog danych REPL; zachowaj go za pomocą --output DIRECTORY",
+      "description": "Uruchom kod JavaScript w sesji REPL na urządzeniu",
+      "directory": "{{path}} to katalog w katalogu danych REPL; zachowaj go za pomocą --output DIRECTORY",
+      "reset": {
+        "description": "Wyzeruj sesję"
+      },
+      "run": {
+        "arguments": "Pierwszy argument to FILE, jeśli wskazuje istniejący plik, a w przeciwnym razie CODE; opcje podaje się przed nim.",
+        "description": "Uruchom wyrażenie lub program JavaScript na urządzeniu",
+        "details": "CODE to wyrażenie, którego wartość jest wyświetlana. FILE lub standardowe wejście podane jako - albo bez argumentu to program i wyświetlane jest tylko jego wyjście konsoli.",
+        "extraArguments": "{{argument}} nie jest plikiem, a CODE nie przyjmuje ARG.",
+        "images": "katalog obrazów (domyślnie: nowy katalog tymczasowy)"
+      }
+    },
+    "sideload": {
+      "description": "Zainstaluj aplikację Swipt metodą sideloadingu",
+      "install": {
+        "description": "Zainstaluj aplikację Swipt",
+        "force": "zainstaluj w miejsce tej samej lub nowszej kompilacji"
+      },
+      "passcode": "skonfiguruj automatyczne odblokowywanie przy użyciu tego kodu",
+      "setup": {
+        "description": "Skonfiguruj aplikację Swipt"
+      },
+      "uninstall": {
+        "description": "Usuń aplikację Swipt"
+      },
+      "update": {
+        "description": "Uaktualnij lub odnów aplikację Swipt",
+        "passcode": "odblokuj urządzenie przy użyciu tego kodu"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Wywołaj czynność Swipletu",
+        "input": "dane wejściowe w formacie JSON, @FILE lub -",
+        "invalidInput": "--input nie zawiera danych w formacie JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} wskazuje katalog danych Swipletu {{swiplet}}; zachowaj go za pomocą --output DIRECTORY",
+      "description": "Zarządzaj Swipletami na urządzeniu",
+      "directory": "{{path}} to katalog w katalogu danych Swipletu {{swiplet}}; zachowaj go za pomocą --output DIRECTORY",
+      "install": {
+        "description": "Zainstaluj archiwum Swipletu",
+        "notFound": "Brak archiwum w lokalizacji {{path}}"
+      },
+      "list": {
+        "actions": "CZYNNOŚCI",
+        "description": "Wyświetl listę Swipletów",
+        "id": "ID",
+        "service": "USŁUGA",
+        "status": "STAN",
+        "title": "TYTUŁ",
+        "version": "WERSJA"
+      },
+      "remove": {
+        "description": "Usuń Swiplet",
+        "removed": "usunięto Swiplet {{name}}"
+      },
+      "service": {
+        "description": "Zarządzaj usługami Swipletów",
+        "disable": {
+          "description": "Wyłącz usługę Swipletu"
+        },
+        "enable": {
+          "description": "Włącz usługę Swipletu"
+        },
+        "watch": {
+          "description": "Obserwuj usługi Swipletów"
+        },
+        "watchState": "obserwuj stan"
+      },
+      "show": {
+        "description": "Pokaż Swiplet",
+        "input": "dane wejściowe: {{schema}}",
+        "notFound": "Brak Swipletu {{id}}.",
+        "output": "dane wyjściowe: {{schema}}",
+        "service": "usługa: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Wyświetl wersję"
+    }
+  },
+  "connection": {
+    "added": "dodano urządzenie {{device}}",
+    "ambiguous": "Jest więcej niż jedno urządzenie: {{devices}}; wybierz jedno za pomocą -d",
+    "driverNotStopped": "Sterownik na komputerze {{computer}} się nie zatrzymał.",
+    "invalidURL": "{{text}} nie jest adresem URL.",
+    "none": "Brak urządzeń; włącz Swipt › Deweloper › Sieć lokalna lub połącz urządzenie za pomocą \"swipt device add URL\".",
+    "noneOnNetwork": "Żadne urządzenie nie publikuje aplikacji Swipt w sieci lokalnej; włącz Swipt › Deweloper › Sieć lokalna lub połącz urządzenie za pomocą \"swipt device add URL\".",
+    "notFound": "Brak urządzenia {{device}}.",
+    "notFoundHint": "Brak urządzenia {{device}}; \"swipt device list\" wyświetla listę urządzeń.",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "tryb dewelopera wyłączony",
+      "deviceUnsupported": "urządzenie nieobsługiwane",
+      "diskImageMissing": "brak obrazu dysku",
+      "diskImageMountFailed": "nie udało się podłączyć obrazu dysku",
+      "pairingRejected": "parowanie odrzucone",
+      "screenInUse": "ekran w użyciu",
+      "unreachable": "nieosiągalne",
+      "vpnPeerAddressMissing": "brak adresu węzła równorzędnego VPN"
+    },
+    "removed": "usunięto urządzenie {{name}}",
+    "requiresToken": "wymaga tokenu",
+    "requiresTokenHint": "Urządzenie {{device}} wymaga tokenu: swipt device add {{url}}",
+    "state": {
+      "connecting": "łączenie",
+      "failed": "niepowodzenie",
+      "preparing": "przygotowywanie",
+      "running": "aktywne",
+      "stopped": "zatrzymane"
+    },
+    "unsupportedURL": "{{text}} nie jest adresem URL http ani https."
+  },
+  "deploy": {
+    "installed": "zainstalowano {{id}} {{version}}",
+    "replaced": "zastąpiono {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Sterownik już działa na tym komputerze; najpierw go zatrzymaj.",
+    "ambiguousName": "Więcej niż jedno urządzenie iPhone lub iPad ma nazwę {{name}}; wybierz jedno według UDID",
+    "appleMobileDeviceServiceMissing": "Usługa Apple Mobile Device Service nie działa; zainstaluj aplikację Urządzenia Apple z Microsoft Store",
+    "chooseDevice": "Wybierz urządzenie",
+    "chooseDeviceHint": "Wybierz urządzenie za pomocą -d NAME|UDID",
+    "connectedDevices": "{{reason}}; podłączone urządzenia iPhone i iPad:",
+    "lookingForDevices": "wyszukiwanie urządzeń",
+    "missing": "Brak sterownika; zainstaluj go za pomocą \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Żaden iPhone ani iPad nie ma nazwy {{name}}",
+    "noDevice": "Żaden iPhone ani iPad nie jest podłączony do tego komputera ani nie został znaleziony w sieci lokalnej; podłącz urządzenie przewodem USB i odblokuj je.",
+    "pairing": "parowanie z urządzeniem {{device}}",
+    "trustPrompt": "stuknij „Zaufaj” na urządzeniu {{device}} i wprowadź jego kod, aby zaufać temu komputerowi",
+    "usbmuxdMissing": "usbmuxd nie działa; zainstaluj usbmuxd i uruchom go"
+  },
+  "error": "błąd: {{message}}",
+  "flags": {
+    "device": "używane urządzenie",
+    "nightly": "użyj kompilacji nightly",
+    "noSetup": "nie paruj aplikacji Swipt, nie oznaczaj jej dewelopera jako zaufanego i nie publikuj jej API",
+    "noSetupAPI": "nie publikuj API w sieci lokalnej",
+    "noSetupPair": "nie paruj aplikacji Swipt",
+    "passcodeType": "pin (4 lub 6 cyfr, domyślnie), numeric lub alphanumeric",
+    "team": "ID zespołu; wymagane, jeśli jest ich więcej niż jeden"
+  },
+  "metro": {
+    "boolean": "wartością logiczną",
+    "contextArgument": "Argument {{index}} funkcji require.context musi być {{expected}}",
+    "contextRegExp": "Argument {{index}} funkcji require.context musi być literałem wyrażenia regularnego.",
+    "oneOf": "jedną z wartości: {{values}}",
+    "string": "ciągiem znaków",
+    "workletsMismatch": "Projekt zawiera react-native-worklets {{version}}, ale aplikacja Swipt używa wersji {{expected}}; zainstaluj react-native-worklets@{{expected}} lub usuń ten pakiet."
+  },
+  "noThanks": "Nie, dziękuję",
+  "output": {
+    "navigate": "nawiguj",
+    "select": "wybierz",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} od {{time}}",
+    "serviceStatus": {
+      "failed": "niepowodzenie",
+      "running": "działa",
+      "starting": "uruchamia się",
+      "stopped": "zatrzymana",
+      "turnedOff": "wyłączona",
+      "turnedOn": "włączona"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Własny kod alfanumeryczny",
+    "alphanumericDetail": "alfanumeryczny",
+    "empty": "Wprowadź kod.",
+    "invalidAlphanumeric": "Kod może zawierać maksymalnie 64 drukowalne znaki ASCII.",
+    "invalidNumeric": "Kod numeryczny może zawierać tylko cyfry.",
+    "invalidPin": "Kod typu pin ma 4 lub 6 cyfr; własny kod wymaga --passcode-type numeric lub alphanumeric",
+    "invalidType": "nieprawidłowy argument {{value}} opcji --passcode-type: dozwolone wartości to {{types}}",
+    "masked": "[wprowadzane dane są ukryte]",
+    "numeric": "Własny kod numeryczny",
+    "numericDetail": "numeryczny",
+    "pin": "Kod 4- lub 6-cyfrowy",
+    "pinDetail": "4 lub 6 cyfr",
+    "prompt": "Kod urządzenia",
+    "setUp": "Skonfigurować automatyczne odblokowywanie? Aplikacja Swipt będzie wtedy mogła samodzielnie odblokowywać to urządzenie."
+  },
+  "project": {
+    "assetConflict": "{{source}} i {{asset}} byłyby w Swiplecie tym samym plikiem assets/{{name}}.",
+    "conditionalActions": "Rozszerzenie definiuje różne czynności w zależności od available(); zdefiniuj te same czynności w każdym systemie i sprawdzaj available() wewnątrz run lub czynności.",
+    "databaseAtLoad": "Użyto bazy danych podczas wczytywania extension.js; użyj jej wewnątrz run lub czynności.",
+    "interfaceImport": "Interfejs importuje {{file}} w czasie działania; zaimportuj jego typ za pomocą `import type`.",
+    "interfaceOnly": "{{name}} działa tylko w interfejsie Swipletu.",
+    "invalidExposure": "Czynność {{action}} może udostępniać się tylko w \"shortcuts\".",
+    "invalidExtension": "Domyślny eksport rozszerzenia nie jest wynikiem defineExtension.",
+    "invalidID": "\"swiplet.id\" w package.json musi składać się z od 1 do 128 małych liter, cyfr, kropek, podkreśleń i łączników oraz zaczynać się od litery lub cyfry.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" w package.json musi przypisywać nazwy do języków.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" w package.json musi być liczbą całkowitą od {{oldest}} do {{level}}, czyli poziomu API pakietu @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" w package.json musi być numerem wersji od {{version}}, czyli minimalnej wersji iOS pakietu @swipt/api.",
+    "invalidName": "\"swiplet.name\" w package.json musi być niepustym ciągiem znaków.",
+    "invalidSchema": "Schemat {{side}} czynności {{action}} nie implementuje Standard JSON Schema; użyj biblioteki, która go implementuje, np. Zod 4.",
+    "invalidString": "\"{{field}}\" w package.json musi być ciągiem znaków.",
+    "invalidVersionCode": "\"swiplet.versionCode\" w package.json musi być dodatnią liczbą całkowitą.",
+    "missingTitle": "Czynność {{action}} wymaga tytułu.",
+    "storageAtLoad": "Użyto magazynu danych podczas wczytywania extension.js; użyj go wewnątrz run lub czynności.",
+    "unprovidedModule": "Aplikacja Swipt nie udostępnia \"{{module}}\" rozszerzeniom; spakuj ten moduł do extension.js.",
+    "usedAtLoad": "Użyto {{name}} podczas wczytywania extension.js; użyj tego wewnątrz run lub czynności."
+  },
+  "serve": {
+    "cancel": "Anuluj",
+    "checking": "sprawdzanie urządzenia {{device}}",
+    "conflictingTokens": "Opcji --token i --random-token nie można używać razem.",
+    "invalidToken": "Token składa się z co najmniej jednego drukowalnego znaku ASCII bez spacji.",
+    "localNetwork": "Sieć lokalna",
+    "noAutoUnlock": "Urządzenie {{device}} nie jest odblokowywane automatycznie; ustaw jego kod za pomocą --passcode. Naciśnij Ctrl-C, aby zatrzymać sterownik.",
+    "quitSwipt": "Zakończ Swipt",
+    "quittingSwipt": "zamykanie aplikacji Swipt na urządzeniu {{device}}",
+    "served": "Sterownik na komputerze {{computer}} już obsługuje urządzenie {{device}}; najpierw zatrzymaj ten sterownik.",
+    "servedPrompt": "Sterownik na komputerze {{computer}} już obsługuje urządzenie {{device}}. Zatrzymać ten sterownik?",
+    "starting": "uruchamianie sterownika dla urządzenia {{device}}",
+    "stopDriver": "Zatrzymaj sterownik na komputerze {{computer}}",
+    "stopHint": "Naciśnij Ctrl-C, aby zatrzymać sterownik.",
+    "stoppingDriver": "zatrzymywanie sterownika na komputerze {{computer}}",
+    "swiptRunning": "Sterownik nie może sterować urządzeniem {{device}}, gdy działa na nim aplikacja Swipt; najpierw zakończ Swipt.",
+    "swiptRunningPrompt": "Sterownik nie może sterować urządzeniem {{device}}, gdy działa na nim aplikacja Swipt. Zakończyć Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Aplikacja Swipt jest zainstalowana metodą sideloadingu na urządzeniu {{device}} przez więcej niż jeden zespół; wybierz jeden za pomocą --team ID:",
+    "certificateFailed": "Xcode nie może utworzyć certyfikatu deweloperskiego dla zespołu {{team}}; dodaj go w {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "sprawdzanie aplikacji Swipt na urządzeniu {{device}}",
+    "checkingRelease": "sprawdzanie najnowszej wersji",
+    "chooseTeam": "Wybierz zespół",
+    "chooseTeamHint": "Wybierz zespół za pomocą --team ID:",
+    "diskImageFailed": "nie udało się przygotować obrazu dysku dewelopera na urządzeniu {{device}}: {{error}}",
+    "downgrade": "Przejdź na starszą wersję",
+    "downgradePrompt": "Przejść z wersji {{version}} aplikacji Swipt na urządzeniu {{device}} na starszą wersję {{releaseVersion}}? Aplikacja Swipt resetuje swoje dane, gdy starsza wersja nie może ich odczytać.",
+    "downgradeToStablePrompt": "Przejść z kompilacji nightly {{version}} aplikacji Swipt na urządzeniu {{device}} na stabilną wersję {{releaseVersion}}? Aplikacja Swipt resetuje swoje dane, gdy starsza wersja nie może ich odczytać.",
+    "downloading": "pobieranie aplikacji Swipt {{version}} ({{build}}) z wydania {{release}}",
+    "expiration": "Podpis wygasa {{expiration}}.",
+    "installed": "Zainstalowano {{build}} na urządzeniu {{device}}.",
+    "installing": "instalowanie na urządzeniu {{device}}",
+    "invalidTeam": "nieprawidłowy argument {{value}} opcji --team: wymagane jest 10-znakowe ID zespołu widoczne w {{accounts}}",
+    "laterThanRelease": "{{build}} na urządzeniu {{device}} to nowsza wersja niż {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; odblokuj urządzenie lub podaj --passcode, a następnie uruchom polecenie ponownie.",
+    "looking": "wyszukiwanie aplikacji Swipt na urządzeniach",
+    "needsMacOS": "Instalowanie lub uaktualnianie aplikacji Swipt wymaga systemu macOS; zainstaluj ją z Maca, a następnie skonfiguruj tutaj za pomocą \"swipt sideload setup\".",
+    "noAccount": "Xcode nie ma żadnego konta; zaloguj się w {{accounts}} lub wybierz zespół za pomocą --team ID",
+    "noAccountForTeam": "Xcode nie ma konta zespołu {{team}}; zaloguj się na konto Apple tego zespołu w {{accounts}}.",
+    "noCertificate": "Xcode nie ma certyfikatu deweloperskiego; dodaj go w {{accounts}} › Manage Certificates lub wybierz zespół za pomocą --team ID",
+    "noneInstalled": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na żadnym urządzeniu iPhone ani iPad.",
+    "noneInstalledHint": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na żadnym urządzeniu iPhone ani iPad; zainstaluj ją za pomocą \"swipt sideload install\".",
+    "notInstalled": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na urządzeniu {{device}}.",
+    "notInstalledByTeam": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na urządzeniu {{device}} przez zespół {{team}}.",
+    "notInstalledByTeamHint": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na urządzeniu {{device}} przez zespół {{team}}; zainstaluj ją za pomocą \"swipt sideload install\".",
+    "notInstalledHint": "Aplikacja Swipt nie jest zainstalowana metodą sideloadingu na urządzeniu {{device}}; zainstaluj ją za pomocą \"swipt sideload install\".",
+    "notOnNetwork": "Nie znaleziono urządzenia {{device}} w sieci lokalnej; adresy URL jego API znajdziesz w Swipt › Deweloper › Sieć lokalna.",
+    "opening": "otwieranie aplikacji Swipt na urządzeniu {{device}}",
+    "openingSettings": "otwieranie Ustawień na urządzeniu {{device}}",
+    "opensAfterUnlock": "Aplikacja otworzy się po odblokowaniu urządzenia {{device}}.",
+    "pairingFailed": "Parowanie nie powiodło się, więc aplikacja Swipt sparuje się zamiast tego w Ustawieniach: {{error}}",
+    "preparingDiskImage": "przygotowywanie obrazu dysku dewelopera na urządzeniu {{device}}",
+    "preparingSigning": "przygotowywanie podpisywania aplikacji Swipt z zespołem {{team}} za pomocą Xcode",
+    "removed": "usunięto {{build}} z urządzenia {{device}}",
+    "removing": "usuwanie aplikacji Swipt z urządzenia {{device}}",
+    "renewalNeedsDowngrade": "{{build}} na urządzeniu {{device}} wymaga nowego podpisu, ale {{release}} ({{releaseBuild}}) to starsza wersja; użyj --nightly lub przejdź na starszą wersję za pomocą \"swipt sideload install --force\".",
+    "resigning": "ponowne podpisywanie aplikacji Swipt",
+    "running": "{{app}} działa.",
+    "settingUpAutoUnlock": "konfigurowanie automatycznego odblokowywania",
+    "trusted": "Deweloper {{developer}} jest zaufany.",
+    "trusting": "oznaczanie dewelopera {{developer}} jako zaufanego w Ustawieniach",
+    "unlockPrompt": "Odblokuj urządzenie, aby kontynuować.",
+    "unlocking": "odblokowywanie urządzenia",
+    "untrusted": "Deweloper aplikacji nie jest jeszcze zaufany; zaufaj mu na stronie Ustawień otwartej na urządzeniu {{device}}, a następnie otwórz aplikację Swipt.",
+    "upToDate": "{{build}} na urządzeniu {{device}} to już {{release}}.",
+    "updated": "Uaktualniono {{build}} na urządzeniu {{device}}.",
+    "waiting": "oczekiwanie na urządzenie {{device}}",
+    "xcodeMissing": "xcodebuild wymaga Xcode; zainstaluj go i wybierz za pomocą xcode-select",
+    "xcodebuildMissing": "Brak xcodebuild; zainstaluj Xcode."
+  }
+}

@@ -1,0 +1,401 @@
+{
+  "availability": {
+    "advice": "Verifique‑os com available(), marque com @available o código que os utiliza ou aumente \"swiplet.minimumAPILevel\" ou \"swiplet.minimumIOSVersion\" no package.json.",
+    "apiLevel": "o nível de API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} é um ponto de entrada do Swiplet e requer {{requirement}}; aumente \"swiplet.minimumAPILevel\" ou \"swiplet.minimumIOSVersion\" no package.json.",
+    "importNeeds": "{{location}}: importar {{name}} requer {{requirement}}; aumente \"swiplet.minimumAPILevel\" ou \"swiplet.minimumIOSVersion\" no package.json.",
+    "invalidEntry": "{{location}}: @available tem \"{{entry}}\"; aceita \"apiLevel <level>\" e \"iOS <version>\", separados por vírgulas.",
+    "needs": "{{location}}: {{name}} requer {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available indica {{kind}} duas vezes."
+  },
+  "cli": {
+    "commands": "comandos:",
+    "exactArgs_many": "aceita {{count}} de argumentos, recebeu {{received}}",
+    "exactArgs_one": "aceita {{count}} argumento, recebeu {{received}}",
+    "exactArgs_other": "aceita {{count}} argumentos, recebeu {{received}}",
+    "help": "ajuda",
+    "helpHint": "Execute \"swipt help\" para ver a utilização.",
+    "minimumArgs_many": "aceita pelo menos {{count}} de argumentos, recebeu {{received}}",
+    "minimumArgs_one": "aceita pelo menos {{count}} argumento, recebeu {{received}}",
+    "minimumArgs_other": "aceita pelo menos {{count}} argumentos, recebeu {{received}}",
+    "missingCommand": "Falta um comando.",
+    "options": "opções:",
+    "rangeArgs_many": "aceita entre {{least}} e {{count}} de argumentos, recebeu {{received}}",
+    "rangeArgs_one": "aceita entre {{least}} e {{count}} argumento, recebeu {{received}}",
+    "rangeArgs_other": "aceita entre {{least}} e {{count}} argumentos, recebeu {{received}}",
+    "unauthenticated": "{{message}}; ligue com o URL mostrado em Swipt › Programador ou por \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "O Swipt em {{url}} não tem este comando; atualize o Swipt.",
+    "unknownCommand": "comando {{name}} desconhecido para {{parent}}",
+    "unknownOption": "{{option}} não é uma opção de {{command}}.",
+    "unreachable": "Não é possível aceder ao Swipt em {{url}}: {{message}}",
+    "usage": "utilização: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Remover todos os ficheiros de dados e manter o diretório de dados"
+      },
+      "list": {
+        "description": "Listar os ficheiros de dados",
+        "recursive": "incluir subdiretórios"
+      },
+      "read": {
+        "description": "Ler um ficheiro ou diretório de dados",
+        "output": "destino",
+        "saved_many": "{{count}} de ficheiros guardados em {{path}}",
+        "saved_one": "{{count}} ficheiro guardado em {{path}}",
+        "saved_other": "{{count}} ficheiros guardados em {{path}}"
+      },
+      "remove": {
+        "description": "Remover um ficheiro de dados",
+        "recursive": "incluir o conteúdo do diretório"
+      },
+      "replDescription": "Gerir os ficheiros no diretório de dados do REPL",
+      "swipletDescription": "Gerir os ficheiros no diretório de dados de um Swiplet",
+      "write": {
+        "description": "Escrever um ficheiro de dados"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "Adicionar um dispositivo através do URL; necessário quando é remoto ou requer um token"
+      },
+      "description": "Gerir os dispositivos e ler os respetivos registos",
+      "list": {
+        "description": "Listar os dispositivos e adicionar os encontrados na rede local"
+      },
+      "logs": {
+        "count": "número de entradas anteriores (predefinição: 100)",
+        "description": "Mostrar os registos",
+        "follow": "acompanhar novas entradas",
+        "invalidDuration": "argumento {{value}} inválido para {{option}}: tem de ser uma duração, como 30s ou 1m30s",
+        "invalidLevel": "--level tem de ser error, warn, info ou debug",
+        "invalidNumber": "argumento {{value}} inválido para {{option}}: tem de ser um número",
+        "level": "nível mínimo (predefinição: info)",
+        "since": "antiguidade máxima das entradas",
+        "swiplet": "ID do Swiplet"
+      },
+      "remove": {
+        "description": "Esquecer um dispositivo"
+      },
+      "stop": {
+        "description": "Deixar de fornecer a API do Swipt",
+        "stopped": "parado"
+      }
+    },
+    "driver": {
+      "description": "Fornecer a API do Swipt e o MCP para um dispositivo a partir deste computador",
+      "details": "O dispositivo só pode ser controlado por um de cada vez: o Swipt no dispositivo ou o controlador num computador.",
+      "passcode": "código para desbloquear o dispositivo automaticamente; deixe vazio para desativar",
+      "randomToken": "exigir um token aleatório aos clientes da API",
+      "token": "exigir este token aos clientes da API"
+    },
+    "project": {
+      "build": {
+        "description": "Empacotar o projeto em dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Criar um projeto de Swiplet num diretório novo ou vazio",
+        "notEmpty": "{{directory}} não está vazio."
+      },
+      "deploy": {
+        "description": "Compilar o projeto e instalá‑lo no dispositivo"
+      },
+      "description": "Criar, compilar e implementar projetos de Swiplet",
+      "develop": {
+        "deployed": "compilado e implementado em {{elapsed}}; a monitorizar {{directory}}",
+        "description": "Compilar, instalar e acompanhar um projeto de Swiplet à medida que muda",
+        "quiet": "sem registos",
+        "unchanged": "compilado em {{elapsed}}; nada foi alterado"
+      },
+      "source": {
+        "description": "Reunir os Swiplets compilados em dist/ com um swiplets.json",
+        "duplicateID": "{{id}} corresponde tanto a {{first}} como a {{second}}",
+        "invalidIcon": "\"source.icon\" no package.json tem de ter symbol e pode ter color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" no package.json tem de associar idiomas a nomes.",
+        "invalidURL": "\"source.url\" no package.json não é um URL absoluto.",
+        "noWorkspaces": "O package.json não lista espaços de trabalho com Swiplets; indique os Swiplets a listar.",
+        "notBuilt": "{{file}} não foi encontrado; compile primeiro {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Mostrar as declarações TypeScript das variáveis globais e dos módulos"
+      },
+      "dataDirectory": "{{path}} indica o diretório de dados do REPL; guarde‑o com --output DIRECTORY",
+      "description": "Executar JavaScript na sessão do REPL no dispositivo",
+      "directory": "{{path}} é um diretório dentro do diretório de dados do REPL; guarde‑o com --output DIRECTORY",
+      "reset": {
+        "description": "Repor a sessão"
+      },
+      "run": {
+        "arguments": "O primeiro argumento é FILE quando indica um ficheiro existente e CODE nos restantes casos; as opções vêm antes dele.",
+        "description": "Executar uma expressão ou um programa JavaScript no dispositivo",
+        "details": "CODE é uma expressão cujo valor é mostrado. FILE, ou a entrada padrão indicada com - ou sem argumento, é um programa, e apenas a saída da consola é mostrada.",
+        "extraArguments": "{{argument}} não é um ficheiro e CODE não aceita ARG.",
+        "images": "diretório de imagens (predefinição: um novo diretório temporário)"
+      }
+    },
+    "sideload": {
+      "description": "Instalar o Swipt por sideload",
+      "install": {
+        "description": "Instalar o Swipt",
+        "force": "instalar por cima da mesma versão ou de uma mais recente"
+      },
+      "passcode": "configurar o desbloqueio automático com este código",
+      "setup": {
+        "description": "Configurar o Swipt"
+      },
+      "uninstall": {
+        "description": "Remover o Swipt"
+      },
+      "update": {
+        "description": "Atualizar ou renovar o Swipt",
+        "passcode": "desbloquear o dispositivo com este código"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Chamar uma ação de Swiplet",
+        "input": "JSON de entrada, @FILE ou -",
+        "invalidInput": "--input não é JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} indica o diretório de dados de {{swiplet}}; guarde‑o com --output DIRECTORY",
+      "description": "Gerir os Swiplets no dispositivo",
+      "directory": "{{path}} é um diretório dentro do diretório de dados de {{swiplet}}; guarde‑o com --output DIRECTORY",
+      "install": {
+        "description": "Instalar um arquivo de Swiplet",
+        "notFound": "Não existe nenhum arquivo em {{path}}"
+      },
+      "list": {
+        "actions": "AÇÕES",
+        "description": "Listar os Swiplets",
+        "id": "ID",
+        "service": "SERVIÇO",
+        "status": "ESTADO",
+        "title": "TÍTULO",
+        "version": "VERSÃO"
+      },
+      "remove": {
+        "description": "Remover um Swiplet",
+        "removed": "Swiplet {{name}} removido"
+      },
+      "service": {
+        "description": "Gerir os serviços de Swiplet",
+        "disable": {
+          "description": "Desativar um serviço de Swiplet"
+        },
+        "enable": {
+          "description": "Ativar um serviço de Swiplet"
+        },
+        "watch": {
+          "description": "Monitorizar os serviços de Swiplet"
+        },
+        "watchState": "monitorizar o estado"
+      },
+      "show": {
+        "description": "Mostrar um Swiplet",
+        "input": "entrada: {{schema}}",
+        "notFound": "Não existe o Swiplet {{id}}.",
+        "output": "saída: {{schema}}",
+        "service": "serviço: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Mostrar a versão"
+    }
+  },
+  "connection": {
+    "added": "dispositivo {{device}} adicionado",
+    "ambiguous": "Há mais do que um dispositivo: {{devices}}; escolha um com -d",
+    "driverNotStopped": "O controlador em {{computer}} não parou.",
+    "invalidURL": "{{text}} não é um URL.",
+    "none": "Não existe nenhum dispositivo; ative Swipt › Programador › Rede local ou ligue um com \"swipt device add URL\".",
+    "noneOnNetwork": "Nenhum dispositivo publica o Swipt na rede local; ative Swipt › Programador › Rede local ou ligue um com \"swipt device add URL\".",
+    "notFound": "Não existe o dispositivo {{device}}.",
+    "notFoundHint": "Não existe o dispositivo {{device}}; \"swipt device list\" lista os dispositivos.",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "modo de programador desativado",
+      "deviceUnsupported": "dispositivo incompatível",
+      "diskImageMissing": "imagem de disco em falta",
+      "diskImageMountFailed": "falha ao montar a imagem de disco",
+      "pairingRejected": "emparelhamento rejeitado",
+      "screenInUse": "ecrã em utilização",
+      "unreachable": "inacessível",
+      "vpnPeerAddressMissing": "endereço do par da VPN em falta"
+    },
+    "removed": "dispositivo {{name}} removido",
+    "requiresToken": "requer um token",
+    "requiresTokenHint": "{{device}} requer um token: swipt device add {{url}}",
+    "state": {
+      "connecting": "a estabelecer ligação",
+      "failed": "com falha",
+      "preparing": "a preparar",
+      "running": "ativa",
+      "stopped": "parada"
+    },
+    "unsupportedURL": "{{text}} não é um URL http ou https."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} instalado",
+    "replaced": "{{id}} {{version}} substituído"
+  },
+  "driver": {
+    "alreadyRunning": "O controlador já está em execução neste computador; pare‑o primeiro.",
+    "ambiguousName": "Há mais do que um iPhone ou iPad com o nome {{name}}; escolha um pelo UDID",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service não está em execução; instale a aplicação Dispositivos Apple a partir da Microsoft Store",
+    "chooseDevice": "Escolha um dispositivo",
+    "chooseDeviceHint": "Escolha um dispositivo com -d NAME|UDID",
+    "connectedDevices": "{{reason}}; dispositivos iPhone e iPad ligados:",
+    "lookingForDevices": "a procurar dispositivos",
+    "missing": "O controlador não foi encontrado; instale‑o com \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Nenhum iPhone ou iPad tem o nome {{name}}",
+    "noDevice": "Nenhum iPhone ou iPad está ligado a este computador ou foi encontrado na rede local; ligue um com um cabo USB e desbloqueie‑o.",
+    "pairing": "a emparelhar com {{device}}",
+    "trustPrompt": "em {{device}}, toque em Confiar e introduza o código para confiar neste computador",
+    "usbmuxdMissing": "O usbmuxd não está em execução; instale o usbmuxd e inicie‑o"
+  },
+  "error": "erro: {{message}}",
+  "flags": {
+    "device": "o dispositivo a usar",
+    "nightly": "usar a versão nightly",
+    "noSetup": "não emparelhar o Swipt, não confiar no programador nem publicar a API",
+    "noSetupAPI": "não publicar a API na rede local",
+    "noSetupPair": "não emparelhar o Swipt",
+    "passcodeType": "pin (4 ou 6 dígitos, predefinição), numeric ou alphanumeric",
+    "team": "ID da equipa, obrigatório se houver mais do que uma"
+  },
+  "metro": {
+    "boolean": "um booleano",
+    "contextArgument": "O argumento {{index}} de require.context tem de ser {{expected}}",
+    "contextRegExp": "O argumento {{index}} de require.context tem de ser um literal de expressão regular.",
+    "oneOf": "um destes valores: {{values}}",
+    "string": "uma cadeia de caracteres",
+    "workletsMismatch": "O projeto tem react-native-worklets {{version}}, mas o Swipt executa {{expected}}; instale react-native-worklets@{{expected}} ou remova‑o."
+  },
+  "noThanks": "Não, obrigado",
+  "output": {
+    "navigate": "navegar",
+    "select": "selecionar",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} desde as {{time}}",
+    "serviceStatus": {
+      "failed": "com falha",
+      "running": "em execução",
+      "starting": "a iniciar",
+      "stopped": "parado",
+      "turnedOff": "desativado",
+      "turnedOn": "ativado"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Código alfanumérico personalizado",
+    "alphanumericDetail": "alfanumérico",
+    "empty": "Introduza o código.",
+    "invalidAlphanumeric": "Um código pode ter até 64 caracteres ASCII imprimíveis.",
+    "invalidNumeric": "Um código numérico só pode conter dígitos.",
+    "invalidPin": "Um código pin tem 4 ou 6 dígitos; um código personalizado requer --passcode-type numeric ou alphanumeric",
+    "invalidType": "argumento {{value}} inválido para --passcode-type: tem de ser {{types}}",
+    "masked": "[entrada oculta]",
+    "numeric": "Código numérico personalizado",
+    "numericDetail": "numérico",
+    "pin": "Código de 4 ou 6 dígitos",
+    "pinDetail": "4 ou 6 dígitos",
+    "prompt": "Código do dispositivo",
+    "setUp": "Configurar o desbloqueio automático? Assim, o Swipt poderá desbloquear este dispositivo automaticamente."
+  },
+  "project": {
+    "assetConflict": "{{source}} e {{asset}} seriam ambos assets/{{name}} no Swiplet.",
+    "conditionalActions": "A extensão define ações diferentes consoante available(); defina as mesmas ações em todos os sistemas e verifique available() dentro de run ou de uma ação.",
+    "databaseAtLoad": "extension.js usa a base de dados durante o carregamento; essa utilização tem de ser feita dentro de run ou de uma ação.",
+    "interfaceImport": "A interface importa {{file}} em tempo de execução; importe o respetivo tipo com `import type`.",
+    "interfaceOnly": "{{name}} só funciona na interface do Swiplet.",
+    "invalidExposure": "A ação {{action}} só pode expor‑se a \"shortcuts\".",
+    "invalidExtension": "A exportação predefinida da extensão não é o resultado de defineExtension.",
+    "invalidID": "\"swiplet.id\" no package.json tem de ter 1 a 128 letras minúsculas, dígitos, pontos, sublinhados e hífenes, começando por uma letra ou um dígito.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" no package.json tem de associar idiomas a nomes.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" no package.json tem de ser um número inteiro de {{oldest}} a {{level}}, o nível de API do @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" no package.json tem de ser um número de versão a partir de {{version}}, a versão mínima do iOS do @swipt/api.",
+    "invalidName": "\"swiplet.name\" no package.json tem de ser uma cadeia de caracteres não vazia.",
+    "invalidSchema": "O esquema {{side}} da ação {{action}} não implementa Standard JSON Schema; use uma biblioteca que o implemente, como Zod 4.",
+    "invalidString": "\"{{field}}\" no package.json tem de ser uma cadeia de caracteres.",
+    "invalidVersionCode": "\"swiplet.versionCode\" no package.json tem de ser um número inteiro positivo.",
+    "missingTitle": "A ação {{action}} precisa de um título.",
+    "storageAtLoad": "extension.js usa o armazenamento durante o carregamento; essa utilização tem de ser feita dentro de run ou de uma ação.",
+    "unprovidedModule": "O Swipt não disponibiliza \"{{module}}\" às extensões; empacote‑o em extension.js.",
+    "usedAtLoad": "extension.js usa {{name}} durante o carregamento; essa utilização tem de ser feita dentro de run ou de uma ação."
+  },
+  "serve": {
+    "cancel": "Cancelar",
+    "checking": "a verificar {{device}}",
+    "conflictingTokens": "--token e --random-token não podem ser utilizados em conjunto.",
+    "invalidToken": "Um token tem um ou mais caracteres ASCII imprimíveis, sem espaços.",
+    "localNetwork": "Rede local",
+    "noAutoUnlock": "{{device}} não é desbloqueado automaticamente; defina o código com --passcode. Ctrl-C interrompe o controlador.",
+    "quitSwipt": "Sair do Swipt",
+    "quittingSwipt": "a sair do Swipt em {{device}}",
+    "served": "O controlador em {{computer}} já está a servir {{device}}; pare primeiro esse controlador.",
+    "servedPrompt": "O controlador em {{computer}} já está a servir {{device}}. Parar esse controlador?",
+    "starting": "a iniciar o controlador para {{device}}",
+    "stopDriver": "Parar o controlador em {{computer}}",
+    "stopHint": "Ctrl-C interrompe o controlador.",
+    "stoppingDriver": "a parar o controlador em {{computer}}",
+    "swiptRunning": "O controlador não pode assumir o controlo de {{device}} enquanto o Swipt estiver em execução no dispositivo; saia primeiro do Swipt.",
+    "swiptRunningPrompt": "O controlador não pode assumir o controlo de {{device}} enquanto o Swipt estiver em execução no dispositivo. Sair do Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Mais do que uma equipa instalou o Swipt por sideload em {{device}}; escolha uma com --team ID:",
+    "certificateFailed": "O Xcode não conseguiu criar um certificado de desenvolvimento para a equipa {{team}}; adicione um em {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "a verificar o Swipt em {{device}}",
+    "checkingRelease": "a verificar a versão mais recente",
+    "chooseTeam": "Escolha uma equipa",
+    "chooseTeamHint": "Escolha uma equipa com --team ID:",
+    "diskImageFailed": "não foi possível preparar a imagem de disco de programador em {{device}}: {{error}}",
+    "downgrade": "Reverter",
+    "downgradePrompt": "Reverter o Swipt em {{device}} da versão {{version}} para a versão anterior {{releaseVersion}}? O Swipt repõe os próprios dados quando a versão anterior não os consegue ler.",
+    "downgradeToStablePrompt": "Reverter o Swipt em {{device}} da versão nightly {{version}} para a versão estável {{releaseVersion}}? O Swipt repõe os próprios dados quando a versão anterior não os consegue ler.",
+    "downloading": "a descarregar o Swipt {{version}} ({{build}}) de {{release}}",
+    "expiration": "A assinatura expira {{expiration}}.",
+    "installed": "{{build}} está instalado em {{device}}.",
+    "installing": "a instalar em {{device}}",
+    "invalidTeam": "argumento {{value}} inválido para --team: tem de ser o ID de equipa de 10 caracteres apresentado em {{accounts}}",
+    "laterThanRelease": "{{build}} em {{device}} é mais recente do que {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; desbloqueie o dispositivo ou indique --passcode e volte a executar este comando.",
+    "looking": "a procurar o Swipt nos dispositivos",
+    "needsMacOS": "Instalar ou atualizar o Swipt requer o macOS; instale‑o a partir de um Mac e, depois, configure‑o aqui com \"swipt sideload setup\".",
+    "noAccount": "O Xcode não tem nenhuma conta; inicie sessão em {{accounts}} ou escolha uma equipa com --team ID",
+    "noAccountForTeam": "O Xcode não tem uma conta da equipa {{team}}; inicie sessão com a Conta Apple da equipa em {{accounts}}.",
+    "noCertificate": "O Xcode não tem nenhum certificado de desenvolvimento; adicione um em {{accounts}} › Manage Certificates ou escolha uma equipa com --team ID",
+    "noneInstalled": "O Swipt não está instalado por sideload em nenhum iPhone ou iPad.",
+    "noneInstalledHint": "O Swipt não está instalado por sideload em nenhum iPhone ou iPad; instale‑o com \"swipt sideload install\".",
+    "notInstalled": "O Swipt não está instalado por sideload em {{device}}.",
+    "notInstalledByTeam": "A equipa {{team}} não instalou o Swipt por sideload em {{device}}.",
+    "notInstalledByTeamHint": "A equipa {{team}} não instalou o Swipt por sideload em {{device}}; instale‑o com \"swipt sideload install\".",
+    "notInstalledHint": "O Swipt não está instalado por sideload em {{device}}; instale‑o com \"swipt sideload install\".",
+    "notOnNetwork": "{{device}} não foi encontrado na rede local; encontre os URL da API em Swipt › Programador › Rede local.",
+    "opening": "a abrir o Swipt em {{device}}",
+    "openingSettings": "a abrir as Definições em {{device}}",
+    "opensAfterUnlock": "Abre assim que desbloquear {{device}}.",
+    "pairingFailed": "O emparelhamento falhou; em vez disso, o Swipt emparelha nas Definições: {{error}}",
+    "preparingDiskImage": "a preparar a imagem de disco de programador em {{device}}",
+    "preparingSigning": "a preparar a assinatura do Swipt com a equipa {{team}} através do Xcode",
+    "removed": "{{build}} removido de {{device}}",
+    "removing": "a remover o Swipt de {{device}}",
+    "renewalNeedsDowngrade": "{{build}} em {{device}} precisa de uma nova assinatura, mas {{release}} ({{releaseBuild}}) é anterior; use --nightly ou reverta para a versão anterior com \"swipt sideload install --force\".",
+    "resigning": "a assinar novamente o Swipt",
+    "running": "{{app}} está em execução.",
+    "settingUpAutoUnlock": "a configurar o desbloqueio automático",
+    "trusted": "{{developer}} é de confiança.",
+    "trusting": "a confiar em {{developer}} nas Definições",
+    "unlockPrompt": "Desbloqueie o dispositivo para continuar.",
+    "unlocking": "a desbloquear o dispositivo",
+    "untrusted": "O programador ainda não é de confiança; confie nele na página das Definições aberta em {{device}} e, em seguida, abra o Swipt.",
+    "upToDate": "{{build}} em {{device}} já é {{release}}.",
+    "updated": "{{build}} foi atualizado em {{device}}.",
+    "waiting": "a aguardar {{device}}",
+    "xcodeMissing": "O xcodebuild precisa do Xcode; instale‑o e selecione‑o com xcode-select",
+    "xcodebuildMissing": "O xcodebuild não foi encontrado; instale o Xcode."
+  }
+}

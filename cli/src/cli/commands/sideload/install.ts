@@ -1,18 +1,18 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import * as sideload from "../../../sideload";
 import { defineCommand } from "../../command";
 import { nightlyOption, passcodeOptions, setupOptions } from "../flags";
 
 export const install = defineCommand({
   name: "install",
-  short: tr("Install Swipt"),
+  short: t("commands.sideload.install.description"),
   args: [0, 0],
   options: {
-    ...passcodeOptions(tr("set up auto-unlock with this passcode")),
+    ...passcodeOptions(t("commands.sideload.passcode")),
     ...nightlyOption,
     force: {
       type: "boolean",
-      help: tr("install over the same or a later build"),
+      help: t("commands.sideload.install.force"),
     },
     ...setupOptions,
   },

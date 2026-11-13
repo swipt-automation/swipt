@@ -10,7 +10,7 @@
 
 - `bun dev install [-d NAME|UDID]` - Build Swipt, install it on the device, and set it up like `swipt sideload install`
 - `bun dev frameworks` - Install the React Native frameworks
-- `bun dev strings` - Sync cli/locales with the strings of the CLI
+- `bun run --cwd cli strings` - Regenerate the types of the CLI strings and check cli/locales against them
 - `bun run --cwd cli build` - Build the CLI
 - `bun typecheck` - Type-check cli and dev
 - `make lib` - Build the SDK runtime and libswipt

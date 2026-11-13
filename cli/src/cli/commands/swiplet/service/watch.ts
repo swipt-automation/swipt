@@ -1,4 +1,4 @@
-import { tr } from "../../../../i18n";
+import { t } from "../../../../i18n";
 import { type Context, defineCommand } from "../../../command";
 import { session } from "../../../session";
 import { watchServices } from "./services";
@@ -11,7 +11,7 @@ const serviceWatch = (context: Context<{ device?: string }>) =>
 export const watch = defineCommand({
   name: "watch",
   use: "watch [ID]",
-  short: tr("Watch swiplet services"),
+  short: t("commands.swiplet.service.watch.description"),
   args: [0, 1],
   run: serviceWatch,
 });

@@ -82,7 +82,7 @@ import {
   type Type,
 } from "typescript/unstable/sync";
 
-import { language, tr } from "./i18n";
+import { language, t } from "./i18n";
 import type { Project } from "./project";
 import { parseVersion, versionAtLeast } from "./version";
 interface Requirements {
@@ -104,7 +104,7 @@ const requirements: { readonly [K in Kind]: Rule<Requirements[K]> } = {
   apiLevel: {
     parse: (text) => (/^[1-9]\d*$/.test(text) ? Number(text) : undefined),
     covers: (level, needed) => level >= needed,
-    describe: (level) => tr("API level {level}", { level }),
+    describe: (level) => t("availability.apiLevel", { level }),
   },
   iOS: {
     parse: parseVersion,
@@ -356,13 +356,7 @@ export class AvailabilityChecker {
       throw new Error(
         [
           ...problems.lines,
-          ...(problems.guarding
-            ? [
-                tr(
-                  'Check these with available(), mark the code that uses them with @available, or raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
-                ),
-              ]
-            : []),
+          ...(problems.guarding ? [t("availability.advice")] : []),
         ].join("\n"),
       );
     }
@@ -614,7 +608,7 @@ class Checker {
     if (requirement !== undefined) {
       this.#problems.guarding = true;
       this.#problems.lines.add(
-        tr("{location}: {name} needs {requirement}.", {
+        t("availability.needs", {
           location: this.#location(node),
           name,
           requirement,
@@ -662,14 +656,11 @@ class Checker {
     );
     if (requirement !== undefined) {
       this.#problems.lines.add(
-        tr(
-          '{location}: importing {name} needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
-          {
-            location: this.#location(name),
-            name: name.text,
-            requirement,
-          },
-        ),
+        t("availability.importNeeds", {
+          location: this.#location(name),
+          name: name.text,
+          requirement,
+        }),
       );
     }
   }
@@ -693,14 +684,11 @@ class Checker {
     );
     if (requirement !== undefined) {
       this.#problems.lines.add(
-        tr(
-          '{location}: {name} is an entry of the swiplet and needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
-          {
-            location: this.#location(name),
-            name: name.text,
-            requirement,
-          },
-        ),
+        t("availability.entryNeeds", {
+          location: this.#location(name),
+          name: name.text,
+          requirement,
+        }),
       );
     }
   }
@@ -717,17 +705,14 @@ class Checker {
     const { requirement, invalid, repeated } = parseAnnotation(text);
     if (invalid !== undefined) {
       this.#problems.lines.add(
-        tr(
-          '{location}: @available has "{entry}"; it takes "apiLevel <level>" and "iOS <version>", separated by commas.',
-          {
-            location: this.#location(node),
-            entry: invalid,
-          },
-        ),
+        t("availability.invalidEntry", {
+          location: this.#location(node),
+          entry: invalid,
+        }),
       );
     } else if (repeated !== undefined) {
       this.#problems.lines.add(
-        tr("{location}: @available names {kind} twice.", {
+        t("availability.repeatedEntry", {
           location: this.#location(node),
           kind: repeated,
         }),

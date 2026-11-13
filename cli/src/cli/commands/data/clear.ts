@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { type ResolveTarget, operandCount } from "./operand";
@@ -24,7 +24,7 @@ export const clear = (operand: string, target: ResolveTarget) => {
   return defineCommand({
     name: "clear",
     use: `clear ${operand}`.trimEnd(),
-    short: tr("Remove every data file, keeping the data directory"),
+    short: t("commands.data.clear.description"),
     args: [before, before],
     run: clearFiles(target),
   });

@@ -58,7 +58,7 @@ jobs:
             PREVIOUS=$(git tag -l --format='%(contents:subject)' nightly)
             RELEASED=$(curl -fsSL --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/metadata.json" | jq -r '"\(.version) \(.build)"' || true)
             if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] && git diff --quiet 'nightly^{commit}' HEAD -- . \
-              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!dev/strings.ts' ':!*_test.go'; then
+              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!*_test.go'; then
               APP_CHANGED=false
             fi
           fi

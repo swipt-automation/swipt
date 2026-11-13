@@ -1,0 +1,405 @@
+{
+  "availability": {
+    "advice": "Overte ich pomocou available(), kód, ktorý ich používa, označte pomocou @available alebo zvýšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
+    "apiLevel": "úroveň API {{level}}",
+    "entryNeeds": "{{location}}: {{name}} je vstupný bod Swipletu a vyžaduje {{requirement}}; zvýšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
+    "importNeeds": "{{location}}: import {{name}} vyžaduje {{requirement}}; zvýšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
+    "invalidEntry": "{{location}}: @available obsahuje \"{{entry}}\"; prijíma \"apiLevel <level>\" a \"iOS <version>\" oddelené čiarkami.",
+    "needs": "{{location}}: {{name}} vyžaduje {{requirement}}.",
+    "repeatedEntry": "{{location}}: @available uvádza {{kind}} dvakrát."
+  },
+  "cli": {
+    "commands": "príkazy:",
+    "exactArgs_few": "prijíma {{count}} argumenty, počet prijatých: {{received}}",
+    "exactArgs_many": "prijíma {{count}} argumentu, počet prijatých: {{received}}",
+    "exactArgs_one": "prijíma {{count}} argument, počet prijatých: {{received}}",
+    "exactArgs_other": "prijíma {{count}} argumentov, počet prijatých: {{received}}",
+    "help": "zobraziť pomocníka",
+    "helpHint": "Informácie o použití získate príkazom \"swipt help\".",
+    "minimumArgs_few": "prijíma aspoň {{count}} argumenty, počet prijatých: {{received}}",
+    "minimumArgs_many": "prijíma aspoň {{count}} argumentu, počet prijatých: {{received}}",
+    "minimumArgs_one": "prijíma aspoň {{count}} argument, počet prijatých: {{received}}",
+    "minimumArgs_other": "prijíma aspoň {{count}} argumentov, počet prijatých: {{received}}",
+    "missingCommand": "Chýba príkaz.",
+    "options": "možnosti:",
+    "rangeArgs_few": "prijíma {{least}} až {{count}} argumenty, počet prijatých: {{received}}",
+    "rangeArgs_many": "prijíma {{least}} až {{count}} argumentu, počet prijatých: {{received}}",
+    "rangeArgs_one": "prijíma {{least}} až {{count}} argument, počet prijatých: {{received}}",
+    "rangeArgs_other": "prijíma {{least}} až {{count}} argumentov, počet prijatých: {{received}}",
+    "unauthenticated": "{{message}}; pripojte sa pomocou adresy URL, ktorú zobrazí Swipt › Vývojár alebo \"swipt driver\": swipt device add {{url}}",
+    "unimplemented": "Apka Swipt na adrese {{url}} nemá tento príkaz; aktualizujte ju.",
+    "unknownCommand": "neznámy príkaz {{name}} pre {{parent}}",
+    "unknownOption": "{{option}} nie je možnosť príkazu {{command}}.",
+    "unreachable": "Apka Swipt na adrese {{url}} je nedostupná: {{message}}",
+    "usage": "použitie: {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "Odstrániť všetky dátové súbory a ponechať dátový adresár"
+      },
+      "list": {
+        "description": "Vypísať dátové súbory",
+        "recursive": "zahrnúť podadresáre"
+      },
+      "read": {
+        "description": "Prečítať dátový súbor alebo adresár",
+        "output": "cieľ",
+        "saved_few": "uložené {{count}} súbory do {{path}}",
+        "saved_many": "uloženého {{count}} súboru do {{path}}",
+        "saved_one": "uložený {{count}} súbor do {{path}}",
+        "saved_other": "uložených {{count}} súborov do {{path}}"
+      },
+      "remove": {
+        "description": "Odstrániť dátový súbor",
+        "recursive": "zahrnúť obsah adresára"
+      },
+      "replDescription": "Spravovať súbory v dátovom adresári REPL",
+      "swipletDescription": "Spravovať súbory v dátovom adresári Swiplet",
+      "write": {
+        "description": "Zapísať dátový súbor"
+      }
+    },
+    "description": "Rozhranie príkazového riadka Swipt",
+    "device": {
+      "add": {
+        "description": "Pridať zariadenie podľa adresy URL; je to potrebné, ak je vzdialené alebo vyžaduje token"
+      },
+      "description": "Spravovať zariadenia a čítať ich záznamy",
+      "list": {
+        "description": "Vypísať zariadenia a pridať tie, ktoré sa našli v lokálnej sieti"
+      },
+      "logs": {
+        "count": "počet predchádzajúcich záznamov (predvolene 100)",
+        "description": "Vypísať záznamy",
+        "follow": "sledovať nové záznamy",
+        "invalidDuration": "neplatný argument {{value}} pre {{option}}: musí to byť trvanie, napríklad 30s alebo 1m30s",
+        "invalidLevel": "--level musí byť error, warn, info alebo debug",
+        "invalidNumber": "neplatný argument {{value}} pre {{option}}: musí to byť číslo",
+        "level": "minimálna úroveň (predvolene info)",
+        "since": "maximálny vek záznamov",
+        "swiplet": "ID Swiplet"
+      },
+      "remove": {
+        "description": "Zabudnúť zariadenie"
+      },
+      "stop": {
+        "description": "Prestať poskytovať Swipt API",
+        "stopped": "zastavené"
+      }
+    },
+    "driver": {
+      "description": "Poskytovať Swipt API a MCP pre zariadenie z tohto počítača",
+      "details": "Zariadenie môže naraz ovládať len jedna strana: apka Swipt na ňom alebo ovládač na jednom počítači.",
+      "passcode": "kód na automatické odomykanie zariadenia; ak ho necháte prázdny, automatické odomykanie sa vypne",
+      "randomToken": "vyžadovať od klientov API náhodný token",
+      "token": "vyžadovať od klientov API tento token"
+    },
+    "project": {
+      "build": {
+        "description": "Zbaliť projekt do dist/<swiplet.id>.swiplet"
+      },
+      "create": {
+        "description": "Vytvoriť projekt Swiplet v novom alebo prázdnom adresári",
+        "notEmpty": "Adresár {{directory}} nie je prázdny."
+      },
+      "deploy": {
+        "description": "Zostaviť projekt a nainštalovať ho do zariadenia"
+      },
+      "description": "Vytvárať, zostavovať a nasadzovať projekty Swiplet",
+      "develop": {
+        "deployed": "zostavené a nasadené za {{elapsed}}; sledovanie adresára {{directory}}",
+        "description": "Zostaviť a nainštalovať projekt Swiplet a priebežne sledovať jeho zmeny",
+        "quiet": "bez záznamov",
+        "unchanged": "zostavené za {{elapsed}}; nič sa nezmenilo"
+      },
+      "source": {
+        "description": "Zhromaždiť zostavené Swiplety do dist/ so súborom swiplets.json",
+        "duplicateID": "{{id}} je súčasne {{first}} aj {{second}}",
+        "invalidIcon": "\"source.icon\" v package.json musí obsahovať symbol a môže obsahovať color.",
+        "invalidLocalizedNames": "\"source.localizedNames\" v package.json musí priraďovať názvy k jazykom.",
+        "invalidURL": "\"source.url\" v package.json nie je absolútna adresa URL.",
+        "noWorkspaces": "package.json neuvádza žiadne pracovné priestory so Swipletmi; zadajte Swiplety, ktoré sa majú zahrnúť do zoznamu.",
+        "notBuilt": "{{file}} chýba; najprv zostavte {{directory}}."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "Vypísať deklarácie TypeScript pre globálne premenné a moduly"
+      },
+      "dataDirectory": "{{path}} označuje dátový adresár REPL; uložte ho pomocou --output DIRECTORY",
+      "description": "Spustiť JavaScript v relácii REPL na zariadení",
+      "directory": "{{path}} je adresár v dátovom adresári REPL; uložte ho pomocou --output DIRECTORY",
+      "reset": {
+        "description": "Resetovať reláciu"
+      },
+      "run": {
+        "arguments": "Prvý argument je FILE, ak označuje existujúci súbor, inak je to CODE; možnosti sa uvádzajú pred ním.",
+        "description": "Spustiť výraz alebo program JavaScript na zariadení",
+        "details": "CODE je výraz, ktorého hodnota sa vypíše. FILE alebo štandardný vstup zadaný ako - alebo bez argumentu je program a vypíše sa iba jeho výstup do konzoly.",
+        "extraArguments": "{{argument}} nie je súbor a CODE neprijíma ARG.",
+        "images": "adresár obrázkov (predvolene nový dočasný adresár)"
+      }
+    },
+    "sideload": {
+      "description": "Nainštalovať Swipt cez sideload",
+      "install": {
+        "description": "Nainštalovať Swipt",
+        "force": "nainštalovať cez rovnakú alebo novšiu zostavu"
+      },
+      "passcode": "nastaviť automatické odomykanie s týmto kódom",
+      "setup": {
+        "description": "Nastaviť Swipt"
+      },
+      "uninstall": {
+        "description": "Odstrániť Swipt"
+      },
+      "update": {
+        "description": "Aktualizovať Swipt alebo obnoviť jeho podpis",
+        "passcode": "odomknúť zariadenie týmto kódom"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Zavolať akciu Swiplet",
+        "input": "vstupný JSON, @FILE alebo -",
+        "invalidInput": "--input nie je JSON: {{error}}"
+      },
+      "dataDirectory": "{{path}} označuje dátový adresár Swiplet {{swiplet}}; uložte ho pomocou --output DIRECTORY",
+      "description": "Spravovať Swiplety na zariadení",
+      "directory": "{{path}} je adresár v dátovom adresári Swiplet {{swiplet}}; uložte ho pomocou --output DIRECTORY",
+      "install": {
+        "description": "Nainštalovať archív Swiplet",
+        "notFound": "Na ceste {{path}} nie je žiadny archív"
+      },
+      "list": {
+        "actions": "AKCIE",
+        "description": "Vypísať Swiplety",
+        "id": "ID",
+        "service": "SLUŽBA",
+        "status": "STAV",
+        "title": "NÁZOV",
+        "version": "VERZIA"
+      },
+      "remove": {
+        "description": "Odstrániť Swiplet",
+        "removed": "odstránený Swiplet {{name}}"
+      },
+      "service": {
+        "description": "Spravovať služby Swiplet",
+        "disable": {
+          "description": "Vypnúť službu Swiplet"
+        },
+        "enable": {
+          "description": "Zapnúť službu Swiplet"
+        },
+        "watch": {
+          "description": "Sledovať služby Swiplet"
+        },
+        "watchState": "sledovať stav"
+      },
+      "show": {
+        "description": "Zobraziť Swiplet",
+        "input": "vstup: {{schema}}",
+        "notFound": "Swiplet {{id}} neexistuje.",
+        "output": "výstup: {{schema}}",
+        "service": "služba: {{status}}"
+      }
+    },
+    "version": {
+      "description": "Vypísať verziu"
+    }
+  },
+  "connection": {
+    "added": "pridané zariadenie {{device}}",
+    "ambiguous": "Zariadení je viac: {{devices}}; vyberte jedno pomocou -d",
+    "driverNotStopped": "Ovládač na počítači {{computer}} sa nezastavil.",
+    "invalidURL": "{{text}} nie je adresa URL.",
+    "none": "Nie je k dispozícii žiadne zariadenie; zapnite Swipt › Vývojár › Lokálna sieť alebo pripojte zariadenie príkazom \"swipt device add URL\".",
+    "noneOnNetwork": "Žiadne zariadenie nezverejňuje apku Swipt v lokálnej sieti; zapnite Swipt › Vývojár › Lokálna sieť alebo pripojte zariadenie príkazom \"swipt device add URL\".",
+    "notFound": "Zariadenie {{device}} neexistuje.",
+    "notFoundHint": "Zariadenie {{device}} neexistuje; zoznam zariadení vypíše \"swipt device list\".",
+    "offline": "offline",
+    "problem": {
+      "developerModeOff": "vývojársky režim je vypnutý",
+      "deviceUnsupported": "zariadenie nie je podporované",
+      "diskImageMissing": "chýba obraz disku",
+      "diskImageMountFailed": "pripojenie obrazu disku zlyhalo",
+      "pairingRejected": "párovanie bolo odmietnuté",
+      "screenInUse": "obrazovka sa používa",
+      "unreachable": "nedostupné",
+      "vpnPeerAddressMissing": "chýba adresa protistrany VPN"
+    },
+    "removed": "odstránené zariadenie {{name}}",
+    "requiresToken": "vyžaduje token",
+    "requiresTokenHint": "Zariadenie {{device}} vyžaduje token: swipt device add {{url}}",
+    "state": {
+      "connecting": "pripájanie",
+      "failed": "zlyhalo",
+      "preparing": "príprava",
+      "running": "aktívne",
+      "stopped": "zastavené"
+    },
+    "unsupportedURL": "{{text}} nie je adresa URL typu http ani https."
+  },
+  "deploy": {
+    "installed": "nainštalované: {{id}} {{version}}",
+    "replaced": "nahradené: {{id}} {{version}}"
+  },
+  "driver": {
+    "alreadyRunning": "Ovládač už na tomto počítači beží; najprv ho zastavte.",
+    "ambiguousName": "Viac zariadení iPhone alebo iPad má názov {{name}}; vyberte jedno podľa UDID",
+    "appleMobileDeviceServiceMissing": "Služba Apple Mobile Device Service nie je spustená; nainštalujte apku Zariadenia Apple z obchodu Microsoft Store",
+    "chooseDevice": "Vyberte zariadenie",
+    "chooseDeviceHint": "Vyberte zariadenie pomocou -d NAME|UDID",
+    "connectedDevices": "{{reason}}; pripojené zariadenia iPhone a iPad:",
+    "lookingForDevices": "hľadanie zariadení",
+    "missing": "Ovládač chýba; nainštalujte ho príkazom \"npm install -g @swipt/cli --include=optional\".",
+    "nameNotFound": "Žiadny iPhone ani iPad nemá názov {{name}}",
+    "noDevice": "K tomuto počítaču nie je pripojený žiadny iPhone ani iPad a v lokálnej sieti sa žiadny nenašiel; pripojte zariadenie káblom USB a odomknite ho.",
+    "pairing": "párovanie so zariadením {{device}}",
+    "trustPrompt": "na zariadení {{device}} klepnite na Dôverovať a zadajte jeho kód, aby ste tomuto počítaču dôverovali",
+    "usbmuxdMissing": "usbmuxd nie je spustený; nainštalujte usbmuxd a spustite ho"
+  },
+  "error": "chyba: {{message}}",
+  "flags": {
+    "device": "zariadenie, ktoré sa má použiť",
+    "nightly": "použiť zostavu nightly",
+    "noSetup": "nespárovať apku Swipt, nedôverovať jej vývojárovi ani nezverejniť jej API",
+    "noSetupAPI": "nezverejniť API v lokálnej sieti",
+    "noSetupPair": "nespárovať apku Swipt",
+    "passcodeType": "pin (4 alebo 6 číslic, predvolené), numeric alebo alphanumeric",
+    "team": "ID tímu, povinné, ak ich je viac"
+  },
+  "metro": {
+    "boolean": "booleovská hodnota",
+    "contextArgument": "Argument {{index}} funkcie require.context musí byť {{expected}}",
+    "contextRegExp": "Argument {{index}} funkcie require.context musí byť literál regulárneho výrazu.",
+    "oneOf": "jedna z hodnôt {{values}}",
+    "string": "reťazec",
+    "workletsMismatch": "Projekt má react-native-worklets {{version}}, ale apka Swipt používa {{expected}}; nainštalujte react-native-worklets@{{expected}} alebo balík odstráňte."
+  },
+  "noThanks": "Nie, ďakujem",
+  "output": {
+    "navigate": "navigovať",
+    "select": "vybrať",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{status}} (od {{time}})",
+    "serviceStatus": {
+      "failed": "zlyhala",
+      "running": "spustená",
+      "starting": "spúšťanie",
+      "stopped": "zastavená",
+      "turnedOff": "vypnutá",
+      "turnedOn": "zapnutá"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "Vlastný alfanumerický kód",
+    "alphanumericDetail": "alfanumerický",
+    "empty": "Zadajte kód.",
+    "invalidAlphanumeric": "Kód môže obsahovať najviac 64 tlačiteľných znakov ASCII.",
+    "invalidNumeric": "Číselný kód môže obsahovať iba číslice.",
+    "invalidPin": "Kód typu pin má 4 alebo 6 číslic; vlastný kód vyžaduje --passcode-type numeric alebo alphanumeric",
+    "invalidType": "neplatný argument {{value}} pre --passcode-type: musí to byť {{types}}",
+    "masked": "[vstup je skrytý]",
+    "numeric": "Vlastný číselný kód",
+    "numericDetail": "číselný",
+    "pin": "4- alebo 6-miestny kód",
+    "pinDetail": "4 alebo 6 číslic",
+    "prompt": "Kód zariadenia",
+    "setUp": "Nastaviť automatické odomykanie? Apka Swipt potom bude môcť toto zariadenie odomykať sama."
+  },
+  "project": {
+    "assetConflict": "{{source}} aj {{asset}} by v Swiplete boli assets/{{name}}.",
+    "conditionalActions": "Rozšírenie definuje rôzne akcie v závislosti od available(); definujte rovnaké akcie na všetkých systémoch a available() kontrolujte vnútri run alebo akcie.",
+    "databaseAtLoad": "Databáza sa používa počas načítavania extension.js; jej použitie presuňte do run alebo do akcie.",
+    "interfaceImport": "Rozhranie počas behu importuje {{file}}; jeho typ importujte pomocou `import type`.",
+    "interfaceOnly": "{{name}} funguje len v rozhraní Swiplet.",
+    "invalidExposure": "Akcia {{action}} sa môže sprístupniť iba pre \"shortcuts\".",
+    "invalidExtension": "Predvolený export rozšírenia nie je výsledkom defineExtension.",
+    "invalidID": "\"swiplet.id\" v package.json musí obsahovať 1 až 128 malých písmen, číslic, bodiek, podčiarkovníkov a spojovníkov a začínať písmenom alebo číslicou.",
+    "invalidLocalizedNames": "\"swiplet.localizedNames\" v package.json musí priraďovať názvy k jazykom.",
+    "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" v package.json musí byť celé číslo od {{oldest}} do {{level}}, čo je úroveň API balíka @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" v package.json musí byť číslo verzie od {{version}}, čo je minimálna verzia iOS balíka @swipt/api.",
+    "invalidName": "\"swiplet.name\" v package.json musí byť neprázdny reťazec.",
+    "invalidSchema": "Schéma {{side}} akcie {{action}} neimplementuje Standard JSON Schema; použite knižnicu, ktorá ho implementuje, napríklad Zod 4.",
+    "invalidString": "\"{{field}}\" v package.json musí byť reťazec.",
+    "invalidVersionCode": "\"swiplet.versionCode\" v package.json musí byť kladné celé číslo.",
+    "missingTitle": "Akcia {{action}} potrebuje názov.",
+    "storageAtLoad": "Úložisko sa používa počas načítavania extension.js; jeho použitie presuňte do run alebo do akcie.",
+    "unprovidedModule": "Swipt neposkytuje rozšíreniam modul \"{{module}}\"; zabaľte ho do extension.js.",
+    "usedAtLoad": "{{name}} sa používa počas načítavania extension.js; použitie presuňte do run alebo do akcie."
+  },
+  "serve": {
+    "cancel": "Zrušiť",
+    "checking": "kontrola zariadenia {{device}}",
+    "conflictingTokens": "--token a --random-token nemožno použiť spolu.",
+    "invalidToken": "Token tvorí jeden alebo viac tlačiteľných znakov ASCII bez medzier.",
+    "localNetwork": "Lokálna sieť",
+    "noAutoUnlock": "Zariadenie {{device}} sa neodomyká automaticky; nastavte jeho kód pomocou --passcode. Ovládač zastavíte stlačením Ctrl-C.",
+    "quitSwipt": "Ukončiť Swipt",
+    "quittingSwipt": "ukončovanie apky Swipt na zariadení {{device}}",
+    "served": "Ovládač na počítači {{computer}} už obsluhuje zariadenie {{device}}; najprv tento ovládač zastavte.",
+    "servedPrompt": "Ovládač na počítači {{computer}} už obsluhuje zariadenie {{device}}. Zastaviť tento ovládač?",
+    "starting": "spúšťanie ovládača pre zariadenie {{device}}",
+    "stopDriver": "Zastaviť ovládač na počítači {{computer}}",
+    "stopHint": "Ovládač zastavíte stlačením Ctrl-C.",
+    "stoppingDriver": "zastavovanie ovládača na počítači {{computer}}",
+    "swiptRunning": "Ovládač nemôže ovládať zariadenie {{device}}, kým je na ňom spustená apka Swipt; najprv ukončite Swipt.",
+    "swiptRunningPrompt": "Ovládač nemôže ovládať zariadenie {{device}}, kým je na ňom spustená apka Swipt. Ukončiť Swipt?"
+  },
+  "sideload": {
+    "ambiguousTeam": "Apka Swipt je na zariadení {{device}} nainštalovaná cez sideload viacerými tímami; vyberte jeden pomocou --team ID:",
+    "certificateFailed": "V Xcode sa nepodarilo vytvoriť vývojársky certifikát pre tím {{team}}; pridajte ho v {{accounts}} › Manage Certificates ({{errors}}).",
+    "checking": "kontrola apky Swipt na zariadení {{device}}",
+    "checkingRelease": "kontrola najnovšieho vydania",
+    "chooseTeam": "Vyberte tím",
+    "chooseTeamHint": "Vyberte tím pomocou --team ID:",
+    "diskImageFailed": "nepodarilo sa pripraviť vývojársky obraz disku na zariadení {{device}}: {{error}}",
+    "downgrade": "Prejsť na staršiu verziu",
+    "downgradePrompt": "Prejsť z verzie {{version}} apky Swipt na zariadení {{device}} na staršiu verziu {{releaseVersion}}? Apka Swipt resetuje svoje dáta, keď ich staršia verzia nedokáže prečítať.",
+    "downgradeToStablePrompt": "Prejsť zo zostavy nightly {{version}} apky Swipt na zariadení {{device}} na stabilnú verziu {{releaseVersion}}? Apka Swipt resetuje svoje dáta, keď ich staršia verzia nedokáže prečítať.",
+    "downloading": "sťahovanie Swipt {{version}} ({{build}}) z vydania {{release}}",
+    "expiration": "Platnosť podpisu vyprší {{expiration}}.",
+    "installed": "{{build}} je nainštalovaný na zariadení {{device}}.",
+    "installing": "inštalácia na zariadenie {{device}}",
+    "invalidTeam": "neplatný argument {{value}} pre --team: musí to byť 10-znakové ID tímu zobrazené v {{accounts}}",
+    "laterThanRelease": "{{build}} na zariadení {{device}} je novší ako {{release}} ({{releaseBuild}}).",
+    "locked": "{{device}}: {{message}}; odomknite zariadenie alebo zadajte --passcode a potom príkaz spustite znova.",
+    "looking": "hľadanie apky Swipt na zariadeniach",
+    "needsMacOS": "Inštalácia alebo aktualizácia apky Swipt vyžaduje macOS; nainštalujte ju z Macu a potom ju tu nastavte príkazom \"swipt sideload setup\".",
+    "noAccount": "Xcode nemá žiadny účet; prihláste sa v {{accounts}} alebo vyberte tím pomocou --team ID",
+    "noAccountForTeam": "Xcode nemá účet pre tím {{team}}; prihláste sa jeho Apple účtom v {{accounts}}.",
+    "noCertificate": "Xcode nemá žiadny vývojársky certifikát; pridajte ho v {{accounts}} › Manage Certificates alebo vyberte tím pomocou --team ID",
+    "noneInstalled": "Apka Swipt nie je cez sideload nainštalovaná na žiadnom zariadení iPhone ani iPad.",
+    "noneInstalledHint": "Apka Swipt nie je cez sideload nainštalovaná na žiadnom zariadení iPhone ani iPad; nainštalujte ju príkazom \"swipt sideload install\".",
+    "notInstalled": "Apka Swipt nie je na zariadení {{device}} nainštalovaná cez sideload.",
+    "notInstalledByTeam": "Apka Swipt nie je na zariadení {{device}} nainštalovaná cez sideload tímom {{team}}.",
+    "notInstalledByTeamHint": "Apka Swipt nie je na zariadení {{device}} nainštalovaná cez sideload tímom {{team}}; nainštalujte ju príkazom \"swipt sideload install\".",
+    "notInstalledHint": "Apka Swipt nie je na zariadení {{device}} nainštalovaná cez sideload; nainštalujte ju príkazom \"swipt sideload install\".",
+    "notOnNetwork": "Zariadenie {{device}} sa v lokálnej sieti nenašlo; URL adresy jeho API nájdete v Swipt › Vývojár › Lokálna sieť.",
+    "opening": "otváranie apky Swipt na zariadení {{device}}",
+    "openingSettings": "otváranie Nastavení na zariadení {{device}}",
+    "opensAfterUnlock": "Otvorí sa po odomknutí zariadenia {{device}}.",
+    "pairingFailed": "Párovanie zlyhalo, preto sa apka Swipt namiesto toho spáruje v Nastaveniach: {{error}}",
+    "preparingDiskImage": "príprava vývojárskeho obrazu disku na zariadení {{device}}",
+    "preparingSigning": "príprava podpisovania apky Swipt s tímom {{team}} cez Xcode",
+    "removed": "odstránené zo zariadenia {{device}}: {{build}}",
+    "removing": "odstraňovanie apky Swipt zo zariadenia {{device}}",
+    "renewalNeedsDowngrade": "{{build}} na zariadení {{device}} potrebuje nový podpis, ale {{release}} ({{releaseBuild}}) je staršie vydanie; použite --nightly alebo prejdite na staršiu verziu príkazom \"swipt sideload install --force\".",
+    "resigning": "opätovné podpisovanie apky Swipt",
+    "running": "{{app}} beží.",
+    "settingUpAutoUnlock": "nastavovanie automatického odomykania",
+    "trusted": "Vývojár {{developer}} je dôveryhodný.",
+    "trusting": "nastavovanie dôvery pre vývojára {{developer}} v Nastaveniach",
+    "unlockPrompt": "Odomknite zariadenie, aby ste mohli pokračovať.",
+    "unlocking": "odomykanie zariadenia",
+    "untrusted": "Jej vývojárovi zatiaľ nedôverujete; dôverujte mu na stránke Nastavení otvorenej na zariadení {{device}} a potom otvorte apku Swipt.",
+    "upToDate": "{{build}} na zariadení {{device}} už zodpovedá vydaniu {{release}}.",
+    "updated": "{{build}} je aktualizovaný na zariadení {{device}}.",
+    "waiting": "čakanie na zariadenie {{device}}",
+    "xcodeMissing": "xcodebuild vyžaduje Xcode; nainštalujte ho a vyberte pomocou xcode-select",
+    "xcodebuildMissing": "xcodebuild chýba; nainštalujte Xcode."
+  }
+}

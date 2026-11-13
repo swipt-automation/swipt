@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import {
   columns,
   serviceEnabledText,
@@ -35,12 +35,12 @@ const listSwiplets = (context: Context<{ device?: string }>) =>
     console.log(
       columns([
         [
-          tr("ID"),
-          tr("TITLE"),
-          tr("VERSION"),
-          tr("ACTIONS"),
-          tr("SERVICE"),
-          tr("STATUS"),
+          t("commands.swiplet.list.id"),
+          t("commands.swiplet.list.title"),
+          t("commands.swiplet.list.version"),
+          t("commands.swiplet.list.actions"),
+          t("commands.swiplet.list.service"),
+          t("commands.swiplet.list.status"),
         ],
         ...rows,
       ]),
@@ -49,7 +49,7 @@ const listSwiplets = (context: Context<{ device?: string }>) =>
 
 export const list = defineCommand({
   name: "list",
-  short: tr("List the swiplets"),
+  short: t("commands.swiplet.list.description"),
   args: [0, 0],
   run: listSwiplets,
 });

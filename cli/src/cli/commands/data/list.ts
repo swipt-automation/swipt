@@ -1,4 +1,4 @@
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { columns, dateTime } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
@@ -35,10 +35,10 @@ export const list = (operand: string, target: ResolveTarget) => {
   return defineCommand({
     name: "list",
     use: `list ${operand}[PATH]`,
-    short: tr("List data files"),
+    short: t("commands.data.list.description"),
     args: [before, before + 1],
     options: {
-      recursive: { type: "boolean", help: tr("include subdirectories") },
+      recursive: { type: "boolean", help: t("commands.data.list.recursive") },
     },
     run: listFiles(target),
   });

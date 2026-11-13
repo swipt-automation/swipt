@@ -7,7 +7,7 @@ import Bonjour from "bonjour-service";
 import type { Context } from "./cli/command";
 import { type Client, Code, RpcError, UsageError, open } from "./client";
 import { configDirectory } from "./directories";
-import { tr } from "./i18n";
+import { t } from "./i18n";
 import { multicastOptions } from "./mdns";
 import { columns, errorMessage } from "./output";
 import {
@@ -67,13 +67,13 @@ function parseURL(text: string) {
   try {
     parsed = new URL(text.includes("://") ? text : `http://${text}`);
   } catch {
-    throw new UsageError(tr("{text} isn't a URL.", { text }));
+    throw new UsageError(t("connection.invalidURL", { text }));
   }
   if (
     parsed.hostname === "" ||
     (parsed.protocol !== "http:" && parsed.protocol !== "https:")
   ) {
-    throw new UsageError(tr("{text} isn't an http or https URL.", { text }));
+    throw new UsageError(t("connection.unsupportedURL", { text }));
   }
   let token;
   try {
@@ -191,7 +191,7 @@ export async function stopDriver(
       throw error;
     }
     throw new Error(
-      tr("The driver on {computer} didn't stop.", {
+      t("connection.driverNotStopped", {
         computer: new URL(url).hostname,
       }),
     );
@@ -219,7 +219,7 @@ export async function runningSwipt(name: string, signal: AbortSignal) {
       throw error;
     }
     if (error.code === Code.Unauthenticated) {
-      console.error(tr("error: {message}", { message: error.message }));
+      console.error(t("error", { message: error.message }));
     }
     return undefined;
   }
@@ -275,7 +275,7 @@ async function discover(signal: AbortSignal, stored: Devices, until?: Enough) {
 }
 
 const requiresToken = (found: Published) =>
-  tr("{device} requires a token: swipt device add {url}", {
+  t("connection.requiresTokenHint", {
     device: found.name,
     url: withToken(found.url),
   });
@@ -299,7 +299,7 @@ export async function attach(
       ).find((it) => sameName(it.name, name));
       if (!found) {
         throw new Error(
-          tr('There is no device {device}; "swipt device list" lists them.', {
+          t("connection.notFoundHint", {
             device: name,
           }),
         );
@@ -321,15 +321,11 @@ export async function attach(
       if (locked.length > 0) {
         throw new Error(locked.map(requiresToken).join("\n"));
       }
-      throw new Error(
-        tr(
-          'There is no device; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL".',
-        ),
-      );
+      throw new Error(t("connection.none"));
     }
     if (names.length > 1) {
       throw new Error(
-        tr("There is more than one device: {devices}; choose one with -d", {
+        t("connection.ambiguous", {
           devices: names.join(", "),
         }),
       );
@@ -341,25 +337,33 @@ export async function attach(
 }
 
 const connectionStates: Partial<Record<DeviceConnectionState, string>> = {
-  [DeviceConnectionState.STOPPED]: tr("stopped", {}, "device connection"),
-  [DeviceConnectionState.CONNECTING]: tr("connecting", {}, "device connection"),
-  [DeviceConnectionState.PREPARING]: tr("preparing", {}, "device connection"),
-  [DeviceConnectionState.RUNNING]: tr("running", {}, "device connection"),
-  [DeviceConnectionState.FAILED]: tr("failed", {}, "device connection"),
+  [DeviceConnectionState.STOPPED]: t("connection.state.stopped"),
+  [DeviceConnectionState.CONNECTING]: t("connection.state.connecting"),
+  [DeviceConnectionState.PREPARING]: t("connection.state.preparing"),
+  [DeviceConnectionState.RUNNING]: t("connection.state.running"),
+  [DeviceConnectionState.FAILED]: t("connection.state.failed"),
 };
 
 const connectionProblems: Partial<Record<DeviceConnectionProblem, string>> = {
-  [DeviceConnectionProblem.UNREACHABLE]: tr("unreachable"),
-  [DeviceConnectionProblem.PAIRING_REJECTED]: tr("pairing rejected"),
-  [DeviceConnectionProblem.DEVELOPER_MODE_OFF]: tr("developer mode off"),
-  [DeviceConnectionProblem.DISK_IMAGE_MISSING]: tr("disk image missing"),
-  [DeviceConnectionProblem.DISK_IMAGE_MOUNT_FAILED]: tr(
-    "disk image mount failed",
+  [DeviceConnectionProblem.UNREACHABLE]: t("connection.problem.unreachable"),
+  [DeviceConnectionProblem.PAIRING_REJECTED]: t(
+    "connection.problem.pairingRejected",
   ),
-  [DeviceConnectionProblem.DEVICE_UNSUPPORTED]: tr("device unsupported"),
-  [DeviceConnectionProblem.SCREEN_IN_USE]: tr("screen in use"),
-  [DeviceConnectionProblem.VPN_PEER_ADDRESS_MISSING]: tr(
-    "VPN peer address missing",
+  [DeviceConnectionProblem.DEVELOPER_MODE_OFF]: t(
+    "connection.problem.developerModeOff",
+  ),
+  [DeviceConnectionProblem.DISK_IMAGE_MISSING]: t(
+    "connection.problem.diskImageMissing",
+  ),
+  [DeviceConnectionProblem.DISK_IMAGE_MOUNT_FAILED]: t(
+    "connection.problem.diskImageMountFailed",
+  ),
+  [DeviceConnectionProblem.DEVICE_UNSUPPORTED]: t(
+    "connection.problem.deviceUnsupported",
+  ),
+  [DeviceConnectionProblem.SCREEN_IN_USE]: t("connection.problem.screenInUse"),
+  [DeviceConnectionProblem.VPN_PEER_ADDRESS_MISSING]: t(
+    "connection.problem.vpnPeerAddressMissing",
   ),
 };
 
@@ -393,10 +397,10 @@ async function probe(
     };
   } catch (error) {
     if (error instanceof RpcError && error.code === Code.Unauthenticated) {
-      return { cells: [tr("requires a token")] };
+      return { cells: [t("connection.requiresToken")] };
     }
     return {
-      cells: [tr("offline")],
+      cells: [t("connection.offline")],
       failure: signal.aborted ? undefined : errorMessage(error),
     };
   }
@@ -415,11 +419,7 @@ export async function list({ signal }: Pick<Context, "signal">) {
   );
   const names = Object.keys(stored).sort((a, b) => a.localeCompare(b));
   if (names.length === 0 && locked.length === 0) {
-    console.error(
-      tr(
-        'No device publishes Swipt on the local network; turn on Swipt › Developer › Local Network, or connect one with "swipt device add URL".',
-      ),
-    );
+    console.error(t("connection.noneOnNetwork"));
     return;
   }
   const late = AbortSignal.any([signal, AbortSignal.timeout(browseLimit)]);
@@ -437,7 +437,7 @@ export async function list({ signal }: Pick<Context, "signal">) {
           parseURL(stored[name]).url,
           ...cells,
         ]),
-        ...locked.map((it) => [it.name, it.url, tr("requires a token")]),
+        ...locked.map((it) => [it.name, it.url, t("connection.requiresToken")]),
       ].sort((a, b) => a[0].localeCompare(b[0])),
     ),
   );
@@ -468,16 +468,16 @@ export async function add(
   }
   stored[name] = context.args[0];
   save(stored);
-  console.log(tr("added {device}", { device: name }));
+  console.log(t("connection.added", { device: name }));
 }
 
 export function remove({ args }: Pick<Context, "args">) {
   const stored = load();
   const name = storedName(stored, label(args[0]));
   if (name === undefined) {
-    throw new Error(tr("There is no device {device}.", { device: args[0] }));
+    throw new Error(t("connection.notFound", { device: args[0] }));
   }
   delete stored[name];
   save(stored);
-  console.log(tr("removed {name}", { name }, "device"));
+  console.log(t("connection.removed", { name }));
 }

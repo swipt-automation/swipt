@@ -1,0 +1,397 @@
+{
+  "availability": {
+    "advice": "available() वापरून ते तपासा, ते वापरणारा कोड @available ने चिन्हांकित करा, किंवा package.json मधील \"swiplet.minimumAPILevel\" किंवा \"swiplet.minimumIOSVersion\" वाढवा.",
+    "apiLevel": "API स्तर {{level}}",
+    "entryNeeds": "{{location}}: {{name}} हा Swiplet चा एंट्री पॉइंट आहे आणि त्यासाठी {{requirement}} आवश्यक आहे; package.json मधील \"swiplet.minimumAPILevel\" किंवा \"swiplet.minimumIOSVersion\" वाढवा.",
+    "importNeeds": "{{location}}: {{name}} इंपोर्ट करण्यासाठी {{requirement}} आवश्यक आहे; package.json मधील \"swiplet.minimumAPILevel\" किंवा \"swiplet.minimumIOSVersion\" वाढवा.",
+    "invalidEntry": "{{location}}: @available मध्ये \"{{entry}}\" आहे; ते स्वल्पविरामांनी वेगळे केलेले \"apiLevel <level>\" आणि \"iOS <version>\" स्वीकारते.",
+    "needs": "{{location}}: {{name}} साठी {{requirement}} आवश्यक आहे.",
+    "repeatedEntry": "{{location}}: @available मध्ये {{kind}} दोनदा दिलेले आहे."
+  },
+  "cli": {
+    "commands": "कमांड :",
+    "exactArgs_one": "{{count}} आर्ग्युमेंट आवश्यक आहे, {{received}} मिळाले",
+    "exactArgs_other": "{{count}} आर्ग्युमेंट आवश्यक आहेत, {{received}} मिळाले",
+    "help": "मदत",
+    "helpHint": "वापराच्या माहितीसाठी \"swipt help\" चालवा.",
+    "minimumArgs_one": "किमान {{count}} आर्ग्युमेंट आवश्यक आहे, {{received}} मिळाले",
+    "minimumArgs_other": "किमान {{count}} आर्ग्युमेंट आवश्यक आहेत, {{received}} मिळाले",
+    "missingCommand": "कमांड दिलेली नाही.",
+    "options": "पर्याय :",
+    "rangeArgs_one": "{{least}} ते {{count}} आर्ग्युमेंट आवश्यक आहे, {{received}} मिळाले",
+    "rangeArgs_other": "{{least}} ते {{count}} आर्ग्युमेंट आवश्यक आहेत, {{received}} मिळाले",
+    "unauthenticated": "{{message}}; Swipt › डेव्हलपर किंवा \"swipt driver\" दाखवत असलेली URL वापरून कनेक्ट करा : swipt device add {{url}}",
+    "unimplemented": "{{url}} येथील Swipt मध्ये ही कमांड नाही; Swipt अपडेट करा.",
+    "unknownCommand": "{{parent}} साठी {{name}} ही कमांड अज्ञात आहे",
+    "unknownOption": "{{option}} हा {{command}} चा पर्याय नाही.",
+    "unreachable": "{{url}} येथील Swipt पर्यंत पोहोचता येत नाही : {{message}}",
+    "usage": "वापर : {{usage}}"
+  },
+  "commands": {
+    "data": {
+      "clear": {
+        "description": "डेटा डिरेक्टरी ठेवून सर्व डेटा फाइल काढून टाका"
+      },
+      "list": {
+        "description": "डेटा फाइलची सूची दाखवा",
+        "recursive": "उपडिरेक्टरी समाविष्ट करा"
+      },
+      "read": {
+        "description": "डेटा फाइल किंवा डिरेक्टरी वाचा",
+        "output": "गंतव्यस्थान",
+        "saved_one": "{{count}} फाइल {{path}} येथे सेव्ह केली",
+        "saved_other": "{{count}} फाइल {{path}} येथे सेव्ह केल्या"
+      },
+      "remove": {
+        "description": "डेटा फाइल काढून टाका",
+        "recursive": "डिरेक्टरीमधील कंटेंट समाविष्ट करा"
+      },
+      "replDescription": "REPL च्या डेटा डिरेक्टरीमधील फाइल व्यवस्थापित करा",
+      "swipletDescription": "Swiplet च्या डेटा डिरेक्टरीमधील फाइल व्यवस्थापित करा",
+      "write": {
+        "description": "डेटा फाइल लिहा"
+      }
+    },
+    "description": "Swipt CLI",
+    "device": {
+      "add": {
+        "description": "URL वापरून डिव्हाइस जोडा; ते रिमोट असल्यास किंवा त्याला टोकन आवश्यक असल्यास हे गरजेचे आहे"
+      },
+      "description": "डिव्हाइस व्यवस्थापित करा आणि त्यांचे लॉग वाचा",
+      "list": {
+        "description": "डिव्हाइसची सूची दाखवा आणि स्थानिक नेटवर्कवर सापडलेली डिव्हाइस जोडा"
+      },
+      "logs": {
+        "count": "मागील नोंदींची संख्या (डीफॉल्ट 100)",
+        "description": "लॉग प्रिंट करा",
+        "follow": "नवीन नोंदी दाखवत राहा",
+        "invalidDuration": "{{option}} साठी {{value}} हा अवैध आर्ग्युमेंट आहे : तो 30s किंवा 1m30s असा कालावधी असावा",
+        "invalidLevel": "--level हे error, warn, info किंवा debug असावे",
+        "invalidNumber": "{{option}} साठी {{value}} हा अवैध आर्ग्युमेंट आहे : ती संख्या असावी",
+        "level": "किमान स्तर (डीफॉल्ट info)",
+        "since": "कमाल कालावधी",
+        "swiplet": "Swiplet ID"
+      },
+      "remove": {
+        "description": "डिव्हाइस विसरा"
+      },
+      "stop": {
+        "description": "Swipt API पुरवणे थांबवा",
+        "stopped": "थांबले"
+      }
+    },
+    "driver": {
+      "description": "या संगणकावरून डिव्हाइससाठी Swipt API आणि MCP पुरवा",
+      "details": "एका वेळी फक्त एकच पक्ष डिव्हाइस नियंत्रित करू शकतो : डिव्हाइसवरील Swipt, किंवा एका संगणकावरील ड्रायव्हर.",
+      "passcode": "डिव्हाइस स्वयंचलितपणे अनलॉक करण्यासाठी पासकोड; रिकामा ठेवल्यास हे बंद होते",
+      "randomToken": "API क्लायंटकडून यादृच्छिक टोकन मागा",
+      "token": "API क्लायंटकडून हे टोकन मागा"
+    },
+    "project": {
+      "build": {
+        "description": "प्रोजेक्ट dist/<swiplet.id>.swiplet मध्ये बंडल करा"
+      },
+      "create": {
+        "description": "नवीन किंवा रिकाम्या डिरेक्टरीमध्ये Swiplet प्रोजेक्ट तयार करा",
+        "notEmpty": "{{directory}} रिकामी नाही."
+      },
+      "deploy": {
+        "description": "प्रोजेक्ट बिल्ड करा आणि डिव्हाइसवर इंस्टॉल करा"
+      },
+      "description": "Swiplet प्रोजेक्ट तयार करा, बिल्ड करा आणि डिप्लॉय करा",
+      "develop": {
+        "deployed": "{{elapsed}} मध्ये बिल्ड आणि डिप्लॉय झाले; {{directory}} वर लक्ष ठेवले जात आहे",
+        "description": "Swiplet प्रोजेक्ट बिल्ड आणि इंस्टॉल करा, आणि तो बदलत असताना त्याचा मागोवा घ्या",
+        "quiet": "लॉगशिवाय",
+        "unchanged": "{{elapsed}} मध्ये बिल्ड झाले; काहीही बदलले नाही"
+      },
+      "source": {
+        "description": "बिल्ड केलेले Swiplet swiplets.json सह dist/ मध्ये गोळा करा",
+        "duplicateID": "{{id}} हे {{first}} आणि {{second}} दोन्ही आहे",
+        "invalidIcon": "package.json मधील \"source.icon\" मध्ये symbol असणे आवश्यक आहे आणि color असू शकतो.",
+        "invalidLocalizedNames": "package.json मधील \"source.localizedNames\" ने भाषा आणि नावे मॅप करणे आवश्यक आहे.",
+        "invalidURL": "package.json मधील \"source.url\" ही ॲब्सोल्यूट URL नाही.",
+        "noWorkspaces": "package.json मध्ये Swiplet असलेल्या वर्कस्पेसची सूची नाही; सूचीत दाखवायच्या Swiplet ची नावे द्या.",
+        "notBuilt": "{{file}} नाही; आधी {{directory}} बिल्ड करा."
+      }
+    },
+    "repl": {
+      "api": {
+        "description": "ग्लोबल आणि मॉड्यूलचे TypeScript डिक्लरेशन प्रिंट करा"
+      },
+      "dataDirectory": "{{path}} हे REPL च्या डेटा डिरेक्टरीकडे निर्देश करते; --output DIRECTORY वापरून ती सेव्ह करा",
+      "description": "डिव्हाइसवरील REPL सेशनमध्ये JavaScript चालवा",
+      "directory": "{{path}} ही REPL च्या डेटा डिरेक्टरीमधील डिरेक्टरी आहे; --output DIRECTORY वापरून ती सेव्ह करा",
+      "reset": {
+        "description": "सेशन रीसेट करा"
+      },
+      "run": {
+        "arguments": "पहिला आर्ग्युमेंट विद्यमान फाइलचे नाव असल्यास तो FILE असतो, अन्यथा CODE; पर्याय त्याच्या आधी द्या.",
+        "description": "डिव्हाइसवर JavaScript एक्सप्रेशन किंवा प्रोग्राम चालवा",
+        "details": "CODE हे एक्सप्रेशन आहे, ज्याचे मूल्य प्रिंट केले जाते. FILE, किंवा - म्हणून दिलेले अथवा आर्ग्युमेंट न देता मिळालेले स्टँडर्ड इनपुट, हा प्रोग्राम असतो आणि फक्त त्याचे कन्सोल आउटपुट प्रिंट केले जाते.",
+        "extraArguments": "{{argument}} ही फाइल नाही, आणि CODE कोणताही ARG स्वीकारत नाही.",
+        "images": "इमेज डिरेक्टरी (डीफॉल्ट : नवीन तात्पुरती डिरेक्टरी)"
+      }
+    },
+    "sideload": {
+      "description": "Swipt साइडलोड करा",
+      "install": {
+        "description": "Swipt इंस्टॉल करा",
+        "force": "समान किंवा नवीन बिल्डवर इंस्टॉल करा"
+      },
+      "passcode": "या पासकोडने स्वयंचलित अनलॉक सेट अप करा",
+      "setup": {
+        "description": "Swipt सेट अप करा"
+      },
+      "uninstall": {
+        "description": "Swipt काढून टाका"
+      },
+      "update": {
+        "description": "Swipt अपडेट किंवा रिन्यू करा",
+        "passcode": "या पासकोडने डिव्हाइस अनलॉक करा"
+      }
+    },
+    "swiplet": {
+      "call": {
+        "description": "Swiplet क्रिया कॉल करा",
+        "input": "इनपुट JSON, @FILE किंवा -",
+        "invalidInput": "--input हे JSON नाही : {{error}}"
+      },
+      "dataDirectory": "{{path}} हे {{swiplet}} च्या डेटा डिरेक्टरीकडे निर्देश करते; --output DIRECTORY वापरून ती सेव्ह करा",
+      "description": "डिव्हाइसवरील Swiplet व्यवस्थापित करा",
+      "directory": "{{path}} ही {{swiplet}} च्या डेटा डिरेक्टरीमधील डिरेक्टरी आहे; --output DIRECTORY वापरून ती सेव्ह करा",
+      "install": {
+        "description": "Swiplet अर्काइव्ह इंस्टॉल करा",
+        "notFound": "{{path}} येथे कोणतेही अर्काइव्ह नाही"
+      },
+      "list": {
+        "actions": "क्रिया",
+        "description": "Swiplet ची सूची दाखवा",
+        "id": "ID",
+        "service": "सेवा",
+        "status": "स्थिती",
+        "title": "शीर्षक",
+        "version": "आवृत्ती"
+      },
+      "remove": {
+        "description": "Swiplet काढून टाका",
+        "removed": "{{name}} काढून टाकले"
+      },
+      "service": {
+        "description": "Swiplet सेवा व्यवस्थापित करा",
+        "disable": {
+          "description": "Swiplet सेवा बंद करा"
+        },
+        "enable": {
+          "description": "Swiplet सेवा सुरू करा"
+        },
+        "watch": {
+          "description": "Swiplet सेवांवर लक्ष ठेवा"
+        },
+        "watchState": "स्थितीवर लक्ष ठेवा"
+      },
+      "show": {
+        "description": "Swiplet दाखवा",
+        "input": "इनपुट : {{schema}}",
+        "notFound": "{{id}} हे Swiplet नाही.",
+        "output": "आउटपुट : {{schema}}",
+        "service": "सेवा : {{status}}"
+      }
+    },
+    "version": {
+      "description": "आवृत्ती प्रिंट करा"
+    }
+  },
+  "connection": {
+    "added": "{{device}} जोडले",
+    "ambiguous": "एकापेक्षा जास्त डिव्हाइस आहेत : {{devices}}; -d वापरून एक निवडा",
+    "driverNotStopped": "{{computer}} वरील ड्रायव्हर थांबला नाही.",
+    "invalidURL": "{{text}} ही URL नाही.",
+    "none": "कोणतेही डिव्हाइस नाही; Swipt › डेव्हलपर › स्थानिक नेटवर्क सुरू करा, किंवा \"swipt device add URL\" वापरून डिव्हाइस कनेक्ट करा.",
+    "noneOnNetwork": "स्थानिक नेटवर्कवर कोणतेही डिव्हाइस Swipt प्रकाशित करत नाही; Swipt › डेव्हलपर › स्थानिक नेटवर्क सुरू करा, किंवा \"swipt device add URL\" वापरून डिव्हाइस कनेक्ट करा.",
+    "notFound": "{{device}} हे डिव्हाइस नाही.",
+    "notFoundHint": "{{device}} हे डिव्हाइस नाही; \"swipt device list\" डिव्हाइसची सूची दाखवते.",
+    "offline": "ऑफलाइन",
+    "problem": {
+      "developerModeOff": "डेव्हलपर मोड बंद आहे",
+      "deviceUnsupported": "डिव्हाइस समर्थित नाही",
+      "diskImageMissing": "डिस्क इमेज नाही",
+      "diskImageMountFailed": "डिस्क इमेज माउंट करता आली नाही",
+      "pairingRejected": "पेअरिंग नाकारले",
+      "screenInUse": "स्क्रीन वापरात आहे",
+      "unreachable": "पोहोचता येत नाही",
+      "vpnPeerAddressMissing": "VPN पीअर ॲड्रेस नाही"
+    },
+    "removed": "{{name}} काढून टाकले",
+    "requiresToken": "टोकन आवश्यक आहे",
+    "requiresTokenHint": "{{device}} ला टोकन आवश्यक आहे : swipt device add {{url}}",
+    "state": {
+      "connecting": "कनेक्ट होत आहे",
+      "failed": "अयशस्वी",
+      "preparing": "तयार होत आहे",
+      "running": "सक्रिय",
+      "stopped": "थांबले"
+    },
+    "unsupportedURL": "{{text}} ही http किंवा https URL नाही."
+  },
+  "deploy": {
+    "installed": "{{id}} {{version}} इंस्टॉल केले",
+    "replaced": "{{id}} {{version}} बदलले"
+  },
+  "driver": {
+    "alreadyRunning": "या संगणकावर ड्रायव्हर आधीच सुरू आहे; आधी तो थांबवा.",
+    "ambiguousName": "{{name}} नावाची एकापेक्षा जास्त iPhone किंवा iPad डिव्हाइस आहेत; UDID वापरून एक निवडा",
+    "appleMobileDeviceServiceMissing": "Apple Mobile Device Service चालू नाही; Microsoft Store मधून Apple Devices ॲप इंस्टॉल करा",
+    "chooseDevice": "डिव्हाइस निवडा",
+    "chooseDeviceHint": "-d NAME|UDID वापरून डिव्हाइस निवडा",
+    "connectedDevices": "{{reason}}; कनेक्ट केलेली iPhone आणि iPad डिव्हाइस :",
+    "lookingForDevices": "डिव्हाइस शोधली जात आहेत",
+    "missing": "ड्रायव्हर सापडला नाही; \"npm install -g @swipt/cli --include=optional\" वापरून तो इंस्टॉल करा.",
+    "nameNotFound": "{{name}} नावाचे कोणतेही iPhone किंवा iPad डिव्हाइस नाही",
+    "noDevice": "या संगणकाशी कोणतेही iPhone किंवा iPad डिव्हाइस कनेक्ट केलेले नाही किंवा स्थानिक नेटवर्कवर आढळले नाही; USB केबलने डिव्हाइस कनेक्ट करा आणि ते अनलॉक करा.",
+    "pairing": "{{device}} शी पेअर केले जात आहे",
+    "trustPrompt": "{{device}} वर “विश्वास ठेवा” वर टॅप करा आणि या संगणकावर विश्वास ठेवण्यासाठी त्याचा पासकोड एंटर करा",
+    "usbmuxdMissing": "usbmuxd चालू नाही; usbmuxd इंस्टॉल करा आणि ते सुरू करा"
+  },
+  "error": "त्रुटी : {{message}}",
+  "flags": {
+    "device": "वापरायचे डिव्हाइस",
+    "nightly": "nightly बिल्ड वापरा",
+    "noSetup": "Swipt पेअर करू नका, त्याच्या डेव्हलपरवर विश्वास ठेवू नका आणि त्याचे API प्रकाशित करू नका",
+    "noSetupAPI": "स्थानिक नेटवर्कवर API प्रकाशित करू नका",
+    "noSetupPair": "Swipt पेअर करू नका",
+    "passcodeType": "pin (4 किंवा 6 अंक, डीफॉल्ट), numeric किंवा alphanumeric",
+    "team": "टीम ID, एकापेक्षा जास्त असल्यास आवश्यक"
+  },
+  "metro": {
+    "boolean": "बूलियन",
+    "contextArgument": "require.context चा आर्ग्युमेंट {{index}} हा {{expected}} असणे आवश्यक आहे",
+    "contextRegExp": "require.context चा आर्ग्युमेंट {{index}} हा रेग्युलर एक्सप्रेशन लिटरल असणे आवश्यक आहे.",
+    "oneOf": "{{values}} पैकी एक",
+    "string": "स्ट्रिंग",
+    "workletsMismatch": "प्रोजेक्टमध्ये react-native-worklets {{version}} आहे, पण Swipt {{expected}} चालवते; react-native-worklets@{{expected}} इंस्टॉल करा किंवा ते काढून टाका."
+  },
+  "noThanks": "नको, धन्यवाद",
+  "output": {
+    "navigate": "हलवा",
+    "select": "निवडा",
+    "service": "{{enabled}}, {{status}}",
+    "serviceSince": "{{enabled}}, {{time}} पासून {{status}}",
+    "serviceStatus": {
+      "failed": "अयशस्वी",
+      "running": "सुरू आहे",
+      "starting": "सुरू होत आहे",
+      "stopped": "थांबली",
+      "turnedOff": "अक्षम",
+      "turnedOn": "सक्षम"
+    }
+  },
+  "passcode": {
+    "alphanumeric": "कस्टम अल्फान्युमेरिक कोड",
+    "alphanumericDetail": "अल्फान्युमेरिक",
+    "empty": "पासकोड एंटर करा.",
+    "invalidAlphanumeric": "पासकोडमध्ये जास्तीत जास्त 64 प्रिंट करण्यायोग्य ASCII वर्ण असतात.",
+    "invalidNumeric": "संख्यात्मक पासकोडमध्ये फक्त अंक असतात.",
+    "invalidPin": "pin पासकोड 4 किंवा 6 अंकी असतो; कस्टम पासकोडसाठी --passcode-type numeric किंवा alphanumeric आवश्यक आहे",
+    "invalidType": "--passcode-type साठी {{value}} हा अवैध आर्ग्युमेंट आहे : तो {{types}} असावा",
+    "masked": "[इनपुट लपवले आहे]",
+    "numeric": "कस्टम संख्यात्मक कोड",
+    "numericDetail": "संख्यात्मक",
+    "pin": "4 किंवा 6 अंकी पासकोड",
+    "pinDetail": "4 किंवा 6 अंक",
+    "prompt": "डिव्हाइस पासकोड",
+    "setUp": "स्वयंचलित अनलॉक सेट अप करायचे का? त्यानंतर Swipt हे डिव्हाइस स्वतः अनलॉक करू शकेल."
+  },
+  "project": {
+    "assetConflict": "{{source}} आणि {{asset}} ही दोन्ही Swiplet मध्ये assets/{{name}} होतील.",
+    "conditionalActions": "एक्स्टेंशनमध्ये available() नुसार वेगवेगळ्या क्रिया परिभाषित केल्या आहेत; प्रत्येक सिस्टमवर समान क्रिया परिभाषित करा आणि run किंवा क्रियेच्या आत available() तपासा.",
+    "databaseAtLoad": "extension.js लोड होत असताना डेटाबेसचा वापर होतो; त्याचा वापर run किंवा क्रियेच्या आत करा.",
+    "interfaceImport": "इंटरफेस रन टाइमला {{file}} इंपोर्ट करतो; `import type` वापरून त्याचा टाइप इंपोर्ट करा.",
+    "interfaceOnly": "{{name}} फक्त Swiplet इंटरफेसमध्ये काम करते.",
+    "invalidExposure": "{{action}} ही क्रिया स्वतःला फक्त \"shortcuts\" साठी उपलब्ध करू शकते.",
+    "invalidExtension": "एक्स्टेंशनचे डीफॉल्ट एक्सपोर्ट हे defineExtension चा निकाल नाही.",
+    "invalidID": "package.json मधील \"swiplet.id\" मध्ये 1 ते 128 लोअरकेस अक्षरे, अंक, बिंदू, अंडरस्कोर आणि हायफन असणे आणि त्याची सुरुवात अक्षराने किंवा अंकाने होणे आवश्यक आहे.",
+    "invalidLocalizedNames": "package.json मधील \"swiplet.localizedNames\" ने भाषा आणि नावे मॅप करणे आवश्यक आहे.",
+    "invalidMinimumAPILevel": "package.json मधील \"swiplet.minimumAPILevel\" हा {{oldest}} ते {{level}} (@swipt/api चा API स्तर) यांमधील पूर्णांक असणे आवश्यक आहे.",
+    "invalidMinimumIOSVersion": "package.json मधील \"swiplet.minimumIOSVersion\" हा {{version}} (@swipt/api ची किमान iOS आवृत्ती) किंवा त्याहून मोठा आवृत्ती क्रमांक असणे आवश्यक आहे.",
+    "invalidName": "package.json मधील \"swiplet.name\" ही रिकामी नसलेली स्ट्रिंग असणे आवश्यक आहे.",
+    "invalidSchema": "{{action}} या क्रियेचा {{side}} स्कीमा Standard JSON Schema लागू करत नाही; ते लागू करणारी लायब्ररी वापरा, उदाहरणार्थ Zod 4.",
+    "invalidString": "package.json मधील \"{{field}}\" ही स्ट्रिंग असणे आवश्यक आहे.",
+    "invalidVersionCode": "package.json मधील \"swiplet.versionCode\" हा धन पूर्णांक असणे आवश्यक आहे.",
+    "missingTitle": "{{action}} या क्रियेला शीर्षक आवश्यक आहे.",
+    "storageAtLoad": "extension.js लोड होत असताना स्टोरेजचा वापर होतो; त्याचा वापर run किंवा क्रियेच्या आत करा.",
+    "unprovidedModule": "Swipt एक्स्टेंशनना \"{{module}}\" पुरवत नाही; ते extension.js मध्ये बंडल करा.",
+    "usedAtLoad": "extension.js लोड होत असताना {{name}} वापरले जाते; ते run किंवा क्रियेच्या आत वापरा."
+  },
+  "serve": {
+    "cancel": "रद्द करा",
+    "checking": "{{device}} तपासले जात आहे",
+    "conflictingTokens": "--token आणि --random-token एकत्र वापरता येत नाहीत.",
+    "invalidToken": "टोकनमध्ये स्पेसशिवाय एक किंवा अधिक प्रिंट करण्यायोग्य ASCII वर्ण असतात.",
+    "localNetwork": "स्थानिक नेटवर्क",
+    "noAutoUnlock": "{{device}} स्वयंचलितपणे अनलॉक होत नाही; --passcode वापरून त्याचा पासकोड सेट करा. ड्रायव्हर थांबवण्यासाठी Ctrl-C दाबा.",
+    "quitSwipt": "Swipt बंद करा",
+    "quittingSwipt": "{{device}} वरील Swipt बंद केले जात आहे",
+    "served": "{{computer}} वरील ड्रायव्हर आधीपासूनच {{device}} ला सेवा देत आहे; आधी तो ड्रायव्हर थांबवा.",
+    "servedPrompt": "{{computer}} वरील ड्रायव्हर आधीपासूनच {{device}} ला सेवा देत आहे. तो ड्रायव्हर थांबवायचा का?",
+    "starting": "{{device}} साठी ड्रायव्हर सुरू केला जात आहे",
+    "stopDriver": "{{computer}} वरील ड्रायव्हर थांबवा",
+    "stopHint": "ड्रायव्हर थांबवण्यासाठी Ctrl-C दाबा.",
+    "stoppingDriver": "{{computer}} वरील ड्रायव्हर थांबवला जात आहे",
+    "swiptRunning": "{{device}} वर Swipt चालू असताना ड्रायव्हर ते नियंत्रित करू शकत नाही; आधी Swipt बंद करा.",
+    "swiptRunningPrompt": "{{device}} वर Swipt चालू असताना ड्रायव्हर ते नियंत्रित करू शकत नाही. Swipt बंद करायचे का?"
+  },
+  "sideload": {
+    "ambiguousTeam": "{{device}} वर एकापेक्षा जास्त टीमनी Swipt साइडलोड केले आहे; --team ID वापरून एक निवडा :",
+    "certificateFailed": "{{team}} या टीमसाठी Xcode ला डेव्हलपमेंट प्रमाणपत्र तयार करता आले नाही; {{accounts}} › Manage Certificates येथे एक जोडा ({{errors}}).",
+    "checking": "{{device}} वर Swipt तपासले जात आहे",
+    "checkingRelease": "नवीनतम रिलीझ तपासली जात आहे",
+    "chooseTeam": "टीम निवडा",
+    "chooseTeamHint": "--team ID वापरून टीम निवडा :",
+    "diskImageFailed": "{{device}} वर डेव्हलपर डिस्क इमेज तयार करता आली नाही : {{error}}",
+    "downgrade": "डाउनग्रेड करा",
+    "downgradePrompt": "{{device}} वरील Swipt {{version}} वरून {{releaseVersion}} वर डाउनग्रेड करायचे का? जुन्या आवृत्तीला डेटा वाचता येत नसल्यास Swipt त्याचा डेटा रीसेट करते.",
+    "downgradeToStablePrompt": "{{device}} वरील Swipt nightly बिल्ड {{version}} वरून स्थिर आवृत्ती {{releaseVersion}} वर डाउनग्रेड करायचे का? जुन्या आवृत्तीला डेटा वाचता येत नसल्यास Swipt त्याचा डेटा रीसेट करते.",
+    "downloading": "{{release}} मधून Swipt {{version}} ({{build}}) डाउनलोड केले जात आहे",
+    "expiration": "त्याचे साइनिंग {{expiration}} कालबाह्य होईल.",
+    "installed": "{{device}} वर {{build}} इंस्टॉल केले.",
+    "installing": "{{device}} वर इंस्टॉल केले जात आहे",
+    "invalidTeam": "--team साठी {{value}} हा अवैध आर्ग्युमेंट आहे : तो {{accounts}} येथे दाखवलेला 10 वर्णांचा टीम ID असावा",
+    "laterThanRelease": "{{device}} वरील {{build}} हे {{release}} ({{releaseBuild}}) पेक्षा नवीन आहे.",
+    "locked": "{{device}}: {{message}}; ते अनलॉक करा किंवा --passcode द्या, आणि मग हे पुन्हा चालवा.",
+    "looking": "डिव्हाइसवर Swipt शोधले जात आहे",
+    "needsMacOS": "Swipt इंस्टॉल किंवा अपडेट करण्यासाठी macOS आवश्यक आहे; ते Mac वरून इंस्टॉल करा, आणि मग \"swipt sideload setup\" वापरून ते येथे सेट अप करा.",
+    "noAccount": "Xcode मध्ये खाते नाही; {{accounts}} येथे साइन इन करा, किंवा --team ID वापरून टीम निवडा",
+    "noAccountForTeam": "Xcode मध्ये {{team}} या टीमचे खाते नाही; {{accounts}} येथे तिच्या Apple खात्याने साइन इन करा.",
+    "noCertificate": "Xcode मध्ये डेव्हलपमेंट प्रमाणपत्र नाही; {{accounts}} › Manage Certificates येथे एक जोडा, किंवा --team ID वापरून टीम निवडा",
+    "noneInstalled": "कोणत्याही iPhone किंवा iPad डिव्हाइसवर Swipt साइडलोड केलेले नाही.",
+    "noneInstalledHint": "कोणत्याही iPhone किंवा iPad डिव्हाइसवर Swipt साइडलोड केलेले नाही; \"swipt sideload install\" वापरून ते इंस्टॉल करा.",
+    "notInstalled": "{{device}} वर Swipt साइडलोड केलेले नाही.",
+    "notInstalledByTeam": "{{device}} वर {{team}} या टीमने Swipt साइडलोड केलेले नाही.",
+    "notInstalledByTeamHint": "{{device}} वर {{team}} या टीमने Swipt साइडलोड केलेले नाही; \"swipt sideload install\" वापरून ते इंस्टॉल करा.",
+    "notInstalledHint": "{{device}} वर Swipt साइडलोड केलेले नाही; \"swipt sideload install\" वापरून ते इंस्टॉल करा.",
+    "notOnNetwork": "स्थानिक नेटवर्कवर {{device}} आढळले नाही; त्याचे API URL Swipt › डेव्हलपर › स्थानिक नेटवर्क येथे पाहा.",
+    "opening": "{{device}} वर Swipt उघडले जात आहे",
+    "openingSettings": "{{device}} वर सेटिंग उघडले जात आहे",
+    "opensAfterUnlock": "{{device}} अनलॉक झाल्यावर ते उघडेल.",
+    "pairingFailed": "पेअरिंग अयशस्वी झाले, त्यामुळे Swipt त्याऐवजी सेटिंगमध्ये पेअर करेल : {{error}}",
+    "preparingDiskImage": "{{device}} वर डेव्हलपर डिस्क इमेज तयार केली जात आहे",
+    "preparingSigning": "Xcode द्वारे {{team}} या टीमसह Swipt साठी साइनिंग तयार केले जात आहे",
+    "removed": "{{device}} वरून {{build}} काढून टाकले",
+    "removing": "{{device}} वरून Swipt काढून टाकले जात आहे",
+    "renewalNeedsDowngrade": "{{device}} वरील {{build}} ला नवीन साइनिंग आवश्यक आहे, पण {{release}} ({{releaseBuild}}) जुने आहे; --nightly वापरा, किंवा \"swipt sideload install --force\" वापरून डाउनग्रेड करा.",
+    "resigning": "Swipt पुन्हा साइन केले जात आहे",
+    "running": "{{app}} सुरू आहे.",
+    "settingUpAutoUnlock": "स्वयंचलित अनलॉक सेट अप केले जात आहे",
+    "trusted": "{{developer}} वर विश्वास ठेवला.",
+    "trusting": "सेटिंगमध्ये {{developer}} वर विश्वास ठेवला जात आहे",
+    "unlockPrompt": "सुरू ठेवण्यासाठी डिव्हाइस अनलॉक करा.",
+    "unlocking": "डिव्हाइस अनलॉक केले जात आहे",
+    "untrusted": "त्याच्या डेव्हलपरवर अद्याप विश्वास ठेवलेला नाही; {{device}} वर उघडलेल्या सेटिंग पेजमध्ये विश्वास ठेवा, आणि मग Swipt उघडा.",
+    "upToDate": "{{device}} वरील {{build}} आधीच {{release}} आहे.",
+    "updated": "{{device}} वर {{build}} अपडेट केले.",
+    "waiting": "{{device}} ची प्रतीक्षा करत आहे",
+    "xcodeMissing": "xcodebuild ला Xcode आवश्यक आहे; ते इंस्टॉल करा आणि xcode-select वापरून निवडा",
+    "xcodebuildMissing": "xcodebuild नाही; Xcode इंस्टॉल करा."
+  }
+}

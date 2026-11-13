@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 
-import { tr } from "../../../i18n";
+import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 
 const { version: packageVersion }: { version: string } = createRequire(
@@ -18,7 +18,7 @@ function printVersion() {
 
 export const version = defineCommand({
   name: "version",
-  short: tr("Print the version"),
+  short: t("commands.version.description"),
   args: [0, 0],
   run: printVersion,
 });
