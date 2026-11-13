@@ -44,8 +44,7 @@ type App struct {
 // pymobiledevice3/remote/core_device/app_service.py:41-54 and
 // pymobiledevice3/remote/core_device/core_device_service.py:46-63, 95-135.
 // An entry's version and bundleVersion carried CFBundleShortVersionString and
-// CFBundleVersion, and some system apps had neither (iPhone18,2, iOS 27.2
-// 24B115).
+// CFBundleVersion, and some system apps had neither (iOS 27.2 24B115).
 func List(ctx context.Context, device *coredevice.Device) ([]App, error) {
 	conn, err := device.DialXPC(ctx, serviceName)
 	if err != nil {
@@ -130,9 +129,10 @@ func stream(ctx context.Context, conn *xpc.Conn, input map[string]any) ([]any, e
 func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL string, terminateExisting, animated bool) error {
 	open := map[string]any{}
 	if !animated {
-		// platformSpecificOptions reach FrontBoard as open options, and SpringBoard
-		// switches without its zoom for this key (SpringBoardServices, iOS 27 24A446;
-		// iPhone18,2, iOS 27.2 24B115).
+		// dtappserviced reads platformSpecificOptions before it opens the app with
+		// FBSOpenApplicationService (DDI 27B48 dtappserviced 0x10003c5c4,
+		// 0x10003c628), and SpringBoardServices names this key
+		// SBSOpenApplicationOptionKeyLaunchWithoutAnimation (iOS 27.0.1 24A446).
 		open["__LaunchWithoutAnimation"] = true
 	}
 	platformOptions, _ := plist.Marshal(open, plist.XMLFormat)
@@ -161,8 +161,9 @@ func Launch(ctx context.Context, device *coredevice.Device, bundleID, payloadURL
 		"standardIOIdentifiers": map[string]any{},
 	}
 	_, err = coredevice.InvokeFeature(ctx, conn, uuid.NewString(), launchFeature, "", input)
-	// Relaunching an app whose previous process is still exiting fails with CoreDeviceError 10004, "The process
-	// identifier of the launched application could not be determined" (iPhone18,2, iOS 27.2 24B115).
+	// CoreDeviceError 10004 is processTokenUnavailable, "The process identifier of the launched application could
+	// not be determined" (DDI 27B5028f CoreDeviceUtilities 0x1aa928..0x1aa9d0). Relaunching an app whose previous
+	// process is still exiting fails with it (iOS 27.2 24B115).
 	if featureError, isFeatureError := errors.AsType[*coredevice.FeatureError](err); isFeatureError && terminateExisting && featureError.Code == errorCodeProcessUnknown {
 		_, err = coredevice.InvokeFeature(ctx, conn, uuid.NewString(), launchFeature, "", input)
 	}

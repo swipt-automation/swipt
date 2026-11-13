@@ -16,7 +16,7 @@ import (
 var errRemounted = E.New("the Developer Disk Image is mounted now; reconnecting to reach its services")
 
 // The Developer Disk Image has a Cryptex identity without ApBoardID or ApChipID; its personalized identities include both
-// (DDI 27A9266e, BuildManifest.plist, BuildIdentities 0..139 and 140).
+// (DDI 27B52, Restore/BuildManifest.plist, BuildIdentities 0..139 and 140).
 var diskImageVariants = []imagemounter.Variant{imagemounter.Cryptex, imagemounter.Personalized}
 
 type diskImages struct {
@@ -47,8 +47,8 @@ func PrepareDiskImage(ctx context.Context, connect func(ctx context.Context) (*c
 func (d *diskImages) prepare(ctx context.Context, device *coredevice.Device) error {
 	images := imagemounter.New(device, d.logger)
 	current, knownVersion := version.Parse(device.Info().OSVersion)
-	// DDI cryptex asset indices changed in iOS 26.4 (pymobiledevice3 cae0191,
-	// services/cryptexd.py, DDI_CRYPTEX_MIN_VERSION).
+	// iOS installs the Developer Disk Image as a cryptex from 26.4 (pymobiledevice3
+	// eed1fde, pymobiledevice3/services/cryptexd.py, DDI_CRYPTEX_MIN_VERSION).
 	cryptexSupported := !knownVersion || current.AtLeast(version.Version{26, 4})
 	variants := []imagemounter.Variant{imagemounter.Personalized}
 	if cryptexSupported {

@@ -55,11 +55,7 @@ type Bytes []byte
 // its lock, from the thread's stack pointer to the origin of the thread's
 // stack, into a buffer of the summed size from fastMalloc (WebKit 21bb1f66,
 // Source/JavaScriptCore/runtime/JSLock.cpp:144; WebKit 21bb1f66,
-// Source/JavaScriptCore/heap/MachineStackMarker.cpp:76, 204). A Go thread runs
-// goroutines on stacks in the Go heap, outside its own stack, so a collection
-// while a thread that had called in ran Go code took a wrapped size, and
-// fastMalloc panicked with pas_panic_on_out_of_memory_error (Mac14,3, macOS
-// 27.0.1 26A434).
+// Source/JavaScriptCore/heap/MachineStackMarker.cpp:76, 204).
 type Context struct {
 	runtime *C.jsc_runtime
 }

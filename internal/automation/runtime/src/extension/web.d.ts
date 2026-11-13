@@ -1508,7 +1508,6 @@ declare var DOMException: Web.FallbackValue<
   "DOMException",
   typeof Web.DOMException
 >;
-// not in lib.dom yet
 interface QuotaExceededError extends Web.QuotaExceededError {}
 declare var QuotaExceededError: typeof Web.QuotaExceededError;
 interface TextEncoder extends Web.Fallback<Web.TextEncoder> {}

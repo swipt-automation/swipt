@@ -1,16 +1,7 @@
-// Builds ExpoModulesCore.xcframework from the patched sources in node_modules/expo-modules-core.
-//
-// The npm package ships prebuilt Debug and Release xcframeworks, so native changes in its patch
-// would never reach the app. This follows what Expo's prebuild pipeline (`et prebuild`, which
-// only exists in the Expo repository) does with the package's spm.config.json: a SwiftPM package
-// with the C++, Objective-C and Swift targets, built by xcodebuild into one dynamic framework,
-// composed with the headers, module map and Swift interfaces into an xcframework.
-//
-// The result is written next to the npm tarballs, in
-// prebuilds/output/<flavor>/xcframeworks/ExpoModulesCore.xcframework, where Expo's SwiftPM
-// plugin prefers an expanded xcframework over the tarball
-// (expo/scripts/spm/flavored-frameworks.js). Reinstalling the package removes it, so the app
-// stops linking until `bun dev frameworks` builds it again.
+// The npm package ships prebuilt Debug and Release xcframeworks, which Expo's prebuild generates from
+// its spm.config.json (expo 0bbc67b, tools/src/prebuilds/SPMGenerator.ts, tools/src/prebuilds/SPMBuild.ts).
+// Expo's SwiftPM plugin prefers an expanded prebuilds/output/<flavor>/xcframeworks/ExpoModulesCore.xcframework
+// over the tarball (expo 58.0.22, scripts/spm/flavored-frameworks.js:35-54).
 
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -33,8 +24,6 @@ const platforms = [
   },
 ];
 
-// Nested builds get a clean environment, as the ExpoModulesJSI build does, so that settings of an
-// enclosing Xcode build do not leak in.
 const environment = () => ({
   PATH: process.env.PATH,
   HOME: process.env.HOME,
@@ -90,7 +79,6 @@ function* walk(directory, base = directory) {
   }
 }
 
-// The subset of glob that spm.config.json uses: `dir/**`, `**/dir/**` and file paths.
 function excluded(file, patterns) {
   return patterns.some((pattern) => {
     if (pattern.startsWith("**/") && pattern.endsWith("/**")) {
@@ -116,7 +104,6 @@ function link(source, destination) {
   fs.symlinkSync(source, destination);
 }
 
-// Headers are hard links, so `#pragma once` sees one file through both of its include paths.
 function hardLink(source, destination) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   try {
@@ -273,8 +260,8 @@ ${targets.join(",\n")}
   return { packageDir, coreProduct, headers };
 }
 
-// ExpoModulesCore links the real ExpoModulesJSI; npm ships only its headers. This builds it the
-// way the app's "Build ExpoModulesJSI" phase does (expo-modules-jsi/apple/scripts/build-swiftpm-app-phase.sh).
+// ExpoModulesCore links the real ExpoModulesJSI; npm ships only its headers, and the app builds it
+// in its "Build ExpoModulesJSI" phase (expo-modules-jsi, apple/scripts/build-swiftpm-app-phase.sh).
 function buildJSI(core) {
   const jsi = resolvePackage("expo-modules-jsi", core);
   const reactNative = resolvePackage("react-native", root);
@@ -402,7 +389,6 @@ function compose(
   const xcframeworks = path.join(root, "build/xcframeworks", flavor);
   const staged = [];
   for (const { sdk, destination, slice } of platforms) {
-    // The frameworks ExpoModulesCore links; the headers come from the ReactNative package.
     const linked = [
       [path.join(xcframeworks, "React.xcframework", slice), "React"],
       [
@@ -450,8 +436,6 @@ function compose(
         // SwiftPM targets do not get Xcode's default project definitions; React Native's headers
         // differ without NDEBUG, so Release would reference symbols its React.framework lacks.
         `GCC_PREPROCESSOR_DEFINITIONS=$(inherited) ${configuration === "Release" ? "NDEBUG=1 NS_BLOCK_ASSERTIONS=1" : "DEBUG=1"}`,
-        // The emitted interfaces import the internal targets until compose() renames them, so
-        // they only verify as the composed framework.
         "OTHER_SWIFT_FLAGS=$(inherited) -no-verify-emitted-module-interface",
         `FRAMEWORK_SEARCH_PATHS=$(inherited) ${quote(path.join(jsi, slice))}`,
         `OTHER_LDFLAGS=$(inherited) ${linked.map(([directory, name]) => `-F${quote(directory)} -framework ${name}`).join(" ")}`,
@@ -505,7 +489,6 @@ function compose(
       umbrella.join("\n"),
     );
 
-    // The internal targets exist only while this package builds; consumers see one module.
     const internal = coreProduct.targets
       .map((target) => target.name)
       .filter((name) => name !== product);
@@ -535,7 +518,6 @@ function compose(
     fs.mkdirSync(swiftModule, { recursive: true });
     const builtModule = path.join(products, `${product}.swiftmodule`);
     for (const entry of fs.readdirSync(builtModule, { withFileTypes: true })) {
-      // Only the textual interfaces: a binary module is tied to this compiler and names the internal targets.
       if (!entry.isFile() || entry.name.endsWith(".swiftmodule")) {
         continue;
       }
@@ -610,7 +592,6 @@ function compose(
   return target;
 }
 
-// Returns whether the xcframeworks were rebuilt.
 export function buildExpoModulesCore() {
   const core = fs.realpathSync(
     path.join(root, "node_modules/expo-modules-core"),

@@ -1,6 +1,3 @@
-// The device sent unencrypted video RTP and RTCP from one UDP port.
-// Starting a second stream of display 1 stopped the first stream after its
-// final frame at 3.09 s (observed on iPad17,1, build 24B5089g).
 package display
 
 import (
@@ -33,8 +30,8 @@ const (
 	accessNetworkType       = int64(1)
 	transportProtocolType   = int64(2)
 
-	// Display ID 1 produced the main-screen stream (observed on iPad17,1,
-	// build 24B5089g).
+	// pymobiledevice3 streams display ID 1 by default (pymobiledevice3 1146717,
+	// pymobiledevice3/remote/core_device/display_service.py:79).
 	DefaultDisplayID = 1
 	rtcpTimeout      = 30 * time.Second
 )
@@ -75,8 +72,8 @@ func (c *Client) operationContext(parent context.Context) (context.Context, cont
 	return ctx, func() { cancel(context.Canceled) }
 }
 
-// The device returns stoppedStreams in the client-offered SSRC namespace
-// (observed on iPad17,1, iPadOS 27.2 24B5099f).
+// The device returns stoppedStreams as the SSRCs the client offered
+// (iPadOS 27.2 24B5099f).
 func (c *Client) stop(ssrc uint32) (func() ([]uint32, error), error) {
 	ctx, cancel := c.operationContext(c.owner)
 	if err := context.Cause(ctx); err != nil {
@@ -121,12 +118,10 @@ func (c *Client) stop(ssrc uint32) (func() ([]uint32, error), error) {
 }
 
 type StreamOptions struct {
-	// A probe started audio then video with one session UUID. Video returned
-	// a nonzero SyncStreamToken; the video-only probe returned zero (observed
-	// on iPad17,1, build 24B5089g).
-	SessionID uuid.UUID
-	// The device echoes the offered SSRC as RemoteSSRC (observed on
-	// iPad17,1, build 24B5089g).
+	// A video stream started with the session ID of a running audio stream
+	// answers a nonzero SyncStreamToken, and zero without one (iPadOS 27.2
+	// 24B5089g).
+	SessionID      uuid.UUID
 	SSRC           uint32
 	Mode           Mode
 	MaximumBitrate uint64
@@ -161,8 +156,7 @@ func startInput(streamType StreamType, sessionID uuid.UUID, offer []byte, receiv
 		"receiverIP":              receiverIP,
 		"receiverPort":            uint64(receiverPort),
 		"senderIP":                senderIP,
-		// The device answers with this value as RTCPTimeoutInterval: a probe
-		// sent 3600 and got 3600 back (observed on iPad17,1, build
+		// The device answers this value as RTCPTimeoutInterval (iPadOS 27.2
 		// 24B5089g).
 		"timeout": uint64(rtcpTimeout / time.Second),
 		"type":    string(streamType),

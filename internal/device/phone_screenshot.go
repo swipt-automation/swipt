@@ -6,8 +6,8 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/screencapture"
 )
 
-// The capture service answered a request made while another capture was in
-// progress with CoreDeviceError 25003 (iPhone18,2, iOS 27.2).
+// dtscreencaptured rejects a request made while another capture is in
+// progress (DDI 27B48 dtscreencaptured 0x10000ee80, 0x10000f048).
 func (p *Phone) Capture(ctx context.Context) ([]byte, float64, error) {
 	c, ctx, done, err := p.begin(ctx)
 	if err != nil {

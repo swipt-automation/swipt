@@ -17,7 +17,7 @@ const (
 )
 
 // appName is the executable's name, and execName the bundle's path as the app
-// list reports it (iPhone18,2, iOS 27.2 24B115).
+// list reports it (iOS 27.2 24B115).
 type AppState struct {
 	Name  string
 	Path  string
@@ -129,10 +129,8 @@ func DialDeviceInfo(ctx, owner context.Context, device *coredevice.Device) (*Dev
 
 // runningProcessWithPid: answers the dictionary runningProcesses lists for
 // the process, which holds foregroundRunning when its task is running and
-// scheduled and its endowment namespaces hold the one tested (24B5110a
-// DVTInstrumentsFoundation 0x262bdb224, 0x262bdab28..0x262bdab80): an app
-// kept it under SpringBoard's paste prompt and in the app switcher, and lost
-// it on going to the home screen (iPhone18,2, iOS 27.2 24B115).
+// scheduled and its endowment namespaces hold the one tested
+// (DVTInstrumentsFoundation 24B5110a 0x262bdb224, 0x262bdab28..0x262bdab80).
 func (d *DeviceInfo) Foreground(ctx context.Context, pid uint64) (bool, error) {
 	value, err := d.conn.Invoke(ctx, deviceInfoChannel, "runningProcessWithPid:", int64(pid))
 	if err != nil {
@@ -149,9 +147,6 @@ type RunningProcess struct {
 	Foreground bool
 }
 
-// runningProcesses took 0.3 to 0.8 s to list about 500 processes, and a
-// request on the same connection waited for it, while runningProcessWithPid:
-// on another connection answered within 20 ms (iPhone18,2, iOS 27.3 24C5037i).
 func (d *DeviceInfo) RunningProcesses(ctx context.Context) ([]RunningProcess, error) {
 	value, err := d.conn.Invoke(ctx, deviceInfoChannel, "runningProcesses")
 	if err != nil {

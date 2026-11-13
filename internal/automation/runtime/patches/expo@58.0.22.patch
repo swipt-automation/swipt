@@ -1,5 +1,5 @@
 diff --git a/ios/Expo/ExpoReactNativeFactory.swift b/ios/Expo/ExpoReactNativeFactory.swift
-index 158c9c9b43861fa942a2b9dbf582cb6101f9dc71..ca20f082bbc70cada27a0964feb3c56787a324e7 100644
+index 158c9c9b43861fa942a2b9dbf582cb6101f9dc71..39069c0eb3340cfd4515890cee5c0121d56cb6db 100644
 --- a/ios/Expo/ExpoReactNativeFactory.swift
 +++ b/ios/Expo/ExpoReactNativeFactory.swift
 @@ -14,7 +14,7 @@ public class ExpoReactNativeFactory: ExpoReactNativeFactoryObjC, ExpoReactNative
@@ -11,12 +11,13 @@ index 158c9c9b43861fa942a2b9dbf582cb6101f9dc71..ca20f082bbc70cada27a0964feb3c567
      )
    }()
  
-@@ -173,3 +173,24 @@ public class ExpoReactNativeFactory: ExpoReactNativeFactoryObjC, ExpoReactNative
+@@ -173,3 +173,25 @@ public class ExpoReactNativeFactory: ExpoReactNativeFactoryObjC, ExpoReactNative
      return rootView
    }
  }
 +
-+// `ExpoReactDelegate` holds its factory strongly, and the factory holds the delegate.
++// `ExpoReactDelegate` holds its factory strongly: expo-modules-core 58.0.29,
++// ios/ReactDelegates/ExpoReactDelegate.swift:9.
 +private final class WeakReactNativeFactory: ExpoReactNativeFactoryProtocol {
 +  private weak var factory: ExpoReactNativeFactory?
 +
@@ -37,10 +38,10 @@ index 158c9c9b43861fa942a2b9dbf582cb6101f9dc71..ca20f082bbc70cada27a0964feb3c567
 +  }
 +}
 diff --git a/ios/ExpoObjC/AppDelegates/ExpoReactNativeFactory.mm b/ios/ExpoObjC/AppDelegates/ExpoReactNativeFactory.mm
-index 18364a87c7a821204f728f6ef760197271d7d98a..4bef4592f57e39aeb64bb6391ab64936e1534f10 100644
+index 18364a87c7a821204f728f6ef760197271d7d98a..1a82a513cc2efccd8494c2b7392dee06844eb07e 100644
 --- a/ios/ExpoObjC/AppDelegates/ExpoReactNativeFactory.mm
 +++ b/ios/ExpoObjC/AppDelegates/ExpoReactNativeFactory.mm
-@@ -21,9 +21,67 @@
+@@ -21,9 +21,70 @@
  #import <ReactCommon/RCTHost.h>
  #import <react/renderer/runtimescheduler/RuntimeSchedulerBinding.h>
  #import <ExpoModulesCore/EXReactSchedulerDispatch.h>
@@ -50,9 +51,12 @@ index 18364a87c7a821204f728f6ef760197271d7d98a..4bef4592f57e39aeb64bb6391ab64936
 +#import <memory>
 +#import <mutex>
 +
-+// `RCTInstance` destroys its runtime on the JS thread, which never gets to it while JavaScript keeps
-+// running. A Hermes timeout interrupts a single execution, and only code with async break checks,
-+// which eval code has, so it is requested again until the runtime is gone.
++// `RCTInstance` releases its runtime in a block on the JS thread: react-native 0.88.1,
++// ReactCommon/react/runtime/platform/ios/ReactCommon/RCTInstance.mm:230-249.
++// A Hermes timeout ends only the current execution, and only in code with async break checks:
++// react-native 0.88.1, ReactCommon/jsi/jsi/hermes-interfaces.h:177-186; hermes-v260318099.0.5,
++// include/hermes/VM/Runtime.h:1488-1501. Hermes emits these checks by default in code that it
++// compiles from source: hermes-v260318099.0.5, public/hermes/Public/RuntimeConfig.h:63.
 +namespace {
 +
 +struct EXRuntimeAccess {
@@ -109,7 +113,7 @@ index 18364a87c7a821204f728f6ef760197271d7d98a..4bef4592f57e39aeb64bb6391ab64936
  }
  
  #pragma mark - RCTHostDelegate
-@@ -39,15 +97,11 @@ - (void)hostDidStart:(nonnull RCTHost *)host
+@@ -39,15 +100,11 @@ - (void)hostDidStart:(nonnull RCTHost *)host
  // [JS thread]
  - (void)host:(nonnull RCTHost *)host didInitializeRuntime:(facebook::jsi::Runtime &)runtime
  {
@@ -122,14 +126,14 @@ index 18364a87c7a821204f728f6ef760197271d7d98a..4bef4592f57e39aeb64bb6391ab64936
 -  // `AppContext.runtime` faults inside JSI.
    EXAppContext *appContext = [[EXAppContext alloc] init];
 -  _appContext = appContext;
-+  // React Native never forgets a registered component name and builds a descriptor for every one
-+  // of them in each new host, so native views are named after an identifier that is reused once
-+  // its app context is gone.
++  // React Native keeps every registered component and builds a descriptor for each of them in
++  // every new host: react-native 0.88.1, React/Fabric/Mounting/RCTComponentViewFactory.mm:188-233
++  // and ReactCommon/react/renderer/componentregistry/ComponentDescriptorProviderRegistry.cpp:67-81.
 +  NSString *viewIdentifier = [appContext useReusableViewIdentifier];
  
    // Resolve the React runtime scheduler so ExpoModulesJSI can dispatch work onto
    // the JS thread. Doing it here (rather than inside the xcframework) keeps
-@@ -72,6 +126,24 @@ - (void)host:(nonnull RCTHost *)host didInitializeRuntime:(facebook::jsi::Runtim
+@@ -72,6 +129,24 @@ - (void)host:(nonnull RCTHost *)host didInitializeRuntime:(facebook::jsi::Runtim
                  dispatch:schedulerHandle ? reinterpret_cast<const void *>(&expo::dispatchOnReactScheduler) : nullptr];
    [appContext setHostWrapper:[[EXHostWrapper alloc] initWithHost:host]];
  
@@ -155,7 +159,7 @@ index 18364a87c7a821204f728f6ef760197271d7d98a..4bef4592f57e39aeb64bb6391ab64936
  }
  
 diff --git a/ios/ExpoObjC/include/Expo/ExpoReactNativeFactory.h b/ios/ExpoObjC/include/Expo/ExpoReactNativeFactory.h
-index 3bac5bccddf0b2c69c893b700fe5f16b2ddea753..e2834b7eb3f4a870461befc763c207759fa57850 100644
+index 3bac5bccddf0b2c69c893b700fe5f16b2ddea753..2aa29cd58fb44084e60204841f56991c47dcedf7 100644
 --- a/ios/ExpoObjC/include/Expo/ExpoReactNativeFactory.h
 +++ b/ios/ExpoObjC/include/Expo/ExpoReactNativeFactory.h
 @@ -3,6 +3,7 @@
@@ -166,11 +170,10 @@ index 3bac5bccddf0b2c69c893b700fe5f16b2ddea753..e2834b7eb3f4a870461befc763c20775
  @protocol RCTHostDelegate;
  @protocol RCTHostRuntimeDelegate;
  
-@@ -14,4 +15,9 @@ NS_SWIFT_NAME(ExpoReactNativeFactoryObjC)
+@@ -14,4 +15,8 @@ NS_SWIFT_NAME(ExpoReactNativeFactoryObjC)
  @interface EXReactNativeFactory : RCTReactNativeFactory <RCTHostDelegate, RCTHostRuntimeDelegate>
  #endif
  
-+// [JS thread] Called before the app context registers its native modules.
 +@property (nonatomic, copy, nullable) void (NS_SWIFT_SENDABLE ^appContextHandler)(EXAppContext *_Nonnull appContext);
 +
 +- (void)terminateJavaScript;

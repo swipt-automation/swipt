@@ -1,9 +1,7 @@
-// DDI build 27A9266e ships dtremotedisplayd, dtuhidd and dtpasteboardd in
-// usr/libexec in both image variants. Its PersonalizedDMG identities name
-// ApBoardID and ApChipID; its Cryptex identity has neither. The three daemon
-// binaries are identical between these two images (usr/libexec in
-// Personalized/Image.dmg and Cryptex/Image.dmg, DDI 27A9266e;
-// BuildManifest.plist, DDI 27A9266e).
+// DDI 27B52 ships the same dtremotedisplayd, dtuhidd and dtpasteboardd
+// binaries in usr/libexec of its personalized and cryptex images. Its
+// PersonalizedDMG identities name ApBoardID and ApChipID; its cryptex identity
+// has neither (022-22446-061.dmg, 022-22432-061.dmg and BuildManifest.plist).
 package imagemounter
 
 import (

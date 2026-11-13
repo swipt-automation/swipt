@@ -19,11 +19,9 @@ const (
 )
 
 type DisplayInfo struct {
-	ID            int
-	Primary       bool
-	Width, Height int
-	// devicectl 651.13.2 reported nativeSize=[2420,1668] and
-	// nativeOrientation=rot270 (observed on iPad17,1).
+	ID                        int
+	Primary                   bool
+	Width, Height             int
 	NativeWidth, NativeHeight int
 	CurrentOrientation        string
 	PointScale                int
@@ -74,11 +72,9 @@ func primaryBacklightState(output map[string]any, aggregateForUnknown bool) (str
 	if selected == nil {
 		return "", E.New("the device did not report a primary integrated display")
 	}
-	// The aggregate state can remain activeOn while the integrated display is
-	// inactiveOn (Always-On Display). CoreDeviceUtilities names
-	// BLSBacklightState 3 activeDimmed, and answers unknown for any other state
-	// or a display it has no backlight of (DDI 27B5028f CoreDeviceUtilities
-	// 0x37298c, 0x35aecc, 0x372bbc).
+	// CoreDeviceUtilities names BLSBacklightState 3 activeDimmed, and answers
+	// unknown for any other state or a display it has no backlight of (DDI
+	// 27B5028f CoreDeviceUtilities 0x37298c, 0x35aecc, 0x372bbc).
 	state, _ := selected["backlightState"].(string)
 	// It reads a display's backlight only through BLSDisplayReference, and answers
 	// unknown for every display where BacklightServices has no such class, as on

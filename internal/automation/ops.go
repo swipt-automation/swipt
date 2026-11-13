@@ -683,7 +683,6 @@ func uiTap(ctx context.Context, phone *device.Phone, call *operation) error {
 	return phone.Tap(ctx, ref, timeout)
 }
 
-// A missing limit waits forever.
 func elementTimeout(timeoutMs *float64) (time.Duration, error) {
 	if timeoutMs == nil {
 		return -1, nil

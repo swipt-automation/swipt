@@ -215,8 +215,8 @@ func restoreRuleMatches(conditions, parameters map[string]any) bool {
 func cryptexRequest(identity buildIdentity, chip map[string]any, nonce []byte) (map[string]any, error) {
 	request := newTSSRequest()
 	request["@Cryptex1,Ticket"] = true
-	// DDI build 27A9266e encodes Cryptex1,ChipID and Cryptex1,ProductClass
-	// as hexadecimal strings (BuildManifest.plist, DDI 27A9266e).
+	// DDI 27B52 encodes Cryptex1,ChipID and Cryptex1,ProductClass as
+	// hexadecimal strings (BuildManifest.plist).
 	for _, key := range []string{"Cryptex1,ChipID", "Cryptex1,ProductClass"} {
 		number, ok := numberValue(identity[key])
 		if !ok {
@@ -257,9 +257,8 @@ func cryptexRequest(identity buildIdentity, chip map[string]any, nonce []byte) (
 	request["Cryptex1,UDID"] = binary.BigEndian.AppendUint64(udid, ecid)
 	request["Cryptex1,UniqueTagList"] = []byte{}
 	// idevice sends only the Digest of Cryptex1 entries marked Personalize
-	// (idevice 3854a5d, idevice/src/tss.rs:224-246). DDI build 27A9266e marks
-	// GenericDmg false and its three other assets true (BuildManifest.plist,
-	// DDI 27A9266e).
+	// (idevice 3854a5d, idevice/src/tss.rs:224-246). DDI 27B52 marks
+	// GenericDmg false and its three other assets true (BuildManifest.plist).
 	for key, value := range identity.manifestEntries() {
 		entry, ok := value.(map[string]any)
 		if !ok || !strings.HasPrefix(key, "Cryptex1,") {

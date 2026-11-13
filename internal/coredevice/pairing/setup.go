@@ -23,7 +23,7 @@ import (
 )
 
 // pymobiledevice3 pairs with "000000" when the device shows no setup code
-// (pymobiledevice3 9c33842, pymobiledevice3/remote/tunnel_service.py:937).
+// (pymobiledevice3 9c33842, pymobiledevice3/remote/tunnel_service.py:911).
 const pinlessSetupCode = "000000"
 
 type signLabels struct {

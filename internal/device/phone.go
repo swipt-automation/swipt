@@ -194,8 +194,8 @@ func (g phoneGeometry) touch(at Point) hid.Touch {
 	return hid.Touch{X: u, Y: v}
 }
 
-// The system-wide hit test takes a point in the digitizer's orientation:
-// (834 − y, x) in landscape (iPad17,1, iPadOS 27.2 24B115).
+// The system-wide hit test takes a point in the digitizer's orientation
+// (iPadOS 27.2 24B115).
 func (g phoneGeometry) digitizer(at Point) accessibility.LayoutPoint {
 	touch := g.touch(at)
 	width, height := g.Width, g.Height
@@ -222,10 +222,10 @@ func (g phoneGeometry) edge(at Point) hid.Edge {
 
 // An application that keeps the interface orientation reports its frames in
 // it; SpringBoard's windows report theirs in the digitizer's space whatever
-// the orientation, and that space is portrait on an iPad whose display is
-// landscape native (iPad17,1, iPadOS 27.2 24B115; iPhone18,2, iOS 27.2
-// 24B5110a). Some of SpringBoard's windows report their frames and those of
-// their contents in pixels (iPhone18,2, iOS 27.2 24B115).
+// the orientation (iOS 27.2 24B5110a), and that space is portrait on an iPad
+// whose display is landscape native (iPadOS 27.2 24B115). Some of
+// SpringBoard's windows report their frames and those of their contents in
+// pixels (iOS 27.2 24B115).
 type axSpace struct {
 	geometry      phoneGeometry
 	rotated       bool
@@ -273,7 +273,7 @@ func (s axSpace) rect(frame accessibility.LayoutFrame) Rect {
 
 // A widget or Live Activity has a render context of its own, placed on the
 // screen at an offset the translator does not report; web content reports
-// none and is in the application's space (iPhone18,2, iOS 27.2 24B5110a).
+// none and is in the application's space (iOS 27.2 24B5110a).
 func (s axSpace) remote(element accessibility.Element) bool {
 	return s.context != 0 && element.Context != 0 && element.Ref.PID != s.pid && element.Context != s.context
 }
@@ -388,7 +388,7 @@ func modelOf(geometry phoneGeometry, screen *accessibility.Screen, base *PhoneNo
 }
 
 // The keyboard has a window of its own, which also holds the candidate bar
-// outside the keyboard (iPhone18,2, iOS 27.2 24B115).
+// outside the keyboard (iOS 27.2 24B115).
 func (n *PhoneNode) window() *PhoneNode {
 	for node := n; node != nil; node = node.Parent {
 		if node.AX.Type == windowAutomationType {
@@ -732,9 +732,8 @@ func (p *Phone) SetClipboard(ctx context.Context, text *string) error {
 	}
 }
 
-// Safari's tab bar reports its address after a U+200E (iPhone18,2, iOS 27.2
-// 24B115); times put U+202F before AM and PM, and phone numbers U+00A0
-// between groups (iPhone18,2, iOS 27.0.1 24A446).
+// Safari's tab bar reports its address after a U+200E (iOS 27.2 24B115), and
+// phone numbers put U+00A0 between groups (iOS 27.0.1 24A446).
 func PlainText(text string) string {
 	return strings.Map(plainRune, text)
 }

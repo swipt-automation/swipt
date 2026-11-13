@@ -71,13 +71,13 @@ func (c *Client) ReplaceCryptex(ctx context.Context, dir string, personalized bo
 	}
 	if personalized {
 		// cryptexd installed on the same tunnel after UnmountImage
-		// (iPhone18,2, iOS 27.3 24C5037i).
+		// (iOS 27.3 24C5037i).
 		err = c.Unmount(ctx)
 	} else {
 		// pymobiledevice3 names the cryptex to uninstall by
 		// remote-cryptex-identifier (pymobiledevice3 1146717,
 		// pymobiledevice3/services/cryptexd.py:675-690). cryptexd answered on the
-		// same tunnel after uninstall (iPhone18,2 virtual, iOS 27.0.1 24A446).
+		// same tunnel after uninstall (iOS 27.0.1 24A446).
 		_, err = c.invokeCryptexd(ctx, "uninstall", map[string]any{"remote-cryptex-identifier": ddiCryptexIdentifier}, nil)
 	}
 	if err != nil {
@@ -229,8 +229,8 @@ func (c *Client) install(ctx context.Context, files []resolvedFile, ticket []byt
 	return err
 }
 
-// DDI build 27A9266e sets Cryptex1,NonceDomain to 4 (BuildManifest.plist,
-// DDI 27A9266e); pymobiledevice3 sends that value as nonce-domain-handle, not
+// DDI 27B52 sets Cryptex1,NonceDomain to 4 (BuildManifest.plist);
+// pymobiledevice3 sends that value as nonce-domain-handle, not
 // nonce-domain (pymobiledevice3 9c33842,
 // pymobiledevice3/services/cryptexd.py:520,536,571).
 func (c *Client) cryptexNonce(ctx context.Context, domain uint64) ([]byte, error) {

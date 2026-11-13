@@ -14,10 +14,8 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/dtx"
 )
 
-// axauditd serves requests and its own reads of the tree on its main thread,
-// waiting up to 10000 s for each read of an application (24B5110a
-// AccessibilityAudit 0x253f9c670; 24B5110a axauditd 0x1000115b8, 0x10000cbc0;
-// iPhone18,2, iOS 27.2 24B115).
+// axauditd gives its reads of applications a messaging timeout of 10000 s
+// (24B5110a axauditd 0x10000cbb4..0x10000cbc0, 0x1000115b8).
 var ErrStalled = E.New("accessibility: the device stopped answering")
 
 type StallError struct {
@@ -37,17 +35,12 @@ func (e *StallError) Unwrap() error {
 // 0x10000cc78..0x10000cc90), which also serves the requests of every
 // connection and its own reads of the tree (24B5110a AccessibilityAudit
 // 0x253f9c670..0x253f9c67c; 24B5110a AccessibilityPlatformTranslation
-// 0x253fe12b8..0x253fe12c4): a snapshot held it for up to 0.9 s with Control
-// Center open (iPad17,1, iPadOS 27.2 24B115) and a round of snapshots of
-// SpringBoard for up to 4.57 s while Control Center opened, while a connection
-// to a daemon blocked on a process that did not answer completed its handshake
-// after 182 s (iPhone18,2, iOS 27.2 24B115).
+// 0x253fe12b8..0x253fe12c4).
 const handshakeWait = 7 * time.Second
 
 // AXPTranslatorRequest request types, which the response carries back as
 // associatedRequestType (24A446 AccessibilityPlatformTranslation
-// -[AXPTranslator processTranslatorRequest:] 0x24fe57a4c, 0x24fe57bec;
-// iPhone18,2, iOS 27.2 24B115).
+// -[AXPTranslator processTranslatorRequest:] 0x24fe57a4c, 0x24fe57bec).
 const (
 	requestApplication = 1
 	requestAttribute   = 2
@@ -59,10 +52,9 @@ const (
 )
 
 // AXPAttribute numbers (24A446 AccessibilityPlatformTranslation
-// __AXPAttributeToString 0x24fe585dc; iPhone18,2, iOS 27.2 24B115). In a
-// requestAttribute request, attributeNative reads the native UIAccessibility
-// attribute given as "parameter" (24A446 AccessibilityPlatformTranslation
-// -[AXPTranslator_iOS processAttributeRequest:] 0x24fe4e4c8).
+// __AXPAttributeToString 0x24fe585dc). In a requestAttribute request,
+// attributeNative reads the native UIAccessibility attribute given as
+// "parameter" (-[AXPTranslator_iOS processAttributeRequest:] 0x24fe4e4c8).
 const (
 	attributeBundleIdentifier = 6
 	attributeCustomActions    = 13
@@ -79,8 +71,7 @@ const (
 )
 
 // UIAccessibility native attributes (24A446 UIAccessibility
-// -[NSObject(AXPrivCategory) _iosAccessibilityAttributeValue:] 0x1bb739f00;
-// iPhone18,2, iOS 27.2 24B115).
+// -[NSObject(AXPrivCategory) _iosAccessibilityAttributeValue:] 0x1bb739f00).
 const (
 	nativeActiveKeyboard   = 2076
 	nativeIsFirstResponder = 2198
@@ -90,9 +81,7 @@ const (
 
 // AX trait bits (24A446 AXRuntime _kAXSelectedTrait 0x18f8773f0,
 // _kAXNotEnabledTrait 0x18f877418, _kAXTextEntryTrait 0x18f877460,
-// _kAXSecureTextFieldTrait 0x18f877498). Spotlight's search field had
-// traitTextEntry, and the lock-screen passcode field both (iPhone18,2, iOS
-// 27.2 24B115).
+// _kAXSecureTextFieldTrait 0x18f877498).
 const (
 	traitSelected        = 0x8
 	traitNotEnabled      = 0x100
@@ -122,9 +111,7 @@ type RemoteClient struct {
 
 func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed func(Push)) (_ *RemoteClient, err error) {
 	// axauditd starts DTX on a remoteAXService connection without reading an
-	// RSDCheckin (24B5110a axauditd 0x10000d214..0x10000d310): with none sent,
-	// it invoked _notifyOfPublishedCapabilities: and hostAPIVersion and
-	// answered deviceAPIVersion (iPhone18,2, iOS 27.2 24B115).
+	// RSDCheckin (24B5110a axauditd 0x10000d214..0x10000d310).
 	conn, err := device.DialService(ctx, "com.apple.accessibility.axAuditDaemon.remoteAXService")
 	if err != nil {
 		return nil, E.Cause(err, "accessibility: connect remoteAXService")
@@ -186,10 +173,6 @@ func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed fu
 	return c, nil
 }
 
-// After clientNeedsAccessibility: false, the device closed the connection
-// within 0.1 s (iPhone18,2, iOS 27.2 24B115); one that stopped answering
-// requests did not close it at all, and one stopped reading, so that the
-// write blocked (iPad17,1, iPadOS 27.2 24B115).
 const closeWait = 200 * time.Millisecond
 
 func (c *RemoteClient) Close() error {
@@ -319,10 +302,8 @@ func (c *RemoteClient) readPasscodeApplication(ctx context.Context, state *Passc
 		}
 	}
 	// attributeFocusedElement reads nativeFirstResponder and, only when that is
-	// nil, native 3027, the UIKit focus element (24A446
-	// AccessibilityPlatformTranslation 0x24fe4c9a4..0x24fe4ca18). It returned
-	// the first responder in Spotlight's search field, and error 3 on the home
-	// screen, where both were nil (iPhone18,2, iOS 27.2 24B115).
+	// nil, native 3027 (24A446 AccessibilityPlatformTranslation
+	// 0x24fe4c9e0..0x24fe4ca18).
 	candidate, err := c.readPasscodeQuery(ctx, state, "candidate", requestAttributes, &app, 0, 0, map[string]any{"attributes": attributes})
 	if err != nil {
 		return translationObject{}, nil, raw, err
@@ -336,8 +317,7 @@ func (c *RemoteClient) readPasscodeApplication(ctx context.Context, state *Passc
 		// can set it for the whole batch, or only drop out of it (24A446
 		// AccessibilityPlatformTranslation -[AXPTranslator_iOS
 		// processMultipleAttributeRequest:removeEmptyValue:] 0x24fe47af4,
-		// 0x24fe47b34, 0x24fe47b58): attributes 5 and 7 set errors 7 and 3,
-		// while 4, 13, 18 and 19 dropped out (iPhone18,2, iOS 27.2 24B115).
+		// 0x24fe47b34, 0x24fe47b58).
 		c.batchRawElementDisabled = true
 		raw.status = "response_error"
 		candidate, err = c.readPasscodeQuery(ctx, state, "candidate", requestAttributes, &app, 0, 0, map[string]any{"attributes": attributes[:len(attributes)-1]})
@@ -412,9 +392,7 @@ func (c *RemoteClient) readPasscodeField(ctx context.Context, state PasscodeStat
 		return state, nil
 	}
 	// nativeIsFirstResponder asks the nearest self-or-ancestor UIResponder
-	// (24A446 UIAccessibility 0x1bb73be28, 0x1bb73c5ac). It was true on
-	// Spotlight's focused search field and false on the keyboard's keys and the
-	// other elements (iPhone18,2, iOS 27.2 24B115).
+	// (24A446 UIAccessibility 0x1bb73be28, 0x1bb73c5ac).
 	responder, err := c.readPasscodeQuery(ctx, &state, "first_responder", requestAttribute, &field, attributeNative, nativeIsFirstResponder, map[string]any{"parameter": int64(nativeIsFirstResponder)})
 	if err != nil {
 		return state, err
@@ -434,9 +412,7 @@ func (c *RemoteClient) readPasscodeField(ctx context.Context, state PasscodeStat
 	}
 	// A request carries no UI snapshot or version to tie it to another (24A446
 	// AccessibilityPlatformTranslation -[AXPTranslatorRequest encodeWithCoder:]
-	// 0x24fe59010), so the field read above may already be replaced:
-	// consecutive reads of the passcode field saw the digits typed between them
-	// (iPhone18,2, iOS 27.2 24B115).
+	// 0x24fe59010).
 	recheck, err := c.readPasscodeQuery(ctx, &state, "responder_recheck", requestAttribute, &app, attributeNative, nativeFirstResponder, map[string]any{"parameter": int64(nativeFirstResponder)})
 	if err != nil {
 		return state, err
@@ -501,7 +477,7 @@ func (t translationObject) same(other translationObject) bool {
 
 // AXPTranslationObject spells the key didPopuldateAppInfo (24A446
 // AccessibilityPlatformTranslation -[AXPTranslationObject encodeWithCoder:]
-// 0x24fe58b20; iPhone18,2, iOS 27.2 24B115).
+// 0x24fe58b20).
 func (t translationObject) archiveObject() dtx.Object {
 	fields := make(map[string]any)
 	for _, key := range []string{"pid", "objectID", "isApplicationElement", "didPopuldateAppInfo", "bridgeDelegateToken", "rawElementData"} {
@@ -536,10 +512,7 @@ func (c *RemoteClient) query(ctx context.Context, kind uint64, obj *translationO
 // AXP responses carry the request type but no identifier (24A446
 // AccessibilityPlatformTranslation -[AXPTranslatorResponse encodeWithCoder:]
 // 0x24fe59764), and axauditd serves requests one after another on its main
-// queue (24B5110a AccessibilityAudit 0x253f9c670..0x253f9c67c): only responses
-// to single-attribute requests carried an associatedTranslationObject, and
-// five pipelined requests of four types were answered in order (iPhone18,2,
-// iOS 27.2 24B115).
+// queue (24B5110a AccessibilityAudit 0x253f9c670..0x253f9c67c).
 func (c *RemoteClient) exchange(ctx context.Context, requests []remoteRequest) ([]remoteResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -636,13 +609,6 @@ func (c *RemoteClient) drain(ctx context.Context, wait time.Duration) error {
 	}
 }
 
-// A round of requests took 20 to 190 ms plus about 3 ms for each request, 909
-// ms for 326 snapshots of web objects, and a snapshot of SpringBoard with
-// Control Center open took up to 867 ms (iPad17,1, iPadOS 27.2 24B115); in 464
-// rounds during 20 cold launches of system apps, one request took up to 1.26 s
-// and a round with snapshots up to 1.67 s, and while Control Center opened, one
-// request took up to 1.85 s and a round with snapshots of SpringBoard up to
-// 4.57 s (iPhone18,2, iOS 27.2 24B115).
 func exchangeWait(requests []remoteRequest) time.Duration {
 	wait := 3*time.Second + time.Duration(len(requests))*6*time.Millisecond
 	if slices.ContainsFunc(requests, remoteRequest.heavy) {

@@ -866,7 +866,6 @@ func (e *engine) schedule(interval bool) jsc.Function {
 		if len(arguments) == 0 || !arguments[0].IsFunction() {
 			return nil, E.New("the callback is not a function")
 		}
-		// HTML's timer initialization steps: no clamp, except 4 ms once timers nest more than 5 deep
 		var delay time.Duration
 		if len(arguments) > 1 {
 			if ms := arguments[1].Number(); ms > 0 && ms <= math.MaxInt32 {

@@ -17,16 +17,14 @@ import (
 // Hub" with the body "This device was viewed remotely from Mac" (24A446
 // RemotePairingDevice 0x23ebbb7c0, 0x23ebbb8b0). Both strings go through
 // NSLocalizedString, yet stayed English on a device set to Chinese, where the
-// cell's AX label started with "DEVICE HUB, " and ended with the body
-// (iPhone18,2, iOS 27.2 24B5110a).
+// cell's AX label started with "DEVICE HUB, " and ended with the body (iOS
+// 27.2 24B5110a).
 func screenViewingNotification(label string) bool {
 	source, _, found := strings.Cut(label, ", ")
 	return found && strings.EqualFold(source, "Device Hub") &&
 		strings.HasSuffix(label, ", This device was viewed remotely from Mac")
 }
 
-// A notification inside a collapsed Sleep Focus group stayed out of the tree
-// until the group was expanded (iPhone18,2, iOS 27.2 24B5110a).
 func (c *RemoteClient) receiveScreenViewingNotifications(value any) {
 	data, ok := value.(map[string]any)
 	if !ok {
@@ -150,11 +148,8 @@ func (c *RemoteClient) dismissScreenViewingNotification(ctx context.Context, obj
 		// A custom action's identifier is "Name:%@\nTarget:%p\nSelector:%@"
 		// with its localized name (24A446 UIAccessibility 0x1bb719180), so a
 		// block-backed one ends in "\nTarget:0x0\nSelector:(null)". On the
-		// Device Hub cell only Clear was, beside More with _axMore: (iPhone18,2,
-		// iOS 27.2 24B5110a), while on a TestFlight cell Options was too
-		// (iPhone18,2, iOS 27.2 24B115). The Device Hub banner's Close action
-		// was likewise the only block-backed action, beside More with _axMore:
-		// (iOS 27.3 24C5037i).
+		// Device Hub cell only Clear was, beside More with _axMore: (iOS 27.2
+		// 24B5110a), and on the banner only Close (iOS 27.3 24C5037i).
 		if strings.HasSuffix(id, "\nTarget:0x0\nSelector:(null)") {
 			if identifier != "" {
 				return false, nil
@@ -167,10 +162,7 @@ func (c *RemoteClient) dismissScreenViewingNotification(ctx context.Context, obj
 	}
 	// AXP action 4 performs the custom action selected by this identifier and
 	// answers whether it ran (24A446 AccessibilityPlatformTranslation
-	// 0x24fe48264..0x24fe482a8, 0x24fe48210..0x24fe48224): with Clear's
-	// identifier it answered true and removed the cell, while the cell's
-	// supported actions, read with request type 9, left out 4 (iPhone18,2, iOS
-	// 27.2 24B5110a).
+	// 0x24fe48264..0x24fe482a8, 0x24fe48210..0x24fe48224).
 	response, err = c.query(ctx, requestAction, &obj, 0, actionCustom, map[string]any{"AXPCustomActionIdentifier": identifier})
 	if err != nil {
 		return false, err

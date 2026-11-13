@@ -165,7 +165,6 @@ func (e *engine) newCompression(format string, decompress bool) ([]string, error
 		output.closeWrite(err)
 		done <- err
 	}()
-	// closing the input reports the codec's result, as a TransformStream's flush does, without waiting for a reader
 	inputWriter.finish = func(abort error) error {
 		if abort != nil {
 			return inputPipe.CloseWithError(abort)
@@ -181,8 +180,6 @@ func (e *engine) newCompression(format string, decompress bool) ([]string, error
 	return []string{e.addResource(inputWriter), e.addResource(outputReader)}, nil
 }
 
-// codecOutput carries a codec's output to its readable side. It holds back the codec while a chunk waits to be read,
-// until the input closes; from then on it buffers, so the codec can finish and report its result.
 type codecOutput struct {
 	access   sync.Mutex
 	changed  *sync.Cond

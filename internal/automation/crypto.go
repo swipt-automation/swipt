@@ -710,7 +710,6 @@ func cryptoImport(_ context.Context, call *operation) (any, error) {
 	return importedKey(params, key)
 }
 
-// uncompressedPoint decompresses an EC point in SEC 1's compressed form and keeps any other form as it is.
 func uncompressedPoint(curve elliptic.Curve, data []byte) ([]byte, error) {
 	if len(data) == 0 || data[0] != 2 && data[0] != 3 {
 		return data, nil
@@ -723,7 +722,6 @@ func uncompressedPoint(curve elliptic.Curve, data []byte) ([]byte, error) {
 	return slices.Concat([]byte{4}, x.FillBytes(make([]byte, size)), y.FillBytes(make([]byte, size))), nil
 }
 
-// spkiPublicKey parses a SubjectPublicKeyInfo. x509 takes only uncompressed EC points, so a compressed one is decompressed first.
 func spkiPublicKey(der []byte) (any, error) {
 	key, err := x509.ParsePKIXPublicKey(der)
 	if err == nil {

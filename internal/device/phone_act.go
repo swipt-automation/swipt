@@ -18,13 +18,8 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
 )
 
-// A test app came to the front 122 to 138 ms after a warm launch request and
-// 662 to 1,042 ms after a cold one, and Clock 1.71 s after a cold one
-// (iPhone18,2, iOS 27.2 24B115).
 const launchLimit = 3500 * time.Millisecond
 
-// A text field takes the focus as the tap's touch-up is handled, and the
-// device reports the change within 150 ms (iPad17,1, iPadOS 27.2 24B115).
 const focusLimit = 500 * time.Millisecond
 
 func (p *Phone) readApplication(ctx context.Context, c *conn, client *accessibility.RemoteClient, geometry phoneGeometry, options accessibility.ApplicationOptions, base *PhoneNode) (*PhoneModel, error) {
@@ -131,8 +126,6 @@ func (s *axSession) perform(ctx context.Context, target *PhoneNode, name string)
 	return nil
 }
 
-// A backspace from the keyboard changed Claude's chat input 177 to 518 ms after
-// it was sent (iPhone18,2, iOS 27.2 24B115).
 const keyLimit = 2 * time.Second
 
 func (s *axSession) setText(ctx context.Context, target *PhoneNode, at Point, text string) error {
@@ -144,13 +137,14 @@ func (s *axSession) setText(ctx context.Context, target *PhoneNode, at Point, te
 		return err
 	}
 	// UIKit sets a text view's value with setText: and keyboardInputChanged:
-	// alone, which Claude's chat input did not take as an edit, while a text
-	// field's setter sends fieldEditorDidChange: and a focused web entry
-	// inserts the text through its editor (24B5110a UIKit.axbundle
-	// 0x18a052c34, 0x18a047f50; 24B5110a UIKitCore 0x185cffcc4; WebKit
-	// f98a24d3, Source/WebCore/accessibility/AccessibilityRenderObject.cpp:1886;
-	// iPhone18,2, iOS 27.2 24B115). Deleting a trailing space with the keyboard
-	// made it one.
+	// alone, while a text field's setter sends fieldEditorDidChange: and a
+	// focused web entry inserts the text through its editor (24B5110a
+	// UIKit.axbundle 0x18a052c34, 0x18a047f50; 24B5110a UIKitCore 0x185cffcc4;
+	// WebKit-7625.2.8.11.9
+	// Source/WebCore/accessibility/AccessibilityRenderObject.cpp:1848-1854).
+	// Claude's chat input did not take a text view's value set this way as an
+	// edit, but took deleting a trailing space with the keyboard as one (iOS
+	// 27.2 24B115).
 	nudge := entry.AX.TextView() && !entry.Web
 	value := text
 	if nudge {
@@ -186,7 +180,7 @@ func (s *axSession) setText(ctx context.Context, target *PhoneNode, at Point, te
 }
 
 // Tapping a text field can bring another entry in its place, as Safari's
-// address bar gives way to its editing field (iPhone18,2, iOS 27.2 24B115).
+// address bar gives way to its editing field (iOS 27.2 24B115).
 func (s *axSession) focus(ctx context.Context, target *PhoneNode, at Point) (*PhoneNode, error) {
 	app := target.model.app
 	before, err := s.focused(ctx, app)
@@ -272,8 +266,8 @@ func (s *axSession) checkText(ctx context.Context, target *PhoneNode, text strin
 	switch {
 	// UIKit and WebKit answer a secure entry's value as one • per UTF-16 code
 	// unit of its text (24B5110a UIKit.axbundle -[UIView
-	// _accessibilitySecureTextForString:] 0x18a046274; WebKit f98a24d3,
-	// Source/WebCore/accessibility/ios/WebAccessibilityObjectWrapperIOS.mm:1690,
+	// _accessibilitySecureTextForString:] 0x18a046274; WebKit-7625.2.8.11.9
+	// Source/WebCore/accessibility/ios/WebAccessibilityObjectWrapperIOS.mm:1685-1690,
 	// Source/WebCore/accessibility/ios/AccessibilityObjectIOS.mm:107).
 	case target.AX.Secure():
 		units := len(utf16.Encode([]rune(text)))
@@ -312,7 +306,7 @@ const nativeHandwriting = 2601
 // AXVoiceOverHandwritingAttributeCanDeleteCharacter is hasText for a
 // UIKeyInput and YES for anything else (24B5110a UIAccessibility 0x1bbde7d10,
 // 0x1bbdf8e08, 0x1bbdf8e90, 0x1bbdf9248); WebCore reports its placeholder as
-// the value of an empty input (24A446 WebCore.axbundle 0x242ab8a54).
+// the value of an empty input (24B5110a WebCore.axbundle 0x246713ad0).
 func (s *axSession) empty(ctx context.Context, target *PhoneNode) (bool, error) {
 	if target.Web {
 		return false, E.New(describeElement(target.AX), " shows its placeholder, and there is no way to tell an empty web input from one holding that text")

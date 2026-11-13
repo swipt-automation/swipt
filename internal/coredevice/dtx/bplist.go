@@ -24,9 +24,6 @@ type plistDecoder struct {
 	active  []bool
 }
 
-// The device writes equal objects once and references them from every place
-// they appear: a 212 KB tree push of a Wikipedia page expanded past 16 MB when
-// every reference was decoded on its own (iPad17,1, iPadOS 27.2 24B115).
 func decodeBinaryPlist(data []byte) (any, error) {
 	if len(data) < 40 || string(data[:8]) != "bplist00" {
 		return nil, E.New("dtx: invalid binary plist header")

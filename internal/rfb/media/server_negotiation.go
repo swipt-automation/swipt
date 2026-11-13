@@ -224,11 +224,7 @@ func answerVideoBlob(info ServerVideoInfo, pixelFormat PixelFormats) []byte {
 	// announce the position field (VideoProcessing 1395.65.1, macOS 27.0.1
 	// 26A434, UUID D87079FD-5315-32B1-8022-E6144A69A8EE,
 	// _VCPDecompressionSessionCheckIfLastSubFrame 0x1b5004328..0x1b500435c,
-	// sub_1b50c7dec 0x1b50c7dec..0x1b50c8038, sub_1b50c95c4 0x1b50c95c4..0x1b50c9958;
-	// VideoProcessing 1415.6.1, macOS 27.2 26B5101f, UUID
-	// A6FC3A01-8834-335F-A877-FDACE2E1AECC,
-	// _VCPDecompressionSessionCheckIfLastSubFrame 0x1cb62d0ac..0x1cb62d0e0,
-	// sub_1cb6f0970 0x1cb6f0970..0x1cb6f0bbc, sub_1cb6f2148 0x1cb6f2148..0x1cb6f24dc).
+	// sub_1b50c7dec 0x1b50c7dec..0x1b50c8038, sub_1b50c8dc8 0x1b50c9030..0x1b50c9060).
 	payload.addBytes(3, []byte(answerFeatureString))
 	payload.addUint(4, parameterSetsHEVC)
 	var stream protoMessage

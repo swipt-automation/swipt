@@ -21,13 +21,7 @@ import (
 // length, and a record of a 129-byte header, the NUL-terminated filename, the
 // image name and the message, both sized in the header with their NUL
 // (pymobiledevice3 eed1fde, pymobiledevice3/services/os_trace.py:131-203,
-// 224, 337-380). Every stream started as the device connected sent nothing
-// for 12 to 25 s, for one process or all, with or without the historical and
-// debug flags, and then all of them began at once, while a stream started
-// again later in the connection sent at once (iPad17,1, iPadOS 27.3
-// 24C5037i). The first writes, of 16 KB, held what had been logged since the
-// stream started, and each entry came at once from then on (iPhone18,2, iOS
-// 27.3 24C5037i).
+// 224, 337-380).
 const (
 	serviceName  = "com.apple.os_trace_relay.shim.remote"
 	streamFlags  = 0x4
@@ -38,7 +32,7 @@ const (
 // Continuous is the mach continuous time the entry was logged at; the time at
 // 55 and 63 is when diagnosticd framed the record (24C5037i diagnosticd
 // 0x100005454, 0x100005540, 0x100005568), and Continuous matched the activity
-// trace tap's time for the same entry (iPhone18,2, iOS 27.3 24C5037i).
+// trace tap's time for the same entry (iOS 27.3 24C5037i).
 type Entry struct {
 	PID        uint64
 	Continuous uint64

@@ -19,7 +19,7 @@ import (
 )
 
 // The Developer Disk Image registers this RemoteService for /System/Developer/usr/libexec/dtremotedisplayd
-// (DDI 27A9266e, Library/LaunchDaemons/com.apple.coredevice.dtremotedisplayd.plist).
+// (DDI 27B5028f, Library/LaunchDaemons/com.apple.coredevice.dtremotedisplayd.plist).
 const displayService = "com.apple.coredevice.displayservice"
 
 var (
@@ -805,8 +805,6 @@ func (s *Connection) updateDisplay(info display.DisplayInfo) {
 	s.display = geometryOf(info)
 	changed := previous.Width != info.Width || previous.Height != info.Height
 	if changed {
-		// In mode 7 the device produced 2420×1668 visible video in a 2432×1680 coded frame;
-		// mode 5 exposed the full 2432×1680 frame (observed on iPad17,1, iPadOS 27.2 24B5099f).
 		screen := rfb.ServerScreen{Width: info.Width, Height: info.Height, Scale: float64(max(info.PointScale, 1)), Model: s.screen.Model}
 		changed = screen != s.screen
 		s.screen = screen

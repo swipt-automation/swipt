@@ -10,9 +10,9 @@ import (
 
 // pymobiledevice3 reaches SpringBoard services over RSD through this shim and
 // reads the icon from pngData of the getIconPNGData reply (pymobiledevice3
-// 9537c0a, pymobiledevice3/services/springboard.py:25, 51-61). The icons were
-// 204x204, and an unknown or empty bundle ID got the generic app icon instead
-// of an error (iPhone18,2, iOS 27.2 24B115).
+// 9537c0a, pymobiledevice3/services/springboard.py:25, 51-61). An unknown or
+// empty bundle ID gets the generic app icon instead of an error (iOS 27.2
+// 24B115).
 const serviceName = "com.apple.springboardservices.shim.remote"
 
 func IconPNG(ctx context.Context, device *coredevice.Device, bundleID string) ([]byte, error) {

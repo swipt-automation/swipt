@@ -15,7 +15,6 @@ export type { Encoding };
 
 export type EncodingTables = typeof import("./encoding-tables");
 
-// On a fatal error, returns the offset of the byte the decoder restores to its input, or -1.
 export type NativeDecode = (
   bytes: Uint8Array,
   fatal: boolean,

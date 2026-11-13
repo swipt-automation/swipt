@@ -23,11 +23,7 @@ const (
 
 // The configuration follows pymobiledevice3 9537c0a,
 // pymobiledevice3/services/dvt/instruments/activity_trace_tap.py:370-385,
-// with the caller's predicate and an update rate of 10 instead of 500: a
-// record of runningboardd's came 7 to 40 ms after it was logged, against 23
-// to 73 ms at 50 and no sooner at 1. Without a predicate, the tap sent the
-// log of every process whatever the target process, 173 MB in 75 s (iPad17,1,
-// iPadOS 27.3 24C5037i).
+// except for predicate and ur.
 func activityConfig(predicate string) map[string]any {
 	return map[string]any{
 		"bm": int64(0), "combineDataScope": int64(0), "machTimebaseDenom": int64(3), "machTimebaseNumer": int64(125),
@@ -37,8 +33,6 @@ func activityConfig(predicate string) map[string]any {
 	}
 }
 
-// Continuous is the mach continuous time the record was logged at, and At the
-// time on the device's clock then.
 type LogEntry struct {
 	PID        uint64
 	At         time.Time
@@ -59,8 +53,6 @@ type LogStream struct {
 	err       error
 }
 
-// DialLogStream streams the log records the predicate selects; Ready closes
-// once the tap sends its first records or heartbeat.
 func DialLogStream(ctx, owner context.Context, device *coredevice.Device, predicate string) (*LogStream, error) {
 	conn, err := device.DialService(ctx, serviceName)
 	if err != nil {
@@ -135,7 +127,6 @@ func (s *LogStream) Ready() <-chan struct{} {
 	return s.ready
 }
 
-// Clock is the device's clock as the tap last gave it.
 func (s *LogStream) Clock() *DeviceClock {
 	return s.clock.Load()
 }
@@ -191,7 +182,6 @@ type activityTable struct {
 	message int
 }
 
-// DeviceClock maps the device's mach continuous time to its wall clock.
 type DeviceClock struct {
 	continuous             uint64
 	since1970              float64
@@ -306,8 +296,6 @@ func (d *activityDecoder) feed(data []byte, emit func(LogEntry) bool) error {
 	}
 }
 
-// push reads the value whose first word is at position, padded with zero
-// bits to whole bytes, and a whole byte more when its bits already fill them.
 func push(program []byte, position int) (value []byte, next int, complete bool, err error) {
 	var chunks []uint16
 	for {
@@ -430,9 +418,8 @@ func (d *activityDecoder) endRow(index int) (LogEntry, bool, error) {
 	return entry, true, nil
 }
 
-// compose joins a record's narrative text and its string, private and
-// integer arguments, which is all the records read here hold; any other
-// argument shows as its type (pymobiledevice3 9537c0a,
+// A record's message is a list of typed items: narrative text, and arguments
+// such as string, private and uint64 ones (pymobiledevice3 9537c0a,
 // pymobiledevice3/services/dvt/instruments/activity_trace_tap.py:216-302).
 func compose(items []any) string {
 	var builder strings.Builder

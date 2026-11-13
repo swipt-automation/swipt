@@ -54,10 +54,8 @@ func tap(ctx context.Context, geometry phoneGeometry, input *hid.Client, at Poin
 	return nil
 }
 
-// A move that reaches its end in one frame, with no position in between, does
-// not reliably scroll: 1 ms swipes scrolled Settings in none of three tries and
-// 16 ms ones in one of two, while 20, 33, 50 and 100 ms swipes always did
-// (iPhone18,2, iOS 27.2 24B115).
+// A move that reached its end in one frame, with no position in between, did
+// not reliably scroll (iOS 27.2 24B115).
 const moveMinimum = 2 * touchFrame
 
 func SwipePath(from, to Point, duration time.Duration) ([][]TouchSample, error) {
@@ -70,8 +68,8 @@ func SwipePath(from, to Point, duration time.Duration) ([][]TouchSample, error) 
 	return [][]TouchSample{{{from.X, from.Y, 0}, {to.X, to.Y, duration}}}, nil
 }
 
-// A scroll view keeps the speed of the last movement after the finger lifts,
-// even when it rested first (iPhone18,2, iOS 27.2 24B5110a).
+// A scroll view kept the speed of the last movement after the finger lifted,
+// even when it rested first (iOS 27.2 24B5110a).
 func DragPath(from, to Point, duration, press time.Duration) ([][]TouchSample, error) {
 	if duration <= 0 {
 		duration = dragDuration
@@ -232,10 +230,9 @@ func parseKeyCombo(combo string) ([]uint8, error) {
 	return nil, E.New("unknown key ", strconv.Quote(key), " in ", strconv.Quote(combo), "; keys are ", strings.Join(slices.Sorted(maps.Keys(phoneKeyUsages)), ", "), ", f1 to f12 and printable ASCII characters")
 }
 
-// Removing the keyboard right after the last key came up dropped keys still on
-// their way (iPad17,1, iPadOS 27.2 24B115): dtuhidd hands each event to the
-// keyboard's own queue and clears the events not yet handled when it removes
-// the keyboard (DDI 27B5028f dtuhidd 0x10003023c).
+// dtuhidd hands each event to the keyboard's own queue and clears the events
+// not yet handled when it removes the keyboard (DDI 27B5028f dtuhidd
+// 0x10003023c).
 func pressKeys(ctx context.Context, input *hid.Client, usages []uint8) error {
 	for _, usage := range usages {
 		if err := input.KeyDown(ctx, usage); err != nil {

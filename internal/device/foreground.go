@@ -16,11 +16,10 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/ostrace"
 )
 
-// Enabling the notifications sent the state of every app within 40 ms. They
-// report a process as Running when it starts or resumes and again when it is
-// suspended (iPhone18,2, iOS 27.2 24B115), and nothing when an app that kept
-// running in the background went to or left the front (iPhone18,2, iOS 27.3
-// 24C5037i).
+// Enabling the notifications first sent the state of every app. They report a
+// process as Running when it starts or resumes and again when it is suspended
+// (iOS 27.2 24B115), and nothing when an app that kept running in the
+// background went to or left the front (iOS 27.3 24C5037i).
 const (
 	appStatesBacklog = 250 * time.Millisecond
 	recentFront      = 250 * time.Millisecond
@@ -28,9 +27,8 @@ const (
 
 // SpringBoard posted SubstantialTransition as the app in front changed, also
 // to and from the home screen, Notification Center and the app switcher, but
-// not as the device locked, which posted lockstate (iPhone18,2, iOS 27.3
-// 24C5037i). It came 300 ms after the transition's animation ended, 0.9 s
-// after a launch (iPad17,1, iPadOS 27.3 24C5037i).
+// not as the device locked, which posted lockstate; it came after the
+// transition's animation ended (iOS and iPadOS 27.3 24C5037i).
 const substantialTransition = "com.apple.mobile.SubstantialTransition"
 
 var frontNotifications = []string{substantialTransition, "com.apple.springboard.lockstate"}
@@ -38,10 +36,10 @@ var frontNotifications = []string{substantialTransition, "com.apple.springboard.
 // runningboardd logged "[app<BUNDLE(PERSONA)>:PID] Set darwin role to: ROLE"
 // at the default level as the role of an app changed. An app took the
 // UserInteractiveFocal role as SpringBoard began to bring it to the front,
-// 0.9 s before SubstantialTransition, while the app it replaced kept the role
-// 0.65 s longer; two apps held it at once in Split View, and an app lost it
-// 1.1 to 1.4 s after the home button. Unlisted apps such as the widget
-// renderers took it too (iPad17,1, iPadOS 27.3 24C5037i).
+// before SubstantialTransition, while the app it replaced kept the role a
+// while longer; two apps held it at once in Split View, an app lost it only
+// a second or more after the Home button, and unlisted apps such as the
+// widget renderers took it too (iPadOS 27.3 24C5037i).
 const (
 	roleChange  = "] Set darwin role to: "
 	focalRole   = "UserInteractiveFocal"
@@ -50,11 +48,8 @@ const (
 
 // The relay of the device's log sent nothing for 12 to 25 s after the device
 // connected and then what had been logged since, while the activity trace tap
-// sent the role changes 7 to 40 ms after them but kept DTServiceHub at 5.7 %
-// of a core and diagnosticd at 1.5 %, against 0.2 % each with the relay
-// (iPad17,1 and iPhone18,2, iPadOS and iOS 27.3 24C5037i). So the tap stands
-// in until the relay's first entry, and a role change no later than the last
-// one taken for its app is one the other stream gave.
+// sent the role changes as they came but kept DTServiceHub and diagnosticd
+// busy many times longer than the relay did (iOS and iPadOS 27.3 24C5037i).
 const rolePredicate = `process == "runningboardd" AND eventMessage CONTAINS "Set darwin role to: "`
 
 type roleEntry struct {
@@ -130,7 +125,7 @@ func (f *foreground) get(ctx context.Context) (frontApplication, error) {
 // SpringBoard held foregroundRunning throughout, and so did unlisted system
 // apps such as InputUI; an app held it in the app switcher and under Control
 // Center, but not under Notification Center, and both apps held it while
-// one replaced the other (iPhone18,2, iOS 27.3 24C5037i).
+// one replaced the other (iOS 27.3 24C5037i).
 func (f *foreground) read(ctx context.Context) (frontApplication, error) {
 	front, _, err := f.readShown(ctx)
 	if err != nil {
@@ -139,8 +134,6 @@ func (f *foreground) read(ctx context.Context) (frontApplication, error) {
 	return f.saw(front), nil
 }
 
-// readShown returns, besides the app it takes as the front, every listed app
-// that held foregroundRunning, without telling them to saw.
 func (f *foreground) readShown(ctx context.Context) (frontApplication, map[uint64]string, error) {
 	if err := f.loadBundles(ctx); err != nil {
 		return frontApplication{}, nil, E.Cause(err, "list the apps")
@@ -175,8 +168,6 @@ func (f *foreground) readShown(ctx context.Context) (frontApplication, map[uint6
 			shown[process.PID] = process.BundleID
 		}
 	}
-	// Both apps hold foregroundRunning while one replaces the other, so an app
-	// that came to hold it since the last read is taken as the front.
 	candidates := shown
 	if asked.After(f.shownAt) {
 		fresh := make(map[uint64]string)
@@ -276,8 +267,6 @@ func (f *foreground) watch(listener func(ForegroundApp)) (cancel func()) {
 	}
 }
 
-// The tracking starts as the device connects and lasts as long, so it is
-// live by the time anything asks for the front.
 func (f *foreground) start() {
 	ctx, stop := context.WithCancel(f.conn.ctx)
 	f.access.Lock()
@@ -356,8 +345,6 @@ func (f *foreground) track(ctx context.Context, stopped chan struct{}) {
 	}
 }
 
-// refresh reads the front again for an event until the roles are followed,
-// and once more after a read during which another event came.
 func (f *foreground) refresh(ctx context.Context) {
 	if f.following.Load() {
 		return
@@ -512,9 +499,6 @@ func (f *foreground) followRoles(ctx context.Context) error {
 	}
 }
 
-// The roles set before the streams started are unknown, so every app the
-// processes show in front holds it, in no known order, until its role
-// changes.
 func (f *foreground) seed(ctx context.Context) error {
 	front, shown, err := f.readShown(ctx)
 	if err != nil {
@@ -596,9 +580,6 @@ func (f *foreground) loadBundles(ctx context.Context) error {
 	return f.listApps(ctx, nil)
 }
 
-// relist lists the apps again when an app that is neither listed nor known to
-// be unlisted comes to the front, as one installed after the apps were listed
-// does.
 func (f *foreground) relist(ctx context.Context, bundleIDs ...string) error {
 	f.access.Lock()
 	unknown := slices.DeleteFunc(slices.Clone(bundleIDs), func(it string) bool { return f.listed[it] || f.unlisted[it] })

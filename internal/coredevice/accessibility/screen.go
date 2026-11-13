@@ -24,10 +24,6 @@ const (
 	webSearchResultLimit = 10000
 )
 
-// WebKit's search with AXVisibleOnly answered the objects around the
-// viewport in document order: 324 objects of a Wikipedia page in 112 ms,
-// where the snapshot of the page answered all 4878 in 4.5 s (iPad17,1, iPadOS
-// 27.2 24B115).
 var webSearch = map[string]any{
 	"AXDirection": "AXDirectionNext", "AXResultsLimit": int64(webSearchResultLimit), "AXSearchKey": "AXAnyTypeSearchKey",
 	"AXVisibleOnly": true, "AXImmediateDescendantsOnly": false,
@@ -35,7 +31,7 @@ var webSearch = map[string]any{
 
 // After its process was told to end, an application stayed the frontmost one
 // for about half a second, answering its bundle ID but no snapshot, until
-// SpringBoard was in front (iPhone18,2, iOS 27.2 24B115).
+// SpringBoard was in front (iOS 27.2 24B115).
 const frontmostTurnover = time.Second
 
 func untilAnswered(read func() (*Screen, error)) (*Screen, error) {
@@ -151,9 +147,6 @@ type ApplicationOptions struct {
 
 var ErrGone = E.New("accessibility: the element is gone")
 
-// An app that read the pasteboard while launching answered no snapshot until
-// its paste prompt was answered, while the frontmost application was already
-// SpringBoard (iPhone18,2, iOS 27.2 24B115).
 func (c *RemoteClient) ReadApplication(ctx context.Context, options ApplicationOptions) (*Screen, error) {
 	read := func() (*Screen, error) {
 		first := &Batch{}
@@ -281,8 +274,6 @@ func (c *RemoteClient) silent(ctx context.Context, app Element, check bool, err 
 	return &SilentFrontmostError{PID: app.Ref.PID, err: err}
 }
 
-// Behind a UIKit alert, the snapshot that honors modal views kept the alert's
-// 43 of 134 nodes (iPad17,1, iPadOS 27.2 24B115).
 func markInert(node *TreeNode, listed map[ElementRef]bool, inert bool) {
 	node.Inert = inert || !listed[node.Ref]
 	for _, child := range node.Children {
@@ -295,10 +286,10 @@ type remoteProbe struct {
 	result *Result[*Snapshot]
 }
 
-// SpringBoard's remote elements are not read: with Control Center open,
-// reading its 5 remote elements took 1.4 s and added nothing to the controls
-// its own snapshot held (iPad17,1, iPadOS 27.2 24B115), and while another
-// application is in front, one hosts that application's scene.
+// A view presenting another process's scene holds a remote element for it
+// (24A446 UIKit.axbundle -[_UIScenePresentationViewAccessibility
+// _accessibilitySetRemoteElementIfNecessary] 0x189f41d28..0x189f420cc), which
+// in SpringBoard is the scene of the application in front.
 func (c *RemoteClient) expand(run func(*Batch) error, snapshots []*Snapshot, springboard uint64, depth int64) error {
 	probes := &Batch{}
 	var remotes []remoteProbe
@@ -345,7 +336,7 @@ func (c *RemoteClient) expand(run func(*Batch) error, snapshots []*Snapshot, spr
 
 // The snapshot of Safari's remote element answers a
 // WKAccessibilityWebPageObject under it, whose child, a
-// WebAccessibilityObjectWrapper, holds the page (iPhone18,2, iOS 27.2 24B115).
+// WebAccessibilityObjectWrapper, holds the page (iOS 27.2 24B115).
 func webArea(node *TreeNode) *TreeNode {
 	if node.Class == webPageClass {
 		for _, child := range node.Children {
@@ -492,8 +483,7 @@ var loneAttributes = slices.Concat(snapshotAttributes, []any{int64(nativeParent)
 // In a snapshot, an attribute whose value is an element, such as the parent
 // (native 5002), comes as that element with its attributes; an element among
 // those attributes comes only as a reference (24B5110a UIAccessibility
-// __fetchAttributesIfNecessary 0x1bbe141e8, 0x1bbe14260; iPhone18,2, iOS 27.2
-// 24B115).
+// __fetchAttributesIfNecessary 0x1bbe141e8, 0x1bbe14260).
 func (b *Batch) lone(element Element) *Result[loneNode] {
 	parameter := map[string]any{
 		"attributes": loneAttributes, "maxDepth": int64(0), "maxChildren": int64(math.MaxInt32), "maxArrayCount": int64(math.MaxInt32),
@@ -506,8 +496,6 @@ func (b *Batch) lone(element Element) *Result[loneNode] {
 			if result.Code != 0 {
 				return nil
 			}
-			// While an app launched, the snapshot of a web element its search had
-			// just found answered nothing (iPhone18,2, iOS 27.2 24B115).
 			if response.value == nil {
 				result.Code = errorNoElement
 				return nil

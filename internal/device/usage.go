@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	// The tap gave the first 31 bytes of a longer process name (iPad17,1,
-	// iPadOS 27.3 24C5037i).
+	// The tap gave the first 31 bytes of a longer process name (iPadOS 27.3
+	// 24C5037i).
 	sysmonNameLength = 31
 	// The tap reported kernel_task as process 0, and the process list of the
-	// app service had every process of the tap but that one (iPad17,1, iPadOS
-	// 27.3 24C5037i).
+	// app service had every process of the tap but that one (iPadOS 27.3
+	// 24C5037i).
 	kernelPID            = 0
 	usageListInterval    = 5 * time.Second
 	usageNewListInterval = time.Second

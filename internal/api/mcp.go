@@ -24,10 +24,10 @@ const (
 	progressEvery  = 10 * time.Second
 )
 
-// Claude Code scales an image down when a side is over 2000 pixels or, for the
-// models that set a tile limit, when it covers over 4784 tiles of 28x28
-// pixels, and re-encodes one over 512,000 bytes as JPEG (Claude Code 2.1.310
-// claude xR 0xcee5319, TTt 0xcee52c9, ld 0xd6acf5c, JS 0xd66d1fa).
+// Claude Code scales an image down to fit 2000x2000 pixels, unless the model
+// sets larger limits, and to fit maxImageTokens tiles of 28x28 pixels, which is
+// 4784 for the models that set it (Claude Code 2.1.322, Vw and Rle in
+// module-117, D$n and Y in module-442, image_limits in module-061).
 const (
 	imageSideLimit = 2000
 	imageTile      = 28
@@ -80,7 +80,7 @@ func (s *Server) serveMCP(w http.ResponseWriter, r *http.Request, credential *Cr
 			return
 		}
 	}
-	// Quick Tunnels hold back the body of a GET text/event-stream response until it ends.
+	// Quick Tunnels hold back the body of a text/event-stream response until it ends.
 	if r.Method == http.MethodGet {
 		w.Header().Set("Allow", "POST, DELETE")
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

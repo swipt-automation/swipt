@@ -101,8 +101,6 @@ extension DialogRequest.ActionName {
 }
 
 extension LocalizedStringResource {
-    /// Shows a runtime string as is: nothing is extracted into a String Catalog,
-    /// and the lookup goes to a table that doesn't exist so no key can match.
     nonisolated static func verbatim(_ string: String) -> LocalizedStringResource {
         LocalizedStringResource(String.LocalizationValue(string), table: "Verbatim")
     }

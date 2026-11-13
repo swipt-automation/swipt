@@ -438,7 +438,6 @@ async function provision(work, id, team, device, update) {
     }) ||
     revoked(certificates)
   ) {
-    // Xcode keeps a cached profile until it expires, even after its certificate is revoked, and creates a new one once it is removed.
     fs.rmSync(
       path.join(
         os.homedir(),

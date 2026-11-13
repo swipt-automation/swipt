@@ -12,17 +12,13 @@ index 6273fada87c1f5ac025c119ab63081ba8af189c2..61baafbf3a9501fb2e3c97b044f104e4
      const nativeViewName = viewName ? `ViewManagerAdapter_${moduleName}_${viewName}${viewNameSuffix}` : `ViewManagerAdapter_${moduleName}${viewNameSuffix}`;
      return NativeComponentRegistry.get(nativeViewName, ()=>{
 diff --git a/ios/Core/AppContext.swift b/ios/Core/AppContext.swift
-index 8a8685bece51b5e0d481aacb28fd700a8e897145..74ab1222b7c69ae31b1255d44af693096941efe7 100644
+index 8a8685bece51b5e0d481aacb28fd700a8e897145..8cb66638cc40f4a395d3ed4ecb119daeffc7533c 100644
 --- a/ios/Core/AppContext.swift
 +++ b/ios/Core/AppContext.swift
-@@ -147,6 +147,29 @@ public class AppContext: NSObject, EXAppContextProtocol, @unchecked Sendable {
+@@ -147,6 +147,23 @@ public class AppContext: NSObject, EXAppContextProtocol, @unchecked Sendable {
      return String(index)
    }
  
-+  /// The identifier in the names of the native view classes registered for this app context.
-+  /// React Native never forgets a registered component name, while `appIdentifier` counts up
-+  /// forever, so an app context can take a reusable one with `useReusableViewIdentifier()`;
-+  /// otherwise it is `appIdentifier`.
 +  @objc
 +  public var viewIdentifier: String? {
 +    return reusableViewIdentifier.withLock { $0?.string } ?? appIdentifier
@@ -30,8 +26,6 @@ index 8a8685bece51b5e0d481aacb28fd700a8e897145..74ab1222b7c69ae31b1255d44af69309
 +
 +  private let reusableViewIdentifier = Mutex<ReusableViewIdentifier?>(nil)
 +
-+  /// Gives this app context the lowest view identifier, counting from 1, that no other living app
-+  /// context holds, and returns it. The identifier is freed with the app context.
 +  @objc
 +  @discardableResult
 +  public func useReusableViewIdentifier() -> String {
@@ -45,7 +39,7 @@ index 8a8685bece51b5e0d481aacb28fd700a8e897145..74ab1222b7c69ae31b1255d44af69309
    /**
     Code signing entitlements for code signing
     */
-@@ -900,3 +923,28 @@ public typealias AppContextLostException = Exceptions.AppContextLost
+@@ -900,3 +917,28 @@ public typealias AppContextLostException = Exceptions.AppContextLost
  // Deprecated since v1.0.0
  @available(*, deprecated, renamed: "Exceptions.RuntimeLost")
  public typealias RuntimeLostException = Exceptions.RuntimeLost
@@ -88,17 +82,13 @@ index 370015ff59ee6dead8aeb8f299822b9f4d7cb696..21e82a76026103bd8381c7f45fa92000
    if (![viewModuleWrapperClass respondsToSelector:createWrapperSelector]) {
      NSLog(@"[ExpoFabricViewObjC] Error: EXViewModuleWrapper does not respond "
 diff --git a/ios/Protocols/EXAppContextProtocol.h b/ios/Protocols/EXAppContextProtocol.h
-index d0c1c80e9889b1d86334e2d2d85998cf5dcaa20b..4d2c9a200755c882933044e9c8242a5bb7dba24c 100644
+index d0c1c80e9889b1d86334e2d2d85998cf5dcaa20b..529c685de81fcb2bed1cb203451f0ba259107f05 100644
 --- a/ios/Protocols/EXAppContextProtocol.h
 +++ b/ios/Protocols/EXAppContextProtocol.h
-@@ -30,6 +30,12 @@ typedef void (NS_SWIFT_SENDABLE ^EXPromiseRejectBlock)(NSString * _Nullable code
+@@ -30,6 +30,8 @@ typedef void (NS_SWIFT_SENDABLE ^EXPromiseRejectBlock)(NSString * _Nullable code
   */
  @property(nonatomic, readonly, nullable) NSString *appIdentifier;
  
-+/**
-+ The identifier in the names of the native view classes registered for this app context.
-+ Unlike `appIdentifier`, it can be reused once its app context is gone.
-+ */
 +@property(nonatomic, readonly, nullable) NSString *viewIdentifier;
 +
  #pragma mark - Module Management

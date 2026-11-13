@@ -11,12 +11,10 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 )
 
-// UIKit drops touches during a presentation while the accessibility hit test
-// already reaches the element: an alert took them 450 to 500 ms after the tap
-// that presented it, and the animation count reached zero about 100 ms later;
-// after a launch it reached zero as late as 1.23 s (iPad17,1, iPadOS 27.3
-// 24C5037i). The count covers every animation of the process, so a repeating
-// one must not hold a tap back for long.
+// UIKit dropped touches during a presentation while the accessibility hit test
+// already reached the element, and took them again shortly before the
+// animation count, which covers every animation of the process, reached zero
+// (iPadOS 27.3 24C5037i).
 const animationLimit = 1500 * time.Millisecond
 
 type Aim struct {
@@ -44,9 +42,6 @@ func (p *Phone) SetText(ctx context.Context, ref, text string, timeout time.Dura
 	})
 }
 
-// aimed runs act on the element once a tap at the point it answers would reach
-// it, checking again while the element is moving, disabled or behind another
-// one, until the timeout; a negative timeout waits forever and zero checks once.
 func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, name string, act func(ctx context.Context, s *axSession, node *PhoneNode, at Point) error) error {
 	c, ctx, done, err := p.begin(ctx)
 	if err != nil {

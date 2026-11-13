@@ -36,7 +36,7 @@ const (
 // _accessibilityObscuredScreenAllowedViews names (24B5110a UIAccessibility
 // 0x1bbe129f0, 0x1bbe12a08, 0x1bbe12aa0). It does not reach into other
 // processes: their content is an element of class AXRemoteElement with no
-// children (iPhone18,2, iOS 27.2 24B115).
+// children (iOS 27.2 24B115).
 const attributeUserTestingSnapshot = 52
 
 // UIAccessibility native attributes (24A446 UIAccessibility
@@ -142,7 +142,7 @@ type Element struct {
 	Label                string
 	Value                string
 	// A web radio button reports 0 as its value and its state as the raw
-	// value, "1" when checked (iPad17,1, iPadOS 27.2 24B115).
+	// value, "1" when checked (iPadOS 27.2 24B115).
 	RawValue    string
 	Identifier  string
 	Placeholder string
@@ -348,8 +348,6 @@ func truthy(value any) bool {
 	return ok && number != 0
 }
 
-// WebKit links report an NSURL with the absolute address in NS.relative and no
-// NS.base (iPhone18,2, iOS 27.2 24B5110a and 24B115).
 func urlValue(value any) string {
 	if fields, ok := value.(map[string]any); ok && fields["$class"] == "NSURL" {
 		return textValue(fields["NS.relative"])

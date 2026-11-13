@@ -114,8 +114,6 @@ func (d *Device) watch() {
 				d.fail(E.Cause(err, "RSD connection closed"))
 				return
 			}
-			// The device sent StartTls with YesNo=false and TlsPolicy=1 in a
-			// captured RSD exchange (observed on iPad17,1, iPadOS 27.2 24B5099f).
 			if message.Body["MessageType"] == "StartTls" {
 				if message.Body["YesNo"] == true {
 					d.logger.Warn("the device asks for TLS on the RSD connection, which is not supported: ", fmt.Sprint(message.Body))

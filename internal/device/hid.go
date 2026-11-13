@@ -188,10 +188,6 @@ func (q *hidQueue) acquire(ctx context.Context, c *conn) (*hidGrant, error) {
 	return nil, E.Cause(ctx.Err(), "wait for the device's input")
 }
 
-// A conn keeps its touch connection until it detaches, so it connects as the
-// conn attaches; the first tap otherwise waited 48 ms for it (iPad17,1, iPadOS
-// 27.3 24C5037i). Touches go through the indigo service, which attaches no
-// keyboard that would hide the software one.
 func (q *hidQueue) prepareTouches(c *conn) {
 	grant, err := q.acquire(c.ctx, c)
 	if err != nil {
@@ -510,18 +506,16 @@ func (s *Connection) LockScreen(ctx context.Context) error {
 	return s.pressButton(ctx, button, 1)
 }
 
-// Home wakes an already-locked display without toggling an ongoing video wake
-// back off, as a second power-button event would.
 func (s *Connection) WakeScreen(ctx context.Context) error {
 	button := hid.ButtonHome
-	// Back-to-back down/up woke ActiveOn from AOD on iPhone18,2 / 24B5110a.
+	// A Home down and up with no hold between them woke the always-on display
+	// to activeOn (iOS 27.2 24B5110a).
 	button.Hold = 0
 	return s.pressButton(ctx, button, 1)
 }
 
 // dtuhidd drops the events it has not dispatched yet once their connection
-// ends, however it ends (observed on iPhone18,2, iOS 27.2 24B5110a), so the
-// buttons go through the client that stays for the viewers.
+// ends, however it ends (DDI 27B5028f dtuhidd 0x1000153e4, 0x10003023c).
 func (s *Connection) pressButton(ctx context.Context, button hid.Button, count int) error {
 	c, release, err := s.acquire(ctx)
 	if err != nil {

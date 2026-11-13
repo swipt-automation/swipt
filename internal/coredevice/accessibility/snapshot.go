@@ -9,8 +9,7 @@ import (
 // ___CFBinaryPlistCreateObjectFiltered 0x18061e414; 24C5037i AXRuntime
 // _AXUnserializeCFType3 0x18fabd614). A snapshot nests each level 2 deeper,
 // and the values of a node 3 or more deeper than the node (24C5037i AXRuntime
-// 0x18fb01858, 0x18fb01cf8): a maxDepth of 63 answered, 64 nil (iPhone18,2,
-// iOS 27.3 24C5037i).
+// 0x18fb01858, 0x18fb01cf8).
 const (
 	DefaultDepth = 50
 	MaxDepth     = 56
@@ -93,7 +92,7 @@ func (s *Snapshot) clip(node *TreeNode, area *LayoutFrame) {
 	// A window's frame is in its own space, which differs from the
 	// application's for SpringBoard: its application element is landscape
 	// on a landscape iPad, while its windows and their content are portrait
-	// (iPad17,1, iPadOS 27.2 24B115).
+	// (iPadOS 27.2 24B115).
 	case node.Type == automationWindow && hasArea(node.Frame):
 		node.Clip = *node.Frame
 	}

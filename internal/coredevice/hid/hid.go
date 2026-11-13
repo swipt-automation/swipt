@@ -1,7 +1,7 @@
 // dtuhidd serves the RemoteXPC services com.apple.coredevice.hid.indigo,
 // whose features include remote.hid.button and remote.hid.digitizer, and
 // com.apple.coredevice.hid.universalhidservice, whose feature is
-// remote.universalhidservice (DDI 27A9266e,
+// remote.universalhidservice (DDI 27B52,
 // /Library/LaunchDaemons/com.apple.coredevice.dtuhidd.plist).
 package hid
 
@@ -86,8 +86,6 @@ func (c *Client) PrepareTouches(ctx context.Context) error {
 	return nil
 }
 
-// A zero-hold tap skipped Face ID on the passcode page (iPhone18,2 and
-// iPad17,1, iOS and iPadOS 27.2 24B115).
 func (c *Client) Tap(ctx context.Context, touch Touch) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -182,9 +180,8 @@ func (c *Client) Close() error {
 
 // IndigoHIDSession ends its touchscreen contact then cancels its service pool
 // on peer teardown (DDI 27B5028f dtuhidd 0x10001b09c, 0x100017bfc,
-// 0x100027914, 0x10003023c). Closing the connection ended a held touch without
-// a tap, and released a held volume-down button, which stopped repeating
-// (iPhone18,2, iOS 27.2 24B115).
+// 0x100027914, 0x10003023c). Closing the connection released a held
+// volume-down button (iOS 27.2 24B115).
 func (c *Client) closeIndigo() {
 	if c.indigo != nil {
 		c.indigo.Close()
@@ -236,10 +233,8 @@ func (c *Client) universalConn(ctx context.Context) (*xpc.Conn, error) {
 
 // dtuhidd keeps the services created on a universalhidservice connection in a
 // pool of that connection, and when the connection closes it resets their
-// gestures and cancels them (DDI 27A9266e dtuhidd 0x10002fe7c..0x10002fe98,
-// 0x1000129f4..0x100012a18, 0x1000281ac..0x100028250,
-// 0x10003131c..0x100031780): closing it without removeService brought the
-// software keyboard back within 1.5 s (iPhone18,2, iOS 27.2 24B115).
+// gestures and cancels them (DDI 27B5028f dtuhidd 0x100012278, 0x100027914,
+// 0x10003023c).
 func (c *Client) closeUniversal() {
 	if c.universal == nil {
 		return

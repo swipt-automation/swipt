@@ -28,7 +28,7 @@ const magic = "CDTunnel"
 const DefaultMTU = 16000
 
 // A vphone guest stops acknowledging a transfer over a tunnel of DefaultMTU
-// (iPhone18,2, iOS 27.0.1 24A446, vphone-cli 2.15.2).
+// (vphone-cli 2.15.2, iOS 27.0.1 24A446).
 const GuestMTU = 1280
 
 const ipv6HeaderLength = 40
@@ -107,10 +107,9 @@ const maxPacket = 65535
 
 const maxWrite = 256 << 10
 
-// The device leaves a TLS record of more than about 8192 bytes of data
-// unprocessed until a smaller record arrives: a 16 MB upload stalls on
-// 8300-byte records and completes on 8193-byte ones
-// (iPhone18,2, iOS 27.3 24C5037i, CoreDeviceProxy over USB).
+// The device leaves a TLS record of more than about 8 KB of data unprocessed
+// until a smaller record arrives (iOS 27.3 24C5037i, CoreDeviceProxy over
+// USB).
 const maxRecord = 8192
 
 const retryDelay = time.Millisecond

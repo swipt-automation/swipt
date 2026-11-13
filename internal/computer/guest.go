@@ -220,7 +220,7 @@ func GuestInstall(ctx context.Context, udid, archive, bundleID string) error {
 }
 
 // A local network decision is a NEPathRule of the NEPathController with
-// IgnoreRouteRules, with these values once allowed (NetworkExtension, iPhone18,2,
+// IgnoreRouteRules, with these values once allowed (NetworkExtension,
 // iOS 27.0.1 24A446).
 func allowLocalNetwork(data []byte, bundleID string) ([]byte, error) {
 	var archive map[string]any
@@ -271,7 +271,7 @@ func allowLocalNetwork(data []byte, bundleID string) ([]byte, error) {
 }
 
 // SpringBoard keeps the notification settings of an app as a BBSectionInfo archive,
-// allowed when authorizationStatus is 2 (BulletinBoard, iPhone18,2, iOS 27.0.1 24A446).
+// allowed when authorizationStatus is 2 (BulletinBoard, iOS 27.0.1 24A446).
 func allowNotifications(data []byte, bundleID, name string) ([]byte, error) {
 	var settings map[string]any
 	_, err := plist.Unmarshal(data, &settings)

@@ -24,10 +24,10 @@ const (
 )
 
 // remoted maps TlsPolicy 1, 2 and 3 to disabled, optional and required, and
-// finishes a peer's handshake only after the peer answers the device's
-// StartTls; macOS answers with YesNo false and TlsPolicy 1 (remoted, macOS
-// 27.0.1 26A434, 0x1000076c4..0x100007728, 0x100008e2c..0x100009090,
-// 0x1000194b4; observed on iPhone18,2, iOS 27.2 24B115).
+// goes on with a peer's handshake once the peer answers its StartTls (remoted,
+// iOS 27.3 24C5037i, 0x1000038b0..0x100003b10, 0x100019c58..0x100019cd0).
+// macOS answers with YesNo false (remoted, macOS 27.0.1 26A434,
+// 0x1000076c4..0x100007728).
 const tlsPolicyDisabled = 1
 
 type Peer struct {

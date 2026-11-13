@@ -39,7 +39,6 @@ func (e *engine) preferredLocalizations(arguments []jsc.Value) (any, error) {
 	return preferredLocalizations(localizations, e.host.options.Languages), nil
 }
 
-// preferredLocalizations matches like Bundle.preferredLocalizations(from:forPreferences:).
 func preferredLocalizations(localizations []string, preferences []string) []string {
 	if len(localizations) == 0 {
 		return []string{}

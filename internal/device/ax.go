@@ -129,8 +129,8 @@ func (w *axWorker) await(ctx context.Context, job *axJob) (any, error) {
 // clientNeedsAccessibility: false stops (24B5110a
 // AccessibilityPlatformTranslation -[AXPRemoteCacheManager
 // handleNotification:data:associatedObject:] 0x253fe623c), and the elements
-// read before closing answered through the next connection (iPhone18,2, iOS
-// 27.3 24C5037i).
+// read before closing answered through the next connection (iOS 27.3
+// 24C5037i).
 func (w *axWorker) next() *axJob {
 	for {
 		w.access.Lock()
@@ -233,8 +233,7 @@ func (w *axWorker) execute(job *axJob) (any, error) {
 	case client.Err() != nil && w.conn.ctx.Err() == nil:
 		w.ended()
 		// The device reset this connection, with axauditd still running, right
-		// after the application in front was relaunched (iPhone18,2, iOS 27.3
-		// 24C5037i).
+		// after the application in front was relaunched (iOS 27.3 24C5037i).
 		if !job.action && !job.retried {
 			job.retried = true
 			return w.execute(job)
@@ -247,8 +246,8 @@ func (w *axWorker) execute(job *axJob) (any, error) {
 
 // After the device's accessibility had failed, each application launched
 // later answered nothing, for more than ten minutes and across connections,
-// while those launched before answered; restarting axauditd ended it
-// (iPhone18,2, iOS 27.2 24B115).
+// while those launched before answered; restarting axauditd ended it (iOS
+// 27.2 24B115).
 func (w *axWorker) silent(pid uint64) {
 	w.access.Lock()
 	if w.silence.pid != pid {
@@ -313,9 +312,8 @@ func (w *axWorker) open(ctx context.Context) (*accessibility.RemoteClient, error
 
 // A remoteAXService connection that ended while its axauditd kept running
 // left that daemon generating the frontmost application's tree at each change
-// of the screen, for no client, until the daemon was killed; this was so after
-// Swipt was killed on the device and after swipt-server was killed on a Mac
-// (iPhone18,2, iOS 27.3 24C5037i).
+// of the screen, for no client, until the daemon was killed (iOS 27.3
+// 24C5037i).
 func (w *axWorker) ended() {
 	served := w.daemon
 	w.logger.Debug("the connection to the device's accessibility service ended: ", w.client.Err())
@@ -358,12 +356,13 @@ func (w *axWorker) closeClient() {
 	w.client = nil
 }
 
-// axauditd reads the frontmost application's tree for every remoteAXService
-// client on its main queue, which also serves requests and accepts
-// connections, waiting up to 10000 s on an application that does not answer;
-// a new connection only adds another such reader, while killing the daemon
-// ended the wait, and dropped every object ID it had handed out
-// (iPhone18,2, iOS 27.2 24B115).
+// axauditd accepts remoteAXService connections on its main queue and gives
+// the accessibility messages it sends a timeout of 10000 s (24B5110a axauditd
+// 0x10000cc78, 0x10000cbc0). It read the frontmost application's tree for
+// every client on that queue, so a new connection only added another reader
+// waiting on an application that did not answer, while killing the daemon
+// ended the wait and dropped every object ID it had handed out (iOS 27.2
+// 24B115).
 func (w *axWorker) stalled(job *axJob, stall error) error {
 	var named uint64
 	reason := stall.Error()

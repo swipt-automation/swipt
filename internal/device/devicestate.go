@@ -9,8 +9,7 @@ import (
 )
 
 // The remote notification proxy relays any Darwin notification it is asked to
-// observe, such as com.apple.system.config.network_change (iPhone18,2, iOS
-// 27.2 24B115).
+// observe, such as com.apple.system.config.network_change (iOS 27.2 24B115).
 const notificationProxyService = "com.apple.mobile.notification_proxy.shim.remote"
 
 var stateNotifications = []string{

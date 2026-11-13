@@ -13,7 +13,7 @@ enum SwiptMain {
         // UUID 2688AFBC-5C39-3132-BCF5-8D00D32D7615,
         // -[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:]
         // 0x1852a5f00..0x1852a5ff4,
-        // -[NSPersistentUIRestorer _finishedRestoringWindowsWith_ZOrder:options:completionHandler:] 0x185ca0144..0x185ca01d0,
+        // -[NSPersistentUIRestorer _finishedRestoringWindowsWithZOrder:options:completionHandler:] 0x185ca0144..0x185ca01d0,
         // ___58-[NSApplication(NSAppleEventHandling) _handleAEOpenEvent:]_block_invoke 0x185024488..0x1850244c0).
         UserDefaults.standard.register(defaults: ["ApplePersistenceIgnoreState": true])
         #endif
@@ -59,8 +59,9 @@ struct SwiptApp: App {
 
 #if os(iOS)
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    // RCTKeyWindow falls back to the application delegate's window while no scene is in the foreground, and the
-    // delegate SwiftUI installs does not answer it (react-native 0.88.1).
+    // RCTKeyWindow falls back to the application delegate's window while no scene is in the foreground, unless
+    // the scene manifest lists scene configurations (react-native 0.88.1, React/Base/RCTUtils.mm:672-674, 680-695),
+    // and the delegate SwiftUI installs does not answer it.
     var window: UIWindow? {
         get {
             let windows = UIApplication.shared.connectedScenes.lazy.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)

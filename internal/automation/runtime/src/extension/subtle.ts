@@ -105,7 +105,6 @@ const gcmTagLengths = [32, 64, 96, 104, 112, 120, 128];
 const failure = (message: string, name: string) =>
   new DOMException(message, name);
 
-// "get a copy of the bytes held by the buffer source": a detached buffer holds no bytes
 const detached = (buffer: ArrayBufferLike) =>
   (buffer as { detached?: boolean }).detached === true;
 const bufferSource = (value: unknown, what: string): Uint8Array => {

@@ -23,18 +23,13 @@ import (
 
 type Mode int
 
-// The mode-5 capture is 2432x1680; modes 7 and 9 display 2420x1668 from a
-// 2432x1680 coded frame (observed on iPad17,1, iPadOS 27.2 24B5099f).
+// Modes 5, 7 and 9 answer TXMaxBitrate 6, 60 and 40 Mbit/s with pixel
+// formats 420f, 444f (HEVC range extensions, 4:4:4) and 420v (iPadOS 27.2
+// 24B5099f).
 const (
-	// Mode 5 returned TXMaxBitrate=6000000 and 420f (observed on iPad17,1,
-	// iPadOS 27.2 24B5099f).
-	ModeCoreDevice Mode = 5
-	// Mode 7 returned TXMaxBitrate=60000000 and 444f; its capture is HEVC
-	// range extensions, 4:4:4 (observed on iPad17,1, iPadOS 27.2 24B5099f).
+	ModeCoreDevice    Mode = 5
 	ModeRemoteDesktop Mode = 7
-	// Mode 9 returned TXMaxBitrate=40000000 and 420v (observed on iPad17,1,
-	// iPadOS 27.2 24B5099f).
-	ModeNearby Mode = 9
+	ModeNearby        Mode = 9
 )
 
 const (
@@ -50,8 +45,6 @@ const (
 	bankFeatures = "FLS;SW:1;"
 )
 
-// An offer with these endpoint values succeeded (observed on iPad17,1,
-// build 24B5089g).
 const (
 	hostModel            = "Mac17,7"
 	hostFrameworkVersion = "2205.3.1"
@@ -64,9 +57,8 @@ type bitrateTier struct {
 	bufferCap uint64
 }
 
-// Mode 7 with the 262144 tier set to 10 Mbit/s and mode 9 with the 12288
-// tier set to 10 Mbit/s each returned TXMaxBitrate=10000000 while
-// TXMinBitrate stayed 20000000 (observed on iPad17,1, iPadOS 27.2 24B5099f).
+// Setting the 262144 tier of mode 7 or the 12288 tier of mode 9 to 10 Mbit/s
+// makes the device answer TXMaxBitrate 10 Mbit/s (iPadOS 27.2 24B5099f).
 const (
 	screenTierBufferCap = 262144
 	screenTierLimit     = 60_000_000

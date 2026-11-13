@@ -102,7 +102,7 @@ private final class SwipletViewController: UIViewController {
 private final class SwipletRuntime: SwiptHostDelegate {
     nonisolated let swiplet: String
     let entry: SwipletEntry
-    // The factory holds its delegate weakly.
+    // The factory holds its delegate weakly (react-native 0.88.1, Libraries/AppDelegate/RCTReactNativeFactory.h:116).
     private let delegate: ExpoReactNativeFactoryDelegate
     let factory: ExpoReactNativeFactory
     let surfaces = NSMapTable<NSString, SwipletSurface>.strongToWeakObjects()
@@ -124,7 +124,8 @@ private final class SwipletRuntime: SwiptHostDelegate {
             guard let self else { return }
             SwiptHostModule.bind(appContext, to: self)
         }
-        // defaultConfiguration returns nil when React Native is built without the dev menu.
+        // defaultConfiguration returns nil when React Native is built without the dev menu
+        // (react-native 0.88.1, React/CoreModules/RCTDevMenu.mm:560-567).
         factory.rootViewFactory.initializeReactHost(
             launchOptions: nil, bundleConfiguration: factory.bundleConfiguration, devMenuConfiguration: RCTDevMenuConfiguration.default() ?? RCTDevMenuConfiguration())
         modules = factory.rootViewFactory.reactHost?.value(forKey: "moduleRegistry") as? RCTModuleRegistry
@@ -303,7 +304,8 @@ final class SwipletHost {
             Bundle.main.url(forResource: "main", withExtension: "jsbundle")
         }
 
-        // RCTTurboModuleManagerDelegate, which Swift doesn't see; nil makes the default instance.
+        // RCTTurboModuleManagerDelegate, which Swift doesn't see; nil makes the default instance (react-native 0.88.1,
+        // ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModuleManager.mm:787-791).
         @objc(getModuleInstanceFromClass:)
         nonisolated func moduleInstance(from moduleClass: AnyClass) -> AnyObject? {
             switch ObjectIdentifier(moduleClass) {

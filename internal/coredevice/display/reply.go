@@ -16,9 +16,9 @@ const (
 	Audio StreamType = "audio"
 )
 
-// In the start reply, LocalSSRC is the RTP sender and RemoteSSRC is the
-// offered receiver SSRC; SourcePort is also the port observed on the
-// incoming RTP and RTCP packets (observed on iPad17,1, build 24B5089g).
+// In the start reply, RemoteSSRC echoes the offered SSRC and LocalSSRC is the
+// device's RTP sender; the device sends unencrypted RTP and RTCP from
+// SourcePort (iPadOS 27.2 24B5089g).
 type StreamInfo struct {
 	Type          StreamType
 	SSRC          uint32
@@ -28,12 +28,9 @@ type StreamInfo struct {
 	FrameRate     int
 	TilesPerFrame int
 	LTRP          bool
-	// The shared-session audio/video probe returned a nonzero
-	// SyncStreamToken on video; the video-only probe returned zero
-	// (observed on iPad17,1, build 24B5089g).
-	SyncToken   uint64
-	PixelFormat uint32
-	RTCPTimeout time.Duration
+	SyncToken     uint64
+	PixelFormat   uint32
+	RTCPTimeout   time.Duration
 }
 
 func parseStartReply(output map[string]any) (StreamInfo, error) {

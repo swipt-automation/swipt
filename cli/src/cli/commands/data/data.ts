@@ -6,8 +6,6 @@ import { read } from "./read";
 import { remove } from "./remove";
 import { write } from "./write";
 
-// operand is "" for the REPL and "ID " for a swiplet, which takes the swiplet
-// ID before the path.
 export const data = (operand, target) =>
   defineCommand({
     name: "data",

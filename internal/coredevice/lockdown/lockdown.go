@@ -27,7 +27,7 @@ const (
 	// pymobiledevice3 reaches remotepairingdeviced's RPPairing control channel
 	// through this lockdownd service, where pair-setup needs no consent on the
 	// device (pymobiledevice3 9c33842,
-	// pymobiledevice3/remote/tunnel_service.py:1398-1431).
+	// pymobiledevice3/remote/tunnel_service.py:1370-1393).
 	RemotePairing = "com.apple.dt.remotepairingdeviced.lockdown"
 )
 

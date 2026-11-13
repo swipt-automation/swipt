@@ -466,9 +466,8 @@ func (c *Conn) SendContext(ctx context.Context, body map[string]any, wantReply b
 // non-reply msg on the reply channel" when asked to reply to an ID of the
 // wrong parity (24B5110a RemoteXPC _xpc_remote_connection_send_reply_message
 // 0x2a4bb8080, 0x2a4bb81d4; pymobiledevice3 cae0191,
-// pymobiledevice3/remote/remotexpc.py:312-316), as dtuhidd did for an even ID
-// (iPad17,1, iPadOS 27.2 24B115). A reply carries the reply flag and the ID of
-// the message it answers (24B5110a RemoteXPC 0x2a4bb8110).
+// pymobiledevice3/remote/remotexpc.py:312-316). A reply carries the reply
+// flag and the ID of the message it answers (24B5110a RemoteXPC 0x2a4bb8110).
 func (c *Conn) send(ctx context.Context, body map[string]any, wantReply bool) (id uint64, err error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err

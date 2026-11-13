@@ -24,7 +24,7 @@ type Pairing struct {
 	DeviceRecord []byte
 }
 
-// A device keeps a pair record with these keys (iPhone18,2, iOS 27.0.1 24A446),
+// A device keeps a pair record with these keys (iOS 27.0.1 24A446),
 // and usbmuxd one with the keys of libimobiledevice c6f89de, common/userpref.c:322-341.
 // The certificates follow pair_record_generate_keys_and_certs of the same file.
 func NewPairing(ctx context.Context, dial Dialer, systemBUID, udid, hostName string) (*Pairing, error) {

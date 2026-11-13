@@ -14,15 +14,13 @@ import (
 )
 
 const (
-	sysmonService = "com.apple.instruments.server.services.sysmontap"
-	sysmonChannel = 1
-	// vmFreeCount and the other page counts are in pages of this size:
-	// physMemSize was 748495 on a device with 12 GB of memory (iPhone18,2,
-	// iOS 27.3 24C5037i).
+	sysmonService  = "com.apple.instruments.server.services.sysmontap"
+	sysmonChannel  = 1
 	SysmonPageSize = 16384
-	// The tap collected a sample as it started and then every sampleInterval,
-	// and sent what it had collected every ur, first one ur after it started
-	// (DVTInstrumentsFoundation, iPadOS 27.3 24C5037i).
+	// The tap collects a sample as it starts and then every sampleInterval,
+	// and sends what it has collected every ur, first one ur after it starts
+	// (iOS 27.3 24C5037i: DVTInstrumentsFoundation 0x26713efcc, 0x26713f158;
+	// libsysmon 0x2cef00d98, 0x2cef0123c).
 	sysmonDelivery = 100 * time.Millisecond
 )
 
@@ -31,16 +29,15 @@ type ProcessUsage struct {
 	Values []any
 }
 
-// The tap collected system and process data independently and could deliver
-// them in separate messages (iPad17,1, iPadOS 27.3 24C5037i). It reported every
-// process in its first two samples, and from the third only those with an
-// attribute that had changed. Exited processes were omitted without a marker;
-// new processes came with a null cpuUsage and powerScore. The first sample was taken as
-// the tap started: it had a null cpuUsage and powerScore for every process, and
-// its core loads covered 2 ms, 0 on every core or 100 on one. A core's
-// CPU_UserLoad and CPU_SystemLoad were -1 and its CPU_NiceLoad 0, and the
-// CPU_TotalLoad of SystemCPUUsage was the sum of the cores' (iPad17,1, iPadOS
-// 27.3 24C5037i).
+// The tap samples system and process data with separate requests and can
+// deliver them in separate messages, and it drops the process rows that did
+// not change since the previous sample (DVTInstrumentsFoundation 24C5037i
+// 0x267176fe0, 0x267175560). A process has no cpuUsage or powerScore until it
+// has a previous sample (libsysmon 24C5037i 0x2cef018ec, 0x2cef0204c). The
+// core loads of the tap's first sample were 0 on every core or 100 on one; a
+// core's CPU_UserLoad and CPU_SystemLoad were -1 and its CPU_NiceLoad 0, and
+// the CPU_TotalLoad of SystemCPUUsage was the sum of the cores' (iPadOS 27.3
+// 24C5037i).
 type UsageSample struct {
 	Time      time.Time
 	CoreLoads []float64

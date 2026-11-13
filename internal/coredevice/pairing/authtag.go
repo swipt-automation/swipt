@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-// idevice computes the Bonjour authTag with SipHash using the 16-byte IRK
-// and emits bytes 5 through 0 of the little-endian result (idevice 3854a5d,
-// idevice/src/remote_pairing/peer_device.rs, compute_auth_tag).
+// idevice computes the Bonjour authTag as SipHash-2-4 of the identifier keyed
+// by the 16-byte IRK, and takes bytes 5 through 0 of the little-endian result
+// (idevice 3854a5d, idevice/src/remote_pairing/peer_device.rs:33-45, 129-140).
 func AuthTag(irk []byte, identifier string) []byte {
 	sum := sipHash24(binary.LittleEndian.Uint64(irk[0:8]), binary.LittleEndian.Uint64(irk[8:16]), []byte(identifier))
 	tag := binary.LittleEndian.AppendUint64(nil, sum)[:6]
@@ -19,10 +19,6 @@ func AuthTag(irk []byte, identifier string) []byte {
 	return tag
 }
 
-// idevice validates Bonjour authTag as SipHash of identifier with altIRK,
-// taking reversed bytes 0 through 5 of the little-endian result
-// (idevice 3854a5d, idevice/src/remote_pairing/peer_device.rs:33-45,
-// idevice/src/remote_pairing/peer_device.rs:129-140).
 func (r *Record) MatchesService(identifier string, authTag string) bool {
 	if len(r.AltIRK) != 16 || identifier == "" {
 		return false

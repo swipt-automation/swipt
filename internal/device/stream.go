@@ -24,7 +24,7 @@ import (
 const (
 	startInterval     = time.Second
 	startBackoffLimit = 10 * time.Second
-	// The device's streams sent RTCP sender reports about once a second (observed on iPad17,1, build 24B5089g).
+	// The device's streams sent RTCP sender reports about once a second (iPadOS 27.2 24B5089g).
 	silenceLimit = 3 * time.Second
 )
 
@@ -304,7 +304,7 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 	var audio *display.Stream
 	var err error
 	if request.Audio {
-		// The device returned a nonzero video SyncStreamToken with audio, zero without it (observed on iPad17,1, build 24B5089g).
+		// The device returned a nonzero video SyncStreamToken with audio, zero without it (iPadOS 27.2 24B5089g).
 		audio, err = a.display.StartAudio(ctx, display.StreamOptions{SessionID: sessionID, ReadOptions: readOptions})
 		if err != nil {
 			s.logger.Warn(E.Cause(err, "start the device's sound"))
@@ -407,13 +407,13 @@ func deviceMode(mode media.VideoMode) display.Mode {
 
 func pixelFormat(format uint32) media.PixelFormats {
 	switch format {
-	case 0x34323076: // The device replied with this format in mode 9 (observed on iPad17,1, iPadOS 27.2 24B5099f).
+	case 0x34323076:
 		return media.PixelFormat420VideoRange
-	case 0x34323066: // The device replied with this format in mode 5 (observed on iPad17,1, iPadOS 27.2 24B5099f).
+	case 0x34323066:
 		return media.PixelFormat420FullRange
 	case 0x34343476:
 		return media.PixelFormat444VideoRange
-	case 0x34343466: // The device replied with this format in mode 7 (observed on iPad17,1, iPadOS 27.2 24B5099f).
+	case 0x34343466:
 		return media.PixelFormat444FullRange
 	}
 	return 0

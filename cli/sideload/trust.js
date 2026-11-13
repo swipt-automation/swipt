@@ -55,7 +55,7 @@ async function answerPrompt() {
   if (alert?.label?.includes(name) && [2, 3].includes(buttons.length)) {
     // The location alert shows an icon and lists Allow Once first; the cellular
     // data alert of China mainland devices shows none and lists Wi-Fi and
-    // cellular first (iPhone18,2, iOS 27.2 24B115).
+    // cellular first (iOS 27.2 24B115).
     const location = alert.findAll({ role: "image" }).length > 0;
     await dismiss(alert, buttons.length === 2 || location ? 1 : 0);
   }

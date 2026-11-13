@@ -17,7 +17,6 @@ final class BackgroundAssertion {
     nonisolated private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Swipt", category: "background")
 
-    // RunningBoard defines the UAFAssetAccess domain since iOS 27.2.
     static let isSupported: Bool = {
         do {
             try Assertion().invalidate()
@@ -63,7 +62,8 @@ final class BackgroundAssertion {
             assertion?.invalidate()
             assertion = next
             isActive = true
-            // UAFAssetAccess expires 300 seconds after each assertion is created.
+            // UAFAssetAccess expires 300 seconds after each assertion is created (RunningBoard 24C5037i,
+            // LifecyclePolicy/DomainAttributes/com.apple.UnifiedAssetFramework.plist: StartPolicy Fixed, InvalidationDuration 300).
             delay = 240
         } catch {
             Self.logger.error("Couldn't acquire the background assertion: \(error, privacy: .public)")

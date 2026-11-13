@@ -145,7 +145,7 @@ func buildPasteboardArchive(clipboard *Clipboard) []byte {
 
 // ScreenSharing passes each flavor through CoreEndianFlipData('aevt', its OSType), which turns
 // 'utxt' into big-endian UTF-16 on the wire (ScreenSharing 776.27, macOS 27.0.1 26A434,
-// _CopyPasteboardEntries 0x1cc179428..0x1cc179454, _UnpackScrapDataWithFilter 0x1cc165b94..0x1cc165bb8).
+// UUID EC0B2C20-F816-3FCE-822D-F9403C09EB50, _CopyPasteboardEntries 0x1cc179428..0x1cc179454, _UnpackScrapDataWithFilter 0x1cc165b94..0x1cc165bb8).
 func swapUTF16Order(data []byte) []byte {
 	swapped := make([]byte, len(data))
 	for i := 0; i < len(data); i += 2 {

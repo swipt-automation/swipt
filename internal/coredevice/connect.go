@@ -97,9 +97,8 @@ func ConnectLockdown(ctx context.Context, options LockdownOptions) (*Device, err
 			var dialer net.Dialer
 			return dialer.DialContext(ctx, "tcp", netip.AddrPortFrom(options.Address, port).String())
 		}
-		// A connection through usbmuxd needs no heartbeat of its own: USB
-		// needs none, and macOS usbmuxd answers it for the devices it reaches
-		// over the network, which also kept a direct connection with the same
+		// macOS usbmuxd answers the heartbeat of the devices it reaches over
+		// the network, and that also kept a direct connection with the same
 		// pair record open (iOS 18.6.2 22G100).
 		heartbeat, err := lockdown.StartHeartbeat(ctx, options.Record, dial, options.Logger)
 		if err != nil {

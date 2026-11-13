@@ -227,7 +227,7 @@ func flatten(root *ViewElement) []*ViewElement {
 
 // The parts of an element report its custom actions as their own, as those of
 // a Home Screen icon, of the Dynamic Island and of Safari's address bar do
-// (iPhone18,2, iOS 27.2 24B115).
+// (iOS 27.2 24B115).
 func tidy(item *ViewElement, inherited []string) {
 	own := item.Actions
 	if len(own) > 0 && common.All(own, func(action string) bool { return slices.Contains(inherited, action) }) {
@@ -286,11 +286,10 @@ func describe(node *PhoneNode) *ViewElement {
 // A web check box has the button automation type and the toggle trait, a
 // Control Center toggle automation type 0 and the toggle trait, a tab bar's
 // tab the button automation type and the tab button trait, and a web pop-up
-// button the pop-up button trait without the button trait (iPhone18,2 and
-// iPad17,1, iOS and iPadOS 27.2 24B115). Headers have the header trait with
-// the StaticText automation type, as in Settings and SwiftUI forms, or with
-// automation type 0, as a UIKit table's section header (iPhone18,2, iOS 27.2
-// 24B115).
+// button the pop-up button trait without the button trait (iOS and iPadOS
+// 27.2 24B115). Headers have the header trait with the StaticText automation
+// type, as in Settings and SwiftUI forms, or with automation type 0, as a
+// UIKit table's section header (iOS 27.2 24B115).
 func role(ax accessibility.Element, application bool, elementTraits []string) string {
 	if application {
 		return "application"
@@ -348,7 +347,7 @@ func shape(node *PhoneNode, system bool) []*ViewElement {
 		children = append(children, shape(child, system)...)
 	}
 	// A table lists its cells in a scroll view of its own, beside its section
-	// headers (iPhone18,2 and iPad17,1, iOS and iPadOS 27.2 24B115).
+	// headers (iOS and iPadOS 27.2 24B115).
 	if slices.Contains(scrollingRoles, out.Role) {
 		children = common.FlatMap(children, func(child *ViewElement) []*ViewElement {
 			if child.Role != "scrollView" || child.Label != "" || child.node.AX.AccessibilityElement || child.Truncated || adds(child, out) {
@@ -391,8 +390,8 @@ func shape(node *PhoneNode, system bool) []*ViewElement {
 		return []*ViewElement{out}
 	}
 	// SpringBoard shows every application in a card of its switcher, labeled
-	// with the application's name, which holds the status bar (iPhone18,2, iOS
-	// 27.2 24B115).
+	// with the application's name, which holds the status bar (iOS 27.2
+	// 24B115).
 	labeled := (out.Label != "" || out.Identifier != "" && out.Role != "image" || out.Value != "") &&
 		!(system && slices.Contains(genericRoles, out.Role))
 	content := slices.Contains(contentRoles, out.Role) || labeled && len(children) == 0 && slices.Contains(genericRoles, out.Role)
@@ -417,8 +416,7 @@ func adds(dropped, kept *ViewElement) bool {
 }
 
 // Language & Region labels a row "Number Format, 1, 234, 567.89" and the
-// button inside it "Number Format, 1,234,567.89" (iPhone18,2, iOS 27.0.1
-// 24A446).
+// button inside it "Number Format, 1,234,567.89" (iOS 27.0.1 24A446).
 func sameText(first, second string) bool {
 	plain := func(text string) string {
 		return strings.Map(func(r rune) rune {

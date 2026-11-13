@@ -81,7 +81,7 @@ final class ScriptDialogs {
     }
 
     // The system platter passes other touches to the app below unless it dims the screen
-    // (-[WFSystemOverlayViewController handleTapGesture:], iOS 27.2 24B5084k).
+    // (-[WFSystemOverlayViewController updateDimmingLayerVisibility], iOS 27.2 24B5084k).
     func capturesTouch(at point: CGPoint) -> Bool {
         backdrop != nil || isDimmed || (!presentations.isEmpty && platterFrame.contains(point))
     }
@@ -237,7 +237,7 @@ private struct DialogOverlay: View {
     }
 }
 
-// WFBannerTransitionSettings (iOS 27.2 24B5084k)
+// -[WFBannerTransitionSettings setDefaultValues] (iOS 27.2 24B5084k)
 @available(iOS 17.4, *)
 private struct DialogTransition: Transition {
     let scale: CGFloat

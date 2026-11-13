@@ -23,7 +23,6 @@ nonisolated enum LocalBacklight {
         guard let hidState = state(of: displayStatusKey) else { return nil }
         if let backlight {
             guard let state = DisplayState(rawValue: backlight.state) else { return nil }
-            // HID turns off before BLS leaves ActiveOn during the sleep animation.
             return hidState == 0 && state.isOn ? .off : state
         }
         return hidState == 0 ? .off : .activeOn
@@ -38,8 +37,6 @@ nonisolated enum LocalBacklight {
         return state
     }
 
-    // BLS distinguishes inactive Always On from the active lock screen; HID displayStatus
-    // only reports display availability.
     private final class Backlight: @unchecked Sendable {
         private typealias GetState = @convention(c) (AnyObject, Selector) -> Int
         private let controller: NSObject

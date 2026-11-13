@@ -12,7 +12,6 @@
 #import "SWJSON.h"
 #import "SWRaster.h"
 
-// The accurate recognizer stops reading CJK glyphs below about 20 px (Vision, iOS 27).
 static const double SWGlyphPixels = 24;
 
 static const uint64_t SWCancelPollInterval = 20 * NSEC_PER_MSEC;
@@ -138,7 +137,6 @@ static NSArray<NSString *> *SWDeviceLanguages(VNRecognizeTextRequest *request, N
             [chosen addObject:match];
         }
     }
-    // Vision pairs Chinese with English only (Recognizing Text in Images, Apple Developer Documentation).
     for (NSString *language in chosen) {
         if ([language hasPrefix:@"zh"]) {
             return [chosen containsObject:@"en-US"] ? @[language, @"en-US"] : @[language];

@@ -67,7 +67,7 @@ func InvokeFeature(ctx context.Context, conn *xpc.Conn, deviceIdentifier, featur
 // "The application failed to launch." (DDI 27B5028f CoreDeviceUtilities
 // 0x1aa85c); only its NSUnderlyingError chain names
 // FBSOpenApplicationServiceErrorDomain 1 and FBSOpenApplicationErrorDomain 4
-// (iPhone18,2, iOS 27.2 24B115).
+// (iOS 27.2 24B115).
 func FeatureOutput(feature string, reply map[string]any) (map[string]any, error) {
 	if output, isDictionary := reply["CoreDevice.output"].(map[string]any); isDictionary {
 		return output, nil

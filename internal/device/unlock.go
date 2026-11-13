@@ -27,21 +27,10 @@ const (
 
 const maxPasscodeLength = 64
 
-// Without a pause between reads, the phone's own server read the lock state
-// about 2,000 times a second while the display woke, and after about 820 reads
-// every read took 27 ms instead of under 1 ms (iPad17,1 and iPhone18,2). From
-// a Mac, reads on one connection went from 16 to 31 ms when its replies passed
-// 256 KiB, where sing-tun's Go stack starts holding back acknowledgements of
-// small segments for up to 25 ms (sing-tun 3f8acd9, stack_go_tcp_input.go:884,
-// stack_go_tcp_input.go:900): each reply's 4-byte length arrived a round
-// trip before its body, and 22 ms before it from then on, while reading
-// lockdown over usbmuxd directly stayed at 8 ms for 1,200 reads (iPhone18,2).
-// With this pause, iPad17,1 unlocked from a dark display in 0.82-0.84 s
-// instead of 1.03 s. All on iOS and iPadOS 27.2 24B115.
+// Read back to back while the display woke, the lock state took 27 ms instead
+// of under 1 ms to answer after about 820 reads (iOS and iPadOS 27.2 24B115).
 const unlockPoll = 10 * time.Millisecond
 
-// From the always-on display, a Mac over Wi-Fi unlocked iPhone18,2 in up to
-// 4.2 s (iOS 27.2 24B115).
 const unlockLimit = 4500 * time.Millisecond
 
 func validateAutoUnlock(settings Settings) error {
@@ -157,8 +146,8 @@ func (t *deviceUnlockTarget) unlock(parent context.Context) (consumed bool, err 
 }
 
 // The fixed-digit PIN field's value was "共6位数，已输入0位" when empty and
-// "共6位数，已输入5位" after five digits (iPhone18,2 and iPad17,1, iOS and
-// iPadOS 27.2 24B115, Simplified Chinese).
+// "共6位数，已输入5位" after five digits (iOS and iPadOS 27.2 24B115, Simplified
+// Chinese).
 func enteredDigits(value string, length int) (int, bool) {
 	var numbers []int
 	for _, field := range strings.FieldsFunc(value, func(r rune) bool { return r < '0' || r > '9' }) {
@@ -181,7 +170,7 @@ func enteredDigits(value string, length int) (int, bool) {
 }
 
 // SpringBoard posts com.apple.springboard.lockstate when the device locks or
-// unlocks (iPhone18,2, iOS 27.2 24B115).
+// unlocks (iOS 27.2 24B115).
 const lockStateLife = 30 * time.Second
 
 type lockStateReader struct {
@@ -284,15 +273,9 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.Passcod
 		return accessibility.PasscodeState{}, err
 	}
 	deviceClass := t.conn.device.Info().DeviceClass
-	// From a dark display, the phone's own server unlocked by typing in
-	// 0.89-0.98 s on iPhone18,2 and 1.03 s on iPad17,1, and by pressing Home
-	// twice and tapping the keypad in 1.43-1.60 s and 1.38-1.42 s; from the
-	// always-on display, a Mac over Wi-Fi took 2.0-2.35 s and 3.7-4.2 s on
-	// iPhone18,2. After Home woke the display, a second Home sent 0.5 s after
-	// the first brought the keypad 0.6-0.76 s later, while after a backspace it
-	// was there within 0.1 s. Opening the page with a backspace and tapping the
-	// digits took 0.90-0.96 s and 1.08-1.09 s. All on iOS and iPadOS 27.2
-	// 24B115.
+	// Once the display was awake, a backspace from the keyboard opened the
+	// passcode page at once, and a second Home only more than half a second
+	// later (iOS and iPadOS 27.2 24B115).
 	transportContext, cancelTransports := context.WithCancel(ctx)
 	touchesPrepared, keyboardPrepared, accessibilityDialed := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	var touchesErr, keyboardErr, accessibilityErr error
@@ -343,10 +326,6 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) (accessibility.Passcod
 			if wakeSent {
 				continue
 			}
-			// Creating the keyboard took 0.38 s, so Home wakes the display
-			// meanwhile: it was active 0.48 s after Home, while creating the
-			// keyboard first and pressing Home then took 0.38 + 0.28 s (iPad17,1,
-			// iPadOS 27.2 24B115, from the iPad's own server).
 			var wake func() error
 			select {
 			case <-keyboardPrepared:
@@ -501,9 +480,6 @@ func (t *deviceUnlockTarget) key(ctx context.Context, stroke asciiKeystroke) err
 	if err := input.KeyDown(ctx, stroke.usage); err != nil {
 		return err
 	}
-	// An up right after each down, after a lock-state read, entered every
-	// digit: the field read five entered before the sixth key (iPhone18,2 and
-	// iPad17,1, iOS and iPadOS 27.2 24B115).
 	if err := input.KeyUp(ctx, stroke.usage); err != nil {
 		return err
 	}

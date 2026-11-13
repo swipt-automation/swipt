@@ -479,7 +479,6 @@ export function createPerformance(host: PerformanceHost) {
   );
   type PerformanceObserver = InstanceType<typeof PerformanceObserver>;
 
-  // Only an observer that buffers the entry needs a task, so marks alone leave no timer pending.
   const queue = <T extends PerformanceEntry>(entry: T): T => {
     let offered = false;
     for (const observer of observers) {

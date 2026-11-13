@@ -220,10 +220,10 @@ func (m *mounterConn) imageMounted(imageType string) (bool, error) {
 	return len(signatures) > 0, nil
 }
 
-// CopyDevices lists the DDI 17A324 mounted by MountImage and the DDI 27B52
-// installed by cryptexd at /System/Developer, each with its version.plist as
-// PersonalizedImageVersionInfo; LookupImage returns no ImageSignature for the
-// cryptex (iPhone18,2, iOS 27.3 24C5037i).
+// CopyDevices lists the image at /System/Developer with its version.plist as
+// PersonalizedImageVersionInfo, both for an image mounted by MountImage and
+// for a cryptex installed by cryptexd; LookupImage returns no ImageSignature
+// for the cryptex (iOS 27.3 24C5037i).
 func (m *mounterConn) developerImage() (map[string]any, error) {
 	reply, err := m.request(map[string]any{"Command": "CopyDevices"})
 	if err != nil {

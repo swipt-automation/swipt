@@ -14,8 +14,12 @@ export const list = (options?: Options) =>
     signal: signalOf(check(options, [])),
   });
 
-// sysmond sampled every 500 ms at the soonest, and at an interval of 750 ms
-// gave samples 710 to 1535 ms apart (iPad17,1, iPadOS 27.3 24C5037i).
+// The sysmontap service passes its sample interval to sysmon_request_set_interval,
+// which raises it to 500 ms and rounds it to the nearest multiple of 500 ms
+// (iOS 27.3 24C5037i, DVTInstrumentsFoundation UUID
+// EFCA71A4-5D05-3C05-B8C5-3E819A1792C1, -[DTSysmonTapLocalDelegate start]
+// 0x267176fe0; libsysmon UUID C43C7A24-0E60-3F44-827F-B8B901B47AF8,
+// _sysmon_request_set_interval 0x2cef00d48..0x2cef00d94).
 const sampling = 500;
 
 interface Wire {

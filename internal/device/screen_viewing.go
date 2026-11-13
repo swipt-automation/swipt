@@ -13,13 +13,13 @@ import (
 
 const screenViewingWindow = 10 * time.Second
 
-// The banner is at depth 6 below SpringBoard's application element on iOS
-// 27.3 24C5037i; depth 5 omitted it. Its pushed AX tree omitted the banner.
+// The banner is at depth 6 below SpringBoard's application element, and the
+// tree axauditd pushes for SpringBoard leaves it out (iOS 27.3 24C5037i).
 const screenViewingDepth = 6
 
 // remotepairingdeviced waits for keybagd.lock_status after the final media
-// stream ends, then schedules the audit notification (24C5037i, 0x100068fa8,
-// 0x100069220, 0x1000172a0). The relay's State was 0 on both lock and unlock.
+// stream ends, then schedules the audit notification (24C5037i
+// remotepairingdeviced 0x100068fa8, 0x100069220, 0x1000172a0).
 const keybagLockStatus = "com.apple.mobile.keybagd.lock_status"
 
 type screenViewing struct {

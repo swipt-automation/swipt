@@ -24,9 +24,9 @@ import (
 const manifestName = "BuildManifest.plist"
 
 // DeveloperDiskImage update_ddi.py publishes these fixed names
-// (DeveloperDiskImage 6eae353, update_ddi.py:60-74). DDI 27A9266e instead
-// uses 022-20899-111 and 022-20886-111 asset paths in its BuildManifest.plist
-// (BuildManifest.plist, DDI 27A9266e).
+// (DeveloperDiskImage 6eae353, update_ddi.py:60-74). The BuildManifest.plist
+// of DDI 27B52 instead names the assets by 022-22446-061 and 022-22432-061
+// paths.
 var fixedNames = map[string]string{
 	"PersonalizedDMG":            "Image.dmg",
 	"LoadableTrustCache":         "Image.dmg.trustcache",
@@ -36,9 +36,8 @@ var fixedNames = map[string]string{
 	"Cryptex1,GenericVolume":     "Image.dmg.root_hash",
 }
 
-// DDI build 27A9266e uses Info.Variant
-// "iOS Customer Developer Disk Image Cryptex" (BuildManifest.plist,
-// DDI 27A9266e).
+// The cryptex identity of DDI 27B52 has Info.Variant
+// "iOS Customer Developer Disk Image Cryptex" (BuildManifest.plist).
 const cryptexVariantSuffix = "Developer Disk Image Cryptex"
 
 type manifest struct {
@@ -80,8 +79,8 @@ func Outdated(ctx context.Context, mounted, dir string) (available string, outda
 	return manifest.ProductBuildVersion, buildOlder(mountedVersion, availableVersion), nil
 }
 
-// DDI builds 27A5228h, 27A9266e and 27B52 have cryptex versions 27.1.5228.8,
-// 27.1.9266.5 and 27.2.52.0 (Image.dmg.cryptex_info, those DDI builds).
+// DDI builds 27A5228h and 27B52 have cryptex versions 27.1.5228.8 and
+// 27.2.52.0 (Image.dmg.cryptex_info, those DDI builds).
 func parseBuild(build string) ([4]uint64, error) {
 	var version [4]uint64
 	train := strings.IndexFunc(build, func(r rune) bool { return r < '0' || r > '9' })
@@ -130,8 +129,8 @@ func (m *manifest) personalizedIdentity(board, chip uint64) (buildIdentity, erro
 	return identity, nil
 }
 
-// All PersonalizedDMG identities in DDI build 27A9266e name the same
-// image and trust-cache paths (BuildManifest.plist, DDI 27A9266e).
+// All PersonalizedDMG identities of DDI 27B52 name the same image and
+// trust-cache paths (BuildManifest.plist).
 func (m *manifest) anyPersonalizedIdentity() (buildIdentity, error) {
 	identity := common.Find(m.BuildIdentities, func(identity buildIdentity) bool {
 		_, hasImage := identity.entry("PersonalizedDMG")
@@ -165,10 +164,9 @@ func (i buildIdentity) entry(key string) (map[string]any, bool) {
 	return entry, ok
 }
 
-// DDI build 27A9266e has SHA-384 digests for its Cryptex assets and 122 of
-// its 140 PersonalizedDMG identities; the 18 identities with SHA-1 digests
-// have ApChipID 0x7000, 0x7001, 0x8000, 0x8001 or 0x8003 (A8, A8X, A9, A9X)
-// (BuildManifest.plist, DDI 27A9266e).
+// DDI 27B52 has SHA-384 digests for its Cryptex assets and 122 of its 140
+// PersonalizedDMG identities; the 18 identities with SHA-1 digests have
+// ApChipID 0x7000, 0x7001, 0x8000, 0x8001 or 0x8003 (BuildManifest.plist).
 func (i buildIdentity) digest(key string) ([]byte, error) {
 	entry, ok := i.entry(key)
 	if !ok {

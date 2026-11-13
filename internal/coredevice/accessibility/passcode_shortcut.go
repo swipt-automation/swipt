@@ -13,8 +13,7 @@ func NumericPasscodeShortcutPoint(layout PasscodeLayout, deviceClass string) (La
 	// SBUIPasscodeLockNumberPad maps a touch to a key by its location in an
 	// inner pad that starts at its top (24A446 SpringBoardUIServices
 	// 0x1a7de09bc..0x1a7de09cc, -[SBUIPasscodeLockNumberPad
-	// _numberPadTouchDownForEvent:] 0x1a7de2850..0x1a7de2874), and the passcode
-	// page's keypad was one (iPhone18,2 and iPad17,1, iOS and iPadOS 27.2 24B115).
+	// _numberPadTouchDownForEvent:] 0x1a7de2850..0x1a7de2874).
 	if layout.Keyboard.Class != "SBUIPasscodeLockNumberPad" {
 		return LayoutPoint{}, false
 	}
@@ -36,13 +35,12 @@ func NumericPasscodeShortcutPoint(layout PasscodeLayout, deviceClass string) (La
 		return LayoutPoint{}, false
 	}
 
-	// The Face ID page's invisible Use Passcode button is 232x332, centered at
-	// half the width and 0.48 of the height of its view (24A446
-	// SpringBoardUIServices -[SBUIPasscodeBiometricAuthenticationView
-	// _updateConstraints] 0x1a7dae8ec..0x1a7dae970, 0x1a7daea48..0x1a7daeb04).
-	// It was an SBUIButton at (104,293,232,332) in a 440x956 app frame, and a
-	// tap at the hit point (220,310.7) skipped Face ID (iPhone18,2, iOS 27.2
-	// 24B115).
+	// The Face ID page's invisible Use Passcode button is an SBUIButton whose
+	// touch-up switches to the passcode (24A446 SpringBoardUIServices
+	// 0x1a7dada44..0x1a7dada7c, 0x1a7dafa90). It is 232x332, centered at half
+	// the width and 0.48 of the height of its view
+	// (-[SBUIPasscodeBiometricAuthenticationView _updateConstraints]
+	// 0x1a7dae8ec..0x1a7dae970, 0x1a7daea48..0x1a7daeb04).
 	const frameRounding = 1.0
 	if button.Width != 232 || button.Height != 332 ||
 		math.Abs(button.X-(app.Width/2-116)) > frameRounding ||
@@ -70,10 +68,9 @@ func validShortcutFrame(frame *LayoutFrame) bool {
 		finiteLayoutNumber(frame.X+frame.Width) && finiteLayoutNumber(frame.Y+frame.Height)
 }
 
-// In landscape, with a 1210x834 app frame, the hit test at the center of the
-// 834x1210 portrait-native space found an SBUIPasscodePillButton, and a tap at
-// that point, normalized against 834x1210, skipped Face ID (iPad17,1, iPadOS
-// 27.2 24B115).
+// In landscape, SpringBoard's application frame is landscape, while its hit
+// test and taps take points of the portrait-native space (iPadOS 27.2
+// 24B115).
 func iPadShortcutPoint(layout PasscodeLayout, app, pad, button *LayoutFrame) (LayoutPoint, bool) {
 	if !validShortcutFrame(app) || !validShortcutFrame(pad) || !validShortcutFrame(button) {
 		return LayoutPoint{}, false

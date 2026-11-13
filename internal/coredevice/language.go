@@ -7,8 +7,8 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 )
 
-// Lockdown reports only the first of the preferred languages (iPhone18,2, iOS
-// 27.2 24B115).
+// Lockdown reports only the first of the preferred languages (iOS 27.2
+// 24B115).
 func (d *Device) Language(ctx context.Context) (string, error) {
 	conn, err := d.DialShim(ctx, remoteLockdownService)
 	if err != nil {

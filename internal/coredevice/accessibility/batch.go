@@ -171,8 +171,7 @@ func (b *Batch) Snapshot(root Element, options SnapshotOptions) *Result[*Snapsho
 // it for the whole batch, or only drop out of it (24A446
 // AccessibilityPlatformTranslation -[AXPTranslator_iOS
 // processMultipleAttributeRequest:removeEmptyValue:] 0x24fe47af4, 0x24fe47b34,
-// 0x24fe47b58): attributes 5 and 7 set errors 7 and 3, while 4, 13, 18 and 19
-// dropped out (iPhone18,2, iOS 27.2 24B115).
+// 0x24fe47b58).
 func (b *Batch) Attributes(element Element) *Result[Element] {
 	result := &Result[Element]{}
 	b.add(remoteRequest{kind: requestAttributes, object: &element.object, params: map[string]any{"attributes": elementAttributes}},
@@ -251,10 +250,10 @@ func (b *Batch) AnimationsInProgress(element Element) *Result[bool] {
 }
 
 // Once the translator holds more than 4096 objects, the next new one drops the
-// 1024 added first. A dropped one is looked up as pid 0 and ID 0, the
-// system-wide element, so it answers all-zero element data, while actions on
-// it report success and do nothing (24B5110a AccessibilityPlatformTranslation
-// 0x253fd75a0, 0x253fe32d8; iPad17,1, iPadOS 27.2 24B115).
+// 1024 added first. A dropped one is looked up as pid 0 and ID 0 (24B5110a
+// AccessibilityPlatformTranslation 0x253fd75a0, 0x253fe32d8), so it answers
+// all-zero element data, while actions on it report success and do nothing
+// (iPadOS 27.2 24B115).
 func (b *Batch) Mapped(element Element) *Result[bool] {
 	result := &Result[bool]{}
 	b.add(remoteRequest{kind: requestAttribute, object: &element.object, attribute: attributeRawElementData}, func(response remoteResponse, _ *Batch) error {
@@ -268,12 +267,10 @@ func (b *Batch) Mapped(element Element) *Result[bool] {
 // Attribute 113 runs native 92516, which a WebCore element answers with
 // accessibilityFindMatchingObjects:, a depth-first search in document order
 // (24B5110a AccessibilityPlatformTranslation 0x253fef320; 24B5110a
-// WebCore.axbundle 0x246716324; WebKit f98a24d3,
-// Source/WebCore/accessibility/AXSearchManager.cpp:411). AXVisibleOnly tests
-// an object only against its scrollable ancestors (WebKit f98a24d3,
-// Source/WebCore/accessibility/AccessibilityObject.cpp:4142): it kept the
-// content of a container whose own frame was off screen (iPad17,1, iPadOS
-// 27.2 24B115).
+// WebCore.axbundle 0x246716324; WebKit-7625.2.8.11.9
+// Source/WebCore/accessibility/AXSearchManager.cpp:410). AXVisibleOnly tests
+// an object only against its scrollable ancestors (WebKit-7625.2.8.11.9
+// Source/WebCore/accessibility/AccessibilityObject.cpp:3927).
 func (b *Batch) Search(root Element, parameters map[string]any) *Result[[]Element] {
 	result := &Result[[]Element]{}
 	b.add(remoteRequest{kind: requestAttribute, object: &root.object, attribute: attributeSearch, params: map[string]any{"parameter": parameters}},
@@ -290,12 +287,9 @@ func (b *Batch) Search(root Element, parameters map[string]any) *Result[[]Elemen
 	return result
 }
 
-// The system-wide hit test takes a point of the display in points of its
-// native orientation: backboardd names the process and context on top there,
-// which then hit-tests its own elements, so that keyboards, banners and other
-// processes' windows are seen; WebKit answers from its accessibility tree,
-// which leaves out content that is not accessible (24A446 BackBoard.axbundle
-// 0x22a9acfc4; iPad17,1, iPadOS 27.2 24B115).
+// The system-wide hit test asks backboardd for the context on top at a point
+// of the display (24A446 BackBoard.axbundle 0x22a9acfc4), in points of its
+// native orientation (iPadOS 27.2 24B115).
 func (b *Batch) HitTest(point LayoutPoint) *Result[Element] {
 	result := &Result[Element]{}
 	b.add(remoteRequest{kind: requestHitTest, params: map[string]any{"point": point.archiveObject(), "displayId": int64(1), "contextId": int64(0)}},

@@ -61,7 +61,6 @@ declare module "web-streams-polyfill" {
   export function internalSlots(value: object): Record<string, unknown>;
 }
 
-// ReadableStream.from takes an async_sequence, which rejects primitives such as strings
 const readableFrom = ReadableStream.from;
 Object.defineProperty(ReadableStream, "from", {
   ...Object.getOwnPropertyDescriptor(ReadableStream, "from"),
@@ -366,7 +365,6 @@ const compressionPair = (
 ) => {
   const [writer, reader] = native.compression(format, mode);
   const readable = nativeReadable(reader);
-  // a chunk that is not a BufferSource errors both sides, as it would in a TransformStream
   const accept = (chunk: unknown) => {
     try {
       return chunkBytes(chunk);

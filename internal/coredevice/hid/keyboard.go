@@ -28,18 +28,17 @@ const (
 	keyboardManufacturer = "Swipt"
 )
 
+// backboardd attaches a keyboard of usage page 1 and usage 6 as a hardware
+// keyboard (24B5110a backboardd 0x100031ab0, 0x100033c0c), for which UIKit
+// minimizes the software keyboard as far as the scene, automatic minimization
+// and the input mode's showSWLayoutWithHWKeyboard allow (24A446 UIKitCore
+// 0x184921c98, 0x1850144b0). CoreDevice publishes its own keyboard with usage
+// page and usage 0 instead (DDI 27B5028f CoreDeviceUtilities 0x2a7718,
+// 0x2a741c).
 type KeyboardMode int
 
 const (
 	HardwareKeyboard KeyboardMode = iota
-	// Published with usage page and usage 0, as CoreDevice's own keyboard
-	// is (DDI 27B5028f CoreDeviceUtilities 0x2a7718, 0x2a741c), the virtual
-	// keyboard took keys while the device kept the software keyboard and
-	// stayed out of hardware keyboard mode, for minutes; with usage page 1
-	// and usage 6 the software keyboard shrank to its edge within 0.4 s.
-	// Either way, letters went through the input method, so that n and i
-	// composed 你 under pinyin (iPad17,1, iPadOS 27.2 24B115, with no
-	// keyboard attached).
 	SoftwareKeyboard
 )
 
@@ -106,14 +105,6 @@ func (c *Client) PrepareKeyboard(ctx context.Context) error {
 	return nil
 }
 
-// backboardd attaches a keyboard of usage page 1 and usage 6 as a hardware
-// keyboard (24B5110a backboardd 0x100031ab0, 0x100033c0c), for which UIKit
-// minimizes the software keyboard as far as the scene, automatic minimization
-// and the input mode's showSWLayoutWithHWKeyboard allow (24A446 UIKitCore
-// 0x184921c98, 0x1850144b0). Keys go through the input method, so pinyin
-// composed "def" into an uncommitted "de f" and "A", "shift+b" into "AB" with
-// candidates showing; kept for the whole session, a HardwareKeyboard hid the
-// software keyboard until the server stopped (iPhone18,2, iOS 27.2 24B115).
 func (c *Client) removeKeyboard(ctx context.Context) error {
 	if c.keyboard == 0 {
 		return nil
@@ -159,13 +150,6 @@ func (c *Client) changeKey(ctx context.Context, usage uint8, down bool) error {
 	return c.sendKeys(ctx, pressed)
 }
 
-func (c *Client) releaseKeys(ctx context.Context) error {
-	if c.keyboard == 0 || c.pressed == [keyboardBitmapSize]byte{} {
-		return nil
-	}
-	return c.sendKeys(ctx, [keyboardBitmapSize]byte{})
-}
-
 // SpringBoard records each key down from an external keyboard by usage and
 // sender ID, and drops it on the up from the same sender. A key down while
 // the screen is off, other than the consumer play/pause, mute, volume and
@@ -173,10 +157,14 @@ func (c *Client) releaseKeys(ctx context.Context) error {
 // receives, such as system shortcuts and brightness keys, until a key up
 // leaves that record empty (24B5110a SpringBoard -[SpringBoard
 // _shouldSwallowHIDEvent:] 0x226a2c448..0x226a2c854, called from -[SpringBoard
-// handleKeyHIDEvent:] and -[SpringBoard __handleHIDEvent:withUIEvent:]): after
-// waking with "a" held, a backspace opened the passcode page only once "a" was
-// up. Closing the connection with "a" held stopped its repeat, and the next
-// wake took keys as usual (iPhone18,2, iOS 27.2 24B115).
+// handleKeyHIDEvent:] and -[SpringBoard __handleHIDEvent:withUIEvent:]).
+func (c *Client) releaseKeys(ctx context.Context) error {
+	if c.keyboard == 0 || c.pressed == [keyboardBitmapSize]byte{} {
+		return nil
+	}
+	return c.sendKeys(ctx, [keyboardBitmapSize]byte{})
+}
+
 func (c *Client) sendKeys(ctx context.Context, pressed [keyboardBitmapSize]byte) error {
 	if err := c.PrepareKeyboard(ctx); err != nil {
 		return err

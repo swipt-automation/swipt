@@ -47,8 +47,7 @@ type PasscodeLayout struct {
 
 // requestAttribute and requestAttributes read attributeRawElementData through
 // the same handler and return the same token (24A446
-// AccessibilityPlatformTranslation 0x24fe4d3b0): both returned the same 20
-// bytes for SpringBoard, and HitTest took either (iPhone18,2, iOS 27.2 24B115).
+// AccessibilityPlatformTranslation 0x24fe4d3b0).
 type layoutRawElement struct {
 	data   []byte
 	status string
@@ -68,9 +67,7 @@ func (c *RemoteClient) readPasscodeLayoutForApp(ctx context.Context, app transla
 	// passcode lock is visible, SpringBoard's first SBUIPasscodeLockNumberPad
 	// under the lock screen (24A446 UIAccessibility 0x1bb73be64; 24A446
 	// SpringBoard.axbundle -[SpringBoardAccessibility
-	// _accessibilitySoftwareMimicKeyboard] 0x2248c9098). On the passcode page,
-	// it returned the keypad (iPhone18,2 and iPad17,1, iOS and iPadOS 27.2
-	// 24B115).
+	// _accessibilitySoftwareMimicKeyboard] 0x2248c9098).
 	keyboard, err := c.query(ctx, requestAttribute, &app, attributeNative, 0, map[string]any{"parameter": int64(nativeActiveKeyboard)})
 	if err != nil {
 		return out, err
@@ -82,12 +79,8 @@ func (c *RemoteClient) readPasscodeLayoutForApp(ctx context.Context, app transla
 		}
 	}
 	if frame := out.AppFrame; frame != nil && frame.Width > 0 && frame.Height > 0 {
-		// (220,310.7) in a 440x956 app frame hit the invisible Use Passcode
-		// button, 18.3 pt above the keypad (iPhone18,2, iOS 27.2 24B115).
 		point := LayoutPoint{X: frame.X + frame.Width*0.5, Y: frame.Y + frame.Height*0.325}
 		if c.deviceClass == "iPad" {
-			// In landscape, with a 1210x834 app frame, (417,605) hit the button
-			// that skips Face ID (iPad17,1, iPadOS 27.2 24B115).
 			point = LayoutPoint{X: min(frame.Width, frame.Height) / 2, Y: max(frame.Width, frame.Height) / 2}
 		}
 		if finiteLayoutNumber(point.X) && finiteLayoutNumber(point.Y) {
@@ -133,10 +126,9 @@ func (c *RemoteClient) readPasscodeLayoutForApp(ctx context.Context, app transla
 func (c *RemoteClient) readLayoutElement(ctx context.Context, obj translationObject) (*LayoutElement, error) {
 	out := &LayoutElement{}
 	// nativeClassName returns NSStringFromClass of the backing object (24A446
-	// UIAccessibility 0x1bb73b2b0, 0x1bb7655f0; iPhone18,2, iOS 27.2 24B115),
-	// while the AXP class name attribute, 7, fails with error 3 (24A446
-	// AccessibilityPlatformTranslation -[AXPTranslator_iOS
-	// _processClassNameAttributeRequest:error:] 0x24fe49b48).
+	// UIAccessibility 0x1bb73b2b0, 0x1bb7655f0), while the AXP class name
+	// attribute, 7, fails with error 3 (24A446 AccessibilityPlatformTranslation
+	// -[AXPTranslator_iOS _processClassNameAttributeRequest:error:] 0x24fe49b48).
 	class, err := c.query(ctx, requestAttribute, &obj, attributeNative, 0, map[string]any{"parameter": int64(nativeClassName)})
 	if err != nil {
 		return nil, err
@@ -169,9 +161,7 @@ func decodeLayoutRawElement(value any) []byte {
 func (c *RemoteClient) readLayoutHit(ctx context.Context, app translationObject, point LayoutPoint, data []byte) (*LayoutElement, *uint64, error) {
 	// Translations are created without rawElementData, and HitTest decodes the
 	// element from it, even for an application translation (24A446
-	// AccessibilityPlatformTranslation 0x24fe51328, 0x24fe50e34..0x24fe50e40):
-	// SpringBoard's came with it nil, and HitTest then failed with error 7
-	// (iPhone18,2, iOS 27.2 24B115).
+	// AccessibilityPlatformTranslation 0x24fe51328, 0x24fe50e34..0x24fe50e40).
 	fields := maps.Clone(app.fields)
 	fields["rawElementData"] = data
 	app.fields = fields

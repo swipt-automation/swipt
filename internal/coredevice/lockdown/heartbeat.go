@@ -12,11 +12,9 @@ import (
 )
 
 // Wireless services are closed unless the pairing's heartbeat answers Marco
-// with Polo. A computer using the same pair record can supply that heartbeat
-// (iOS 18.6.2 22G100), and a newer heartbeat connection for the pair record
-// closes the older one (iOS 27.3 24C5037i). The device sends the first Marco
-// at once and the next ones every Interval seconds, 10 in practice; idevice
-// waits one interval for each (idevice 8970209,
+// with Polo (iOS 18.6.2 22G100). The device sends the first Marco at once, and
+// each Marco carried an Interval of 10 (iOS 27.3 24C5037i); idevice waits one
+// interval for each (idevice 8970209,
 // idevice/src/services/heartbeat.rs:62-95).
 const heartbeatGrace = 5 * time.Second
 

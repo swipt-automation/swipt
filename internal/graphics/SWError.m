@@ -81,8 +81,8 @@ NSString *SWErrorNameOf(NSError *error) {
 }
 
 static NSString *SWErrorLevelOf(NSError *error) {
-    // A Swift error bridged to NSError localizes as "The operation couldn't be completed. (Domain error N.)";
-    // only -description names its case and payload (__SwiftNativeNSError, Swift runtime).
+    // A Swift error bridged to NSError is a __SwiftNativeNSError, whose -description describes the Swift value
+    // (swift 8cc0db7, stdlib/public/runtime/ErrorObject.mm:70, 103-116).
     if ([error isKindOfClass:NSClassFromString(@"__SwiftNativeNSError")]) {
         return error.description;
     }

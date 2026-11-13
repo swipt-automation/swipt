@@ -401,8 +401,8 @@ func (r *webSocketBodyReader) waitForClose() {
 	}
 }
 
-// grpc-go's handler transport closes the body after it writes the status, so
-// the trailer frame has to go out here, before the connection closes.
+// grpc-go's handler transport closes the request body after it writes the
+// status (grpc-go 1.85.0, internal/transport/handler_server.go:286, :465).
 func (r *webSocketBodyReader) Close() error {
 	r.response.writeTrailerFrame()
 	return r.conn.Close(websocket.StatusNormalClosure, "")

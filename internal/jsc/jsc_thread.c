@@ -266,8 +266,7 @@ static bool jsc_should_terminate(JSContextRef ctx, void *context) {
 // A termination in the microtask checkpoint that runs as the outermost call
 // returns leaves its exception pending, and the next call answers it without
 // running (WebKit 21bb1f66, Source/JavaScriptCore/runtime/VM.cpp:1495;
-// WebKit 21bb1f66, Source/JavaScriptCore/runtime/JSLock.cpp:315, 318; Mac14,3,
-// macOS 27.0.1 26A434).
+// WebKit 21bb1f66, Source/JavaScriptCore/runtime/JSLock.cpp:315, 318).
 static void jsc_recover(jsc_runtime *rt) {
 	if (!rt->terminated) {
 		return;
