@@ -60,6 +60,7 @@ type responder struct {
 	host        string
 	serviceType dnsmessage.Name
 	port        uint16
+	txt         []string
 	instance    dnsmessage.Name
 	hostName    dnsmessage.Name
 	families    []*family
@@ -67,7 +68,7 @@ type responder struct {
 	packets     chan packet
 }
 
-func Advertise(ctx context.Context, name string, serviceType string, host string, port uint16) (*Advertisement, error) {
+func Advertise(ctx context.Context, name string, serviceType string, host string, port uint16, txt map[string]string) (*Advertisement, error) {
 	if strings.Contains(name, ".") || strings.Contains(host, ".") {
 		return nil, E.New("mdns: advertise ", name, " on ", host, ": a name contains a dot")
 	}
@@ -80,6 +81,7 @@ func Advertise(ctx context.Context, name string, serviceType string, host string
 		host:        host,
 		serviceType: serviceName,
 		port:        port,
+		txt:         encodeTXT(txt),
 		families:    []*family{{group: group}, {group: group6}},
 		packets:     make(chan packet),
 	}
@@ -101,6 +103,19 @@ func Advertise(ctx context.Context, name string, serviceType string, host string
 		a.Close()
 		return nil, ctx.Err()
 	}
+}
+
+// An empty TXT record holds one empty string (RFC 6763, section 6.1).
+func encodeTXT(txt map[string]string) []string {
+	if len(txt) == 0 {
+		return []string{""}
+	}
+	entries := make([]string, 0, len(txt))
+	for key, value := range txt {
+		entries = append(entries, key+"="+value)
+	}
+	slices.Sort(entries)
+	return entries
 }
 
 func (a *Advertisement) Host() string {
@@ -288,7 +303,7 @@ func (r *responder) records(l link) []dnsmessage.Resource {
 		},
 		{
 			Header: dnsmessage.ResourceHeader{Name: r.instance, Type: dnsmessage.TypeTXT, Class: unique, TTL: serviceTTL},
-			Body:   &dnsmessage.TXTResource{TXT: []string{""}},
+			Body:   &dnsmessage.TXTResource{TXT: r.txt},
 		},
 	}
 	for _, prefix := range l.prefixes {

@@ -4,7 +4,7 @@ package computer
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net"
 	"os"
@@ -32,7 +32,7 @@ type Options struct {
 	Device       string
 	Passcode     string
 	PasscodeType string
-	DiskImage    string
+	DiskImages   []string
 	Version      string
 	Logs         *log.Factory
 	Output       io.Writer
@@ -84,14 +84,25 @@ func Run(ctx context.Context, options Options) error {
 		return E.Cause(err, "listen on port ", stored.Port)
 	}
 	defer listener.Close()
+	// Stopped after the device is closed, so a computer that sees the
+	// advertisement go away can control the device.
+	host, stopAdvertising, err := advertise(ctx, uint16(stored.Port), paired.UDID)
+	if err != nil {
+		return err
+	}
+	defer stopAdvertising()
 
 	deviceLogger := options.Logs.NewLogger("device")
+	diskImages, err := diskImageDirectory(ctx, options.DiskImages, deviceLogger)
+	if err != nil {
+		return err
+	}
 	connection := device.New(device.Options{
 		Name:               paired.Name,
 		Connect:            connect(paired.UDID, deviceLogger),
 		Logger:             deviceLogger,
 		Observer:           observer{},
-		DiskImageDirectory: diskImageDirectory(options.DiskImage, deviceLogger),
+		DiskImageDirectory: diskImages,
 	})
 	if options.Passcode != "" {
 		if err = connection.UpdateSettings(device.Settings{AutoUnlockPasscode: options.Passcode, AutoUnlockPasscodeType: passcodeKind}); err != nil {
@@ -120,17 +131,14 @@ func Run(ctx context.Context, options Options) error {
 		AppVersion: options.Version,
 		Shutdown:   func() { stopOnce.Do(func() { close(stop) }) },
 	})
-	host, stopAdvertising, err := advertise(ctx, uint16(stored.Port))
-	if err != nil {
-		return err
-	}
-	defer stopAdvertising()
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener, "", nil) }()
-	fmt.Fprintln(options.Output, "Device:", paired.Name, "("+paired.UDID+")")
-	fmt.Fprintln(options.Output, "Swipt API:", url("localhost"))
-	fmt.Fprintln(options.Output, "MCP:", url("localhost")+api.MCPPath)
-	fmt.Fprintln(options.Output, "Local network:", url(host))
+	if err = json.NewEncoder(options.Output).Encode(Serving{
+		Device: paired.Name, UDID: paired.UDID,
+		API: url("localhost"), MCP: url("localhost") + api.MCPPath, Network: url(host),
+	}); err != nil {
+		return err
+	}
 	select {
 	case <-ctx.Done():
 	case <-stop:
@@ -147,10 +155,19 @@ func Run(ctx context.Context, options Options) error {
 	return nil
 }
 
+// Serving is the line Run prints once the API answers.
+type Serving struct {
+	Device  string `json:"device"`
+	UDID    string `json:"udid"`
+	API     string `json:"api"`
+	MCP     string `json:"mcp"`
+	Network string `json:"network"`
+}
+
 type MountOptions struct {
-	Device    string
-	DiskImage string
-	Logs      *log.Factory
+	Device     string
+	DiskImages []string
+	Logs       *log.Factory
 }
 
 func Mount(ctx context.Context, options MountOptions) error {
@@ -159,7 +176,11 @@ func Mount(ctx context.Context, options MountOptions) error {
 		return err
 	}
 	logger := options.Logs.NewLogger("device")
-	return device.PrepareDiskImage(ctx, connect(paired.UDID, logger), diskImageDirectory(options.DiskImage, logger), logger)
+	directory, err := diskImageDirectory(ctx, options.DiskImages, logger)
+	if err != nil {
+		return err
+	}
+	return device.PrepareDiskImage(ctx, connect(paired.UDID, logger), directory, logger)
 }
 
 func passcodeType(name string) (device.PasscodeType, error) {

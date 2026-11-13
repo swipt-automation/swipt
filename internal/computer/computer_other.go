@@ -23,8 +23,8 @@ func instanceName() string {
 	return name
 }
 
-func advertise(ctx context.Context, port uint16) (string, func(), error) {
-	advertisement, err := mdns.Advertise(ctx, instanceName(), discovery.ServiceType, label(instanceName()+" swipt"), port)
+func advertise(ctx context.Context, port uint16, udid string) (string, func(), error) {
+	advertisement, err := mdns.Advertise(ctx, instanceName(), discovery.ServiceType, label(instanceName()+" swipt"), port, map[string]string{discovery.UDIDKey: udid})
 	if err != nil {
 		return "", nil, err
 	}

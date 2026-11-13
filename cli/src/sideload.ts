@@ -1,20 +1,13 @@
-import {
-  type StdioOptions,
-  execFile,
-  execFileSync,
-  spawn,
-} from "node:child_process";
+import { type StdioOptions, execFile, execFileSync } from "node:child_process";
 import { X509Certificate, createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import readline from "node:readline";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 
-import password from "@inquirer/password";
 import select from "@inquirer/select";
 
 import { UsageError, open } from "./client";
@@ -30,17 +23,18 @@ import {
   containerHasFile,
   containerSQL,
   coreDevice,
+  deviceNotListedExit,
   installApp,
   launchApp,
   lockedError,
+  mountDiskImage,
   openSettings,
   provisioningProfiles,
   pushToContainer,
   driver,
-  driverError,
   driverHint,
-  driverPath,
   MissingDriverError,
+  serve,
   terminateApp,
   uninstallApp,
 } from "./coredevice";
@@ -54,6 +48,7 @@ import {
   selectTheme,
   step,
 } from "./output";
+import { askPasscode, passcodeOf, passcodeTypes } from "./passcode";
 import { LogLevel } from "./proto/common_pb";
 
 const exec = promisify(execFile);
@@ -103,42 +98,7 @@ const signingNeedsMac = tr(
 const expiresSoon = ({ creation, expiration }) =>
   expiration - Date.now() < (expiration - creation) / 2;
 
-const passcodeTypes = ["pin", "numeric", "alphanumeric"];
-
 const plistValueMissing = /No value at that key path/;
-
-function passcodeOf(options) {
-  const type = options["passcode-type"] ?? "pin";
-  if (!passcodeTypes.includes(type)) {
-    throw new UsageError(
-      tr("invalid argument {value} for --passcode-type: it's {types}", {
-        value: JSON.stringify(type),
-        types: passcodeTypes.join(", "),
-      }),
-    );
-  }
-  const passcode = options.passcode;
-  if (!passcode) {
-    return undefined;
-  }
-  const digits = /^\d+$/.test(passcode);
-  if (type === "pin" && !(digits && [4, 6].includes(passcode.length))) {
-    throw new UsageError(
-      tr(
-        "A pin passcode is 4 or 6 digits; a custom one needs --passcode-type numeric or alphanumeric",
-      ),
-    );
-  }
-  if (type === "numeric" && !digits) {
-    throw new UsageError(tr("A numeric passcode is digits only."));
-  }
-  if (!/^[\x20-\x7e]{1,64}$/.test(passcode)) {
-    throw new UsageError(
-      tr("A passcode is up to 64 printable ASCII characters."),
-    );
-  }
-  return { passcode, type };
-}
 
 function headers(accept) {
   const token = process.env.GITHUB_TOKEN;
@@ -622,6 +582,11 @@ const teamChoice = ({ id, name }) => ({
   value: id,
 });
 
+export const swiptApps = async (device) =>
+  (await apps(device))
+    .map((app) => app.bundleIdentifier)
+    .filter((id) => sideloadedPattern.test(id));
+
 async function sideloadedDevices(
   devices,
   missing = tr("Swipt isn't sideloaded on any iPhone or iPad."),
@@ -774,59 +739,6 @@ function expirationText(time) {
     .replace(/(\d)(\p{Script=Han})/gu, "$1 $2");
 }
 
-async function askPasscode(context) {
-  const type = await select<string | null>(
-    {
-      message: tr(
-        "Set up auto-unlock? Swipt can then unlock this device by itself.",
-      ),
-      theme: selectTheme,
-      choices: [
-        {
-          name: tr("4 or 6 digit passcode"),
-          short: tr("4 or 6 digits"),
-          value: "pin",
-        },
-        {
-          name: tr("Custom numeric passcode"),
-          short: tr("numeric"),
-          value: "numeric",
-        },
-        {
-          name: tr("Custom alphanumeric passcode"),
-          short: tr("alphanumeric"),
-          value: "alphanumeric",
-        },
-        { name: tr("No Thanks"), value: null },
-      ],
-    },
-    { output: process.stderr, signal: context.signal },
-  );
-  if (type === null) {
-    return undefined;
-  }
-  const options = (passcode) => ({ passcode, "passcode-type": type });
-  return passcodeOf(
-    options(
-      await password(
-        {
-          message: tr("Device passcode"),
-          theme: { i18n: { maskedText: tr("[input is masked]") } } as any,
-          validate(passcode) {
-            try {
-              passcodeOf(options(passcode));
-              return passcode !== "" || tr("Enter the passcode.");
-            } catch (error) {
-              return error.message;
-            }
-          },
-        },
-        { output: process.stderr, signal: context.signal },
-      ),
-    ),
-  );
-}
-
 export async function installPasscode(context, device, current) {
   return current === undefined &&
     !device.virtual &&
@@ -890,35 +802,7 @@ async function downloadIPA(context, release) {
   return ipa;
 }
 
-async function localIPA(context) {
-  const cached = fs.existsSync(downloads)
-    ? fs.readdirSync(downloads).find((entry) => entry.endsWith(".ipa"))
-    : undefined;
-  return cached === undefined
-    ? downloadIPA(
-        context,
-        await step(
-          tr("checking the latest release"),
-          () => findRelease(context.options.nightly, context.signal),
-          { transient: true },
-        ),
-      )
-    : path.join(downloads, cached);
-}
-
-async function withLocalApp(context, device, run) {
-  if (device.virtual) {
-    return run(undefined);
-  }
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-app-"));
-  try {
-    return await run(await unpack(await localIPA(context), work));
-  } finally {
-    fs.rmSync(work, { recursive: true, force: true });
-  }
-}
-
-async function mountDiskImage(context, device, app) {
+async function prepareDiskImage(context, device) {
   if (device.virtual) {
     return;
   }
@@ -929,13 +813,7 @@ async function mountDiskImage(context, device, app) {
       }),
       async () => {
         try {
-          await driver([
-            "mount",
-            "-d",
-            device.udid,
-            "--disk-image",
-            path.join(app, "DeveloperDiskImage"),
-          ]);
+          await mountDiskImage(device);
         } catch (error) {
           if (!(error instanceof MissingDriverError)) {
             throw error;
@@ -1047,22 +925,20 @@ async function deploy(
       if (!saves && !pairs) {
         return;
       }
-      await withLocalApp(context, device, async (app) => {
-        await mountDiskImage(context, device, app);
-        if (saves) {
-          await step(tr("setting up auto-unlock"), () =>
-            setUpAutoUnlock(device, id, passcode),
-          );
-        }
-        if (context.options["no-setup"]) {
-          await launch(device, id);
-          return;
-        }
-        const paired = pairs && (await pair(device, id, true));
-        if (saves || paired) {
-          await openConfigured(context, device, id, passcode, undefined, app);
-        }
-      });
+      await prepareDiskImage(context, device);
+      if (saves) {
+        await step(tr("setting up auto-unlock"), () =>
+          setUpAutoUnlock(device, id, passcode),
+        );
+      }
+      if (context.options["no-setup"]) {
+        await launch(device, id);
+        return;
+      }
+      const paired = pairs && (await pair(device, id, true));
+      if (saves || paired) {
+        await openConfigured(context, device, id, passcode);
+      }
       return;
     }
     if (!replaces && installed > release.build) {
@@ -1151,7 +1027,7 @@ export async function installAndOpen(
       );
     }
   }
-  await mountDiskImage(context, device, app);
+  await prepareDiskImage(context, device);
   if (device.virtual) {
     await installOnGuest(device, id, app);
   } else {
@@ -1209,7 +1085,6 @@ export async function installAndOpen(
     id,
     passcode,
     current !== undefined && !paired,
-    app,
   );
 }
 
@@ -1240,7 +1115,7 @@ async function printAPI(context, device) {
   );
 }
 
-async function openConfigured(context, device, id, passcode, updated?, app?) {
+async function openConfigured(context, device, id, passcode, updated?) {
   const publishes = !context.options["no-setup-api"];
   if (device.virtual) {
     await step(
@@ -1256,14 +1131,7 @@ async function openConfigured(context, device, id, passcode, updated?, app?) {
     );
   } else {
     try {
-      await trustAndOpen(
-        context,
-        device,
-        id,
-        passcode,
-        updated,
-        path.join(app, "DeveloperDiskImage"),
-      );
+      await trustAndOpen(context, device, id, passcode, updated);
     } catch (error) {
       if (!(error instanceof MissingDriverError)) {
         throw error;
@@ -1338,18 +1206,16 @@ export async function setup(context) {
     (interactive(context) && !device.virtual
       ? await askPasscode(context)
       : undefined);
-  await withLocalApp(context, device, async (app) => {
-    await mountDiskImage(context, device, app);
-    if (passcode !== undefined) {
-      await step(tr("setting up auto-unlock"), () =>
-        setUpAutoUnlock(device, id, passcode),
-      );
-    }
-    if (!context.options["no-setup-pair"]) {
-      await pair(device, id, true);
-    }
-    await openConfigured(context, device, id, passcode, undefined, app);
-  });
+  await prepareDiskImage(context, device);
+  if (passcode !== undefined) {
+    await step(tr("setting up auto-unlock"), () =>
+      setUpAutoUnlock(device, id, passcode),
+    );
+  }
+  if (!context.options["no-setup-pair"]) {
+    await pair(device, id, true);
+  }
+  await openConfigured(context, device, id, passcode);
 }
 
 const trustMessages = JSON.stringify({
@@ -1361,8 +1227,6 @@ const trustMessages = JSON.stringify({
   running: tr("{app} is running.", { app: "{app}" }),
   trusted: tr("{developer} is trusted.", { developer: "{developer}" }),
 });
-
-const deviceNotListedExit = 3;
 
 const schema = [
   "CREATE TABLE grdb_migrations (identifier TEXT NOT NULL PRIMARY KEY)",
@@ -1408,7 +1272,7 @@ const setUpAutoUnlock = (device, id, passcode) =>
 const pairingFile = "PairingRecord.plist";
 const pairingPath = `Library/Application Support/${pairingFile}`;
 
-async function savedPasscode(device, id) {
+export async function savedPasscode(device, id) {
   const rows = await containerSQL(
     device,
     id,
@@ -1474,70 +1338,7 @@ async function pair(device, id, overwrite = false) {
   return true;
 }
 
-async function serve(udid, passcode, signal, diskImage) {
-  const child = spawn(
-    driverPath(),
-    [
-      "-d",
-      udid,
-      ...(passcode
-        ? ["--passcode", passcode.passcode, "--passcode-type", passcode.type]
-        : []),
-      "--disk-image",
-      diskImage,
-    ],
-    {
-      stdio: ["ignore", "pipe", "pipe"],
-      signal,
-    },
-  );
-  let logs = "";
-  let origin;
-  child.stderr.on("data", (chunk) => {
-    logs += chunk;
-  });
-  const exited = new Promise((resolve) => child.once("close", resolve));
-  const url = new Promise((resolve, reject) => {
-    child.once("error", (error: NodeJS.ErrnoException) =>
-      reject(error.code === "ENOENT" ? new MissingDriverError() : error),
-    );
-    exited.then((code) =>
-      reject(
-        Object.assign(
-          driverError(
-            logs,
-            `swipt-driver exited with ${code ?? "a signal"}${logs.trim() === "" ? "" : `: ${logs.trim()}`}`,
-          ),
-          { exitCode: code },
-        ),
-      ),
-    );
-    readline.createInterface({ input: child.stdout }).on("line", (line) => {
-      const found = /^Swipt API: (\S+)/.exec(line);
-      if (found) {
-        const parsed = new URL(found[1]);
-        parsed.hostname = "127.0.0.1";
-        origin = parsed.origin;
-        resolve(origin);
-      }
-    });
-  });
-  return {
-    url,
-    async stop() {
-      if (process.platform === "win32" && origin !== undefined) {
-        try {
-          await open({ url: origin, token: "" }).system.shutdown({});
-          return await exited;
-        } catch {}
-      }
-      child.kill("SIGTERM");
-      return exited;
-    },
-  };
-}
-
-async function launchUnlocking(device, id, args, signal, diskImage) {
+async function launchUnlocking(device, id, args, signal) {
   try {
     await launchApp(device, id, args);
     return;
@@ -1549,23 +1350,23 @@ async function launchUnlocking(device, id, args, signal, diskImage) {
     if (passcode === undefined) {
       throw error;
     }
-    const serving = await serve(device.udid, passcode, signal, diskImage);
+    const driven = serve(device.udid, { passcode, signal });
     try {
       const failure = await tryUnlock(
-        open({ url: await serving.url, token: "" }),
+        open({ url: (await driven.serving).local, token: "" }),
         signal,
       );
       if (failure !== undefined) {
         throw new Error(failure);
       }
     } finally {
-      await serving.stop();
+      await driven.stop();
     }
   }
   await launchApp(device, id, args);
 }
 
-async function trustAndOpen(context, device, id, given, updated, diskImage) {
+async function trustAndOpen(context, device, id, given, updated) {
   const lines = [];
   let failure;
   let passcode = given;
@@ -1580,7 +1381,6 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
               id,
               context.options["no-setup-api"] ? [] : [publishArgument],
               context.signal,
-              diskImage,
             );
             return;
           } catch (error) {
@@ -1599,17 +1399,12 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
             : process.stderr.isTTY
               ? "wait"
               : "";
-        let serving;
+        let driven;
         let url;
         while (url === undefined) {
-          serving = await serve(
-            device.udid,
-            passcode,
-            context.signal,
-            diskImage,
-          );
+          driven = serve(device.udid, { passcode, signal: context.signal });
           try {
-            url = await serving.url;
+            url = (await driven.serving).local;
           } catch (error) {
             if (error.exitCode !== deviceNotListedExit || unlock !== "wait") {
               throw error;
@@ -1669,7 +1464,7 @@ async function trustAndOpen(context, device, id, given, updated, diskImage) {
           }
           await run([id, "prompts"]);
         } finally {
-          await serving.stop();
+          await driven.stop();
         }
       },
     );

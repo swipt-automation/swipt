@@ -10,13 +10,17 @@ export const deviceOption: Options = {
   },
 };
 
-export const sideloadOptions: Options = {
+export const udidDeviceOption: Options = {
   device: {
     type: "string",
     short: "d",
     value: "NAME|UDID",
     help: tr("the device to use"),
   },
+};
+
+export const sideloadOptions: Options = {
+  ...udidDeviceOption,
   team: {
     type: "string",
     value: "ID",

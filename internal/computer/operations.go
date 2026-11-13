@@ -216,30 +216,43 @@ func (s *Session) installed(ctx context.Context, bundleID string) (instproxy.App
 }
 
 func (s *Session) Terminate(ctx context.Context, bundleID string) error {
-	application, found, err := s.installed(ctx, bundleID)
-	if err != nil {
-		return err
-	}
-	if !found {
-		return E.New(bundleID, " is not installed")
-	}
-	bundle := strings.TrimSuffix(application.Path, "/") + "/"
-	target, err := s.device(ctx)
-	if err != nil {
-		return err
-	}
-	processes, err := apps.Processes(ctx, target)
+	target, processes, err := s.processes(ctx, bundleID)
 	if err != nil {
 		return err
 	}
 	for _, process := range processes {
-		if strings.HasPrefix(strings.TrimPrefix(process.Executable, "/private"), strings.TrimPrefix(bundle, "/private")) {
-			if _, err = apps.Signal(ctx, target, process.PID, syscall.SIGKILL); err != nil {
-				return err
-			}
+		if _, err = apps.Signal(ctx, target, process.PID, syscall.SIGKILL); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func (s *Session) Running(ctx context.Context, bundleID string) (bool, error) {
+	_, processes, err := s.processes(ctx, bundleID)
+	return len(processes) > 0, err
+}
+
+func (s *Session) processes(ctx context.Context, bundleID string) (*coredevice.Device, []apps.Process, error) {
+	application, found, err := s.installed(ctx, bundleID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !found {
+		return nil, nil, E.New(bundleID, " is not installed")
+	}
+	bundle := strings.TrimPrefix(strings.TrimSuffix(application.Path, "/")+"/", "/private")
+	target, err := s.device(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	processes, err := apps.Processes(ctx, target)
+	if err != nil {
+		return nil, nil, err
+	}
+	return target, slices.DeleteFunc(processes, func(process apps.Process) bool {
+		return !strings.HasPrefix(strings.TrimPrefix(process.Executable, "/private"), bundle)
+	}), nil
 }
 
 func (s *Session) container(ctx context.Context, bundleID string) (*afc.Client, error) {

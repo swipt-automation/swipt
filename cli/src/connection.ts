@@ -20,6 +20,7 @@ const browseLimit = 1500;
 const browseRequery = 300;
 const publishLimit = 10_000;
 const answerLimit = 5000;
+const stopLimit = 10_000;
 
 const storeFile = path.join(configDirectory, "devices.json");
 
@@ -114,6 +115,7 @@ async function browse(signal, until, limit = browseLimit) {
           name: label(service.name),
           url: `http://${host.includes(":") ? `[${host}]` : host}:${service.port}`,
           authenticates: service.txt?.auth === "1",
+          udid: service.txt?.udid,
         });
         if (until?.([...found.values()])) {
           enough.abort();
@@ -156,6 +158,38 @@ export async function findPublished(name, signal) {
     publishLimit,
   );
   return found.find(matches);
+}
+
+// A computer that runs swipt-driver publishes the UDID of the device it serves.
+export async function findDriver(udid, signal) {
+  const serves = (service) =>
+    service.udid !== undefined && sameName(service.udid, udid);
+  return (await browse(signal, (services) => services.some(serves))).find(
+    serves,
+  );
+}
+
+// Returns once the driver no longer publishes itself, which it does after it
+// has let go of the device.
+export async function stopDriver(service, signal) {
+  const device = { url: service.url, token: "" };
+  await open((await located(device, signal)) ?? device).system.shutdown(
+    {},
+    { signal },
+  );
+  const deadline = AbortSignal.any([signal, AbortSignal.timeout(stopLimit)]);
+  try {
+    while ((await findDriver(service.udid, deadline)) !== undefined) {
+      await sleep(browseRequery, undefined, { signal: deadline });
+    }
+  } catch (error) {
+    if (signal.aborted) {
+      throw error;
+    }
+    throw new Error(
+      tr("The driver on {computer} didn't stop.", { computer: service.name }),
+    );
+  }
 }
 
 export async function runningSwipt(name, signal) {

@@ -22,6 +22,14 @@ for target in "${TARGETS[@]}"; do
     > "$package/package.json"
   optional+=("optionalDependencies.@swipt/driver-$target=$VERSION")
 done
+# The Developer Disk Image has its own version, and each version is published once.
+DISK_IMAGE=Swipt/Resources/DeveloperDiskImage
+DISK_IMAGE_VERSION=$(node -p "require('./$DISK_IMAGE/package.json').version")
+if npm view "@swipt/developer-disk-image@$DISK_IMAGE_VERSION" version > /dev/null 2>&1; then
+  echo "@swipt/developer-disk-image@$DISK_IMAGE_VERSION is already published"
+else
+  npm publish "./$DISK_IMAGE"
+fi
 npm pkg set "version=$VERSION" --prefix api
 npm pkg set "version=$VERSION" "peerDependencies.@swipt/api=$VERSION" "${optional[@]}" --prefix cli
 for package in api "${TARGETS[@]/#/build/driver/}" cli; do
