@@ -1,14 +1,106 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { NodeFlags, SyntaxKind } from "typescript/unstable/ast";
-import { isTypeNode } from "typescript/unstable/ast/is";
-import { API, SymbolFlags } from "typescript/unstable/sync";
+import type { Metafile } from "esbuild";
+import {
+  type ClassLikeDeclaration,
+  type ExportDeclaration,
+  type Expression,
+  type FunctionLikeDeclaration,
+  type Identifier,
+  type ImportDeclaration,
+  type JSDocTag,
+  type ModifiersBase,
+  type Node,
+  NodeFlags,
+  type ObjectLiteralElementLike,
+  type PropertyAssignment,
+  type PropertyDeclaration,
+  type SourceFile,
+  type Statement,
+  type StringLiteralLikeNode,
+  SyntaxKind,
+  type VariableDeclaration,
+} from "typescript/unstable/ast";
+import {
+  isAccessorDeclaration,
+  isArrowFunction,
+  isBinaryExpression,
+  isBindingElement,
+  isBlock,
+  isBreakOrContinueStatement,
+  isCallExpression,
+  isCallOrNewExpression,
+  isCaseClause,
+  isClassDeclaration,
+  isClassLikeDeclaration,
+  isComputedPropertyName,
+  isConditionalExpression,
+  isConstructorDeclaration,
+  isDefaultClause,
+  isElementAccessExpression,
+  isExportDeclaration,
+  isExpressionWithTypeArguments,
+  isFunctionDeclaration,
+  isFunctionLikeDeclaration,
+  isHeritageClause,
+  isIdentifier,
+  isIfStatement,
+  isImportDeclaration,
+  isInterfaceDeclaration,
+  isJSDoc,
+  isJsxAttribute,
+  isJsxAttributes,
+  isJsxSpreadAttribute,
+  isMethodDeclaration,
+  isModuleBlock,
+  isNamedExports,
+  isNumericLiteral,
+  isNumericOrStringLikeLiteral,
+  isObjectBindingPattern,
+  isObjectLiteralExpression,
+  isParenthesizedExpression,
+  isPrefixUnaryExpression,
+  isPropertyAccessExpression,
+  isPropertyAssignment,
+  isPropertyDeclaration,
+  isReturnStatement,
+  isShorthandPropertyAssignment,
+  isSourceFile,
+  isSpreadAssignment,
+  isStringLiteralLikeNode,
+  isThrowStatement,
+  isTypeNode,
+  isVariableDeclaration,
+} from "typescript/unstable/ast/is";
+import {
+  API,
+  SymbolFlags,
+  type Checker as TypeScriptChecker,
+  type Project as TypeScriptProject,
+  type Symbol as TypeScriptSymbol,
+  type Type,
+} from "typescript/unstable/sync";
 
 import { language, tr } from "./i18n";
+import type { Project } from "./project";
 import { parseVersion, versionAtLeast } from "./version";
+interface Requirements {
+  apiLevel: number;
+  iOS: readonly number[];
+}
 
-const requirements = {
+type Kind = keyof Requirements;
+
+type Requirement = Partial<Requirements>;
+
+interface Rule<Value> {
+  readonly parse: (text: string) => Value | undefined;
+  readonly covers: (value: Value, needed: Value) => boolean;
+  readonly describe: (value: Value) => string;
+}
+
+const requirements: { readonly [K in Kind]: Rule<Requirements[K]> } = {
   apiLevel: {
     parse: (text) => (/^[1-9]\d*$/.test(text) ? Number(text) : undefined),
     covers: (level, needed) => level >= needed,
@@ -21,94 +113,164 @@ const requirements = {
   },
 };
 
+const isKind = (name: string): name is Kind =>
+  Object.hasOwn(requirements, name);
+
+const kindsOf = (requirement: Requirement) =>
+  Object.keys(requirement).filter(isKind);
+
+const parseKind = <K extends Kind>(
+  kind: K,
+  text: string,
+): Requirement | undefined => {
+  const value = requirements[kind].parse(text);
+  if (value === undefined) {
+    return undefined;
+  }
+  const requirement: Requirement = {};
+  requirement[kind] = value;
+  return requirement;
+};
+
 const lists = new Intl.ListFormat(language, { type: "conjunction" });
 
-const merge = (into, from) => {
-  for (const [name, needed] of Object.entries(from)) {
-    if (
-      into[name] === undefined ||
-      !requirements[name].covers(into[name], needed)
-    ) {
-      into[name] = needed;
-    }
+const mergeKind = <K extends Kind>(
+  into: Requirement,
+  from: Requirement,
+  kind: K,
+) => {
+  const needed = from[kind];
+  const current = into[kind];
+  if (
+    needed !== undefined &&
+    (current === undefined || !requirements[kind].covers(current, needed))
+  ) {
+    into[kind] = needed;
+  }
+};
+
+const merge = (into: Requirement, from: Requirement) => {
+  for (const kind of kindsOf(from)) {
+    mergeKind(into, from, kind);
   }
   return into;
 };
 
-const describe = (needed, missing) =>
-  lists.format(
-    missing.map((name) => requirements[name].describe(needed[name])),
-  );
+type Coverage = <K extends Kind>(kind: K, needed: Requirements[K]) => boolean;
 
-function parseAnnotation(text) {
-  const requirement = {};
+const unmet = (needed: Requirement, covered: Coverage) => {
+  const missing = kindsOf(needed).flatMap(<K extends Kind>(kind: K) => {
+    const value = needed[kind];
+    return value === undefined || covered(kind, value)
+      ? []
+      : [requirements[kind].describe(value)];
+  });
+  return missing.length > 0 ? lists.format(missing) : undefined;
+};
+
+interface Annotation {
+  readonly requirement: Requirement;
+  readonly invalid?: string;
+  readonly repeated?: Kind;
+}
+
+function parseAnnotation(text: string): Annotation {
+  const requirement: Requirement = {};
   for (const entry of text.split(",").map((part) => part.trim())) {
-    const [kind, value, ...rest] = entry.split(/\s+/);
+    const [kind = "", value = "", ...rest] = entry.split(/\s+/);
     const parsed =
-      rest.length === 0 && Object.hasOwn(requirements, kind)
-        ? requirements[kind].parse(value ?? "")
-        : undefined;
+      rest.length === 0 && isKind(kind) ? parseKind(kind, value) : undefined;
     if (parsed === undefined) {
       return { requirement, invalid: entry };
     }
-    if (requirement[kind] !== undefined) {
-      return { requirement, repeated: kind };
+    const repeated = kindsOf(parsed).find(
+      (name) => requirement[name] !== undefined,
+    );
+    if (repeated !== undefined) {
+      return { requirement, repeated };
     }
-    requirement[kind] = parsed;
+    Object.assign(requirement, parsed);
   }
   return { requirement };
 }
 
-const tagText = (tag) =>
-  typeof tag.comment === "string"
-    ? tag.comment
-    : (tag.comment ?? []).map((part) => part.text).join("");
+const tagText = (tag: JSDocTag) =>
+  (tag.comment ?? []).map((part) => part.text).join("");
 
-const annotationTags = (node) =>
-  (node.jsDoc ?? []).flatMap((comment) =>
-    (comment.tags ?? []).filter((tag) => tag.tagName.text === "available"),
-  );
+const annotationTags = (node: Node) =>
+  (node.jsDoc ?? [])
+    .filter(isJSDoc)
+    .flatMap((comment) =>
+      (comment.tags ?? []).filter((tag) => tag.tagName.text === "available"),
+    );
 
-const exits = (statement) =>
-  statement.kind === SyntaxKind.ReturnStatement ||
-  statement.kind === SyntaxKind.ThrowStatement ||
-  statement.kind === SyntaxKind.BreakStatement ||
-  statement.kind === SyntaxKind.ContinueStatement ||
-  (statement.kind === SyntaxKind.Block &&
-    statement.statements.length > 0 &&
-    exits(statement.statements.at(-1)));
+const exits = (statement: Statement): boolean => {
+  if (
+    isReturnStatement(statement) ||
+    isThrowStatement(statement) ||
+    isBreakOrContinueStatement(statement)
+  ) {
+    return true;
+  }
+  const last = isBlock(statement) ? statement.statements.at(-1) : undefined;
+  return last !== undefined && exits(last);
+};
 
-const hasModifier = (node, kind) =>
+const hasModifier = (node: ModifiersBase, kind: SyntaxKind) =>
   node.modifiers?.some((modifier) => modifier.kind === kind) ?? false;
 
-const functions = new Set([
-  SyntaxKind.FunctionDeclaration,
-  SyntaxKind.FunctionExpression,
-  SyntaxKind.ArrowFunction,
-  SyntaxKind.MethodDeclaration,
-  SyntaxKind.GetAccessor,
-  SyntaxKind.SetAccessor,
-  SyntaxKind.Constructor,
-]);
+const statementsOf = (node: Node): readonly Statement[] =>
+  isBlock(node) ||
+  isSourceFile(node) ||
+  isModuleBlock(node) ||
+  isCaseClause(node) ||
+  isDefaultClause(node)
+    ? node.statements
+    : [];
 
-const classes = new Set([
-  SyntaxKind.ClassDeclaration,
-  SyntaxKind.ClassExpression,
-]);
+const isNameOf = (node: Node) =>
+  "name" in node.parent && node.parent.name === node;
 
-const valueHolders = new Set([
-  SyntaxKind.VariableDeclaration,
-  SyntaxKind.PropertyDeclaration,
-  SyntaxKind.PropertyAssignment,
-]);
+const isPropertyNameOf = (node: Node) =>
+  "propertyName" in node.parent && node.parent.propertyName === node;
 
-const objectMembers = new Set([
-  SyntaxKind.PropertyAssignment,
-  SyntaxKind.ShorthandPropertyAssignment,
-  SyntaxKind.MethodDeclaration,
-  SyntaxKind.GetAccessor,
-  SyntaxKind.SetAccessor,
-]);
+const isObjectMember = (node: Node) =>
+  isPropertyAssignment(node) ||
+  isShorthandPropertyAssignment(node) ||
+  isMethodDeclaration(node) ||
+  isAccessorDeclaration(node);
+
+const isValueHolder = (node: Node) =>
+  isVariableDeclaration(node) ||
+  isPropertyDeclaration(node) ||
+  isPropertyAssignment(node);
+
+type Annotated =
+  | FunctionLikeDeclaration
+  | ClassLikeDeclaration
+  | VariableDeclaration
+  | PropertyDeclaration
+  | PropertyAssignment;
+
+const writtenName = (member: ObjectLiteralElementLike) => {
+  if (isSpreadAssignment(member)) {
+    return undefined;
+  }
+  const { name } = member;
+  if (isComputedPropertyName(name)) {
+    return isNumericOrStringLikeLiteral(name.expression)
+      ? name.expression.text
+      : undefined;
+  }
+  return name.text;
+};
+
+const constituentsOf = (type: Type) =>
+  type.isUnionType() ||
+  type.isIntersectionType() ||
+  type.isTemplateLiteralType()
+    ? type.getTypes()
+    : [];
 
 const literals = new Set([
   SyntaxKind.ObjectLiteralExpression,
@@ -125,11 +287,6 @@ const literals = new Set([
   SyntaxKind.SpreadElement,
 ]);
 
-const names = new Set([
-  SyntaxKind.StringLiteral,
-  SyntaxKind.NoSubstitutionTemplateLiteral,
-]);
-
 const inert = new Set([
   SyntaxKind.ImportDeclaration,
   SyntaxKind.ExportDeclaration,
@@ -138,8 +295,8 @@ const inert = new Set([
   SyntaxKind.JsxClosingElement,
 ]);
 
-function sourceFilesOf(root, metafiles) {
-  const files = new Set();
+function sourceFilesOf(root: string, metafiles: readonly Metafile[]) {
+  const files = new Set<string>();
   for (const metafile of metafiles) {
     for (const input of Object.keys(metafile.inputs)) {
       const file = path.resolve(input);
@@ -156,11 +313,16 @@ function sourceFilesOf(root, metafiles) {
   return [...files];
 }
 
-export class AvailabilityChecker {
-  #api;
-  #open = new Set();
+interface Problems {
+  readonly lines: Set<string>;
+  guarding: boolean;
+}
 
-  check(project, metafiles) {
+export class AvailabilityChecker {
+  #api: API | undefined;
+  #open = new Set<string>();
+
+  check(project: Project, metafiles: readonly Metafile[]) {
     const files = sourceFilesOf(project.root, metafiles);
     if (files.length === 0 && this.#open.size === 0) {
       return;
@@ -179,10 +341,14 @@ export class AvailabilityChecker {
     if (files.length === 0) {
       return;
     }
-    const problems = { lines: new Set(), guarding: false };
-    const groups = Map.groupBy(files, (file) =>
-      snapshot.getDefaultProjectForFile(file),
-    );
+    const problems: Problems = { lines: new Set(), guarding: false };
+    const groups = Map.groupBy(files, (file) => {
+      const typescript = snapshot.getDefaultProjectForFile(file);
+      if (typescript === undefined) {
+        throw new Error(`no TypeScript project contains ${file}`);
+      }
+      return typescript;
+    });
     for (const [typescript, owned] of groups) {
       new Checker(typescript, project, files, problems).check(owned);
     }
@@ -208,23 +374,31 @@ export class AvailabilityChecker {
 }
 
 class Checker {
-  #project;
-  #checker;
-  #root;
-  #files;
-  #problems;
-  #minimum;
-  #entries;
-  #available;
-  #symbols = new Map();
-  #imports = new Set();
-  #requirements = new Map();
-  #annotations = new Map();
-  #facts = [new Map(), new Map()];
-  #types = new Map();
-  #annotated = new Map();
+  #project: TypeScriptProject;
+  #checker: TypeScriptChecker;
+  #root: string;
+  #files: Set<string>;
+  #problems: Problems;
+  #minimum: Requirement;
+  #entries: Set<string>;
+  #available: number | undefined;
+  #symbols = new Map<Node, TypeScriptSymbol | undefined>();
+  #imports = new Set<Node>();
+  #requirements = new Map<number, Requirement>();
+  #annotations = new Map<Node, Requirement>();
+  #facts: [Map<Node, Requirement>, Map<Node, Requirement>] = [
+    new Map(),
+    new Map(),
+  ];
+  #types = new Map<Node, Type | undefined>();
+  #annotated = new Map<number, TypeScriptSymbol[]>();
 
-  constructor(typescript, project, files, problems) {
+  constructor(
+    typescript: TypeScriptProject,
+    project: Project,
+    files: readonly string[],
+    problems: Problems,
+  ) {
     this.#project = typescript;
     this.#checker = typescript.checker;
     this.#root = project.root;
@@ -238,39 +412,45 @@ class Checker {
     };
     this.#entries = new Set(
       [project.app, project.extension]
-        .filter(Boolean)
+        .filter((entry) => entry !== undefined)
         .map((entry) => fs.realpathSync(entry)),
     );
     this.#available = this.#availableSymbol(project.apiDirectory);
   }
 
-  check(files) {
+  check(files: readonly string[]) {
     for (const file of files) {
       const source = this.#project.program.getSourceFile(file);
+      if (source === undefined) {
+        throw new Error(`the TypeScript program has no ${file}`);
+      }
       const { identifiers, properties, values } = this.#collect(source);
       const symbols = this.#checker.getSymbolAtLocation(identifiers);
       for (const [index, node] of identifiers.entries()) {
         this.#use(
           node,
-          node.parent.kind === SyntaxKind.ShorthandPropertyAssignment
+          isShorthandPropertyAssignment(node.parent)
             ? this.#checker.getShorthandAssignmentValueSymbol(node.parent)
             : symbols[index],
+          node.text,
         );
       }
       for (const node of properties) {
-        this.#use(node, this.#propertySymbol(node));
+        this.#use(node, this.#propertySymbol(node), node.text);
       }
       for (const node of values) {
         this.#useValue(node);
       }
       for (const statement of source.statements) {
-        if (
-          statement.kind !== SyntaxKind.ExportDeclaration ||
-          statement.isTypeOnly
-        ) {
+        if (!isExportDeclaration(statement) || statement.isTypeOnly) {
           continue;
         }
-        const exported = (statement.exportClause?.elements ?? []).filter(
+        const { exportClause } = statement;
+        const elements =
+          exportClause !== undefined && isNamedExports(exportClause)
+            ? exportClause.elements
+            : undefined;
+        const exported = (elements ?? []).filter(
           (specifier) => !specifier.isTypeOnly,
         );
         if (statement.moduleSpecifier === undefined) {
@@ -281,16 +461,16 @@ class Checker {
               this.#useImport(local);
             }
           }
-        } else if (
-          exported.length > 0 ||
-          statement.exportClause?.elements === undefined
-        ) {
+        } else if (exported.length > 0 || elements === undefined) {
           this.#importModule(statement);
         }
       }
       if (this.#entries.has(file)) {
         for (const statement of source.statements) {
           if (
+            (isFunctionDeclaration(statement) ||
+              isClassDeclaration(statement) ||
+              isInterfaceDeclaration(statement)) &&
             statement.name !== undefined &&
             hasModifier(statement, SyntaxKind.DefaultKeyword)
           ) {
@@ -301,82 +481,69 @@ class Checker {
     }
   }
 
-  #collect(source) {
-    const identifiers = [];
-    const properties = [];
-    const values = [];
-    const visit = (node, checked) => {
+  #collect(source: SourceFile) {
+    const identifiers: (Identifier | StringLiteralLikeNode)[] = [];
+    const properties: (Identifier | StringLiteralLikeNode)[] = [];
+    const values: Expression[] = [];
+    const visit = (node: Node, checked: boolean) => {
       for (const tag of annotationTags(node)) {
         this.#parse(tagText(tag), tag);
       }
       const extended =
-        node.kind === SyntaxKind.ExpressionWithTypeArguments &&
+        isExpressionWithTypeArguments(node) &&
+        isHeritageClause(node.parent) &&
         node.parent.token === SyntaxKind.ExtendsKeyword &&
-        classes.has(node.parent.parent.kind);
+        isClassLikeDeclaration(node.parent.parent);
       if (inert.has(node.kind) || (isTypeNode(node) && !extended)) {
         checked = false;
       }
       if (checked) {
-        if (
-          node.kind === SyntaxKind.CallExpression ||
-          node.kind === SyntaxKind.NewExpression
-        ) {
+        if (isCallOrNewExpression(node)) {
           values.push(
             ...(node.arguments ?? []).filter(
               (argument) => !literals.has(argument.kind),
             ),
           );
-        } else if (
-          node.kind === SyntaxKind.SpreadAssignment ||
-          node.kind === SyntaxKind.JsxSpreadAttribute
-        ) {
+        } else if (isSpreadAssignment(node) || isJsxSpreadAttribute(node)) {
           values.push(node.expression);
         }
       }
-      if (checked && node.kind === SyntaxKind.Identifier) {
+      if (checked && isIdentifier(node)) {
         const { parent } = node;
         const property =
-          parent.kind === SyntaxKind.JsxAttribute ||
-          (objectMembers.has(parent.kind) &&
-            parent.parent.kind === SyntaxKind.ObjectLiteralExpression &&
+          isJsxAttribute(parent) ||
+          (isObjectMember(parent) &&
+            isObjectLiteralExpression(parent.parent) &&
             parent.name === node) ||
-          (parent.kind === SyntaxKind.BindingElement &&
-            parent.parent.kind === SyntaxKind.ObjectBindingPattern &&
+          (isBindingElement(parent) &&
+            isObjectBindingPattern(parent.parent) &&
             (parent.propertyName ?? parent.name) === node);
         if (property) {
           properties.push(node);
         }
         if (
-          parent.kind === SyntaxKind.ShorthandPropertyAssignment ||
+          isShorthandPropertyAssignment(parent) ||
           (!property &&
-            parent.propertyName !== node &&
-            (parent.name !== node ||
-              parent.kind === SyntaxKind.PropertyAccessExpression))
+            !isPropertyNameOf(node) &&
+            (!isNameOf(node) || isPropertyAccessExpression(parent)))
         ) {
           identifiers.push(node);
         }
       }
-      if (
-        checked &&
-        (node.kind === SyntaxKind.StringLiteral ||
-          node.kind === SyntaxKind.NoSubstitutionTemplateLiteral)
-      ) {
+      if (checked && isStringLiteralLikeNode(node)) {
         const { parent } = node;
-        const member =
-          parent.kind === SyntaxKind.ComputedPropertyName
-            ? parent.parent
-            : parent;
+        const member = isComputedPropertyName(parent) ? parent.parent : parent;
         if (
-          (objectMembers.has(member.kind) &&
-            member.parent.kind === SyntaxKind.ObjectLiteralExpression &&
+          (isObjectMember(member) &&
+            isObjectLiteralExpression(member.parent) &&
             (member.name === node || member.name === parent)) ||
-          (member.kind === SyntaxKind.BindingElement &&
-            member.parent.kind === SyntaxKind.ObjectBindingPattern &&
+          (isBindingElement(member) &&
+            isObjectBindingPattern(member.parent) &&
             (member.propertyName === node || member.propertyName === parent))
         ) {
           properties.push(node);
         } else if (
-          parent.kind === SyntaxKind.ElementAccessExpression &&
+          isElementAccessExpression(parent) &&
           parent.argumentExpression === node
         ) {
           identifiers.push(node);
@@ -384,11 +551,12 @@ class Checker {
       }
       if (
         checked &&
-        node.kind === SyntaxKind.ObjectLiteralExpression &&
+        isObjectLiteralExpression(node) &&
         node.properties.some(
           (member) =>
-            member.name?.kind === SyntaxKind.ComputedPropertyName &&
-            !names.has(member.name.expression.kind),
+            !isSpreadAssignment(member) &&
+            isComputedPropertyName(member.name) &&
+            !isStringLiteralLikeNode(member.name.expression),
         )
       ) {
         values.push(node);
@@ -399,37 +567,31 @@ class Checker {
     return { identifiers, properties, values };
   }
 
-  #useValue(node) {
+  #useValue(node: Expression) {
     const expected = this.#checker.getContextualType(node);
     if (expected === undefined) {
       return;
     }
-    if (!this.#annotated.has(expected.id)) {
-      const annotated = new Map();
-      for (const candidate of [expected, ...(expected.getTypes?.() ?? [])]) {
+    let annotated = this.#annotated.get(expected.id);
+    if (annotated === undefined) {
+      const found = new Map<string, TypeScriptSymbol>();
+      for (const candidate of [expected, ...constituentsOf(expected)]) {
         for (const property of this.#checker.getPropertiesOfType(candidate)) {
           if (Object.keys(this.#requirementOf(property)).length > 0) {
-            annotated.set(property.name, property);
+            found.set(property.name, property);
           }
         }
       }
-      this.#annotated.set(expected.id, [...annotated.values()]);
+      annotated = [...found.values()];
+      this.#annotated.set(expected.id, annotated);
     }
-    const annotated = this.#annotated.get(expected.id);
     const type =
       annotated.length > 0 ? this.#checker.getTypeAtLocation(node) : undefined;
     if (type === undefined) {
       return;
     }
     const named = new Set(
-      (node.kind === SyntaxKind.ObjectLiteralExpression
-        ? node.properties
-        : []
-      ).map((member) =>
-        member.name?.kind === SyntaxKind.ComputedPropertyName
-          ? member.name.expression.text
-          : member.name?.text,
-      ),
+      (isObjectLiteralExpression(node) ? node.properties : []).map(writtenName),
     );
     for (const property of annotated) {
       if (
@@ -441,80 +603,81 @@ class Checker {
     }
   }
 
-  #use(node, symbol, name = node.text) {
+  #use(node: Node, symbol: TypeScriptSymbol | undefined, name: string) {
     if (symbol === undefined) {
       return;
     }
     this.#useImport(symbol);
-    const needed = this.#requirementOf(symbol);
-    const missing = Object.keys(needed).filter(
-      (name) => !this.#covered(name, needed[name], node),
+    const requirement = unmet(this.#requirementOf(symbol), (kind, needed) =>
+      this.#covered(kind, needed, node),
     );
-    if (missing.length > 0) {
+    if (requirement !== undefined) {
       this.#problems.guarding = true;
       this.#problems.lines.add(
         tr("{location}: {name} needs {requirement}.", {
           location: this.#location(node),
           name,
-          requirement: describe(needed, missing),
+          requirement,
         }),
       );
     }
   }
 
-  #useImport(symbol) {
+  #useImport(symbol: TypeScriptSymbol) {
     let declaration =
       symbol.flags & SymbolFlags.Alias
-        ? symbol.declarations?.[0]?.resolve(this.#project)
+        ? symbol.declarations.at(0)?.resolve(this.#project)
         : undefined;
-    while (
-      declaration !== undefined &&
-      declaration.kind !== SyntaxKind.ImportDeclaration
-    ) {
-      declaration = declaration.parent;
+    while (declaration !== undefined && !isImportDeclaration(declaration)) {
+      declaration = isSourceFile(declaration) ? undefined : declaration.parent;
     }
     if (declaration !== undefined) {
       this.#importModule(declaration);
     }
   }
 
-  #importModule(declaration) {
-    if (this.#imports.has(declaration)) {
+  #importModule(declaration: ImportDeclaration | ExportDeclaration) {
+    const name = declaration.moduleSpecifier;
+    if (
+      this.#imports.has(declaration) ||
+      name === undefined ||
+      !isStringLiteralLikeNode(name)
+    ) {
       return;
     }
     this.#imports.add(declaration);
-    const name = declaration.moduleSpecifier;
     const module = this.#checker
       .getSymbolAtLocation(name)
-      ?.declarations?.[0]?.resolve(this.#project);
+      ?.declarations.at(0)
+      ?.resolve(this.#project);
     if (
-      module?.kind !== SyntaxKind.SourceFile ||
+      module === undefined ||
+      !isSourceFile(module) ||
       this.#files.has(module.fileName)
     ) {
       return;
     }
-    const needed = this.#moduleRequirement(module);
-    const missing = Object.keys(needed).filter(
-      (kind) => !requirements[kind].covers(this.#minimum[kind], needed[kind]),
+    const requirement = unmet(this.#moduleRequirement(module), (kind, needed) =>
+      this.#meetsMinimum(kind, needed),
     );
-    if (missing.length > 0) {
+    if (requirement !== undefined) {
       this.#problems.lines.add(
         tr(
           '{location}: importing {name} needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
           {
             location: this.#location(name),
             name: name.text,
-            requirement: describe(needed, missing),
+            requirement,
           },
         ),
       );
     }
   }
 
-  #moduleRequirement(source) {
-    const requirement = {};
-    const [first] = source.statements;
-    if (first?.kind === SyntaxKind.ImportDeclaration) {
+  #moduleRequirement(source: SourceFile) {
+    const requirement: Requirement = {};
+    const first = source.statements.at(0);
+    if (first !== undefined && isImportDeclaration(first)) {
       for (const tag of annotationTags(first)) {
         merge(requirement, this.#parse(tagText(tag), tag));
       }
@@ -522,27 +685,27 @@ class Checker {
     return requirement;
   }
 
-  #useEntry(name) {
+  #useEntry(name: Identifier) {
     const symbol = this.#checker.getSymbolAtLocation(name);
-    const needed = symbol === undefined ? {} : this.#requirementOf(symbol);
-    const missing = Object.keys(needed).filter(
-      (kind) => !requirements[kind].covers(this.#minimum[kind], needed[kind]),
+    const requirement = unmet(
+      symbol === undefined ? {} : this.#requirementOf(symbol),
+      (kind, needed) => this.#meetsMinimum(kind, needed),
     );
-    if (missing.length > 0) {
+    if (requirement !== undefined) {
       this.#problems.lines.add(
         tr(
           '{location}: {name} is an entry of the swiplet and needs {requirement}; raise "swiplet.minimumAPILevel" or "swiplet.minimumIOSVersion" in package.json.',
           {
             location: this.#location(name),
             name: name.text,
-            requirement: describe(needed, missing),
+            requirement,
           },
         ),
       );
     }
   }
 
-  #location(node) {
+  #location(node: Node) {
     const source = sourceFileOf(node);
     const { line, character } = source.getLineAndCharacterOfPosition(
       node.getStart(source),
@@ -550,13 +713,16 @@ class Checker {
     return `${path.relative(this.#root, source.fileName)}:${line + 1}:${character + 1}`;
   }
 
-  #parse(text, node) {
+  #parse(text: string, node: Node) {
     const { requirement, invalid, repeated } = parseAnnotation(text);
     if (invalid !== undefined) {
       this.#problems.lines.add(
         tr(
           '{location}: @available has "{entry}"; it takes "apiLevel <level>" and "iOS <version>", separated by commas.',
-          { location: this.#location(node), entry: invalid },
+          {
+            location: this.#location(node),
+            entry: invalid,
+          },
         ),
       );
     } else if (repeated !== undefined) {
@@ -570,13 +736,13 @@ class Checker {
     return requirement;
   }
 
-  #target(symbol) {
+  #target(symbol: TypeScriptSymbol) {
     return symbol.flags & SymbolFlags.Alias
       ? this.#checker.getAliasedSymbol(symbol)
       : symbol;
   }
 
-  #symbolOf(node) {
+  #symbolOf(node: Node) {
     if (!this.#symbols.has(node)) {
       const symbol = this.#checker.getSymbolAtLocation(node);
       this.#symbols.set(
@@ -587,12 +753,13 @@ class Checker {
     return this.#symbols.get(node);
   }
 
-  #requirementOf(symbol) {
+  #requirementOf(symbol: TypeScriptSymbol) {
     const target = this.#target(symbol);
-    if (!this.#requirements.has(target.id)) {
-      const requirement = {};
+    let requirement = this.#requirements.get(target.id);
+    if (requirement === undefined) {
+      requirement = {};
       const declaration = (
-        target.valueDeclaration ?? target.declarations[0]
+        target.valueDeclaration ?? target.declarations.at(0)
       )?.resolve(this.#project);
       const external =
         declaration !== undefined &&
@@ -612,15 +779,20 @@ class Checker {
       }
       this.#requirements.set(target.id, requirement);
     }
-    return this.#requirements.get(target.id);
+    return requirement;
   }
 
-  #annotationOf(node) {
-    if (!this.#annotations.has(node)) {
-      const requirement = {};
+  #annotationOf(node: Annotated) {
+    let requirement = this.#annotations.get(node);
+    if (requirement === undefined) {
+      requirement = {};
+      const name =
+        isArrowFunction(node) || isConstructorDeclaration(node)
+          ? undefined
+          : node.name;
       const symbol =
-        node.name?.kind === SyntaxKind.Identifier
-          ? this.#checker.getSymbolAtLocation(node.name)
+        name !== undefined && isIdentifier(name)
+          ? this.#checker.getSymbolAtLocation(name)
           : undefined;
       if (symbol !== undefined) {
         merge(requirement, this.#requirementOf(symbol));
@@ -630,28 +802,29 @@ class Checker {
       }
       this.#annotations.set(node, requirement);
     }
-    return this.#annotations.get(node);
+    return requirement;
   }
 
-  #propertySymbol(name) {
-    const member =
-      name.parent.kind === SyntaxKind.ComputedPropertyName
-        ? name.parent.parent
-        : name.parent;
+  #propertySymbol(name: Identifier | StringLiteralLikeNode) {
+    const member = isComputedPropertyName(name.parent)
+      ? name.parent.parent
+      : name.parent;
     const container = member.parent;
     if (!this.#types.has(container)) {
       this.#types.set(
         container,
-        member.kind === SyntaxKind.BindingElement
+        isObjectBindingPattern(container)
           ? this.#checker.getTypeAtLocation(container)
-          : this.#checker.getContextualType(container),
+          : isObjectLiteralExpression(container) || isJsxAttributes(container)
+            ? this.#checker.getContextualType(container)
+            : undefined,
       );
     }
     const type = this.#types.get(container);
     if (type === undefined) {
       return undefined;
     }
-    for (const candidate of [type, ...(type.getTypes?.() ?? [])]) {
+    for (const candidate of [type, ...constituentsOf(type)]) {
       const property = this.#checker.getPropertyOfType(candidate, name.text);
       if (property !== undefined) {
         return property;
@@ -660,60 +833,56 @@ class Checker {
     return undefined;
   }
 
-  #covered(name, needed, reference) {
-    const { covers } = requirements[name];
-    if (covers(this.#minimum[name], needed)) {
+  #meetsMinimum<K extends Kind>(kind: K, needed: Requirements[K]) {
+    const minimum = this.#minimum[kind];
+    return minimum !== undefined && requirements[kind].covers(minimum, needed);
+  }
+
+  #covered<K extends Kind>(kind: K, needed: Requirements[K], reference: Node) {
+    if (this.#meetsMinimum(kind, needed)) {
       return true;
     }
+    const { covers } = requirements[kind];
     let crossed = false;
-    for (
-      let child = reference, parent = reference.parent;
-      parent;
-      child = parent, parent = parent.parent
-    ) {
-      const proven = this.#provenBy(parent, child, crossed)[name];
+    for (let child = reference; !isSourceFile(child); child = child.parent) {
+      const { parent } = child;
+      const proven = this.#provenBy(parent, child, crossed)[kind];
       if (proven !== undefined && covers(proven, needed)) {
         return true;
       }
-      crossed ||= functions.has(parent.kind);
+      crossed ||= isFunctionLikeDeclaration(parent);
     }
     return false;
   }
 
-  #provenBy(parent, child, crossed) {
-    const proven = {};
-    switch (parent.kind) {
-      case SyntaxKind.IfStatement:
-        if (child === parent.thenStatement) {
-          merge(proven, this.#factsOf(parent.expression, true));
-        } else if (child === parent.elseStatement) {
-          merge(proven, this.#factsOf(parent.expression, false));
-        }
-        break;
-      case SyntaxKind.ConditionalExpression:
-        if (child === parent.whenTrue) {
-          merge(proven, this.#factsOf(parent.condition, true));
-        } else if (child === parent.whenFalse) {
-          merge(proven, this.#factsOf(parent.condition, false));
-        }
-        break;
-      case SyntaxKind.BinaryExpression:
-        if (child === parent.right) {
-          const operator = parent.operatorToken.kind;
-          if (operator === SyntaxKind.AmpersandAmpersandToken) {
-            merge(proven, this.#factsOf(parent.left, true));
-          } else if (operator === SyntaxKind.BarBarToken) {
-            merge(proven, this.#factsOf(parent.left, false));
-          }
-        }
-        break;
+  #provenBy(parent: Node, child: Node, crossed: boolean) {
+    const proven: Requirement = {};
+    if (isIfStatement(parent)) {
+      if (child === parent.thenStatement) {
+        merge(proven, this.#factsOf(parent.expression, true));
+      } else if (child === parent.elseStatement) {
+        merge(proven, this.#factsOf(parent.expression, false));
+      }
+    } else if (isConditionalExpression(parent)) {
+      if (child === parent.whenTrue) {
+        merge(proven, this.#factsOf(parent.condition, true));
+      } else if (child === parent.whenFalse) {
+        merge(proven, this.#factsOf(parent.condition, false));
+      }
+    } else if (isBinaryExpression(parent) && child === parent.right) {
+      const operator = parent.operatorToken.kind;
+      if (operator === SyntaxKind.AmpersandAmpersandToken) {
+        merge(proven, this.#factsOf(parent.left, true));
+      } else if (operator === SyntaxKind.BarBarToken) {
+        merge(proven, this.#factsOf(parent.left, false));
+      }
     }
-    for (const statement of parent.statements ?? []) {
+    for (const statement of statementsOf(parent)) {
       if (statement === child) {
         break;
       }
       if (
-        statement.kind === SyntaxKind.IfStatement &&
+        isIfStatement(statement) &&
         statement.elseStatement === undefined &&
         exits(statement.thenStatement)
       ) {
@@ -721,74 +890,77 @@ class Checker {
       }
     }
     if (
-      functions.has(parent.kind) ||
-      (classes.has(parent.kind) &&
+      isFunctionLikeDeclaration(parent) ||
+      (isClassLikeDeclaration(parent) &&
         (crossed ||
-          (child.kind === SyntaxKind.PropertyDeclaration &&
+          (isPropertyDeclaration(child) &&
             !hasModifier(child, SyntaxKind.StaticKeyword)))) ||
-      (valueHolders.has(parent.kind) && crossed && child === parent.initializer)
+      (isValueHolder(parent) && crossed && child === parent.initializer)
     ) {
       merge(proven, this.#annotationOf(parent));
     }
     return proven;
   }
 
-  #factsOf(node, outcome) {
+  #factsOf(node: Expression, outcome: boolean) {
     const cache = this.#facts[Number(outcome)];
-    if (!cache.has(node)) {
+    let facts = cache.get(node);
+    if (facts === undefined) {
       cache.set(node, {});
-      cache.set(node, this.#computeFacts(node, outcome));
+      facts = this.#computeFacts(node, outcome);
+      cache.set(node, facts);
     }
-    return cache.get(node);
+    return facts;
   }
 
-  #computeFacts(node, outcome) {
-    switch (node.kind) {
-      case SyntaxKind.Identifier: {
-        const value = this.#constant(node);
-        return value === node ? {} : this.#factsOf(value, outcome);
+  #computeFacts(node: Expression, outcome: boolean): Requirement {
+    if (isIdentifier(node)) {
+      const value = this.#constant(node);
+      return value === node ? {} : this.#factsOf(value, outcome);
+    }
+    if (isParenthesizedExpression(node)) {
+      return this.#factsOf(node.expression, outcome);
+    }
+    if (isPrefixUnaryExpression(node)) {
+      return node.operator === SyntaxKind.ExclamationToken
+        ? this.#factsOf(node.operand, !outcome)
+        : {};
+    }
+    if (isCallExpression(node)) {
+      return outcome && this.#isAvailable(node.expression)
+        ? this.#requirementsOf(node.arguments.at(0))
+        : {};
+    }
+    if (isBinaryExpression(node)) {
+      const operator = node.operatorToken.kind;
+      if (operator === SyntaxKind.AmpersandAmpersandToken) {
+        return outcome
+          ? merge(
+              merge({}, this.#factsOf(node.left, true)),
+              this.#factsOf(node.right, true),
+            )
+          : {};
       }
-      case SyntaxKind.ParenthesizedExpression:
-        return this.#factsOf(node.expression, outcome);
-      case SyntaxKind.PrefixUnaryExpression:
-        return node.operator === SyntaxKind.ExclamationToken
-          ? this.#factsOf(node.operand, !outcome)
-          : {};
-      case SyntaxKind.CallExpression:
-        return outcome && this.#isAvailable(node.expression)
-          ? this.#requirementsOf(node.arguments[0])
-          : {};
-      case SyntaxKind.BinaryExpression: {
-        const operator = node.operatorToken.kind;
-        if (operator === SyntaxKind.AmpersandAmpersandToken) {
-          return outcome
-            ? merge(
-                merge({}, this.#factsOf(node.left, true)),
-                this.#factsOf(node.right, true),
-              )
-            : {};
-        }
-        if (operator === SyntaxKind.BarBarToken) {
-          return outcome
-            ? {}
-            : merge(
-                merge({}, this.#factsOf(node.left, false)),
-                this.#factsOf(node.right, false),
-              );
-        }
-        return {};
+      if (operator === SyntaxKind.BarBarToken) {
+        return outcome
+          ? {}
+          : merge(
+              merge({}, this.#factsOf(node.left, false)),
+              this.#factsOf(node.right, false),
+            );
       }
     }
     return {};
   }
 
-  #constant(node) {
-    for (const seen = new Set(); node.kind === SyntaxKind.Identifier;) {
+  #constant(node: Expression) {
+    for (const seen = new Set<Node>(); isIdentifier(node);) {
       const declaration = this.#symbolOf(node)?.valueDeclaration?.resolve(
         this.#project,
       );
       if (
-        declaration?.kind !== SyntaxKind.VariableDeclaration ||
+        declaration === undefined ||
+        !isVariableDeclaration(declaration) ||
         declaration.initializer === undefined ||
         !(declaration.parent.flags & NodeFlags.Const) ||
         seen.has(declaration)
@@ -801,55 +973,58 @@ class Checker {
     return node;
   }
 
-  #isAvailable(node) {
-    const name =
-      node.kind === SyntaxKind.PropertyAccessExpression ? node.name : node;
+  #isAvailable(node: Expression) {
+    const name = isPropertyAccessExpression(node) ? node.name : node;
     return (
       this.#available !== undefined &&
-      name.kind === SyntaxKind.Identifier &&
+      isIdentifier(name) &&
       this.#symbolOf(name)?.id === this.#available
     );
   }
 
-  #requirementsOf(argument) {
-    const proven = {};
-    for (const property of argument?.kind === SyntaxKind.ObjectLiteralExpression
+  #requirementsOf(argument: Expression | undefined) {
+    const proven: Requirement = {};
+    for (const property of argument !== undefined &&
+    isObjectLiteralExpression(argument)
       ? argument.properties
       : []) {
-      const value =
-        property.kind === SyntaxKind.PropertyAssignment &&
-        Object.hasOwn(requirements, property.name.text)
-          ? this.#constant(property.initializer)
-          : undefined;
-      if (value?.kind === SyntaxKind.NumericLiteral) {
-        const parsed = requirements[property.name.text].parse(
-          String(Number(value.text)),
-        );
-        if (parsed !== undefined) {
-          proven[property.name.text] = parsed;
-        }
+      if (
+        !isPropertyAssignment(property) ||
+        isComputedPropertyName(property.name)
+      ) {
+        continue;
+      }
+      const kind = property.name.text;
+      if (!isKind(kind)) {
+        continue;
+      }
+      const value = this.#constant(property.initializer);
+      const parsed = isNumericLiteral(value)
+        ? parseKind(kind, String(Number(value.text)))
+        : undefined;
+      if (parsed !== undefined) {
+        Object.assign(proven, parsed);
       }
     }
     return proven;
   }
 
-  #availableSymbol(apiDirectory) {
+  #availableSymbol(apiDirectory: string) {
     const source = this.#project.program.getSourceFile(
       fs.realpathSync(path.join(apiDirectory, "index.d.ts")),
     );
-    const declaration = source?.statements.find(
-      (statement) =>
-        statement.kind === SyntaxKind.FunctionDeclaration &&
-        statement.name?.text === "available",
-    );
-    return declaration === undefined
+    const name = source?.statements
+      .filter(isFunctionDeclaration)
+      .map((statement) => statement.name)
+      .find((name) => name?.text === "available");
+    return name === undefined
       ? undefined
-      : this.#checker.getSymbolAtLocation(declaration.name)?.id;
+      : this.#checker.getSymbolAtLocation(name)?.id;
   }
 }
 
-function sourceFileOf(node) {
-  while (node.kind !== SyntaxKind.SourceFile) {
+function sourceFileOf(node: Node) {
+  while (!isSourceFile(node)) {
     node = node.parent;
   }
   return node;

@@ -1,9 +1,20 @@
 import fs from "node:fs";
 
+import { create } from "@bufbuild/protobuf";
+
+import type { Client } from "../client";
 import { tr } from "../i18n";
+import {
+  type DeploySwipletResponse,
+  SwipletSchema,
+} from "../proto/swiplets_pb";
 import { uploadChunk } from "./io";
 
-export async function deploy(client, archive, signal) {
+export async function deploy(
+  client: Client,
+  archive: string,
+  signal: AbortSignal,
+) {
   const data = fs.readFileSync(archive);
   return client.swiplets.deploySwiplet(
     (async function* () {
@@ -19,15 +30,18 @@ export async function deploy(client, archive, signal) {
   );
 }
 
-export const printDeployed = (deployed, toStdout) =>
+export const printDeployed = (
+  { replaced, swiplet = create(SwipletSchema) }: DeploySwipletResponse,
+  toStdout: boolean,
+) =>
   (toStdout ? console.log : console.error)(
-    deployed.replaced
+    replaced
       ? tr("replaced {id} {version}", {
-          id: deployed.swiplet.id,
-          version: deployed.swiplet.version,
+          id: swiplet.id,
+          version: swiplet.version,
         })
       : tr("installed {id} {version}", {
-          id: deployed.swiplet.id,
-          version: deployed.swiplet.version,
+          id: swiplet.id,
+          version: swiplet.version,
         }),
   );

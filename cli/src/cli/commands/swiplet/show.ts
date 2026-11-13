@@ -1,15 +1,17 @@
+import type { JsonObject } from "@bufbuild/protobuf";
+
 import { tr } from "../../../i18n";
 import { serviceText } from "../../../output";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
-const indented = (value) =>
+const indented = (value: JsonObject) =>
   JSON.stringify(value, null, 2).replaceAll("\n", "\n  ");
 
-const notInstalled = (id) =>
+const notInstalled = (id: string) =>
   new Error(tr("There is no swiplet {id}.", { id: JSON.stringify(id) }));
 
-const showSwiplet = (context) =>
+const showSwiplet = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
     const { swiplets } = await client.swiplets.listSwiplets(
       {},
@@ -23,7 +25,7 @@ const showSwiplet = (context) =>
     if (swiplet.service) {
       console.log(
         tr("service: {status}", {
-          status: serviceText(swiplet.id, swiplet.service),
+          status: serviceText(swiplet.service),
         }),
       );
     }

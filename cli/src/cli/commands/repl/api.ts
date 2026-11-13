@@ -1,8 +1,8 @@
 import { tr } from "../../../i18n";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
-const printDeclarations = (context) =>
+const printDeclarations = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
     process.stdout.write(
       (await client.repl.getDeclarations({}, { signal: context.signal }))

@@ -7,11 +7,11 @@ import { UsageError } from "../../../client";
 import { tr } from "../../../i18n";
 import { printScriptError } from "../../../output";
 import { LogLevel } from "../../../proto/common_pb";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { readStdin } from "../../io";
 import { session } from "../../session";
 
-const isFile = (name) => {
+const isFile = (name: string) => {
   try {
     return fs.statSync(name).isFile();
   } catch {
@@ -19,9 +19,9 @@ const isFile = (name) => {
   }
 };
 
-const isProgram = (first) => first === "-" || isFile(first);
+const isProgram = (first: string) => first === "-" || isFile(first);
 
-function readScript([first, ...args]) {
+function readScript([first, ...args]: string[]) {
   if (first === undefined || first === "-") {
     return {
       code: readStdin().toString(),
@@ -52,11 +52,11 @@ class ImageSink {
   declare output: string | undefined;
   directory = "";
 
-  constructor(output) {
+  constructor(output: string | undefined) {
     this.output = output;
   }
 
-  save(data) {
+  save(data: Uint8Array) {
     if (this.directory === "") {
       if (this.output !== undefined && this.output !== "") {
         this.directory = path.resolve(this.output);
@@ -74,7 +74,9 @@ class ImageSink {
   }
 }
 
-async function runScript(context) {
+async function runScript(
+  context: Context<{ device?: string; output?: string }>,
+) {
   const { args, options, signal } = context;
   const script = readScript(args);
   await session(context, async (client) => {

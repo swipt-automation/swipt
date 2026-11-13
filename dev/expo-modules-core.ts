@@ -14,6 +14,27 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const work = path.join(root, "build/expo-modules-core");
 const product = "ExpoModulesCore";
 
+interface Target {
+  name: string;
+  path: string;
+  type: "cpp" | "objc" | "swift";
+  exclude?: string[];
+  fileMapping?: { from: string; to: string }[];
+  dependencies?: string[];
+  linkedFrameworks?: string[];
+  includeDirectories?: string[];
+  compilerFlags?: { common?: string[] };
+}
+
+interface Config {
+  products: {
+    name: string;
+    platforms: string[];
+    targets: Target[];
+    excludeFromUmbrella?: string[];
+  }[];
+}
+
 const flavors = { debug: "Debug", release: "Release" };
 const platforms = [
   { sdk: "iphoneos", destination: "generic/platform=iOS", slice: "ios-arm64" },
@@ -33,8 +54,8 @@ const environment = () => ({
 });
 
 function run(
-  command,
-  args,
+  command: string,
+  args: string[],
   {
     cwd = root,
     env = process.env,
@@ -66,7 +87,7 @@ function run(
   }
 }
 
-function* walk(directory, base = directory) {
+function* walk(directory: string, base = directory): Generator<string> {
   for (const entry of fs
     .readdirSync(directory, { withFileTypes: true })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
@@ -79,7 +100,7 @@ function* walk(directory, base = directory) {
   }
 }
 
-function excluded(file, patterns) {
+function excluded(file: string, patterns: string[]) {
   return patterns.some((pattern) => {
     if (pattern.startsWith("**/") && pattern.endsWith("/**")) {
       return `/${file}`.includes(`/${pattern.slice(3, -3)}/`);
@@ -91,7 +112,7 @@ function excluded(file, patterns) {
   });
 }
 
-function sources(directory, extensions, exclude) {
+function sources(directory: string, extensions: string[], exclude: string[]) {
   return [...walk(directory)].filter(
     (file) =>
       extensions.includes(path.extname(file)) &&
@@ -99,12 +120,12 @@ function sources(directory, extensions, exclude) {
   );
 }
 
-function link(source, destination) {
+function link(source: string, destination: string) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.symlinkSync(source, destination);
 }
 
-function hardLink(source, destination) {
+function hardLink(source: string, destination: string) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   try {
     fs.linkSync(source, destination);
@@ -113,22 +134,25 @@ function hardLink(source, destination) {
   }
 }
 
-const quote = (value) => JSON.stringify(value);
+const quote = (value: string | string[]) => JSON.stringify(value);
 
-const resolvePackage = (name, from) =>
+const resolvePackage = (name: string, from: string) =>
   path.dirname(
     createRequire(path.join(from, "package.json")).resolve(
       `${name}/package.json`,
     ),
   );
 
-function stage(core, config) {
+function stage(core: string, config: Config) {
   // SwiftPM names the package after its directory, and the interfaces record it as -package-name.
   const packageDir = path.join(work, product);
   fs.rmSync(packageDir, { recursive: true, force: true });
   const coreProduct = config.products.find(
     (candidate) => candidate.name === product,
   );
+  if (coreProduct === undefined) {
+    throw new Error(`spm.config.json has no product ${product}`);
+  }
   const version = JSON.parse(
     fs.readFileSync(path.join(core, "package.json"), "utf8"),
   ).version;
@@ -137,13 +161,13 @@ function stage(core, config) {
     "apple/ExpoModulesMacros",
   );
   const internal = new Set(coreProduct.targets.map((target) => target.name));
-  const headers = {};
-  const targets = [];
+  const headers: Record<string, string[]> = {};
+  const targets: string[] = [];
   for (const target of coreProduct.targets) {
     const targetPath = path.join(core, target.path);
     const destination = path.join(packageDir, target.name);
     const exclude = target.exclude ?? [];
-    const mapped = new Set();
+    const mapped = new Set<string>();
     for (const mapping of target.fileMapping ?? []) {
       mapped.add(mapping.from);
       link(
@@ -214,9 +238,15 @@ function stage(core, config) {
       `.unsafeFlags(${quote((target.includeDirectories ?? []).flatMap((directory) => ["-I", path.resolve(targetPath, directory)]))})`,
     ];
     for (const flag of target.compilerFlags?.common ?? []) {
-      const [, name, value] = flag
+      const match = flag
         .replace("${PACKAGE_VERSION}", version)
         .match(/^-D(\w+)(?:=(.+))?$/);
+      if (match === null) {
+        throw new Error(
+          `${target.name} has a flag that defines nothing: ${flag}`,
+        );
+      }
+      const [, name, value] = match;
       settings.push(
         value === undefined
           ? `.define(${quote(name)})`
@@ -262,7 +292,7 @@ ${targets.join(",\n")}
 
 // ExpoModulesCore links the real ExpoModulesJSI; npm ships only its headers, and the app builds it
 // in its "Build ExpoModulesJSI" phase (expo-modules-jsi, apple/scripts/build-swiftpm-app-phase.sh).
-function buildJSI(core) {
+function buildJSI(core: string) {
   const jsi = resolvePackage("expo-modules-jsi", core);
   const reactNative = resolvePackage("react-native", root);
   const xcframeworks = path.join(root, "build/xcframeworks");
@@ -349,9 +379,9 @@ function buildJSI(core) {
   return path.join(jsiRoot, "Products/ExpoModulesJSI.xcframework");
 }
 
-function inputsDigest(core, jsi) {
+function inputsDigest(core: string, jsi: string) {
   const digest = crypto.createHash("sha256");
-  const add = (label, content) =>
+  const add = (label: string, content: string | Buffer) =>
     digest.update(label).update("\0").update(content).update("\0");
   for (const directory of ["ios", "common"]) {
     for (const file of walk(path.join(core, directory))) {
@@ -380,10 +410,10 @@ function inputsDigest(core, jsi) {
 }
 
 function compose(
-  { packageDir, coreProduct, headers },
-  jsi,
-  flavor,
-  configuration,
+  { packageDir, coreProduct, headers }: ReturnType<typeof stage>,
+  jsi: string,
+  flavor: string,
+  configuration: string,
 ) {
   const derivedData = path.join(work, "DerivedData");
   const xcframeworks = path.join(root, "build/xcframeworks", flavor);
@@ -596,7 +626,7 @@ export function buildExpoModulesCore() {
   const core = fs.realpathSync(
     path.join(root, "node_modules/expo-modules-core"),
   );
-  const config = JSON.parse(
+  const config: Config = JSON.parse(
     fs.readFileSync(path.join(core, "spm.config.json"), "utf8"),
   );
   fs.mkdirSync(work, { recursive: true });

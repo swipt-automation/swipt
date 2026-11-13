@@ -1,7 +1,18 @@
 import dns from "node:dns";
 import { createRequire } from "node:module";
 
-import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
+import {
+  type DescMessage,
+  type DescMethod,
+  type DescService,
+  type Message,
+  type MessageInitShape,
+  type MessageShape,
+  create,
+  fromBinary,
+  toBinary,
+} from "@bufbuild/protobuf";
+import type { GenService } from "@bufbuild/protobuf/codegenv2";
 
 import { resolveHost } from "./mdns";
 import { LogService } from "./proto/logs_pb";
@@ -39,7 +50,7 @@ export class RpcError extends Error {
   }
 }
 
-const httpStatusCodes = {
+const httpStatusCodes: Record<number, number> = {
   400: Code.Internal,
   401: Code.Unauthenticated,
   403: Code.Unauthenticated,
@@ -50,8 +61,8 @@ const httpStatusCodes = {
   504: Code.Unavailable,
 };
 
-function statusMessage(text) {
-  if (text === undefined || text === null) {
+function statusMessage(text: string | undefined) {
+  if (text === undefined) {
     return "";
   }
   try {
@@ -61,25 +72,44 @@ function statusMessage(text) {
   }
 }
 
-const causeText = (cause) =>
-  cause?.errors?.length > 0
+interface Cause {
+  errors?: Cause[];
+  message?: string;
+  code?: string;
+}
+
+const causeText = (cause?: Cause): string | undefined =>
+  cause?.errors?.length
     ? cause.errors.map(causeText).join("; ")
     : cause?.message || cause?.code;
 
-const transportError = (error) => {
+const transportError = (error: unknown) => {
   if (error instanceof RpcError) {
     return error;
   }
-  if (error?.name === "AbortError") {
+  if (!(error instanceof Error)) {
+    return new RpcError(Code.Unavailable, String(error));
+  }
+  if (error.name === "AbortError") {
     return new RpcError(Code.Canceled, "the call was canceled");
   }
   return new RpcError(
     Code.Unavailable,
-    causeText(error?.cause) || error?.message || String(error),
+    causeText(error.cause as Cause) || error.message || String(error),
   );
 };
 
-async function locate(connection, signal) {
+interface Connection {
+  url: string;
+  token: string;
+  resolved?: string;
+}
+
+export interface CallOptions {
+  signal?: AbortSignal;
+}
+
+async function locate(connection: Connection, signal?: AbortSignal) {
   const url = new URL(connection.url);
   if (!url.hostname.endsWith(".local")) {
     return connection.url;
@@ -109,12 +139,12 @@ async function locate(connection, signal) {
   return url.href.replace(/\/+$/, "");
 }
 
-async function base(connection, signal) {
+async function base(connection: Connection, signal?: AbortSignal) {
   connection.resolved ??= await locate(connection, signal);
   return connection.resolved;
 }
 
-function frame(schema, init) {
+function frame(schema: DescMessage, init: MessageInitShape<DescMessage>) {
   const body = toBinary(schema, create(schema, init));
   const out = Buffer.allocUnsafe(5 + body.length);
   out[0] = 0;
@@ -123,8 +153,8 @@ function frame(schema, init) {
   return out;
 }
 
-function parseMetadata(body) {
-  const headers = {};
+function parseMetadata(body: Uint8Array) {
+  const headers: Record<string, string> = {};
   for (const line of Buffer.from(body).toString().split("\r\n")) {
     const separator = line.indexOf(":");
     if (separator > 0) {
@@ -136,20 +166,22 @@ function parseMetadata(body) {
   return headers;
 }
 
-class FrameReader {
-  declare schema: any;
-  pending = Buffer.alloc(0);
+type Frame = { trailers: Record<string, string> } | { message: Message };
 
-  constructor(schema) {
+class FrameReader {
+  declare schema: DescMessage;
+  pending: Buffer = Buffer.alloc(0);
+
+  constructor(schema: DescMessage) {
     this.schema = schema;
   }
 
-  push(chunk) {
+  push(chunk: Uint8Array) {
     this.pending =
       this.pending.length === 0
         ? Buffer.from(chunk)
         : Buffer.concat([this.pending, Buffer.from(chunk)]);
-    const frames = [];
+    const frames: Frame[] = [];
     while (this.pending.length >= 5) {
       const length = this.pending.readUInt32BE(1);
       if (length > largestMessage) {
@@ -173,9 +205,9 @@ class FrameReader {
   }
 }
 
-function checkStatus(headers) {
+function checkStatus(headers: Record<string, string>) {
   const status = headers["grpc-status"];
-  if (status === undefined || status === null) {
+  if (status === undefined) {
     return false;
   }
   const code = Number(status);
@@ -185,7 +217,7 @@ function checkStatus(headers) {
   return true;
 }
 
-function requestHeaders(connection) {
+function requestHeaders(connection: Connection) {
   const headers: Record<string, string> = {
     "content-type": contentType,
     "x-grpc-web": "1",
@@ -197,7 +229,12 @@ function requestHeaders(connection) {
   return headers;
 }
 
-async function* invokeHTTP(connection, method, input, { signal }) {
+async function* invokeHTTP(
+  connection: Connection,
+  method: DescMethod,
+  input: MessageInitShape<DescMessage>,
+  { signal }: CallOptions,
+) {
   let response;
   try {
     response = await fetch(
@@ -227,9 +264,9 @@ async function* invokeHTTP(connection, method, input, { signal }) {
   const reader = new FrameReader(method.output);
   let ended = false;
   try {
-    for await (const chunk of response.body) {
+    for await (const chunk of response.body ?? []) {
       for (const found of reader.push(chunk)) {
-        if (found.trailers) {
+        if ("trailers" in found) {
           checkStatus(found.trailers);
           ended = true;
         } else if (!ended) {
@@ -245,7 +282,12 @@ async function* invokeHTTP(connection, method, input, { signal }) {
   }
 }
 
-async function* invokeWebSocket(connection, method, input, { signal }) {
+async function* invokeWebSocket(
+  connection: Connection,
+  method: DescMethod,
+  input: AsyncIterable<MessageInitShape<DescMessage>>,
+  { signal }: CallOptions,
+) {
   if (signal?.aborted) {
     throw new RpcError(Code.Canceled, "the call was canceled");
   }
@@ -256,8 +298,8 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   );
   socket.binaryType = "arraybuffer";
   const reader = new FrameReader(method.output);
-  const messages = [];
-  let failure;
+  const messages: Message[] = [];
+  let failure: unknown;
   let closed = false;
   let headersSeen = false;
   let wake: (value?: unknown) => void = () => {};
@@ -266,7 +308,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
     wake = () => {};
     current();
   };
-  const fail = (error) => {
+  const fail = (error: unknown) => {
     failure ??= error;
     socket.close();
     notify();
@@ -291,7 +333,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   socket.addEventListener("message", (event) => {
     try {
       for (const found of reader.push(new Uint8Array(event.data))) {
-        if (found.message) {
+        if ("message" in found) {
           messages.push(found.message);
         } else if (headersSeen || "grpc-status" in found.trailers) {
           checkStatus(found.trailers);
@@ -335,8 +377,7 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
     );
     void (async () => {
       try {
-        const body = method.methodKind === "client_streaming" ? input : [input];
-        for await (const message of body) {
+        for await (const message of input) {
           if (closed || failure) {
             return;
           }
@@ -352,8 +393,9 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
       }
     })();
     while (true) {
-      if (messages.length > 0) {
-        yield messages.shift();
+      const message = messages.shift();
+      if (message !== undefined) {
+        yield message;
         continue;
       }
       if (closed || failure) {
@@ -374,8 +416,8 @@ async function* invokeWebSocket(connection, method, input, { signal }) {
   }
 }
 
-async function single(iterable) {
-  let found;
+async function single(iterable: AsyncIterable<Message>) {
+  let found: Message | undefined;
   for await (const message of iterable) {
     found ??= message;
   }
@@ -385,33 +427,50 @@ async function single(iterable) {
   return found;
 }
 
-function bind(service, connection): Record<string, any> {
-  const client: Record<string, any> = {};
-  for (const method of service.methods) {
-    const streamsInput =
-      method.methodKind === "client_streaming" ||
-      method.methodKind === "bidi_streaming";
-    client[method.localName] = (
-      input,
-      options: { signal?: AbortSignal } = {},
-    ) => {
-      const call = (streamsInput ? invokeWebSocket : invokeHTTP)(
-        connection,
-        method,
-        input,
-        { signal: options.signal },
-      );
-      return method.methodKind === "unary" ||
-        method.methodKind === "client_streaming"
-        ? single(call)
-        : call;
-    };
-  }
-  return client;
+type Call<Method extends Pick<DescMethod, "methodKind" | "input" | "output">> =
+  Method["methodKind"] extends "unary"
+    ? (
+        input: MessageInitShape<Method["input"]>,
+        options?: CallOptions,
+      ) => Promise<MessageShape<Method["output"]>>
+    : Method["methodKind"] extends "server_streaming"
+      ? (
+          input: MessageInitShape<Method["input"]>,
+          options?: CallOptions,
+        ) => AsyncGenerator<MessageShape<Method["output"]>, void>
+      : (
+          input: AsyncIterable<MessageInitShape<Method["input"]>>,
+          options?: CallOptions,
+        ) => Promise<MessageShape<Method["output"]>>;
+
+type ServiceClient<Service> =
+  Service extends GenService<infer Methods>
+    ? { [Name in keyof Methods]: Call<Methods[Name]> }
+    : never;
+
+function bind<Service extends DescService>(
+  service: Service,
+  connection: Connection,
+) {
+  return Object.fromEntries(
+    service.methods.map((method) => [
+      method.localName,
+      (input: never, options: CallOptions = {}) => {
+        switch (method.methodKind) {
+          case "unary":
+            return single(invokeHTTP(connection, method, input, options));
+          case "server_streaming":
+            return invokeHTTP(connection, method, input, options);
+          default:
+            return single(invokeWebSocket(connection, method, input, options));
+        }
+      },
+    ]),
+  ) as ServiceClient<Service>;
 }
 
-export function open({ url, token }) {
-  const connection = { url, token, resolved: undefined };
+export function open({ url, token }: { url: string; token: string }) {
+  const connection = { url, token };
   return {
     system: bind(SystemService, connection),
     logs: bind(LogService, connection),
@@ -420,5 +479,7 @@ export function open({ url, token }) {
   };
 }
 
-export const unauthenticated = (error) =>
+export type Client = ReturnType<typeof open>;
+
+export const unauthenticated = (error: unknown) =>
   error instanceof RpcError && error.code === Code.Unauthenticated;

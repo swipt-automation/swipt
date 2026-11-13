@@ -1,8 +1,8 @@
 import { tr } from "../../../i18n";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
-const removeSwiplet = (context) =>
+const removeSwiplet = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
     await client.swiplets.removeSwiplet(
       { swipletId: context.args[0] },

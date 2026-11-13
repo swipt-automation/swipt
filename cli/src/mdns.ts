@@ -1,6 +1,7 @@
 import dgram from "node:dgram";
 import os from "node:os";
 
+import type { StringAnswer } from "dns-packet";
 import multicastDNS from "multicast-dns";
 
 const requery = 300;
@@ -8,16 +9,16 @@ const requery = 300;
 export const multicastOptions = () =>
   Object.values(os.networkInterfaces())
     .map((addresses) =>
-      addresses.find((it) => it.family === "IPv4" && !it.internal),
+      addresses?.find((it) => it.family === "IPv4" && !it.internal),
     )
-    .filter(Boolean)
+    .filter((found) => found !== undefined)
     .map(({ address }) => ({
       socket: dgram.createSocket("udp4"),
-      bind: false,
+      bind: false as const,
       interface: address,
     }));
 
-export async function resolveHost(host, signal) {
+export async function resolveHost(host: string, signal: AbortSignal) {
   const sockets = multicastOptions().map((options) => multicastDNS(options));
   const query = () => {
     for (const mdns of sockets) {
@@ -40,7 +41,7 @@ export async function resolveHost(host, signal) {
         mdns.on("error", reject);
         mdns.on("response", (response) => {
           const answers = response.answers.filter(
-            (it) =>
+            (it): it is StringAnswer =>
               it.name.toLowerCase() === host.toLowerCase() &&
               (it.type === "A" ||
                 (it.type === "AAAA" && !/^fe[89ab]/i.test(it.data))),

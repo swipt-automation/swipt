@@ -3,11 +3,37 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { transformAsync } from "@babel/core";
+import {
+  type NodePath,
+  type PluginObj,
+  type TransformCaller,
+  type TransformOptions,
+  template,
+  transformAsync,
+  types,
+} from "@babel/core";
 import { loadProjectEnv } from "@expo/env";
+import type { Plugin, ResolveResult } from "esbuild";
 import { imageSize } from "image-size";
 
 import { tr } from "./i18n";
+
+declare module "@babel/core" {
+  interface TransformCaller {
+    bundler?: string;
+    platform?: string;
+    engine?: string;
+    isDev?: boolean;
+    isServer?: boolean;
+    isReactServer?: boolean;
+    baseUrl?: string;
+    routerRoot?: string;
+    projectRoot?: string;
+    isHMREnabled?: boolean;
+    metroSourceType?: "script" | "module" | "asset";
+    isNodeModule?: boolean;
+  }
+}
 
 const require = createRequire(import.meta.url);
 const cliDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -76,17 +102,20 @@ const babelConfigNames = [
 const contextModes = ["sync", "eager", "lazy", "lazy-once"];
 const scaleSuffixes = ["", "@1x", "@1.5x", "@2x", "@3x", "@4x"];
 const platformSuffixes = ["", ".ios", ".native"];
-const platformRank = { ios: 2, native: 1 };
+const platformRank = new Map([
+  ["ios", 2],
+  ["native", 1],
+]);
 
-const posix = (file) => file.split(path.sep).join("/");
-const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const posix = (file: string) => file.split(path.sep).join("/");
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export function loadEnvironment(root) {
+export function loadEnvironment(root: string) {
   loadProjectEnv(root, { mode: "production", silent: true });
   process.env.BABEL_ENV ??= "production";
 }
 
-function defaultPreset(root) {
+function defaultPreset(root: string) {
   try {
     return createRequire(path.join(root, "package.json")).resolve(
       "expo/internal/babel-preset",
@@ -96,13 +125,13 @@ function defaultPreset(root) {
   }
 }
 
-function contextFiles(directory, recursive) {
+function contextFiles(directory: string, recursive: boolean) {
   if (!fs.existsSync(directory)) {
     return [];
   }
   const extensions = new Set([...sourceExtensions, ...assetExtensions]);
   return fs
-    .readdirSync(directory, { recursive })
+    .readdirSync(directory, { encoding: "utf8", recursive })
     .map(posix)
     .filter(
       (file) =>
@@ -112,111 +141,117 @@ function contextFiles(directory, recursive) {
     .sort();
 }
 
-function requireContext({ types: t, template }) {
-  const argument = (call, index, fallback, expected, check) => {
-    if (call.node.arguments[index] === undefined) {
-      if (fallback !== undefined) {
-        return fallback;
-      }
-    } else {
-      const { confident, value } = call.get(`arguments.${index}`).evaluate();
-      if (confident && check(value)) {
-        return value;
-      }
+function contextArgument<T>(
+  call: NodePath<types.CallExpression>,
+  index: number,
+  fallback: T | undefined,
+  expected: string,
+  check: (value: unknown) => value is T,
+): T {
+  if (call.node.arguments[index] === undefined) {
+    if (fallback !== undefined) {
+      return fallback;
     }
-    throw call.buildCodeFrameError(
-      tr("Argument {index} of require.context must be {expected}", {
-        index: index + 1,
-        expected,
-      }),
-    );
-  };
-  const pattern = (call, index) => {
-    const node = call.node.arguments[index];
-    if (node === undefined) {
-      return /^\.\/.*$/;
+  } else {
+    const { confident, value } = call.get("arguments")[index].evaluate();
+    if (confident && check(value)) {
+      return value;
     }
-    if (!t.isRegExpLiteral(node)) {
-      throw call.buildCodeFrameError(
-        tr(
-          "Argument {index} of require.context must be a regular expression literal.",
-          { index: index + 1 },
-        ),
-      );
-    }
-    return new RegExp(node.pattern, node.flags.replace(/[gy]/g, ""));
-  };
-  return {
-    name: "swipt-require-context",
-    visitor: {
-      CallExpression(call, state) {
-        const { callee } = call.node;
-        if (
-          !t.isMemberExpression(callee) ||
-          !t.isIdentifier(callee.object, { name: "require" }) ||
-          call.scope.hasBinding("require") ||
-          !(callee.computed
-            ? t.isStringLiteral(callee.property, { value: "context" })
-            : t.isIdentifier(callee.property, { name: "context" }))
-        ) {
-          return;
-        }
-        const from = path.dirname(state.filename);
-        const directory = path.resolve(
-          from,
-          argument(
-            call,
-            0,
-            undefined,
-            tr("a string"),
-            (value) => typeof value === "string",
-          ),
-        );
-        const recursive = argument(
-          call,
-          1,
-          true,
-          tr("a Boolean"),
-          (value) => typeof value === "boolean",
-        );
-        const filter = pattern(call, 2);
-        const mode = argument(
-          call,
-          3,
-          "sync",
-          tr("one of {values}", { values: contextModes.join(", ") }),
-          (value) => contextModes.includes(value),
-        );
-        const entries = contextFiles(directory, recursive)
-          .map((file) => `./${file}`)
-          .filter((key) => filter.test(key))
-          .map((key) => {
-            const target = posix(
-              path.relative(from, path.join(directory, key)),
-            );
-            return `${JSON.stringify(key)}: () => require(${JSON.stringify(target.startsWith(".") ? target : `./${target}`)})`;
-          });
-        call.replaceWith(
-          template.expression.ast(`(() => {
-          const modules = { ${entries.join(", ")} };
-          const context = key => {
-            if (!Object.prototype.hasOwnProperty.call(modules, key)) {
-              throw Object.assign(new Error("Cannot find module '" + key + "'"), { code: "MODULE_NOT_FOUND" });
-            }
-            return ${mode === "sync" ? "modules[key]()" : "Promise.resolve().then(modules[key])"};
-          };
-          context.keys = () => Object.keys(modules);
-          context.resolve = key => key;
-          context.id = ${JSON.stringify(posix(path.relative(state.cwd, directory)) || ".")};
-          return context;
-        })()`),
-        );
-      },
-    },
-  };
+  }
+  throw call.buildCodeFrameError(
+    tr("Argument {index} of require.context must be {expected}", {
+      index: index + 1,
+      expected,
+    }),
+  );
 }
 
-const loaderOf = (file) => {
+function contextPattern(call: NodePath<types.CallExpression>, index: number) {
+  const node = call.node.arguments[index];
+  if (node === undefined) {
+    return /^\.\/.*$/;
+  }
+  if (!types.isRegExpLiteral(node)) {
+    throw call.buildCodeFrameError(
+      tr(
+        "Argument {index} of require.context must be a regular expression literal.",
+        { index: index + 1 },
+      ),
+    );
+  }
+  return new RegExp(node.pattern, node.flags.replace(/[gy]/g, ""));
+}
+
+const requireContext: PluginObj = {
+  name: "swipt-require-context",
+  visitor: {
+    CallExpression(call, state) {
+      const { callee } = call.node;
+      if (
+        state.filename === undefined ||
+        !types.isMemberExpression(callee) ||
+        !types.isIdentifier(callee.object, { name: "require" }) ||
+        call.scope.hasBinding("require") ||
+        !(callee.computed
+          ? types.isStringLiteral(callee.property, { value: "context" })
+          : types.isIdentifier(callee.property, { name: "context" }))
+      ) {
+        return;
+      }
+      const from = path.dirname(state.filename);
+      const directory = path.resolve(
+        from,
+        contextArgument(
+          call,
+          0,
+          undefined,
+          tr("a string"),
+          (value) => typeof value === "string",
+        ),
+      );
+      const recursive = contextArgument(
+        call,
+        1,
+        true,
+        tr("a Boolean"),
+        (value) => typeof value === "boolean",
+      );
+      const filter = contextPattern(call, 2);
+      const mode = contextArgument(
+        call,
+        3,
+        "sync",
+        tr("one of {values}", { values: contextModes.join(", ") }),
+        (value): value is string =>
+          typeof value === "string" && contextModes.includes(value),
+      );
+      const entries = contextFiles(directory, recursive)
+        .map((file) => `./${file}`)
+        .filter((key) => filter.test(key))
+        .map((key) => {
+          const target = posix(path.relative(from, path.join(directory, key)));
+          return `${JSON.stringify(key)}: () => require(${JSON.stringify(target.startsWith(".") ? target : `./${target}`)})`;
+        });
+      call.replaceWith(
+        template.expression.ast(`(() => {
+        const modules = { ${entries.join(", ")} };
+        const context = key => {
+          if (!Object.prototype.hasOwnProperty.call(modules, key)) {
+            throw Object.assign(new Error("Cannot find module '" + key + "'"), { code: "MODULE_NOT_FOUND" });
+          }
+          return ${mode === "sync" ? "modules[key]()" : "Promise.resolve().then(modules[key])"};
+        };
+        context.keys = () => Object.keys(modules);
+        context.resolve = key => key;
+        context.id = ${JSON.stringify(posix(path.relative(state.cwd, directory)) || ".")};
+        return context;
+      })()`),
+      );
+    },
+  },
+};
+
+const loaderOf = (file: string) => {
   const extension = path.extname(file);
   return extension === ".tsx"
     ? "tsx"
@@ -225,7 +260,7 @@ const loaderOf = (file) => {
       : "jsx";
 };
 
-function archivedAsset(root, file) {
+function archivedAsset(root: string, file: string) {
   const relative = path.relative(root, file).split(path.sep);
   return relative[0] === "assets"
     ? { path: relative.slice(1).join("/"), bundled: false }
@@ -235,7 +270,12 @@ function archivedAsset(root, file) {
       };
 }
 
-function assetVariants(resolved) {
+interface AssetVariant {
+  scale: number;
+  file: string;
+}
+
+function assetVariants(resolved: string): AssetVariant[] {
   const directory = path.dirname(resolved);
   const extension = path.extname(resolved);
   const stem = path
@@ -245,14 +285,14 @@ function assetVariants(resolved) {
   const pattern = new RegExp(
     `^${escape(stem)}(?:@([\\d.]+)x)?(?:\\.(ios|native))?${escape(extension)}$`,
   );
-  const scales = new Map();
+  const scales = new Map<number, { rank: number; file: string }>();
   for (const name of fs.readdirSync(directory)) {
     const match = pattern.exec(name);
     if (match === null) {
       continue;
     }
     const scale = match[1] === undefined ? 1 : Number(match[1]);
-    const rank = platformRank[match[2]] ?? 0;
+    const rank = platformRank.get(match[2]) ?? 0;
     if (Number.isFinite(scale) && (scales.get(scale)?.rank ?? -1) < rank) {
       scales.set(scale, { rank, file: path.join(directory, name) });
     }
@@ -262,7 +302,11 @@ function assetVariants(resolved) {
     .map(([scale, { file }]) => ({ scale, file }));
 }
 
-function assetModule(root, variants, assets) {
+function assetModule(
+  root: string,
+  variants: AssetVariant[],
+  assets: Map<string, string>,
+) {
   const [first] = variants;
   const extension = path.extname(first.file).slice(1);
   const size = imageExtensions.has(extension)
@@ -284,7 +328,7 @@ module.exports = { uri: assets.file(file).uri, scale${size ? `, width: ${size.wi
 `;
 }
 
-function checkWorklets(root) {
+function checkWorklets(root: string) {
   let plugin;
   try {
     plugin = require.resolve("react-native-worklets/plugin", { paths: [root] });
@@ -313,12 +357,15 @@ interface MetroOptions {
   sourcemap?: boolean;
 }
 
-export function metro(root, { assets, sourcemap }: MetroOptions) {
+export function metro(
+  root: string,
+  { assets, sourcemap }: MetroOptions,
+): Plugin {
   checkWorklets(root);
   const configName = babelConfigNames.find((name) =>
     fs.existsSync(path.join(root, name)),
   );
-  const babel = {
+  const babel: TransformOptions = {
     cwd: root,
     root,
     babelrc: false,
@@ -333,7 +380,7 @@ export function metro(root, { assets, sourcemap }: MetroOptions) {
       : { presets: [defaultPreset(root)] }),
     plugins: [requireContext],
   };
-  const caller = {
+  const caller: TransformCaller = {
     name: "metro",
     bundler: "metro",
     platform: "ios",
@@ -378,7 +425,7 @@ export function metro(root, { assets, sourcemap }: MetroOptions) {
             }
             const extension = path.extname(args.path);
             const stem = args.path.slice(0, -extension.length);
-            let first;
+            let first: ResolveResult | undefined;
             for (const scale of scaleSuffixes) {
               for (const platform of platformSuffixes) {
                 const found = await build.resolve(
@@ -400,7 +447,7 @@ export function metro(root, { assets, sourcemap }: MetroOptions) {
                 first ??= found;
               }
             }
-            return { errors: first.errors };
+            return { errors: first?.errors };
           },
         );
         build.onLoad({ filter: /.*/, namespace: "swiplet-asset" }, (args) => ({
@@ -423,13 +470,14 @@ export function metro(root, { assets, sourcemap }: MetroOptions) {
               },
             },
           );
-          return result === null
-            ? undefined
-            : {
-                contents: result.code,
+          const code = result?.code;
+          return typeof code === "string"
+            ? {
+                contents: code,
                 loader: loaderOf(args.path),
                 resolveDir: path.dirname(args.path),
-              };
+              }
+            : undefined;
         },
       );
     },

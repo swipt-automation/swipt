@@ -7,17 +7,32 @@ export interface Option {
 
 export type Options = Record<string, Option>;
 
-export interface Command {
+export interface Context<Values = {}> {
+  args: string[];
+  options: Values;
+  target: { url: string };
+  signal: AbortSignal;
+  printError: (error: unknown, operation?: string) => number;
+}
+
+interface Named {
   name: string;
   use?: string;
   short: string;
   description?: string[];
-  args?: [least: number, most: number];
   options?: Options;
-  commands?: Command[];
-  passthrough?: (word: string) => boolean;
-  parse?: (values: Record<string, any>) => Record<string, any>;
-  run?: (context: any) => unknown;
 }
 
-export const defineCommand = (command: Command): Command => command;
+export interface CommandGroup extends Named {
+  commands: Command[];
+}
+
+export interface LeafCommand extends Named {
+  args: [least: number, most: number];
+  passthrough?: (word: string) => boolean;
+  run: (context: Context<any>) => unknown;
+}
+
+export type Command = CommandGroup | LeafCommand;
+
+export const defineCommand = <C extends Command>(command: C): C => command;

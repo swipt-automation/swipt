@@ -1,4 +1,9 @@
-import { type StdioOptions, execFile, execFileSync } from "node:child_process";
+import {
+  type ExecFileException,
+  type StdioOptions,
+  execFile,
+  execFileSync,
+} from "node:child_process";
 import { X509Certificate, createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -10,6 +15,7 @@ import { promisify } from "node:util";
 
 import select from "@inquirer/select";
 
+import type { Context } from "./cli/command";
 import { UsageError, open } from "./client";
 import {
   findPublished,
@@ -19,6 +25,9 @@ import {
 } from "./connection";
 import { cacheDirectory } from "./directories";
 import {
+  DriverError,
+  type Application,
+  type Device,
   apps,
   configureVirtual,
   failures,
@@ -35,6 +44,8 @@ import {
 } from "./driver";
 import { language, tr } from "./i18n";
 import {
+  errorMessage,
+  type PromptContext,
   choose,
   columns,
   interactive,
@@ -42,8 +53,14 @@ import {
   selectTheme,
   step,
 } from "./output";
-import { askPasscode, passcodeOf } from "./passcode";
-import { LogLevel } from "./proto/common_pb";
+import {
+  type Passcode,
+  type PasscodeOptions,
+  askPasscode,
+  passcodeOf,
+} from "./passcode";
+import { LogLevel, type ScriptError } from "./proto/common_pb";
+import type { ConsoleOutput } from "./proto/repl_pb";
 import {
   bundleId,
   bundleTeam,
@@ -58,6 +75,63 @@ import {
   teamPattern,
 } from "./swipt-app";
 
+interface SetupOptions {
+  "no-setup"?: boolean;
+  "no-setup-pair"?: boolean;
+  "no-setup-api"?: boolean;
+}
+
+type SetupContext = Pick<Context<SetupOptions>, "options" | "signal">;
+
+type PasscodeSetupContext = PromptContext &
+  Pick<Context<PasscodeOptions & SetupOptions>, "options">;
+
+type DeployContext = PasscodeSetupContext &
+  Pick<Context<{ nightly?: boolean; force?: boolean }>, "options">;
+
+interface Period {
+  creation: number;
+  expiration: number;
+}
+
+interface Team {
+  id: string;
+  name?: string;
+}
+
+interface Signing {
+  identity: string;
+  entitlements: string;
+  profile?: string;
+}
+
+interface GitHubAsset {
+  id: number;
+  name: string;
+  url: string;
+}
+
+interface GitHubRelease {
+  tag_name: string;
+  assets: GitHubAsset[];
+}
+
+interface Release {
+  tag: string;
+  version: string;
+  build: number;
+  ipa: GitHubAsset;
+}
+
+class GitHubError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 const exec = promisify(execFile);
 
 const repository = "swipt-automation/swipt";
@@ -66,7 +140,9 @@ const guestTeam = "SWIPTLOCAL";
 // installd on a vphone guest accepts an ad hoc signature and needs
 // application-identifier (vphone-cli 8c3630c7,
 // VPhoneGuestComponents/MISFix/MISFixInstallPolicy.c).
-const guestEntitlements = (id) => `<?xml version="1.0" encoding="UTF-8"?>
+const guestEntitlements = (
+  id: string,
+) => `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -96,12 +172,19 @@ const signingNeedsMac = tr(
   'Installing or updating Swipt needs macOS; install it from a Mac, then set it up here with "swipt sideload setup".',
 );
 
-const expiresSoon = ({ creation, expiration }) =>
+const expiresSoon = ({ creation, expiration }: Period) =>
   expiration - Date.now() < (expiration - creation) / 2;
 
-const plistValueMissing = /No value at that key path/;
+const plistValueMissing = (error: unknown) =>
+  error instanceof Error &&
+  "stderr" in error &&
+  typeof error.stderr === "string" &&
+  /No value at that key path/.test(error.stderr);
 
-function headers(accept) {
+const failedWith = (error: unknown, code: string): error is DriverError =>
+  error instanceof DriverError && error.code === code;
+
+function headers(accept: string) {
   const token = process.env.GITHUB_TOKEN;
   return {
     Accept: accept,
@@ -111,70 +194,82 @@ function headers(accept) {
   };
 }
 
-async function github(url, accept, signal) {
+async function github(url: string, accept: string, signal: AbortSignal) {
   let response = await fetch(url, {
     headers: headers(accept),
     signal,
     redirect: "manual",
   });
-  if (response.status >= 300 && response.status < 400) {
-    response = await fetch(response.headers.get("location"), { signal });
+  const location = response.headers.get("location");
+  if (response.status >= 300 && response.status < 400 && location !== null) {
+    response = await fetch(location, { signal });
   }
   if (!response.ok) {
     let message = `GitHub answered ${response.status} for ${url}`;
     if ([401, 403, 429].includes(response.status)) {
       message += `; ${process.env.GITHUB_TOKEN ? "GITHUB_TOKEN" : "set GITHUB_TOKEN to a token that"} must read the repository and stay under the rate limit`;
     }
-    const error: Error & { status?: number } = new Error(message);
-    error.status = response.status;
-    throw error;
+    throw new GitHubError(message, response.status);
   }
   return response;
 }
 
-async function findRelease(nightly, signal) {
-  const read = async (name): Promise<any> =>
-    (
+async function findRelease(
+  nightly: boolean | undefined,
+  signal: AbortSignal,
+): Promise<Release> {
+  const read = async (name: string) =>
+    (await (
       await github(
         `https://api.github.com/repos/${repository}/releases/${name}`,
         "application/vnd.github+json",
         signal,
       )
-    ).json();
+    ).json()) as GitHubRelease;
   const release = nightly
     ? await read("tags/nightly")
-    : await read("latest").catch((error) => {
-        if (error.status !== 404) {
+    : await read("latest").catch((error: unknown) => {
+        if (!(error instanceof GitHubError) || error.status !== 404) {
           throw error;
         }
         return read("tags/nightly");
       });
-  const asset = (name) => {
+  const asset = (name: string) => {
     const found = release.assets.find((it) => it.name === name);
     if (!found) {
       throw new Error(`release ${release.tag_name} has no ${name}`);
     }
     return found;
   };
-  const metadata: any = await (
+  const metadata = (await (
     await github(asset("metadata.json").url, "application/octet-stream", signal)
-  ).json();
+  ).json()) as { version: string; build: number };
   return {
     tag: release.tag_name,
     version: metadata.version,
-    build: Number(metadata.build),
+    build: metadata.build,
     ipa: asset("Swipt.ipa"),
   };
 }
 
-async function download(url, file, signal, update) {
+async function download(
+  url: string,
+  file: string,
+  signal: AbortSignal,
+  update: (text: string) => void,
+) {
   const response = await github(url, "application/octet-stream", signal);
+  if (response.body === null) {
+    throw new Error(
+      `GitHub answered ${response.status} without a body for ${url}`,
+    );
+  }
   const total = Number(response.headers.get("content-length"));
-  const megabytes = (bytes) => (bytes / 1_000_000).toFixed(1);
+  const megabytes = (bytes: number) => (bytes / 1_000_000).toFixed(1);
   let received = 0;
   await pipeline(
     Readable.fromWeb(response.body),
-    async function* (source) {
+    async function* (source: AsyncIterable<Uint8Array>) {
       for await (const chunk of source) {
         received += chunk.length;
         update(
@@ -190,7 +285,7 @@ async function download(url, file, signal, update) {
   );
 }
 
-async function unpack(ipa, directory) {
+async function unpack(ipa: string, directory: string) {
   await exec("ditto", ["-x", "-k", ipa, directory]);
   const payload = path.join(directory, "Payload");
   const app = fs.readdirSync(payload).find((name) => name.endsWith(".app"));
@@ -200,7 +295,7 @@ async function unpack(ipa, directory) {
   return path.join(payload, app);
 }
 
-const pbxproj = (id, team) => `// !$*UTF8*$!
+const pbxproj = (id: string, team: string) => `// !$*UTF8*$!
 {
 	archiveVersion = 1;
 	classes = {
@@ -257,7 +352,7 @@ const pbxproj = (id, team) => `// !$*UTF8*$!
 }
 `;
 
-function explain(output, team) {
+function explain(output: string, team: string) {
   const errors = [
     ...new Set(
       output
@@ -275,7 +370,11 @@ function explain(output, team) {
   if (/signing certificate|certificateType/i.test(output)) {
     return tr(
       "Xcode couldn't make a development certificate for team {team}; add one at {accounts} › Manage Certificates ({errors}).",
-      { team, accounts: accountsHint, errors },
+      {
+        team,
+        accounts: accountsHint,
+        errors,
+      },
     );
   }
   if (/requires Xcode|xcode-select/.test(output)) {
@@ -286,7 +385,7 @@ function explain(output, team) {
   return errors || output.trim();
 }
 
-function profileField(file, key) {
+function profileField(file: string, key: string) {
   return execFileSync("plutil", ["-extract", key, "raw", "-o", "-", "-"], {
     input: execFileSync("security", ["cms", "-D", "-i", file], {
       stdio: ["ignore", "pipe", "ignore"],
@@ -295,7 +394,7 @@ function profileField(file, key) {
   }).trim();
 }
 
-function revoked(certificates) {
+function revoked(certificates: string) {
   const [leaf, issuer] = [0, 1].map(
     (index) => new X509Certificate(fs.readFileSync(`${certificates}${index}`)),
   );
@@ -331,7 +430,13 @@ function revoked(certificates) {
   }
 }
 
-async function provision(work, id, team, device, update) {
+async function provision(
+  work: string,
+  id: string,
+  team: string,
+  device: Device,
+  update: (text: string) => void,
+): Promise<Signing> {
   const stub = path.join(work, "Stub");
   const products = path.join(stub, "Products");
   const app = path.join(products, "Stub.app");
@@ -366,7 +471,7 @@ async function provision(work, id, team, device, update) {
       ],
       { maxBuffer: Infinity },
     );
-    running.child.stdout.on("data", (chunk) => {
+    running.child.stdout?.on("data", (chunk: Buffer) => {
       const line = String(chunk)
         .split("\n")
         .findLast((it) => /^[A-Z]\w* /.test(it));
@@ -377,13 +482,17 @@ async function provision(work, id, team, device, update) {
     try {
       await running;
     } catch (error) {
-      if (error.code === "ENOENT") {
+      const failure = error as ExecFileException & {
+        stdout: string;
+        stderr: string;
+      };
+      if (failure.code === "ENOENT") {
         throw new Error(tr("xcodebuild is missing; install Xcode."));
       }
-      if (typeof error.code !== "number") {
+      if (typeof failure.code !== "number") {
         throw error;
       }
-      throw new Error(explain(`${error.stdout}${error.stderr}`, team));
+      throw new Error(explain(`${failure.stdout}${failure.stderr}`, team));
     }
   };
   const certificates = path.join(work, "certificate");
@@ -431,7 +540,12 @@ async function provision(work, id, team, device, update) {
   };
 }
 
-async function resign(app, id, signing, update) {
+async function resign(
+  app: string,
+  id: string,
+  signing: Signing,
+  update: (text: string) => void,
+) {
   const info = path.join(app, "Info.plist");
   execFileSync("plutil", [
     "-replace",
@@ -440,7 +554,7 @@ async function resign(app, id, signing, update) {
     id,
     info,
   ]);
-  let permitted;
+  let permitted: string[] | undefined;
   try {
     permitted = JSON.parse(
       execFileSync(
@@ -453,11 +567,11 @@ async function resign(app, id, signing, update) {
           "-",
           info,
         ],
-        { stdio: "pipe" },
-      ) as unknown as string,
+        { stdio: "pipe", encoding: "utf8" },
+      ),
     );
   } catch (error) {
-    if (!plistValueMissing.test(error.stderr)) {
+    if (!plistValueMissing(error)) {
       throw error;
     }
   }
@@ -523,7 +637,7 @@ function xcodeTeams() {
   ).matchAll(
     /SHA-1 hash: ([0-9A-F]{40})[\s\S]*?(-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----)/g,
   );
-  const teams = new Map();
+  const teams = new Map<string, string | undefined>();
   for (const [, hash, pem] of certificates) {
     if (!valid.has(hash)) {
       continue;
@@ -534,12 +648,12 @@ function xcodeTeams() {
       teams.set(id, /^O=(.+)$/m.exec(subject)?.[1].replaceAll("\\", ""));
     }
   }
-  return [...teams].map(([id, name]) => ({ id, name }));
+  return [...teams].map(([id, name]): Team => ({ id, name }));
 }
 
 function xcodeSignedIn() {
   try {
-    const lists = JSON.parse(
+    const lists: Record<string, unknown[]> = JSON.parse(
       execFileSync(
         "plutil",
         [
@@ -561,31 +675,29 @@ function xcodeSignedIn() {
         },
       ),
     );
-    return Object.values(lists).some(
-      (accounts: unknown[]) => accounts.length > 0,
-    );
+    return Object.values(lists).some((accounts) => accounts.length > 0);
   } catch (error) {
-    if (plistValueMissing.test(error.stderr)) {
+    if (plistValueMissing(error)) {
       return false;
     }
     throw error;
   }
 }
 
-const teamList = (teams) =>
+const teamList = (teams: Team[]) =>
   teams
     .map((team) => `  ${team.id}${team.name ? `  ${team.name}` : ""}`)
     .join("\n");
 
-const teamChoice = ({ id, name }) => ({
+const teamChoice = ({ id, name }: Team) => ({
   name: name ? `${name}  ${id}` : id,
   short: name ?? id,
   value: id,
 });
 
 async function sideloadedDevices(
-  devices,
-  missing = tr("Swipt isn't sideloaded on any iPhone or iPad."),
+  devices: Device[],
+  missing: string = tr("Swipt isn't sideloaded on any iPhone or iPad."),
 ) {
   const sideloaded = await step(
     tr("looking for Swipt on the devices"),
@@ -607,7 +719,7 @@ async function sideloadedDevices(
   return found;
 }
 
-async function locate(context, device, fresh = false) {
+async function locate(context: PromptContext, device: Device, fresh = false) {
   const { options } = context;
   const found = await step(
     tr("checking Swipt on {device}", { device: device.name }),
@@ -624,7 +736,10 @@ async function locate(context, device, fresh = false) {
       throw new UsageError(
         tr(
           "invalid argument {value} for --team: it's the 10-character team ID shown in {accounts}",
-          { value: JSON.stringify(options.team), accounts: accountsHint },
+          {
+            value: JSON.stringify(options.team),
+            accounts: accountsHint,
+          },
         ),
       );
     }
@@ -684,9 +799,10 @@ async function locate(context, device, fresh = false) {
   return { team: found[0]?.team, current: found[0] };
 }
 
-const buildText = (app) => `Swipt ${app.version} (${app.bundleVersion})`;
+const buildText = (app: Application) =>
+  `Swipt ${app.version} (${app.bundleVersion})`;
 
-async function signingPeriod(device, id, team) {
+async function signingPeriod(device: Device, id: string, team: string) {
   const names = [id, "*"].map((it) => `iOS Team Provisioning Profile: ${it}`);
   const profiles = await step(
     tr("checking Swipt on {device}", { device: device.name }),
@@ -702,13 +818,13 @@ async function signingPeriod(device, id, team) {
       creation: Date.parse(profile.creationDate),
       expiration: Date.parse(profile.expirationDate),
     }))
-    .reduce((latest, it) => (it.expiration > latest.expiration ? it : latest), {
-      creation: 0,
-      expiration: 0,
-    });
+    .reduce<Period>(
+      (latest, it) => (it.expiration > latest.expiration ? it : latest),
+      { creation: 0, expiration: 0 },
+    );
 }
 
-function expirationText(time) {
+function expirationText(time: number) {
   const hours = (time - Date.now()) / 3_600_000;
   const days = Math.round(hours / 24);
   const [value, unit]: [number, Intl.RelativeTimeFormatUnit] =
@@ -726,7 +842,11 @@ function expirationText(time) {
     .replace(/(\d)(\p{Script=Han})/gu, "$1 $2");
 }
 
-export async function installPasscode(context, device, current) {
+export async function installPasscode(
+  context: PasscodeSetupContext,
+  device: Device,
+  current: Application | undefined,
+) {
   return current === undefined &&
     !device.virtual &&
     interactive(context) &&
@@ -737,7 +857,7 @@ export async function installPasscode(context, device, current) {
     : passcodeOf(context.options);
 }
 
-async function findInstalled(context) {
+async function findInstalled(context: PromptContext) {
   const device = await trustedDevice(context, {
     filter: (devices) =>
       sideloadedDevices(
@@ -764,7 +884,7 @@ async function findInstalled(context) {
   return { device, team, current };
 }
 
-async function downloadIPA(context, release) {
+async function downloadIPA(context: Pick<Context, "signal">, release: Release) {
   const name = `Swipt-${release.ipa.id}.ipa`;
   const ipa = path.join(downloads, name);
   if (fs.existsSync(ipa)) {
@@ -789,7 +909,10 @@ async function downloadIPA(context, release) {
   return ipa;
 }
 
-async function prepareDiskImage(context, device) {
+async function prepareDiskImage(
+  context: Pick<Context, "signal">,
+  device: Device,
+) {
   if (device.virtual) {
     return;
   }
@@ -808,16 +931,20 @@ async function prepareDiskImage(context, device) {
     console.error(
       tr("couldn't prepare the Developer Disk Image on {device}: {error}", {
         device: device.name,
-        error: error.message,
+        error: errorMessage(error),
       }),
     );
   }
 }
 
 async function deploy(
-  context,
-  { device, team, current }: { device: any; team?: any; current: any },
-  updateOnly,
+  context: DeployContext,
+  {
+    device,
+    team,
+    current,
+  }: { device: Device; team?: string; current: Application | undefined },
+  updateOnly: boolean,
 ) {
   const passcode = await installPasscode(context, device, current);
   const release = await step(
@@ -826,12 +953,13 @@ async function deploy(
     { transient: true },
   );
   const id =
-    device.virtual || team === bundleTeam ? bundleId : `${bundleId}.${team}`;
+    team === undefined || team === bundleTeam
+      ? bundleId
+      : `${bundleId}.${team}`;
   if (current !== undefined) {
     const installed = Number(current.bundleVersion);
-    const signing = device.virtual
-      ? undefined
-      : await signingPeriod(device, id, team);
+    const signing =
+      team === undefined ? undefined : await signingPeriod(device, id, team);
     const parameters = {
       build: buildText(current),
       device: device.name,
@@ -929,19 +1057,20 @@ async function deploy(
       );
     }
   }
-  if (!device.virtual && process.platform !== "darwin") {
+  if (team !== undefined && process.platform !== "darwin") {
     throw new Error(signingNeedsMac);
   }
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-sideload-"));
   try {
-    const signing = device.virtual
-      ? undefined
-      : await step(
-          tr("preparing signing for Swipt with team {team} through Xcode", {
-            team: xcodeTeams().find((it) => it.id === team)?.name ?? team,
-          }),
-          (update) => provision(work, id, team, device, update),
-        );
+    const signing =
+      team === undefined
+        ? undefined
+        : await step(
+            tr("preparing signing for Swipt with team {team} through Xcode", {
+              team: xcodeTeams().find((it) => it.id === team)?.name ?? team,
+            }),
+            (update) => provision(work, id, team, device, update),
+          );
     const ipa = await downloadIPA(context, release);
     const app =
       signing === undefined
@@ -960,7 +1089,7 @@ async function deploy(
   }
 }
 
-async function installOnGuest(device, id, app) {
+async function installOnGuest(device: Device, id: string, app: string) {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "swipt-guest-"));
   try {
     const signed = path.join(work, "Payload", path.basename(app));
@@ -986,11 +1115,18 @@ async function installOnGuest(device, id, app) {
 }
 
 export async function installAndOpen(
-  context,
-  { device, id, current },
-  app,
-  build,
-  { passcode, saves = true },
+  context: SetupContext,
+  {
+    device,
+    id,
+    current,
+  }: { device: Device; id: string; current: Application | undefined },
+  app: string,
+  build: number,
+  {
+    passcode,
+    saves = true,
+  }: { passcode: Passcode | undefined; saves?: boolean },
 ) {
   if (current !== undefined) {
     const running = await step(
@@ -1068,7 +1204,7 @@ export async function installAndOpen(
   );
 }
 
-async function printAPI(context, device) {
+async function printAPI(context: Pick<Context, "signal">, device: Device) {
   const found = await step(
     tr("checking Swipt on {device}", { device: device.name }),
     () => findPublished(device.name, context.signal),
@@ -1092,7 +1228,13 @@ async function printAPI(context, device) {
   );
 }
 
-async function openConfigured(context, device, id, passcode, updated?) {
+async function openConfigured(
+  context: SetupContext,
+  device: Device,
+  id: string,
+  passcode: Passcode | undefined,
+  updated = false,
+) {
   const publishes = !context.options["no-setup-api"];
   if (device.virtual) {
     await step(
@@ -1114,14 +1256,14 @@ async function openConfigured(context, device, id, passcode, updated?) {
   }
 }
 
-async function launch(device, id, args?) {
+async function launch(device: Device, id: string) {
   try {
     await step(tr("opening Swipt on {device}", { device: device.name }), () =>
-      launchApp(device, id, args),
+      launchApp(device, id),
     );
     return true;
   } catch (error) {
-    if (error.code === failures.untrusted) {
+    if (failedWith(error, failures.untrusted)) {
       await step(
         tr("opening Settings on {device}", { device: device.name }),
         () =>
@@ -1136,7 +1278,7 @@ async function launch(device, id, args?) {
           { device: device.name },
         ),
       );
-    } else if (error.code === failures.locked) {
+    } else if (failedWith(error, failures.locked)) {
       console.log(
         tr("It opens after {device} is unlocked.", { device: device.name }),
       );
@@ -1147,7 +1289,7 @@ async function launch(device, id, args?) {
   }
 }
 
-export async function install(context) {
+export async function install(context: DeployContext) {
   const device = await trustedDevice(context);
   await deploy(
     context,
@@ -1156,11 +1298,11 @@ export async function install(context) {
   );
 }
 
-export async function update(context) {
+export async function update(context: DeployContext) {
   await deploy(context, await findInstalled(context), true);
 }
 
-export async function setup(context) {
+export async function setup(context: PasscodeSetupContext) {
   const given = passcodeOf(context.options);
   const { device, current } = await findInstalled(context);
   const id = current.bundleIdentifier;
@@ -1191,7 +1333,12 @@ const trustMessages = JSON.stringify({
   trusted: tr("{developer} is trusted.", { developer: "{developer}" }),
 });
 
-async function pair(context, device, id, overwrite = false) {
+async function pair(
+  context: Pick<Context, "signal">,
+  device: Device,
+  id: string,
+  overwrite = false,
+) {
   if (
     !overwrite &&
     (await step(
@@ -1212,7 +1359,7 @@ async function pair(context, device, id, overwrite = false) {
     }
     console.error(
       tr("Pairing failed, so Swipt pairs in Settings instead: {error}", {
-        error: error.message,
+        error: errorMessage(error),
       }),
     );
     return false;
@@ -1220,12 +1367,17 @@ async function pair(context, device, id, overwrite = false) {
   return true;
 }
 
-async function launchUnlocking(device, id, args, signal) {
+async function launchUnlocking(
+  device: Device,
+  id: string,
+  args: string[],
+  signal: AbortSignal,
+) {
   try {
     await launchApp(device, id, args);
     return;
   } catch (error) {
-    if (error.code !== failures.locked) {
+    if (!failedWith(error, failures.locked)) {
       throw error;
     }
     const passcode = await savedPasscode(device, id);
@@ -1252,9 +1404,15 @@ async function launchUnlocking(device, id, args, signal) {
   await launchApp(device, id, args);
 }
 
-async function trustAndOpen(context, device, id, given, updated) {
-  const lines = [];
-  let failure;
+async function trustAndOpen(
+  context: SetupContext,
+  device: Device,
+  id: string,
+  given: Passcode | undefined,
+  updated: boolean,
+) {
+  const lines: ConsoleOutput[] = [];
+  let failure: ScriptError | undefined;
   let passcode = given;
   try {
     await step(
@@ -1271,8 +1429,8 @@ async function trustAndOpen(context, device, id, given, updated) {
             return;
           } catch (error) {
             if (
-              error.code !== failures.untrusted &&
-              error.code !== failures.locked
+              !failedWith(error, failures.untrusted) &&
+              !failedWith(error, failures.locked)
             ) {
               throw error;
             }
@@ -1288,7 +1446,7 @@ async function trustAndOpen(context, device, id, given, updated) {
               : "";
         let driven;
         let local;
-        while (local === undefined) {
+        for (;;) {
           driven = serve(device.udid, {
             passcode,
             token: randomToken(),
@@ -1296,8 +1454,12 @@ async function trustAndOpen(context, device, id, given, updated) {
           });
           try {
             local = (await driven.serving).local;
+            break;
           } catch (error) {
-            if (error.code !== failures.deviceNotListed || unlock !== "wait") {
+            if (
+              !failedWith(error, failures.deviceNotListed) ||
+              unlock !== "wait"
+            ) {
               throw error;
             }
             update(tr("waiting for {device}", { device: device.name }));
@@ -1306,7 +1468,7 @@ async function trustAndOpen(context, device, id, given, updated) {
         }
         try {
           const client = open(local);
-          const run = async (args) => {
+          const run = async (args: string[]) => {
             for await (const response of client.repl.execute(
               {
                 code: fs.readFileSync(
@@ -1346,7 +1508,7 @@ async function trustAndOpen(context, device, id, given, updated) {
           try {
             await launchApp(device, id, args);
           } catch (error) {
-            if (error.code !== failures.untrusted) {
+            if (!failedWith(error, failures.untrusted)) {
               throw error;
             }
             await run([id, "trust", "", error.message]);
@@ -1387,7 +1549,7 @@ async function trustAndOpen(context, device, id, given, updated) {
   }
 }
 
-export async function uninstall(context) {
+export async function uninstall(context: PromptContext) {
   const device = await trustedDevice(context, { filter: sideloadedDevices });
   const { team, current } = await locate(context, device);
   if (current === undefined) {

@@ -1,9 +1,9 @@
 import { tr } from "../../../i18n";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { deviceOption } from "../flags";
 
-const stopServing = (context) =>
+const stopServing = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
     await client.system.shutdown({}, { signal: context.signal });
     console.log(tr("stopped"));

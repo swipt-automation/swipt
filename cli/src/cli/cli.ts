@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 import { Code, RpcError, UsageError } from "../client";
 import * as connection from "../connection";
 import { tr } from "../i18n";
-import { FalseResult } from "../output";
+import { FalseResult, errorMessage } from "../output";
 import type { Command, Options } from "./command";
 import { root } from "./commands";
 
@@ -11,27 +11,26 @@ const globalOptions: Options = {
   help: { type: "boolean", short: "h", help: tr("help") },
 };
 
-const parseOptions = (options: Options) =>
+const parseOptions = (options: Options = {}) =>
   Object.fromEntries(
-    Object.entries(options ?? {}).map(([name, option]) => [
+    Object.entries(options).map(([name, option]) => [
       name,
       { type: option.type, ...(option.short ? { short: option.short } : {}) },
     ]),
   );
 
-function allOptions(command: Command, collected = {}) {
-  Object.assign(collected, parseOptions(command.options));
-  for (const child of command.commands ?? []) {
-    allOptions(child, collected);
-  }
-  return collected;
+function allOptions(command: Command): ReturnType<typeof parseOptions> {
+  return Object.assign(
+    parseOptions(command.options),
+    ...("commands" in command ? command.commands.map(allOptions) : []),
+  );
 }
 
 function usage(trail: Command[]) {
-  const command = trail.at(-1);
+  const command = trail[trail.length - 1];
   const name = trail.map((it) => it.name).join(" ");
   const lines = [command.short, ""];
-  if (command.commands) {
+  if ("commands" in command) {
     lines.push(
       tr("usage: {usage}", { usage: `${name} COMMAND` }),
       "",
@@ -74,12 +73,12 @@ function usage(trail: Command[]) {
   return lines.join("\n");
 }
 
-function columns(rows) {
+function columns(rows: [string, string][]) {
   const width = Math.max(...rows.map((row) => row[0].length));
   return rows.map((row) => `${row[0].padEnd(width + 2)}${row[1]}`).join("\n");
 }
 
-function resolve(argv) {
+function resolve(argv: string[]) {
   const loose = parseArgs({
     args: argv,
     options: { ...parseOptions(globalOptions), ...allOptions(root) },
@@ -90,22 +89,24 @@ function resolve(argv) {
   const positionals = loose.tokens.filter(
     (token) => token.kind === "positional",
   );
-  const trail = [root];
+  const trail: Command[] = [root];
+  let current: Command = root;
   let consumed = 0;
   let help = positionals[0]?.value === "help";
   if (help) {
     consumed++;
   }
-  while (trail.at(-1).commands) {
-    const current = trail.at(-1);
+  while ("commands" in current) {
     const word = positionals[consumed]?.value;
     if (word === undefined) {
       if (help || loose.values.help || current !== root || argv.length === 0) {
-        return { trail, help: true };
+        return { trail };
       }
       throw new UsageError(tr("A command is missing."));
     }
-    const found = current.commands.find((it) => it.name === word);
+    const found: Command | undefined = current.commands.find(
+      (it) => it.name === word,
+    );
     if (!found) {
       throw new UsageError(
         tr("unknown command {name} for {parent}", {
@@ -115,9 +116,10 @@ function resolve(argv) {
       );
     }
     trail.push(found);
+    current = found;
     consumed++;
   }
-  const command = trail.at(-1);
+  const command = current;
   const options: Options = trail.reduce(
     (found, it) => ({ ...found, ...it.options }),
     {},
@@ -136,25 +138,23 @@ function resolve(argv) {
       strict: true,
     });
   } catch (error) {
-    const option = error.message.match(/^Unknown option '(-[^']*)'/)?.[1];
+    const message = errorMessage(error);
+    const option = message.match(/^Unknown option '(-[^']*)'/)?.[1];
     throw new UsageError(
       option === undefined
-        ? error.message
+        ? message
         : tr("{option} isn't an option of {command}.", {
             option,
             command: JSON.stringify(trail.map((it) => it.name).join(" ")),
           }),
     );
   }
-  if (parsed.values.help) {
-    help = true;
+  if (help || parsed.values.help) {
+    return { trail };
   }
   const args = [...parsed.positionals.slice(consumed), ...argv.slice(verbatim)];
-  if (
-    !help &&
-    (args.length < command.args[0] || args.length > command.args[1])
-  ) {
-    const [least, most] = command.args;
+  const [least, most] = command.args;
+  if (args.length < least || args.length > most) {
     throw new UsageError(
       least === most
         ? tr(
@@ -188,12 +188,16 @@ function resolve(argv) {
             ),
     );
   }
-  return { trail, help, args, values: parsed.values };
+  return { trail, invocation: { command, args, options: parsed.values } };
 }
 
-function printError(error, target, operation?) {
+function printError(
+  error: unknown,
+  target: { url: string },
+  operation?: string,
+) {
   let exit = 1;
-  let message = error.message;
+  let message = errorMessage(error);
   if (error instanceof UsageError) {
     exit = 2;
   } else if (error instanceof RpcError) {
@@ -208,7 +212,10 @@ function printError(error, target, operation?) {
       case Code.Unauthenticated:
         message = tr(
           '{message}; connect with the URL that Swipt › Developer or "swipt driver" shows: swipt device add {url}',
-          { message, url: connection.withToken(target.url) },
+          {
+            message,
+            url: connection.withToken(target.url),
+          },
         );
         break;
       case Code.Unimplemented:
@@ -237,18 +244,14 @@ export async function main() {
   process.once("SIGTERM", interrupted);
   const target = { url: "" };
   try {
-    const resolved = resolve(process.argv.slice(2));
-    if (resolved.help) {
-      console.log(usage(resolved.trail));
+    const { trail, invocation } = resolve(process.argv.slice(2));
+    if (!invocation) {
+      console.log(usage(trail));
       return;
     }
-    const command = resolved.trail.at(-1);
-    const values = command.parse
-      ? command.parse(resolved.values)
-      : resolved.values;
-    await command.run({
-      args: resolved.args,
-      options: values,
+    await invocation.command.run({
+      args: invocation.args,
+      options: invocation.options,
       target,
       signal: interrupt.signal,
       printError: (error, operation) => printError(error, target, operation),
@@ -256,7 +259,10 @@ export async function main() {
   } catch (error) {
     if (error instanceof FalseResult) {
       process.exitCode = 1;
-    } else if (interrupt.signal.aborted || error.name === "ExitPromptError") {
+    } else if (
+      interrupt.signal.aborted ||
+      (error instanceof Error && error.name === "ExitPromptError")
+    ) {
       process.exitCode = 130;
     } else {
       process.exitCode = printError(error, target);

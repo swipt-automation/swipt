@@ -2,12 +2,12 @@ import path from "node:path";
 
 import { tr } from "../../../i18n";
 import { buildProject } from "../../../project";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { deploy as deploySwiplet, printDeployed } from "../../deploy";
 import { session } from "../../session";
 import { deviceOption } from "../flags";
 
-async function deployProject(context) {
+async function deployProject(context: Context<{ device?: string }>) {
   const { archive } = await buildProject(path.resolve(context.args[0] ?? "."));
   await session(context, async (client) =>
     printDeployed(await deploySwiplet(client, archive, context.signal), true),

@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { Context } from "./cli/command";
 import { UsageError } from "./client";
 import { findDriver, stopDriver, withToken } from "./connection";
 import { configDirectory } from "./directories";
 import {
+  type Device,
   appRunning,
   randomToken,
   serve,
@@ -12,24 +14,43 @@ import {
   trustedDevice,
 } from "./driver";
 import { tr } from "./i18n";
-import { FalseResult, choose, columns, interactive, step } from "./output";
-import { askPasscode, passcodeOf } from "./passcode";
+import {
+  FalseResult,
+  type PromptContext,
+  choose,
+  columns,
+  interactive,
+  step,
+} from "./output";
+import {
+  type Passcode,
+  type PasscodeOptions,
+  askPasscode,
+  passcodeOf,
+} from "./passcode";
 import { savedPasscode, swiptApps } from "./swipt-app";
 
 const passcodeFile = path.join(configDirectory, "passcodes.json");
 
-function loadPasscodes() {
+interface ServeOptions extends PasscodeOptions {
+  token?: string;
+  "random-token"?: boolean;
+}
+
+type Passcodes = Record<string, Passcode | null>;
+
+function loadPasscodes(): Passcodes {
   try {
     return JSON.parse(fs.readFileSync(passcodeFile, "utf8"));
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return {};
     }
     throw error;
   }
 }
 
-function savePasscode(udid, passcode) {
+function savePasscode(udid: string, passcode: Passcode | undefined) {
   const saved = loadPasscodes();
   saved[udid] = passcode ?? null;
   fs.mkdirSync(configDirectory, { recursive: true, mode: 0o700 });
@@ -38,7 +59,12 @@ function savePasscode(udid, passcode) {
   });
 }
 
-async function confirm(context, message, action, failure) {
+async function confirm(
+  context: PromptContext,
+  message: string,
+  action: string,
+  failure: Error,
+) {
   const confirmed = await choose(
     context,
     message,
@@ -53,13 +79,13 @@ async function confirm(context, message, action, failure) {
   }
 }
 
-async function runningApps(device) {
+async function runningApps(device: Device) {
   const ids = (await swiptApps(device)).map((app) => app.bundleIdentifier);
   const running = await Promise.all(ids.map((id) => appRunning(device, id)));
   return { ids, running: ids.filter((_, index) => running[index]) };
 }
 
-async function takeOver(context, device) {
+async function takeOver(context: PromptContext, device: Device) {
   const [{ ids, running }, driving] = await step(
     tr("checking {device}", { device: device.name }),
     () =>
@@ -93,7 +119,7 @@ async function takeOver(context, device) {
       serves,
     );
     await step(tr("stopping the driver on {computer}", parameters), () =>
-      stopDriver(driving, context.signal),
+      stopDriver(driving.url, device.udid, context.signal),
     );
   }
   if (running.length > 0) {
@@ -119,7 +145,7 @@ async function takeOver(context, device) {
   return ids;
 }
 
-async function swiptPasscode(device, ids) {
+async function swiptPasscode(device: Device, ids: string[]) {
   for (const id of ids) {
     try {
       const passcode = await savedPasscode(device, id);
@@ -131,7 +157,11 @@ async function swiptPasscode(device, ids) {
   return undefined;
 }
 
-async function unlockPasscode(context, device, ids) {
+async function unlockPasscode(
+  context: PromptContext & Pick<Context<PasscodeOptions>, "options">,
+  device: Device,
+  ids: string[],
+) {
   const { options } = context;
   if (options.passcode !== undefined) {
     const passcode = passcodeOf(options);
@@ -157,7 +187,7 @@ async function unlockPasscode(context, device, ids) {
   return passcode;
 }
 
-function apiToken(options) {
+function apiToken(options: ServeOptions) {
   if (options["random-token"]) {
     if (options.token !== undefined) {
       throw new UsageError(
@@ -174,7 +204,9 @@ function apiToken(options) {
   return options.token;
 }
 
-export async function run(context) {
+export async function run(
+  context: PromptContext & Pick<Context<ServeOptions>, "options">,
+) {
   if (context.options["passcode-type"] !== undefined) {
     passcodeOf(context.options);
   }
@@ -196,13 +228,16 @@ export async function run(context) {
     () => driven.serving,
     { transient: true },
   );
+  const urls: [name: string, url: string | undefined][] = [
+    ["CLI", ready.api],
+    ["MCP", ready.mcp],
+    [tr("Local network"), ready.network],
+  ];
   console.log(
     `${ready.device}\n${columns(
-      [
-        ["CLI", ready.api],
-        ["MCP", ready.mcp],
-        [tr("Local network"), ready.network],
-      ].map(([name, url]) => [name, token ? withToken(url, token) : url]),
+      urls.flatMap(([name, url]) =>
+        url === undefined ? [] : [[name, token ? withToken(url, token) : url]],
+      ),
     )}`,
   );
   console.error(

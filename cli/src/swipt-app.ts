@@ -1,11 +1,13 @@
 import {
+  type Application,
+  type Device,
   apps,
   containerHasFile,
   containerSQL,
   pairApp,
   terminateApp,
 } from "./driver";
-import { passcodeTypes } from "./passcode";
+import { type Passcode, passcodeTypes } from "./passcode";
 
 export const bundleId = "io.nekohasekai.swipt";
 export const bundleTeam = "P8XK3KHB48";
@@ -20,6 +22,18 @@ export const setupArgument = "--setup";
 const databasePath = "Library/Application Support/Swipt.sqlite";
 const pairingPath = "Library/Application Support/PairingRecord.plist";
 
+interface Preferences {
+  autoUnlocks?: boolean;
+  autoUnlockPasscodeType?: number;
+  autoUnlockPasscode?: string;
+  autoUnlockSetUp?: boolean;
+  developerLocalNetworkEnabled?: boolean;
+}
+
+export interface SwiptApp extends Application {
+  team: string;
+}
+
 const schema = [
   "CREATE TABLE grdb_migrations (identifier TEXT NOT NULL PRIMARY KEY)",
   'CREATE TABLE "preferences" ("name" TEXT PRIMARY KEY NOT NULL, "data" BLOB NOT NULL)',
@@ -29,18 +43,22 @@ const schema = [
   "INSERT INTO grdb_migrations VALUES ('0.1.0')",
 ];
 
-export const swiptApps = async (device) =>
+export const swiptApps = async (device: Device): Promise<SwiptApp[]> =>
   (await apps(device)).flatMap((app) => {
     const match = sideloadedPattern.exec(app.bundleIdentifier);
     return match === null ? [] : [{ ...app, team: match[1] ?? bundleTeam }];
   });
 
-export async function savePreferences(device, id, preferences) {
+export async function savePreferences(
+  device: Device,
+  id: string,
+  preferences: Preferences,
+) {
   const exists = await containerHasFile(device, id, databasePath);
   if (exists) {
     await terminateApp(device, id);
   }
-  const quote = (text) => `'${text.replaceAll("'", "''")}'`;
+  const quote = (text: string) => `'${text.replaceAll("'", "''")}'`;
   await containerSQL(
     device,
     id,
@@ -57,7 +75,11 @@ export async function savePreferences(device, id, preferences) {
   );
 }
 
-export const setUpAutoUnlock = (device, id, passcode) =>
+export const setUpAutoUnlock = (
+  device: Device,
+  id: string,
+  passcode: Passcode,
+) =>
   savePreferences(device, id, {
     autoUnlocks: true,
     autoUnlockPasscodeType: passcodeTypes.indexOf(passcode.type),
@@ -65,7 +87,10 @@ export const setUpAutoUnlock = (device, id, passcode) =>
     autoUnlockSetUp: true,
   });
 
-export async function savedPasscode(device, id) {
+export async function savedPasscode(
+  device: Device,
+  id: string,
+): Promise<Passcode | undefined> {
   const rows = await containerSQL(
     device,
     id,
@@ -73,8 +98,12 @@ export async function savedPasscode(device, id) {
     "SELECT name, CAST(data AS TEXT) AS value FROM preferences WHERE name LIKE 'autoUnlock%'",
     { query: true },
   );
-  const saved = Object.fromEntries(
-    rows.map(({ name, value }) => [name, JSON.parse(value)]),
+  const saved: Preferences = Object.fromEntries(
+    rows.flatMap(({ name, value }) =>
+      typeof name === "string" && typeof value === "string"
+        ? [[name, JSON.parse(value)]]
+        : [],
+    ),
   );
   return saved.autoUnlocks && saved.autoUnlockPasscode
     ? {
@@ -84,7 +113,8 @@ export async function savedPasscode(device, id) {
     : undefined;
 }
 
-export const hasPairing = (device, id) =>
+export const hasPairing = (device: Device, id: string) =>
   containerHasFile(device, id, pairingPath);
 
-export const savePairing = (device, id) => pairApp(device, id, pairingPath);
+export const savePairing = (device: Device, id: string) =>
+  pairApp(device, id, pairingPath);

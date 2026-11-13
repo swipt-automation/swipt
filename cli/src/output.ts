@@ -1,14 +1,23 @@
 import { styleText } from "node:util";
 
-import { timestampDate } from "@bufbuild/protobuf/wkt";
+import { type Timestamp, timestampDate } from "@bufbuild/protobuf/wkt";
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
 import { tr } from "./i18n";
-import { LogLevel, LogLevelSchema } from "./proto/common_pb";
-import { ServiceStatus } from "./proto/swiplets_pb";
+import {
+  type LogEntry,
+  LogLevel,
+  LogLevelSchema,
+  type ScriptError,
+  type StackFrame,
+} from "./proto/common_pb";
+import { type ServiceState, ServiceStatus } from "./proto/swiplets_pb";
 
 export class FalseResult extends Error {}
+
+export const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 export const selectTheme = {
   style: {
@@ -25,13 +34,23 @@ export const selectTheme = {
   },
 };
 
-export const interactive = (context) =>
+export interface PromptContext {
+  options: { device?: string; team?: string };
+  signal: AbortSignal;
+}
+
+export const interactive = (context: Pick<PromptContext, "options">) =>
   context.options.device === undefined &&
   context.options.team === undefined &&
   process.stdin.isTTY &&
   process.stderr.isTTY;
 
-export function choose(context, message, choices, failure) {
+export function choose<Value>(
+  context: PromptContext,
+  message: string,
+  choices: { name: string; short?: string; value: Value }[],
+  failure: Error,
+) {
   if (!interactive(context)) {
     throw failure;
   }
@@ -43,19 +62,25 @@ export function choose(context, message, choices, failure) {
 
 const spinner = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
 
-export async function step(label, run, { transient = false } = {}) {
+export async function step<Result>(
+  label: string,
+  run: (detail: (text: string) => void) => Result | Promise<Result>,
+  { transient = false } = {},
+) {
   const stream = process.stderr;
   if (!stream.isTTY) {
     console.error(label);
     return run(() => {});
   }
-  const style = (format, text) => styleText(format, text, { stream });
+  const style = (format: Parameters<typeof styleText>[0], text: string) =>
+    styleText(format, text, { stream });
   const started = Date.now();
   const elapsed = () => {
     const seconds = Math.floor((Date.now() - started) / 1000);
     return seconds > 0 ? style("dim", ` ${seconds}s`) : "";
   };
-  const draw = (line) => stream.write(`\r\x1b[?7l\x1b[2K${line}\x1b[?7h`);
+  const draw = (line: string) =>
+    stream.write(`\r\x1b[?7l\x1b[2K${line}\x1b[?7h`);
   let detail = "";
   let frame = 0;
   const render = () => {
@@ -83,25 +108,29 @@ export async function step(label, run, { transient = false } = {}) {
   }
 }
 
-const levelName = (level) =>
+const levelName = (level: LogLevel) =>
   level === LogLevel.UNSPECIFIED
     ? "info"
     : LogLevelSchema.value[level].name.slice("LOG_LEVEL_".length).toLowerCase();
 
-const pad = (value, width) => String(value).padStart(width, "0");
+const pad = (value: number, width: number) =>
+  String(value).padStart(width, "0");
 
-export function clockTime(timestamp) {
-  const at = timestampDate(timestamp);
+const dateOf = (timestamp: Timestamp | undefined) =>
+  timestamp ? timestampDate(timestamp) : new Date(0);
+
+export function clockTime(timestamp: Timestamp | undefined) {
+  const at = dateOf(timestamp);
   return `${pad(at.getHours(), 2)}:${pad(at.getMinutes(), 2)}:${pad(at.getSeconds(), 2)}.${pad(at.getMilliseconds(), 3)}`;
 }
 
-export function dateTime(timestamp) {
-  const at = timestampDate(timestamp);
+export function dateTime(timestamp: Timestamp | undefined) {
+  const at = dateOf(timestamp);
   return `${at.getFullYear()}-${pad(at.getMonth() + 1, 2)}-${pad(at.getDate(), 2)} ${pad(at.getHours(), 2)}:${pad(at.getMinutes(), 2)}:${pad(at.getSeconds(), 2)}`;
 }
 
-export function columns(rows) {
-  const widths = [];
+export function columns(rows: string[][]) {
+  const widths: number[] = [];
   for (const row of rows) {
     row.forEach((cell, index) => {
       widths[index] = Math.max(widths[index] ?? 0, stringWidth(cell));
@@ -121,23 +150,23 @@ export function columns(rows) {
     .join("\n");
 }
 
-const frameText = (frame) => {
+const frameText = (frame: StackFrame) => {
   const position = `${frame.file}:${frame.line}:${frame.column}`;
   return frame.function === "" ? position : `${frame.function} (${position})`;
 };
 
-export const failureText = (failure) =>
+export const failureText = (failure: ScriptError) =>
   [
     `${failure.name}: ${failure.message}`,
     ...failure.stack.map((frame) => `    at ${frameText(frame)}`),
   ].join("\n");
 
-export function printScriptError(failure) {
+export function printScriptError(failure: ScriptError) {
   console.error(tr("error: {message}", { message: failureText(failure) }));
   return new FalseResult();
 }
 
-export function printLog(entry, toStdout) {
+export function printLog(entry: LogEntry, toStdout: boolean) {
   const message =
     entry.tag === "" ? entry.message : `${entry.tag}: ${entry.message}`;
   (toStdout ? console.log : console.error)(
@@ -155,12 +184,13 @@ const serviceStatuses = {
   [ServiceStatus.FAILED]: tr("failed", {}, "service"),
 };
 
-export const serviceEnabledText = (enabled) =>
+export const serviceEnabledText = (enabled: boolean | undefined) =>
   enabled ? tr("turned on", {}, "service") : tr("turned off", {}, "service");
 
-export const serviceStatusText = (status) => serviceStatuses[status];
+export const serviceStatusText = (status: ServiceStatus) =>
+  serviceStatuses[status];
 
-export function serviceText(_id, state) {
+export function serviceText(state: ServiceState | undefined) {
   const enabled = serviceEnabledText(state?.enabled);
   const status = serviceStatuses[state?.status ?? ServiceStatus.UNSPECIFIED];
   let text = state?.since

@@ -28,7 +28,7 @@ export const sideloadOptions: Options = {
   },
 };
 
-export const passcodeOptions = (help): Options => ({
+export const passcodeOptions = (help: string): Options => ({
   passcode: { type: "string", value: "CODE", help },
   "passcode-type": {
     type: "string",

@@ -3,9 +3,9 @@ import { createRequire } from "node:module";
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
 
-const { version: packageVersion } = createRequire(import.meta.url)(
-  "../../../../package.json",
-);
+const { version: packageVersion }: { version: string } = createRequire(
+  import.meta.url,
+)("../../../../package.json");
 
 function printVersion() {
   console.log(

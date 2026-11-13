@@ -3,11 +3,21 @@ import select from "@inquirer/select";
 
 import { UsageError } from "./client";
 import { tr } from "./i18n";
-import { selectTheme } from "./output";
+import { errorMessage, selectTheme } from "./output";
 
 export const passcodeTypes = ["pin", "numeric", "alphanumeric"];
 
-export function passcodeOf(options) {
+export interface Passcode {
+  passcode: string;
+  type: string;
+}
+
+export interface PasscodeOptions {
+  passcode?: string;
+  "passcode-type"?: string;
+}
+
+export function passcodeOf(options: PasscodeOptions): Passcode | undefined {
   const type = options["passcode-type"] ?? "pin";
   if (!passcodeTypes.includes(type)) {
     throw new UsageError(
@@ -40,7 +50,7 @@ export function passcodeOf(options) {
   return { passcode, type };
 }
 
-export async function askPasscode(context) {
+export async function askPasscode(context: { signal: AbortSignal }) {
   const type = await select<string | null>(
     {
       message: tr(
@@ -71,19 +81,19 @@ export async function askPasscode(context) {
   if (type === null) {
     return undefined;
   }
-  const options = (passcode) => ({ passcode, "passcode-type": type });
+  const options = (passcode: string) => ({ passcode, "passcode-type": type });
   return passcodeOf(
     options(
       await password(
         {
           message: tr("Device passcode"),
-          theme: { i18n: { maskedText: tr("[input is masked]") } } as any,
+          theme: { style: { maskedText: tr("[input is masked]") } },
           validate(passcode) {
             try {
               passcodeOf(options(passcode));
               return passcode !== "" || tr("Enter the passcode.");
             } catch (error) {
-              return error.message;
+              return errorMessage(error);
             }
           },
         },

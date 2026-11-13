@@ -9,7 +9,7 @@ const languages = new Set([
   ...fs.readdirSync(locales).map((file) => path.basename(file, ".json")),
 ]);
 
-function environmentLanguages(variables) {
+function environmentLanguages(variables: NodeJS.ProcessEnv) {
   const locale = variables.LC_ALL || variables.LC_MESSAGES || variables.LANG;
   if (!locale) {
     return undefined;
@@ -33,7 +33,7 @@ function appleLanguages() {
   }
 }
 
-function registryValue(key, name) {
+function registryValue(key: string, name: string) {
   let output;
   try {
     output = execFileSync("reg", ["query", key, "/v", name], {
@@ -73,7 +73,7 @@ function systemLanguages(): Iterable<string> {
   }
 }
 
-function supportedLanguage(tag) {
+function supportedLanguage(tag: string) {
   let locale;
   try {
     locale = new Intl.Locale(tag).maximize();
@@ -81,15 +81,15 @@ function supportedLanguage(tag) {
     return undefined;
   }
   const { language, script, region } = locale;
-  const variant = {
+  const variants: Record<string, string> = {
     es: region === "ES" ? "es" : "es-419",
     no: "nb",
     pt: "pt-PT",
-  }[language];
+  };
   return [
     `${language}-${region}`,
     `${language}-${script}`,
-    variant,
+    variants[language],
     language,
   ].find((candidate) => languages.has(candidate));
 }
@@ -99,7 +99,11 @@ export const language =
     .map((tag) => supportedLanguage(tag.split(/[.@]/)[0].replaceAll("_", "-")))
     .find(Boolean) ?? "en";
 
-const messages =
+type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & {
+  other: string;
+};
+
+const messages: Record<string, string | PluralForms> =
   language === "en"
     ? {}
     : JSON.parse(fs.readFileSync(new URL(`${language}.json`, locales), "utf8"));
@@ -108,7 +112,7 @@ const pluralRules = new Intl.PluralRules(language);
 
 export function tr(
   source: string | { one: string; other: string },
-  values: Record<string, any> = {},
+  values: Record<string, unknown> = {},
   context?: string,
 ) {
   const key = typeof source === "string" ? source : source.other;
@@ -117,6 +121,6 @@ export function tr(
   const text =
     typeof message === "string"
       ? message
-      : (message[pluralRules.select(values.count)] ?? message.other);
-  return text.replace(/\{(\w+)\}/g, (_, name) => values[name]);
+      : (message[pluralRules.select(Number(values.count))] ?? message.other);
+  return text.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name]));
 }

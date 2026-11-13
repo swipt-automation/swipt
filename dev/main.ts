@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { trustedDevice } from "@swipt/cli/driver";
-import { FalseResult } from "@swipt/cli/output";
+import { FalseResult, errorMessage } from "@swipt/cli/output";
 import { installAndOpen, installPasscode } from "@swipt/cli/sideload";
 import { bundleId, swiptApps } from "@swipt/cli/swipt-app";
 
@@ -40,7 +40,7 @@ const driver = path.join(
 const interrupt = new AbortController();
 process.on("SIGINT", () => interrupt.abort());
 
-function run(command, args, env?) {
+function run(command: string, args: string[], env?: NodeJS.ProcessEnv) {
   const result = spawnSync(command, args, {
     cwd: root,
     env: { ...process.env, ...env },
@@ -56,10 +56,10 @@ function run(command, args, env?) {
   }
 }
 
-const capture = (command, ...args) =>
+const capture = (command: string, ...args: string[]) =>
   execFileSync(command, args, { cwd: root, encoding: "utf8" });
 
-function committed(paths) {
+function committed(paths: string[]) {
   const status = capture(
     "git",
     "status",
@@ -74,12 +74,20 @@ function committed(paths) {
     : undefined;
 }
 
-const modified = (file) =>
+const modified = (file: string | undefined) =>
   file === undefined
     ? undefined
     : fs.statSync(path.resolve(root, file), { throwIfNoEntry: false })?.mtimeMs;
 
-function build(name, { paths, inputs = [], product = undefined }, command) {
+function build(
+  name: string,
+  {
+    paths,
+    inputs = [],
+    product,
+  }: { paths: string[]; inputs?: string[]; product?: string },
+  command: () => void,
+) {
   const records = fs.existsSync(builds)
     ? JSON.parse(fs.readFileSync(builds, "utf8"))
     : {};
@@ -129,7 +137,7 @@ const frameworks = () => {
   }
 };
 
-async function installApp(context) {
+async function installApp(context: Parameters<typeof installPasscode>[0]) {
   const toolchain = [
     capture("go", "version"),
     capture("xcodebuild", "-version"),
@@ -151,7 +159,7 @@ async function installApp(context) {
   const flags = [
     process.env.XCODEBUILD_FLAGS,
     ...(device.virtual ? ["CODE_SIGNING_ALLOWED=NO"] : []),
-  ].filter(Boolean);
+  ].filter((flag) => flag !== undefined);
   const info = path.join(app, "Info.plist");
   run("bun", ["install", "--frozen-lockfile"]);
   build(
@@ -259,10 +267,13 @@ try {
 } catch (error) {
   if (error instanceof FalseResult) {
     process.exitCode = 1;
-  } else if (interrupt.signal.aborted || error.name === "ExitPromptError") {
+  } else if (
+    interrupt.signal.aborted ||
+    (error instanceof Error && error.name === "ExitPromptError")
+  ) {
     process.exitCode = 130;
   } else {
-    console.error("error:", error.message);
+    console.error("error:", errorMessage(error));
     process.exitCode = 1;
   }
 }

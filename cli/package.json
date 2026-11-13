@@ -64,6 +64,8 @@
     "@swipt/driver-win32-x64": "0.1.0"
   },
   "devDependencies": {
+    "@types/babel__core": "^7.20.5",
+    "@types/multicast-dns": "^7.2.4",
     "@types/node": "^24.19.2",
     "tsdown": "^0.23.7"
   }

@@ -5,12 +5,12 @@ import { ValueSchema } from "@bufbuild/protobuf/wkt";
 
 import { UsageError } from "../../../client";
 import { tr } from "../../../i18n";
-import { printLog, printScriptError } from "../../../output";
-import { defineCommand } from "../../command";
+import { errorMessage, printLog, printScriptError } from "../../../output";
+import { type Context, defineCommand } from "../../command";
 import { readStdin } from "../../io";
 import { session } from "../../session";
 
-function readInput(value) {
+function readInput(value: string | undefined) {
   if (value === undefined || value === "") {
     return undefined;
   }
@@ -22,18 +22,20 @@ function readInput(value) {
       data = fs.readFileSync(value.slice(1), "utf8");
     }
   } catch (error) {
-    throw new Error(`read --input: ${error.message}`);
+    throw new Error(`read --input: ${errorMessage(error)}`);
   }
   try {
     return fromJson(ValueSchema, JSON.parse(data));
   } catch (error) {
     throw new UsageError(
-      tr("--input isn't JSON: {error}", { error: error.message }),
+      tr("--input isn't JSON: {error}", {
+        error: errorMessage(error),
+      }),
     );
   }
 }
 
-const callAction = (context) =>
+const callAction = (context: Context<{ device?: string; input?: string }>) =>
   session(context, async (client) => {
     const [id, action] = context.args;
     const input = readInput(context.options.input);

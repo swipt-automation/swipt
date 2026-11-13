@@ -2,22 +2,25 @@ import fs from "node:fs";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
+import { create } from "@bufbuild/protobuf";
+
 import { AvailabilityChecker } from "../../../availability";
 import { unauthenticated } from "../../../client";
 import { attach } from "../../../connection";
 import { tr } from "../../../i18n";
 import { Ignorer, relativePath } from "../../../ignore";
-import { printLog, serviceText } from "../../../output";
+import { errorMessage, printLog, serviceText } from "../../../output";
 import { buildProject, loadProject } from "../../../project";
+import { LogEntrySchema } from "../../../proto/common_pb";
 import { ServiceStatus } from "../../../proto/swiplets_pb";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { deploy, printDeployed } from "../../deploy";
 import { deviceOption } from "../flags";
 
 const rebuildDelay = 300;
 const logReconnect = 2000;
 
-function elapsed(since) {
+function elapsed(since: number) {
   const ms = Date.now() - since;
   if (ms < 1000) {
     return `${ms}ms`;
@@ -29,8 +32,12 @@ function elapsed(since) {
   return `${Math.floor(seconds / 60)}m${Number((seconds % 60).toFixed(3))}s`;
 }
 
-async function follow(signal, fatal, run) {
-  let reported;
+async function follow(
+  signal: AbortSignal,
+  fatal: (error: unknown) => void,
+  run: () => Promise<void>,
+) {
+  let reported: string | undefined;
   while (!signal.aborted) {
     try {
       await run();
@@ -39,9 +46,10 @@ async function follow(signal, fatal, run) {
         fatal(error);
         return;
       }
-      if (!signal.aborted && error.message !== reported) {
-        reported = error.message;
-        console.error(tr("error: {message}", { message: error.message }));
+      const message = errorMessage(error);
+      if (!signal.aborted && message !== reported) {
+        reported = message;
+        console.error(tr("error: {message}", { message }));
       }
     }
     try {
@@ -52,18 +60,17 @@ async function follow(signal, fatal, run) {
   }
 }
 
-async function developProject(context) {
+async function developProject(
+  context: Context<{ device?: string; "no-logs"?: boolean }>,
+) {
   const { signal, printError } = context;
   const project = loadProject(path.resolve(context.args[0] ?? "."));
   const root = project.root;
   const client = await attach(context);
   const controller = new AbortController();
   const inner = AbortSignal.any([signal, controller.signal]);
-  let fatalReject;
-  const fatal = new Promise((_, reject) => {
-    fatalReject = reject;
-  });
-  follow(inner, fatalReject, async () => {
+  const fatal = Promise.withResolvers<never>();
+  follow(inner, fatal.reject, async () => {
     for await (const response of client.swiplets.watchServices(
       {},
       { signal: inner },
@@ -73,18 +80,18 @@ async function developProject(context) {
         response.service?.status === ServiceStatus.FAILED
       ) {
         console.error(
-          `${response.swipletId}: ${serviceText(response.swipletId, response.service)}`,
+          `${response.swipletId}: ${serviceText(response.service)}`,
         );
       }
     }
   });
   if (!context.options["no-logs"]) {
-    follow(inner, fatalReject, async () => {
+    follow(inner, fatal.reject, async () => {
       for await (const response of client.logs.readLogs(
         { swipletId: project.config.id, follow: true },
         { signal: inner },
       )) {
-        printLog(response.entry, false);
+        printLog(response.entry ?? create(LogEntrySchema), false);
       }
     });
   }
@@ -97,7 +104,7 @@ async function developProject(context) {
       built = await buildProject(root, checker);
     } catch (error) {
       if (!inner.aborted) {
-        console.error(tr("error: {message}", { message: error.message }));
+        printError(error);
       }
       return;
     }
@@ -137,7 +144,7 @@ async function developProject(context) {
         return;
       }
       let ignore = new Ignorer(root);
-      let timer;
+      let timer: NodeJS.Timeout | undefined;
       const watcher = fs.watch(root, { recursive: true }, (_, filename) => {
         if (filename === null) {
           return;
@@ -171,7 +178,7 @@ async function developProject(context) {
       );
     });
   try {
-    await Promise.race([cycle().then(watch), fatal]);
+    await Promise.race([cycle().then(watch), fatal.promise]);
   } finally {
     controller.abort();
     checker.close();

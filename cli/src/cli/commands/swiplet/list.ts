@@ -4,10 +4,10 @@ import {
   serviceEnabledText,
   serviceStatusText,
 } from "../../../output";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
-const listSwiplets = (context) =>
+const listSwiplets = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
     const { swiplets } = await client.swiplets.listSwiplets(
       {},

@@ -6,8 +6,8 @@ import path from "node:path";
 import vm from "node:vm";
 
 import { transformAsync } from "@babel/core";
-import { build } from "esbuild";
-import { zipSync } from "fflate";
+import { build, type Metafile, type Plugin } from "esbuild";
+import { type Zippable, zipSync } from "fflate";
 
 import { AvailabilityChecker } from "./availability";
 import { tr } from "./i18n";
@@ -82,11 +82,19 @@ const storedSuffixes = [
 
 const zipEpoch = new Date(1980, 0, 1).getTime();
 
-export function loadProject(root) {
-  const manifest = JSON.parse(
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStringRecord = (value: unknown): value is Record<string, string> =>
+  isRecord(value) &&
+  Object.values(value).every((name) => typeof name === "string");
+
+export function loadProject(root: string) {
+  const parsed: unknown = JSON.parse(
     fs.readFileSync(path.join(root, "package.json"), "utf8"),
   );
-  const config = manifest.swiplet ?? {};
+  const manifest: Record<string, unknown> = isRecord(parsed) ? parsed : {};
+  const config = isRecord(manifest.swiplet) ? manifest.swiplet : {};
   if (typeof config.id !== "string" || !idPattern.test(config.id)) {
     throw new Error(
       tr(
@@ -100,11 +108,7 @@ export function loadProject(root) {
     );
   }
   const localizedNames = config.localizedNames ?? {};
-  if (
-    localizedNames === null ||
-    typeof localizedNames !== "object" ||
-    !Object.values(localizedNames).every((name) => typeof name === "string")
-  ) {
+  if (!isStringRecord(localizedNames)) {
     throw new Error(
       tr(
         '"swiplet.localizedNames" in package.json must map languages to names.',
@@ -123,7 +127,9 @@ export function loadProject(root) {
   }
   if (
     config.versionCode !== undefined &&
-    (!Number.isInteger(config.versionCode) || config.versionCode < 1)
+    (typeof config.versionCode !== "number" ||
+      !Number.isInteger(config.versionCode) ||
+      config.versionCode < 1)
   ) {
     throw new Error(
       tr('"swiplet.versionCode" in package.json must be a positive integer.'),
@@ -136,10 +142,15 @@ export function loadProject(root) {
     apiLevel,
     oldestAPILevel = 1,
     minimumIOSVersion = 27,
+  }: {
+    apiLevel: number;
+    oldestAPILevel?: number;
+    minimumIOSVersion?: number;
   } = JSON.parse(fs.readFileSync(apiManifest, "utf8"));
   if (
     config.minimumAPILevel !== undefined &&
     !(
+      typeof config.minimumAPILevel === "number" &&
       Number.isInteger(config.minimumAPILevel) &&
       config.minimumAPILevel >= oldestAPILevel &&
       config.minimumAPILevel <= apiLevel
@@ -148,17 +159,22 @@ export function loadProject(root) {
     throw new Error(
       tr(
         '"swiplet.minimumAPILevel" in package.json must be an integer from {oldest} to {level}, the API level of @swipt/api.',
-        { oldest: oldestAPILevel, level: apiLevel },
+        {
+          oldest: oldestAPILevel,
+          level: apiLevel,
+        },
       ),
     );
   }
   const version = parseVersion(config.minimumIOSVersion);
+  const oldestVersion = parseVersion(minimumIOSVersion);
   if (
     config.minimumIOSVersion !== undefined &&
     !(
       typeof config.minimumIOSVersion === "number" &&
       version &&
-      versionAtLeast(version, parseVersion(minimumIOSVersion))
+      oldestVersion &&
+      versionAtLeast(version, oldestVersion)
     )
   ) {
     throw new Error(
@@ -175,10 +191,28 @@ export function loadProject(root) {
       }),
     );
   }
+  if (
+    config.extension !== undefined &&
+    (typeof config.extension !== "string" || config.extension === "")
+  ) {
+    throw new Error(
+      tr('"{field}" in package.json must be a string.', {
+        field: "swiplet.extension",
+      }),
+    );
+  }
   return {
     root,
-    manifest,
-    config,
+    version: manifest.version,
+    config: {
+      id: config.id,
+      name: config.name,
+      description: config.description,
+      versionCode: config.versionCode,
+      icon: config.icon,
+      minimumAPILevel: config.minimumAPILevel,
+      minimumIOSVersion: config.minimumIOSVersion,
+    },
     localizedNames,
     apiLevel,
     minimumIOSVersion,
@@ -191,7 +225,9 @@ export function loadProject(root) {
   };
 }
 
-const typeImport = (extension) => ({
+export type Project = ReturnType<typeof loadProject>;
+
+const typeImport = (extension: string): Plugin => ({
   name: "swiplet-type-import",
   setup(build) {
     build.onLoad({ filter: /.*/ }, (args) => {
@@ -203,7 +239,9 @@ const typeImport = (extension) => ({
           {
             text: tr(
               "The interface imports {file} at runtime; import its type with `import type`.",
-              { file: path.basename(extension) },
+              {
+                file: path.basename(extension),
+              },
             ),
           },
         ],
@@ -212,8 +250,16 @@ const typeImport = (extension) => ({
   },
 });
 
-async function bundle(project) {
-  const out = {
+interface Bundle {
+  app: string;
+  extension: string;
+  extensionMap: string;
+  assets: Map<string, string>;
+  metafiles: Metafile[];
+}
+
+async function bundle(project: Project) {
+  const out: Bundle = {
     app: "",
     extension: "",
     extensionMap: "",
@@ -246,11 +292,16 @@ async function bundle(project) {
       plugins: [metro(project.root, { sourcemap: true })],
     });
     out.metafiles.push(result.metafile);
-    out.extension = result.outputFiles.find((file) =>
-      file.path.endsWith(".js"),
-    ).text;
-    const map = JSON.parse(
-      result.outputFiles.find((file) => file.path.endsWith(".map")).text,
+    const code = result.outputFiles.find((file) => file.path.endsWith(".js"));
+    const sourceMap = result.outputFiles.find((file) =>
+      file.path.endsWith(".map"),
+    );
+    if (code === undefined || sourceMap === undefined) {
+      throw new Error("esbuild wrote no extension bundle or source map");
+    }
+    out.extension = code.text;
+    const map: { sources: string[]; sourceRoot?: string } = JSON.parse(
+      sourceMap.text,
     );
     const sources = map.sources.map((source) =>
       path
@@ -308,13 +359,36 @@ async function bundle(project) {
     compact: false,
     plugins: [require.resolve("@babel/plugin-transform-block-scoping")],
   });
+  if (typeof scoped?.code !== "string") {
+    throw new Error("Babel produced no code for the app bundle");
+  }
   out.app = scoped.code;
   return out;
 }
 
 const definitionKey = Symbol("definition");
 
-function describeExtension(source) {
+interface ExtensionDescription {
+  service: boolean;
+  actions: ActionDescription[];
+}
+
+interface ActionDescription {
+  name: string;
+  title: string;
+  description?: unknown;
+  expose?: "shortcuts"[];
+  stream?: true;
+  input?: unknown;
+  output?: unknown;
+}
+
+const member = (value: unknown, key: PropertyKey): unknown =>
+  (typeof value === "object" && value !== null) || typeof value === "function"
+    ? Reflect.get(value, key)
+    : undefined;
+
+function describeExtension(source: string): ExtensionDescription {
   if (source === "") {
     return { service: false, actions: [] };
   }
@@ -331,20 +405,26 @@ function describeExtension(source) {
   return newer;
 }
 
-function evaluateExtension(source, availableResult) {
-  const failing = (message) => {
+function evaluateExtension(
+  source: string,
+  availableResult: boolean,
+): ExtensionDescription {
+  const failing = (message: string) => {
     const fail = () => {
       throw new Error(message);
     };
-    const get = (_, key) =>
-      key === "__esModule"
-        ? true
-        : typeof key === "symbol" || key === "then"
-          ? undefined
-          : fail();
-    return new Proxy(fail, { get, apply: fail, construct: fail });
+    return new Proxy(fail, {
+      get: (_, key) =>
+        key === "__esModule"
+          ? true
+          : typeof key === "symbol" || key === "then"
+            ? undefined
+            : fail(),
+      apply: fail,
+      construct: fail,
+    });
   };
-  const loading = (name) =>
+  const loading = (name: string) =>
     failing(
       tr(
         "{name} is used while extension.js loads; use it inside run or an action.",
@@ -362,11 +442,13 @@ function evaluateExtension(source, availableResult) {
       "The storage is used while extension.js loads; use it inside run or an action.",
     ),
   );
-  const modules = {
+  const modules: Record<string, unknown> = {
     "@swipt/api": { available: () => availableResult },
     "@swipt/api/swiplet": {
-      defineExtension: (definition) => ({ [definitionKey]: definition }),
-      defineAction: (definition) => definition,
+      defineExtension: (definition: unknown) => ({
+        [definitionKey]: definition,
+      }),
+      defineAction: (definition: unknown) => definition,
       actions: loading("actions"),
       useService: loading("useService"),
     },
@@ -412,7 +494,7 @@ function evaluateExtension(source, availableResult) {
       },
     },
     "@swipt/api/localization": {
-      preferredLocalizations: (localizations) =>
+      preferredLocalizations: (localizations: readonly string[]) =>
         localizations.includes("en") ? ["en"] : localizations.slice(0, 1),
     },
     "expo-sqlite": {
@@ -433,7 +515,7 @@ function evaluateExtension(source, availableResult) {
       defaultDatabaseDirectory: "",
       bundledExtensions: {},
       configureWeb: () => {},
-      deepEqual: function deepEqual(a, b) {
+      deepEqual: function deepEqual(a: unknown, b: unknown): boolean {
         if (a === b) {
           return true;
         }
@@ -448,7 +530,7 @@ function evaluateExtension(source, availableResult) {
         const keys = Object.keys(a);
         return (
           keys.length === Object.keys(b).length &&
-          keys.every((key) => deepEqual(a[key], b[key]))
+          keys.every((key) => deepEqual(member(a, key), member(b, key)))
         );
       },
       SQLiteProvider: () => {
@@ -532,7 +614,9 @@ function evaluateExtension(source, availableResult) {
     CustomEvent,
     DOMException,
     Blob,
-    ...Object.fromEntries(webGlobals.map((name) => [name, globalThis[name]])),
+    ...Object.fromEntries(
+      webGlobals.map((name) => [name, Reflect.get(globalThis, name)]),
+    ),
     fetch: loading("fetch"),
     setTimeout: ignored,
     setInterval: ignored,
@@ -540,19 +624,23 @@ function evaluateExtension(source, availableResult) {
     clearInterval: ignored,
     navigator: { userAgent: "Swipt", language: "en", languages: ["en"] },
   });
-  const factory = vm.runInContext(
+  const factory: (
+    require: (specifier: unknown) => unknown,
+    module: { exports: unknown },
+    exports: unknown,
+  ) => void = vm.runInContext(
     `(function (require, module, exports) {${source}\n})`,
     context,
     { filename: "extension.js" },
   );
-  const module: { exports: any } = { exports: {} };
+  const module: { exports: unknown } = { exports: {} };
   factory(
     (specifier) => {
-      if (!Object.hasOwn(modules, specifier)) {
+      if (typeof specifier !== "string" || !Object.hasOwn(modules, specifier)) {
         throw new Error(
           tr(
             'Swipt doesn\'t provide "{module}" to extensions; bundle it into extension.js.',
-            { module: specifier },
+            { module: String(specifier) },
           ),
         );
       }
@@ -561,20 +649,26 @@ function evaluateExtension(source, availableResult) {
     module,
     module.exports,
   );
-  const definition = (module.exports.default ?? module.exports)?.[
-    definitionKey
-  ];
+  const definition = member(
+    member(module.exports, "default") ?? module.exports,
+    definitionKey,
+  );
   if (definition === undefined) {
     throw new Error(
       tr("The extension's default export isn't the result of defineExtension."),
     );
   }
-  const schema = (name, value, side) => {
+  const schema = (
+    name: string,
+    value: unknown,
+    side: "input" | "output",
+  ): unknown => {
     if (value === undefined) {
       return undefined;
     }
-    const converter = value?.["~standard"]?.jsonSchema;
-    if (typeof converter?.[side] !== "function") {
+    const converter = member(member(value, "~standard"), "jsonSchema");
+    const convert = member(converter, side);
+    if (typeof convert !== "function") {
       throw new Error(
         tr(
           "The {side} schema of the action {action} doesn't implement Standard JSON Schema; use a library that does, such as Zod 4.",
@@ -582,21 +676,24 @@ function evaluateExtension(source, availableResult) {
         ),
       );
     }
-    return converter[side]({ target: "draft-2020-12" });
+    return convert.call(converter, { target: "draft-2020-12" });
   };
-  const actions = Object.entries(definition.actions ?? {}).map(
-    ([name, action]: [string, any]) => {
-      if (typeof action?.title !== "string" || action.title === "") {
+  const actions = Object.entries(member(definition, "actions") ?? {}).map(
+    ([name, action]: [string, unknown]): ActionDescription => {
+      const title = member(action, "title");
+      if (typeof title !== "string" || title === "") {
         throw new Error(
           tr("The action {action} needs a title.", {
             action: JSON.stringify(name),
           }),
         );
       }
-      const expose = action.expose ?? [];
+      const expose = member(action, "expose") ?? [];
       if (
         !Array.isArray(expose) ||
-        !expose.every((caller) => caller === "shortcuts")
+        !expose.every(
+          (caller: unknown): caller is "shortcuts" => caller === "shortcuts",
+        )
       ) {
         throw new Error(
           tr('The action {action} can only expose itself to "shortcuts".', {
@@ -604,23 +701,29 @@ function evaluateExtension(source, availableResult) {
           }),
         );
       }
+      const description = member(action, "description");
+      const input = member(action, "input");
+      const output = member(action, "output");
       return {
         name,
-        title: action.title,
-        ...(action.description ? { description: action.description } : {}),
+        title,
+        ...(description ? { description } : {}),
         ...(expose.length > 0 ? { expose } : {}),
-        ...(typeof action.stream === "function" ? { stream: true } : {}),
-        ...(action.input ? { input: schema(name, action.input, "input") } : {}),
-        ...(action.output
-          ? { output: schema(name, action.output, "output") }
+        ...(typeof member(action, "stream") === "function"
+          ? { stream: true }
           : {}),
+        ...(input ? { input: schema(name, input, "input") } : {}),
+        ...(output ? { output: schema(name, output, "output") } : {}),
       };
     },
   );
-  return { service: typeof definition.run === "function", actions };
+  return {
+    service: typeof member(definition, "run") === "function",
+    actions,
+  };
 }
 
-function swipletManifest(project, output) {
+function swipletManifest(project: Project, output: Bundle) {
   const { service, actions } = describeExtension(output.extension);
   const { config, localizedNames } = project;
   return {
@@ -628,7 +731,7 @@ function swipletManifest(project, output) {
     name: config.name,
     ...(Object.keys(localizedNames).length > 0 ? { localizedNames } : {}),
     ...(config.description ? { description: config.description } : {}),
-    ...(project.manifest.version ? { version: project.manifest.version } : {}),
+    ...(project.version ? { version: project.version } : {}),
     ...(config.versionCode ? { versionCode: config.versionCode } : {}),
     ...(config.icon ? { icon: config.icon } : {}),
     minimumAPILevel: config.minimumAPILevel ?? project.apiLevel,
@@ -638,12 +741,15 @@ function swipletManifest(project, output) {
   };
 }
 
-const sourceFiles = (output) => ({
+const sourceFiles = (output: Bundle) => ({
   "app.js": output.app,
   ...(output.extension ? { "extension.js": output.extension } : {}),
 });
 
-export async function buildProject(root, checker?) {
+export async function buildProject(
+  root: string,
+  checker?: AvailabilityChecker,
+) {
   const project = loadProject(root);
   const output = await bundle(project);
   if (checker === undefined) {
@@ -704,9 +810,9 @@ export async function buildProject(root, checker?) {
   return { id: manifest.id, archive, digest: writeSwiplet(folder, archive) };
 }
 
-function writeSwiplet(folder, archive) {
+function writeSwiplet(folder: string, archive: string) {
   const hash = createHash("sha256");
-  const entries = {};
+  const entries: Zippable = {};
   const names = fs
     .readdirSync(folder, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())

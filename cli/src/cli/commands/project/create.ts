@@ -5,17 +5,21 @@ import path from "node:path";
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
 
-const { version } = JSON.parse(
+const { version }: { version: string } = JSON.parse(
   fs.readFileSync(new URL("../../../../package.json", import.meta.url), "utf8"),
 );
 const require = createRequire(import.meta.url);
-const { peerDependencies } = require("@swipt/api/package.json");
+const {
+  peerDependencies,
+}: {
+  peerDependencies: Partial<Record<string, string>>;
+} = require("@swipt/api/package.json");
 
 const swiptRange = version.includes("-")
   ? version
   : `>=${version}-0 <=${version}`;
 
-const idOf = (name) =>
+const idOf = (name: string) =>
   name
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
@@ -24,7 +28,7 @@ const idOf = (name) =>
     .replace(/[._-]+$/, "") || "swiplet";
 
 const templates = {
-  "package.json": (name) =>
+  "package.json": (name: string) =>
     `${JSON.stringify(
       {
         name: idOf(name),
@@ -110,7 +114,7 @@ export default function App() {
 `,
 };
 
-const quote = (value) =>
+const quote = (value: string) =>
   process.platform === "win32"
     ? /^[\w.:\\/-]+$/.test(value)
       ? value
@@ -119,7 +123,7 @@ const quote = (value) =>
       ? value
       : `'${value.replaceAll("'", "'\\''")}'`;
 
-function createCommand(directory) {
+function createCommand(directory: string) {
   const root = path.resolve(directory);
   if (fs.existsSync(root) && fs.readdirSync(root).length > 0) {
     throw new Error(tr("{directory} isn't empty.", { directory }));

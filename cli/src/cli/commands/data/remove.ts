@@ -1,21 +1,23 @@
 import { tr } from "../../../i18n";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
-import { operandCount } from "./operand";
+import { type ResolveTarget, operandCount } from "./operand";
 
-const removeFile = (target) => (context) =>
-  session(context, async (client) => {
-    const {
-      id,
-      args: [name],
-    } = target(context.args);
-    await client.swiplets.removeDataFile(
-      { swipletId: id, path: name, recursive: context.options.recursive },
-      { signal: context.signal },
-    );
-  });
+const removeFile =
+  (target: ResolveTarget) =>
+  (context: Context<{ device?: string; recursive?: boolean }>) =>
+    session(context, async (client) => {
+      const {
+        id,
+        args: [name],
+      } = target(context.args);
+      await client.swiplets.removeDataFile(
+        { swipletId: id, path: name, recursive: context.options.recursive },
+        { signal: context.signal },
+      );
+    });
 
-export const remove = (operand, target) => {
+export const remove = (operand: string, target: ResolveTarget) => {
   const before = operandCount(operand);
   return defineCommand({
     name: "remove",

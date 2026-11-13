@@ -7,7 +7,8 @@ import readline from "node:readline";
 
 import { label, sameName } from "./connection";
 import { tr } from "./i18n";
-import { choose, interactive, step } from "./output";
+import { type PromptContext, choose, interactive, step } from "./output";
+import type { Passcode } from "./passcode";
 
 const require = createRequire(import.meta.url);
 const target = `${process.platform}-${process.arch}`;
@@ -33,7 +34,7 @@ function driverPath() {
       executable,
     );
   } catch (error) {
-    if (error.code !== "MODULE_NOT_FOUND") {
+    if ((error as NodeJS.ErrnoException).code !== "MODULE_NOT_FOUND") {
       throw error;
     }
     return undefined;
@@ -52,17 +53,34 @@ const usbmuxdHint =
         )
       : undefined;
 
-function driverError({ code, message }) {
-  let text = message;
-  if (code === "usbmuxd_unavailable" && usbmuxdHint !== undefined) {
-    text = `${usbmuxdHint} (${message})`;
-  } else if (code === "driver_running") {
-    text = tr("The driver is already running on this computer; stop it first.");
-  }
-  return Object.assign(new Error(text), { code });
+interface Failure {
+  code?: string;
+  message: string;
 }
 
-function start(args, { input = undefined, signal = undefined } = {}) {
+type Line = { result: unknown } | { error: Failure };
+
+export class DriverError extends Error {
+  declare code: string | undefined;
+
+  constructor({ code, message }: Failure) {
+    super(
+      code === "usbmuxd_unavailable" && usbmuxdHint !== undefined
+        ? `${usbmuxdHint} (${message})`
+        : code === "driver_running"
+          ? tr("The driver is already running on this computer; stop it first.")
+          : message,
+    );
+    this.code = code;
+  }
+}
+
+interface Invocation {
+  input?: unknown;
+  signal?: AbortSignal;
+}
+
+function start(args: string[], { input, signal }: Invocation = {}) {
   const file = driverPath();
   if (file === undefined || !fs.existsSync(file)) {
     throw new Error(
@@ -91,30 +109,28 @@ function start(args, { input = undefined, signal = undefined } = {}) {
   child.stderr.setEncoding("utf8").on("data", (chunk) => {
     logs = (logs + chunk).slice(-crashLogLimit);
   });
-  const lines = [];
-  let firstLine;
-  const first = new Promise<any>((resolve) => {
-    firstLine = resolve;
-  });
+  let last: Line | undefined;
+  const { promise: first, resolve: firstLine } = Promise.withResolvers<
+    Line | undefined
+  >();
   readline.createInterface({ input: child.stdout }).on("line", (line) => {
-    let parsed;
+    let parsed: Line;
     try {
       parsed = JSON.parse(line);
     } catch {
       parsed = { error: { message: line } };
     }
-    lines.push(parsed);
+    last = parsed;
     firstLine(parsed);
   });
-  const exited = new Promise<any>((resolve, reject) => {
+  const exited = new Promise<unknown>((resolve, reject) => {
     child.once("error", reject);
     child.once("close", (code, signalName) => {
       signal?.removeEventListener("abort", stop);
       child.stdin.end();
       firstLine(undefined);
-      const last = lines.at(-1);
-      if (last?.error !== undefined) {
-        reject(driverError(last.error));
+      if (last !== undefined && "error" in last) {
+        reject(new DriverError(last.error));
       } else if (code === 0 || stopped) {
         resolve(last?.result);
       } else {
@@ -130,16 +146,61 @@ function start(args, { input = undefined, signal = undefined } = {}) {
   return { first, exited, stop, stderr: child.stderr };
 }
 
-const driver = async (args, options = {}) => start(args, options).exited;
+const driver = <Result = void>(args: string[], options?: Invocation) =>
+  start(args, options).exited as Promise<Result>;
 
-const onDevice = (device, command, args = [], options = {}) =>
-  driver(["device", command, "-d", device.udid, ...args], options);
+export interface Device {
+  name: string;
+  udid: string;
+  paired: boolean;
+  virtual: boolean;
+}
+
+export interface Application {
+  bundleIdentifier: string;
+  name: string;
+  version: string;
+  bundleVersion: string;
+}
+
+export interface Profile {
+  name: string;
+  uuid: string;
+  teamIdentifier: string;
+  creationDate: string;
+  expirationDate: string;
+}
+
+interface Serving {
+  device: string;
+  udid: string;
+  api: string;
+  mcp: string;
+  network?: string;
+}
+
+const onDevice = <Result = void>(
+  device: Device,
+  command: string,
+  args: string[] = [],
+  options?: Invocation,
+) => driver<Result>(["device", command, "-d", device.udid, ...args], options);
 
 export const randomToken = () => crypto.randomBytes(16).toString("hex");
 
 export function serve(
-  udid,
-  { passcode = undefined, token = "", localNetwork = false, signal },
+  udid: string,
+  {
+    passcode,
+    token = "",
+    localNetwork = false,
+    signal,
+  }: {
+    passcode?: Passcode;
+    token?: string;
+    localNetwork?: boolean;
+    signal: AbortSignal;
+  },
 ) {
   const running = start(
     [
@@ -155,14 +216,15 @@ export function serve(
   );
   return {
     serving: running.first.then(async (line) => {
-      if (line?.result === undefined) {
+      if (line === undefined || !("result" in line)) {
         await running.exited;
         signal.throwIfAborted();
         throw new Error("swipt-driver stopped before serving");
       }
-      const local = new URL(line.result.api);
+      const serving = line.result as Serving;
+      const local = new URL(serving.api);
       local.hostname = "127.0.0.1";
-      return { ...line.result, local: { url: local.origin, token } };
+      return { ...serving, local: { url: local.origin, token } };
     }),
     stderr: running.stderr,
     finished: () => running.exited,
@@ -173,30 +235,34 @@ export function serve(
   };
 }
 
-const deviceLine = (device) => `  ${device.name}  ${device.udid}`;
+const deviceLine = (device: Device) => `  ${device.name}  ${device.udid}`;
 
 interface DeviceQuery {
   required?: boolean;
   virtual?: boolean;
-  filter?: (devices: any[]) => Promise<any[]> | any[];
+  filter?: (devices: Device[]) => Promise<Device[]> | Device[];
 }
 
 async function findDevice(
-  context,
+  context: PromptContext,
   { required = true, virtual = true, filter }: DeviceQuery,
 ) {
   const given = context.options.device;
   const listed = await step(
     tr("looking for devices"),
-    () => driver(["device", "list"]),
+    () => driver<Device[]>(["device", "list"]),
     { transient: true },
   );
   const devices = listed
     .filter((device) => virtual || !device.virtual)
     .map((device) => ({ ...device, name: device.name || device.udid }));
-  const named = (device) =>
-    sameName(device.udid, given) || sameName(label(device.name), label(given));
-  const matches = given ? devices.filter(named) : devices;
+  const matches = given
+    ? devices.filter(
+        (device) =>
+          sameName(device.udid, given) ||
+          sameName(label(device.name), label(given)),
+      )
+    : devices;
   if ((given || !required) && matches.length === 1) {
     return matches[0];
   }
@@ -236,7 +302,10 @@ async function findDevice(
   );
 }
 
-export async function trustedDevice(context, query: DeviceQuery = {}) {
+export async function trustedDevice(
+  context: PromptContext,
+  query: DeviceQuery = {},
+) {
   const device = await findDevice(context, query);
   if (!device.paired) {
     await step(
@@ -253,44 +322,51 @@ export async function trustedDevice(context, query: DeviceQuery = {}) {
   return device;
 }
 
-export const apps = (device) => onDevice(device, "apps");
+export const apps = (device: Device) => onDevice<Application[]>(device, "apps");
 
-export const appRunning = (device, id) => onDevice(device, "running", [id]);
+export const appRunning = (device: Device, id: string) =>
+  onDevice<boolean>(device, "running", [id]);
 
-export const installApp = (device, app, id) =>
+export const installApp = (device: Device, app: string, id: string) =>
   onDevice(device, "install", [app, id]);
 
-export const uninstallApp = (device, id) => onDevice(device, "uninstall", [id]);
+export const uninstallApp = (device: Device, id: string) =>
+  onDevice(device, "uninstall", [id]);
 
-export const launchApp = (device, id, args = []) =>
+export const launchApp = (device: Device, id: string, args: string[] = []) =>
   onDevice(device, "launch", [id, "--", ...args]);
 
-export const openSettings = (device, url) =>
+export const openSettings = (device: Device, url: string) =>
   onDevice(device, "launch", ["--payload-url", url, "com.apple.Preferences"]);
 
-export const terminateApp = (device, id) => onDevice(device, "terminate", [id]);
+export const terminateApp = (device: Device, id: string) =>
+  onDevice(device, "terminate", [id]);
 
-export const configureVirtual = (device, id, name) =>
+export const configureVirtual = (device: Device, id: string, name: string) =>
   onDevice(device, "configure", [id, name]);
 
-export const pairApp = (device, id, file) =>
+export const pairApp = (device: Device, id: string, file: string) =>
   onDevice(device, "pair", [id, file]);
 
-export const containerHasFile = (device, id, file) =>
-  onDevice(device, "has", [id, file]);
+export const containerHasFile = (device: Device, id: string, file: string) =>
+  onDevice<boolean>(device, "has", [id, file]);
 
 export const containerSQL = (
-  device,
-  id,
-  file,
-  statements,
+  device: Device,
+  id: string,
+  file: string,
+  statements: string,
   { query = false } = {},
 ) =>
-  onDevice(device, "sqlite", [id, file, ...(query ? ["--query"] : [])], {
-    input: statements,
-  });
+  onDevice<Record<string, unknown>[]>(
+    device,
+    "sqlite",
+    [id, file, ...(query ? ["--query"] : [])],
+    { input: statements },
+  );
 
-export const provisioningProfiles = (device) => onDevice(device, "profiles");
+export const provisioningProfiles = (device: Device) =>
+  onDevice<Profile[]>(device, "profiles");
 
-export const mountDiskImage = (device) =>
+export const mountDiskImage = (device: Device) =>
   onDevice(device, "mount", ["--disk-image", diskImage()]);

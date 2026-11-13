@@ -1,23 +1,32 @@
+import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 
 import { UsageError } from "../../../client";
 import { tr } from "../../../i18n";
 import { printLog } from "../../../output";
-import { defineCommand } from "../../command";
+import { LogEntrySchema, LogLevel } from "../../../proto/common_pb";
+import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { deviceOption } from "../flags";
 
-const durationUnits = {
-  ns: 1e-6,
-  us: 1e-3,
-  µs: 1e-3,
-  ms: 1,
-  s: 1000,
-  m: 60_000,
-  h: 3_600_000,
-};
+const durationUnits = new Map([
+  ["ns", 1e-6],
+  ["us", 1e-3],
+  ["µs", 1e-3],
+  ["ms", 1],
+  ["s", 1000],
+  ["m", 60_000],
+  ["h", 3_600_000],
+]);
 
-function parseDuration(text, option) {
+const levels = new Map([
+  ["error", LogLevel.ERROR],
+  ["warn", LogLevel.WARN],
+  ["info", LogLevel.INFO],
+  ["debug", LogLevel.DEBUG],
+]);
+
+function parseDuration(text: string | undefined, option: string) {
   if (text === undefined) {
     return 0;
   }
@@ -27,22 +36,26 @@ function parseDuration(text, option) {
   let total = 0;
   let rest = text;
   while (rest !== "") {
-    const match = /^(\d+(?:\.\d*)?|\.\d+)(ns|us|µs|ms|s|m|h)/.exec(rest);
-    if (!match) {
+    const match = /^(\d+(?:\.\d*)?|\.\d+)([^\d.]+)/.exec(rest);
+    const unit = match === null ? undefined : durationUnits.get(match[2]);
+    if (match === null || unit === undefined) {
       throw new UsageError(
         tr(
           "invalid argument {value} for {option}: it's a duration such as 30s or 1m30s",
-          { value: JSON.stringify(text), option },
+          {
+            value: JSON.stringify(text),
+            option,
+          },
         ),
       );
     }
-    total += Number(match[1]) * durationUnits[match[2]];
+    total += Number(match[1]) * unit;
     rest = rest.slice(match[0].length);
   }
   return total;
 }
 
-function parseCount(text, option) {
+function parseCount(text: string | undefined, option: string) {
   if (text === undefined) {
     return undefined;
   }
@@ -57,32 +70,38 @@ function parseCount(text, option) {
   return Number(text);
 }
 
-const readLogs = (context) =>
-  session(context, async (client) => {
-    const { options } = context;
-    const levels = ["error", "warn", "info", "debug"];
-    const index = levels.indexOf(options.level);
-    if (index < 0) {
-      throw new UsageError(tr("--level is error, warn, info or debug"));
-    }
-    const request: Record<string, any> = {
-      follow: options.follow,
-      tail: options.tail ?? 100,
-      swipletId: options.swiplet ?? "",
-      level: index + 1,
-    };
-    if (options.since > 0) {
-      request.since = timestampFromMs(Date.now() - options.since);
-      if (options.tail === undefined) {
-        request.tail = 0xffffffff;
-      }
-    }
-    for await (const response of client.logs.readLogs(request, {
-      signal: context.signal,
-    })) {
-      printLog(response.entry, true);
+async function readLogs(
+  context: Context<{
+    device?: string;
+    follow?: boolean;
+    tail?: string;
+    since?: string;
+    level?: string;
+    swiplet?: string;
+  }>,
+) {
+  const { options } = context;
+  const tail = parseCount(options.tail, "--tail");
+  const since = parseDuration(options.since, "--since");
+  const level = levels.get(options.level ?? "info");
+  if (level === undefined) {
+    throw new UsageError(tr("--level is error, warn, info or debug"));
+  }
+  await session(context, async (client) => {
+    for await (const response of client.logs.readLogs(
+      {
+        follow: options.follow,
+        tail: tail ?? (since > 0 ? 0xffffffff : 100),
+        swipletId: options.swiplet ?? "",
+        level,
+        since: since > 0 ? timestampFromMs(Date.now() - since) : undefined,
+      },
+      { signal: context.signal },
+    )) {
+      printLog(response.entry ?? create(LogEntrySchema), true);
     }
   });
+}
 
 export const logs = defineCommand({
   name: "logs",
@@ -96,19 +115,21 @@ export const logs = defineCommand({
       value: "COUNT",
       help: tr("number of past entries (default 100)"),
     },
-    since: { type: "string", value: "DURATION", help: tr("maximum age") },
+    since: {
+      type: "string",
+      value: "DURATION",
+      help: tr("maximum age"),
+    },
     level: {
       type: "string",
       value: "LEVEL",
       help: tr("minimum level (default info)"),
     },
-    swiplet: { type: "string", value: "ID", help: tr("swiplet ID") },
+    swiplet: {
+      type: "string",
+      value: "ID",
+      help: tr("swiplet ID"),
+    },
   },
-  parse: (options) => ({
-    ...options,
-    tail: parseCount(options.tail, "--tail"),
-    since: parseDuration(options.since, "--since"),
-    level: options.level ?? "info",
-  }),
   run: readLogs,
 });

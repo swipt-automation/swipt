@@ -1,12 +1,13 @@
 import { tr } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { data } from "../data";
+import type { DataTarget } from "../data/operand";
 import { deviceOption } from "../flags";
 import { api } from "./api";
 import { reset } from "./reset";
 import { run } from "./run";
 
-const replData = (args) => ({
+const replData = (args: string[]): DataTarget => ({
   id: "@repl",
   wholeDirectory: (name) =>
     tr(

@@ -1,11 +1,11 @@
 import fs from "node:fs";
 
 import { tr } from "../../../i18n";
-import { defineCommand } from "../../command";
+import { type Context, defineCommand } from "../../command";
 import { deploy, printDeployed } from "../../deploy";
 import { session } from "../../session";
 
-async function installArchive(context) {
+async function installArchive(context: Context<{ device?: string }>) {
   const [archive] = context.args;
   if (!fs.existsSync(archive)) {
     throw new Error(tr("There is no archive at {path}", { path: archive }));

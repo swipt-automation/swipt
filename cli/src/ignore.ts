@@ -1,31 +1,33 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const excluded = (name) =>
+const excluded = (name: string) =>
   name.startsWith(".") || name === "node_modules" || name === "dist";
 
-const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 interface Rule {
   negated: boolean;
   directory: boolean;
-  pattern?: RegExp;
+  pattern: RegExp;
+  base: string;
 }
 
-function parseRule(line) {
+function parseRule(line: string, base: string): Rule | undefined {
   line = line.replace(/[ \t\r]+$/, "");
   if (line === "" || line.startsWith("#")) {
     return undefined;
   }
-  const rule: Rule = { negated: false, directory: false };
+  let negated = false;
+  let directory = false;
   if (line.startsWith("!")) {
-    rule.negated = true;
+    negated = true;
     line = line.slice(1);
   } else if (line.startsWith("\\")) {
     line = line.slice(1);
   }
   if (line.endsWith("/")) {
-    rule.directory = true;
+    directory = true;
     line = line.replace(/\/+$/, "");
   }
   if (line === "") {
@@ -65,14 +67,18 @@ function parseRule(line) {
     }
   }
   try {
-    rule.pattern = new RegExp(`${expression}$`);
+    return {
+      negated,
+      directory,
+      pattern: new RegExp(`${expression}$`),
+      base,
+    };
   } catch {
     return undefined;
   }
-  return rule;
 }
 
-export const relativePath = (root, name) => {
+export const relativePath = (root: string, name: string) => {
   const relative = path.relative(root, name);
   return relative === "" ||
     relative.startsWith("..") ||
@@ -82,10 +88,10 @@ export const relativePath = (root, name) => {
 };
 
 export class Ignorer {
-  rules = [];
+  rules: Rule[] = [];
 
-  constructor(root) {
-    const walk = (directory) => {
+  constructor(root: string) {
+    const walk = (directory: string) => {
       const relative = relativePath(root, directory);
       if (relative !== "" && this.ignored(relative, true)) {
         return;
@@ -106,7 +112,7 @@ export class Ignorer {
     walk(root);
   }
 
-  read(name, base) {
+  read(name: string, base: string) {
     let text;
     try {
       text = fs.readFileSync(name, "utf8");
@@ -114,14 +120,14 @@ export class Ignorer {
       return;
     }
     for (const line of text.split("\n")) {
-      const rule = parseRule(line);
+      const rule = parseRule(line, base);
       if (rule) {
-        this.rules.push({ ...rule, base });
+        this.rules.push(rule);
       }
     }
   }
 
-  ignored(relative, directory) {
+  ignored(relative: string, directory: boolean) {
     const parts = relative.split("/");
     return parts.some(
       (part, index) =>
@@ -133,7 +139,7 @@ export class Ignorer {
     );
   }
 
-  matches(relative, directory) {
+  matches(relative: string, directory: boolean) {
     let ignored = false;
     for (const rule of this.rules) {
       if (rule.directory && !directory) {

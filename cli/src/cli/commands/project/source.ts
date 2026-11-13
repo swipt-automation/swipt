@@ -5,40 +5,45 @@ import path from "node:path";
 import { strFromU8, unzipSync } from "fflate";
 
 import { tr } from "../../../i18n";
+import { errorMessage } from "../../../output";
 import { idPattern } from "../../../project";
 import { defineCommand } from "../../command";
 
-function loadSource(root) {
-  const manifest = JSON.parse(
-    fs.readFileSync(path.join(root, "package.json"), "utf8"),
-  );
-  const config = manifest.source ?? {};
-  for (const field of ["name", "image", "url"]) {
-    if (config[field] !== undefined && typeof config[field] !== "string") {
-      throw new Error(
-        tr('"{field}" in package.json must be a string.', {
-          field: `source.${field}`,
-        }),
-      );
-    }
-  }
-  const localizedNames = config.localizedNames ?? {};
-  if (
-    localizedNames === null ||
-    typeof localizedNames !== "object" ||
-    !Object.values(localizedNames).every((name) => typeof name === "string")
-  ) {
+interface Icon {
+  symbol: string;
+  color?: string;
+  symbolColor?: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStringRecord = (value: unknown): value is Record<string, string> =>
+  isRecord(value) &&
+  Object.values(value).every((name) => typeof name === "string");
+
+function stringField(
+  record: Record<string, unknown>,
+  name: string,
+  field: string,
+) {
+  const value = record[name];
+  if (value !== undefined && typeof value !== "string") {
     throw new Error(
-      tr(
-        '"source.localizedNames" in package.json must map languages to names.',
-      ),
+      tr('"{field}" in package.json must be a string.', { field }),
     );
   }
+  return value;
+}
+
+function loadIcon(icon: unknown): Icon | undefined {
+  if (icon === undefined) {
+    return undefined;
+  }
   if (
-    config.icon !== undefined &&
-    (typeof config.icon?.symbol !== "string" ||
-      (config.icon.color !== undefined &&
-        typeof config.icon.color !== "string"))
+    !isRecord(icon) ||
+    typeof icon.symbol !== "string" ||
+    (icon.color !== undefined && typeof icon.color !== "string")
   ) {
     throw new Error(
       tr(
@@ -46,43 +51,76 @@ function loadSource(root) {
       ),
     );
   }
-  if (
-    config.icon?.symbolColor !== undefined &&
-    typeof config.icon.symbolColor !== "string"
-  ) {
+  return {
+    symbol: icon.symbol,
+    color: icon.color,
+    symbolColor: stringField(icon, "symbolColor", "source.icon.symbolColor"),
+  };
+}
+
+function workspacePatterns(workspaces: unknown) {
+  const [field, patterns] = Array.isArray(workspaces)
+    ? ["workspaces", workspaces]
+    : isRecord(workspaces) && Array.isArray(workspaces.packages)
+      ? ["workspaces.packages", workspaces.packages]
+      : ["", []];
+  return patterns.map((pattern: unknown, index) => {
+    if (typeof pattern !== "string") {
+      throw new Error(
+        tr('"{field}" in package.json must be a string.', {
+          field: `${field}[${index}]`,
+        }),
+      );
+    }
+    return pattern;
+  });
+}
+
+function loadSource(root: string) {
+  const parsed: unknown = JSON.parse(
+    fs.readFileSync(path.join(root, "package.json"), "utf8"),
+  );
+  const manifest = isRecord(parsed) ? parsed : {};
+  const config = isRecord(manifest.source) ? manifest.source : {};
+  const name = stringField(config, "name", "source.name");
+  const image = stringField(config, "image", "source.image");
+  const url = stringField(config, "url", "source.url");
+  const localizedNames = config.localizedNames ?? {};
+  if (!isStringRecord(localizedNames)) {
     throw new Error(
-      tr('"{field}" in package.json must be a string.', {
-        field: "source.icon.symbolColor",
-      }),
+      tr(
+        '"source.localizedNames" in package.json must map languages to names.',
+      ),
     );
   }
-  let prefix;
-  if (config.url !== undefined) {
+  const icon = loadIcon(config.icon);
+  let prefix: URL | undefined;
+  if (url !== undefined) {
     try {
-      prefix = new URL(
-        config.url.endsWith("/") ? config.url : `${config.url}/`,
-      );
+      prefix = new URL(url.endsWith("/") ? url : `${url}/`);
     } catch {
       throw new Error(
         tr('"source.url" in package.json isn\'t an absolute URL.'),
       );
     }
   }
-  const workspaces = Array.isArray(manifest.workspaces)
-    ? manifest.workspaces
-    : (manifest.workspaces?.packages ?? []);
-  return { root, config, localizedNames, prefix, workspaces };
+  const workspaces = workspacePatterns(manifest.workspaces);
+  return { root, name, image, localizedNames, icon, prefix, workspaces };
 }
 
-function workspaceSwiplets(source) {
-  const files = [];
+function workspaceSwiplets(source: ReturnType<typeof loadSource>) {
+  const files: string[] = [];
   for (const pattern of source.workspaces) {
     for (const directory of fs.globSync(pattern, { cwd: source.root }).sort()) {
       const project = path.join(source.root, directory, "package.json");
       if (!fs.existsSync(project)) {
         continue;
       }
-      const id = JSON.parse(fs.readFileSync(project, "utf8")).swiplet?.id;
+      const manifest: unknown = JSON.parse(fs.readFileSync(project, "utf8"));
+      const id =
+        isRecord(manifest) && isRecord(manifest.swiplet)
+          ? manifest.swiplet.id
+          : undefined;
       if (typeof id !== "string") {
         continue;
       }
@@ -101,7 +139,7 @@ function workspaceSwiplets(source) {
   return files;
 }
 
-function readSwiplet(file) {
+function readSwiplet(file: string) {
   const data = fs.readFileSync(file);
   let entry;
   try {
@@ -109,19 +147,23 @@ function readSwiplet(file) {
       filter: ({ name }) => name === "manifest.json",
     })["manifest.json"];
   } catch (error) {
-    throw new Error(`${file}: ${error.message}`);
+    throw new Error(`${file}: ${errorMessage(error)}`);
   }
   if (entry === undefined) {
     throw new Error(`${file} has no manifest.json`);
   }
-  const manifest = JSON.parse(strFromU8(entry));
-  if (typeof manifest.id !== "string" || !idPattern.test(manifest.id)) {
+  const manifest: unknown = JSON.parse(strFromU8(entry));
+  if (
+    !isRecord(manifest) ||
+    typeof manifest.id !== "string" ||
+    !idPattern.test(manifest.id)
+  ) {
     throw new Error(`${file} has no valid swiplet id in its manifest`);
   }
-  return { file, manifest, data };
+  return { file, id: manifest.id, manifest, data };
 }
 
-function sourceCommand(root, given) {
+function sourceCommand(root: string, given: string[]) {
   const source = loadSource(root);
   const files =
     given.length > 0
@@ -134,34 +176,33 @@ function sourceCommand(root, given) {
       ),
     );
   }
-  const swiplets = new Map();
+  const swiplets = new Map<string, ReturnType<typeof readSwiplet>>();
   for (const read of files.map(readSwiplet)) {
-    const { id } = read.manifest;
-    if (swiplets.has(id)) {
+    const first = swiplets.get(read.id);
+    if (first !== undefined) {
       throw new Error(
         tr("{id} is both {first} and {second}", {
-          id,
-          first: swiplets.get(id).file,
+          id: read.id,
+          first: first.file,
           second: read.file,
         }),
       );
     }
-    swiplets.set(id, read);
+    swiplets.set(read.id, read);
   }
   const image =
-    source.config.image === undefined
+    source.image === undefined
       ? undefined
       : {
-          name: path.basename(source.config.image),
-          data: fs.readFileSync(path.resolve(root, source.config.image)),
+          name: path.basename(source.image),
+          data: fs.readFileSync(path.resolve(root, source.image)),
         };
-  const located = (name) =>
+  const located = (name: string) =>
     source.prefix ? new URL(name, source.prefix).href : name;
   const dist = path.join(root, "dist");
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
-  const entries = [...swiplets.keys()].map((id) => {
-    const { manifest, data } = swiplets.get(id);
+  const entries = [...swiplets.values()].map(({ id, manifest, data }) => {
     const name = `${id}.swiplet`;
     fs.writeFileSync(path.join(dist, name), data);
     return {
@@ -175,19 +216,17 @@ function sourceCommand(root, given) {
     fs.writeFileSync(path.join(dist, image.name), image.data);
   }
   const index = {
-    ...(source.config.name ? { name: source.config.name } : {}),
+    ...(source.name ? { name: source.name } : {}),
     ...(Object.keys(source.localizedNames).length > 0
       ? { localizedNames: source.localizedNames }
       : {}),
-    ...(source.config.icon
+    ...(source.icon
       ? {
           icon: {
-            symbol: source.config.icon.symbol,
-            ...(source.config.icon.color
-              ? { color: source.config.icon.color }
-              : {}),
-            ...(source.config.icon.symbolColor
-              ? { symbolColor: source.config.icon.symbolColor }
+            symbol: source.icon.symbol,
+            ...(source.icon.color ? { color: source.icon.color } : {}),
+            ...(source.icon.symbolColor
+              ? { symbolColor: source.icon.symbolColor }
               : {}),
           },
         }
