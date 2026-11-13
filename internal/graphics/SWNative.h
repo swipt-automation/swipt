@@ -1,8 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/JavaScriptCore.h>
 
-@class SWEngine;
-
 @protocol SWNativeExports <JSExport>
 - (JSValue *)prepare:(NSString *)method :(NSString *)arguments :(JSValue *)objects;
 - (JSValue *)take:(NSInteger)identifier;
@@ -10,5 +8,5 @@
 @end
 
 @interface SWNative : NSObject <SWNativeExports>
-- (instancetype)initWithEngine:(SWEngine *)engine;
+- (instancetype)initWithEngine:(uintptr_t)engine;
 @end

@@ -4,6 +4,5 @@
 @property (nonatomic, readonly) BOOL isCancelled;
 
 - (instancetype)initWithCancelled:(BOOL (^)(void))cancelled;
-- (void)cancel;
 - (BOOL)failIfCancelled:(NSError **)error;
 @end

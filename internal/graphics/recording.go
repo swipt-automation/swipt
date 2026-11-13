@@ -8,13 +8,17 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/swipt-automation/swipt/internal/atomicfile"
 	"github.com/swipt-automation/swipt/internal/automation"
+	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/rfb/media"
 )
 
-const recordingManifest = "recording.json"
+const recordingManifestFile = "recording.json"
 
 type recordingSegment struct {
 	File     string  `json:"file"`
@@ -23,32 +27,30 @@ type recordingSegment struct {
 	Turns    int     `json:"turns"`
 }
 
-type recordingScreen struct {
-	Width  int     `json:"width"`
-	Height int     `json:"height"`
-	Scale  float64 `json:"scale"`
-}
-
-type recordingMetadata struct {
+type recordingManifest struct {
 	Start    float64            `json:"start"`
 	Duration float64            `json:"duration"`
-	Screen   recordingScreen    `json:"screen"`
+	Screen   device.ScreenInfo  `json:"screen"`
 	Segments []recordingSegment `json:"segments"`
 }
 
 type recordingSession struct {
 	directory string
 	stream    *screenStream
-	access    sync.Mutex
 	began     chan struct{}
-	origin    float64
-	last      float64
-	segments  []recordingSegment
-	writer    *movieWriter
-	format    *hevcFormat
-	waiting   bool
-	stopped   bool
-	failure   error
+
+	access   sync.Mutex
+	origin   float64
+	last     float64
+	segments []recordingSegment
+	writer   *movieWriter
+	waiting  bool
+	stopped  bool
+	failure  error
+}
+
+func milliseconds(at time.Time) float64 {
+	return float64(at.UnixNano()) / float64(time.Millisecond)
 }
 
 func recordScreen(call *automation.GraphicsCall, stream *screenStream, root, path string) (*recordingSession, error) {
@@ -64,10 +66,10 @@ func recordScreen(call *automation.GraphicsCall, stream *screenStream, root, pat
 		return nil, failure(nameState, "graphics: ", filepath.Base(directory), " is not empty")
 	}
 	session := &recordingSession{directory: directory, stream: stream, began: make(chan struct{}), waiting: true}
-	if !stream.addRecording(session) {
-		return nil, errScreenClosed
+	if err = stream.addRecording(session); err != nil {
+		return nil, err
 	}
-	stream.source.device.RequestKeyFrame()
+	stream.device.RequestKeyFrame()
 	timer := time.NewTimer(screenFirstFrameLimit)
 	defer timer.Stop()
 	select {
@@ -89,55 +91,50 @@ func recordScreen(call *automation.GraphicsCall, stream *screenStream, root, pat
 	return nil, err
 }
 
-func (r *recordingSession) append(unit *accessUnit) (needsKeyFrame bool) {
+func (r *recordingSession) append(unit *media.AccessUnit, format *hevcFormat, damaged bool) (needsKeyFrame bool) {
 	r.access.Lock()
 	defer r.access.Unlock()
 	if r.stopped || r.failure != nil {
 		return false
 	}
-	if unit.damaged {
+	if damaged {
 		r.waiting = true
 		return true
 	}
-	if unit.nal(nalSPS) != nil {
-		if format, err := parseHEVCFormat(unit, r.stream.source.info.Width, r.stream.source.info.Height); err == nil {
-			r.format = format
-		}
-	}
-	turns := unit.turns()
-	if r.writer == nil || (r.format != nil && (r.writer.turns != turns || !r.format.equal(r.writer.format))) {
+	if r.writer == nil || (format != nil && (r.writer.turns != unit.Turns || format != r.writer.format)) {
 		if r.writer != nil {
 			r.closeWriter()
 			if r.failure != nil {
 				return false
 			}
 		}
-		if !unit.keyframe() || r.format == nil {
+		if !unit.Keyframe() || format == nil {
 			r.waiting = true
 			return true
 		}
 		file := fmt.Sprint(len(r.segments)+1, ".mov")
-		writer, err := newMovieWriter(filepath.Join(r.directory, file), r.format, turns)
+		writer, err := newMovieWriter(filepath.Join(r.directory, file), format, unit)
 		if err != nil {
-			r.fail(err)
+			r.failLocked(err)
 			return false
 		}
+		arrival := milliseconds(unit.Arrival)
 		if len(r.segments) == 0 {
-			r.origin = unit.arrival
+			r.origin = arrival
 			close(r.began)
 		}
 		r.writer = writer
-		r.segments = append(r.segments, recordingSegment{File: file, Start: unit.arrival - r.origin, Turns: turns})
+		r.segments = append(r.segments, recordingSegment{File: file, Start: arrival - r.origin, Turns: unit.Turns})
 		r.waiting = false
 	}
 	if r.waiting {
-		if !unit.keyframe() {
+		if !unit.Keyframe() {
 			return true
 		}
 		r.waiting = false
 	}
 	r.writer.append(unit)
-	r.last = unit.arrival
+	r.last = milliseconds(unit.Arrival)
 	if r.writer.failure != nil {
 		r.closeWriter()
 	}
@@ -145,6 +142,12 @@ func (r *recordingSession) append(unit *accessUnit) (needsKeyFrame bool) {
 }
 
 func (r *recordingSession) fail(err error) {
+	r.access.Lock()
+	defer r.access.Unlock()
+	r.failLocked(err)
+}
+
+func (r *recordingSession) failLocked(err error) {
 	if r.failure != nil {
 		return
 	}
@@ -156,7 +159,7 @@ func (r *recordingSession) fail(err error) {
 
 func (r *recordingSession) closeWriter() {
 	if err := r.writer.finish(); err != nil {
-		r.fail(err)
+		r.failLocked(err)
 	}
 	r.writer = nil
 }
@@ -185,11 +188,11 @@ func (r *recordingSession) finish() error {
 		}
 		return failure(nameUnavailable, "graphics: the recording got no frames; the screen may be off or another app may hold it")
 	}
-	duration := max(r.last-r.origin, 0) + 1000.0/60
-	metadata := recordingMetadata{
+	duration := max(r.last-r.origin, 0) + float64(lastFrameDuration)/float64(time.Millisecond)
+	manifest := recordingManifest{
 		Start:    rounded(r.origin),
 		Duration: rounded(duration),
-		Screen:   recordingScreen{Width: r.stream.source.info.Width, Height: r.stream.source.info.Height, Scale: r.stream.source.info.Scale},
+		Screen:   r.stream.info,
 		Segments: make([]recordingSegment, len(r.segments)),
 	}
 	for index, segment := range r.segments {
@@ -197,19 +200,19 @@ func (r *recordingSession) finish() error {
 		if index+1 < len(r.segments) {
 			following = r.segments[index+1].Start
 		}
-		metadata.Segments[index] = recordingSegment{File: segment.File, Start: rounded(segment.Start), Duration: rounded(following - segment.Start), Turns: segment.Turns}
+		manifest.Segments[index] = recordingSegment{File: segment.File, Start: rounded(segment.Start), Duration: rounded(following - segment.Start), Turns: segment.Turns}
 	}
-	encoded, err := json.Marshal(metadata)
+	encoded, err := json.Marshal(manifest)
 	if err != nil {
 		return err
 	}
-	if err = writeAtomically(filepath.Join(r.directory, recordingManifest), encoded); err != nil {
+	if err = atomicfile.Write(filepath.Join(r.directory, recordingManifestFile), encoded, 0o644); err != nil {
 		return err
 	}
 	return r.failure
 }
 
-func (r *recordingSession) abandon() {
+func (r *recordingSession) release() {
 	r.access.Lock()
 	running := !r.stopped
 	r.stopped = true
@@ -222,37 +225,48 @@ func (r *recordingSession) abandon() {
 		if err == nil {
 			return
 		}
-		options := current.Load().options
+		graphics := r.stream.engine.graphics
 		message := automation.Message(err)
-		options.Logger.Error("save the abandoned recording: ", message)
-		if options.OnRecordingFailed != nil {
-			options.OnRecordingFailed(message)
+		graphics.logger.Error("save the abandoned recording: ", message)
+		if graphics.onRecordingFailed != nil {
+			graphics.onRecordingFailed(message)
 		}
 	}()
 }
 
-func writeAtomically(path string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	staging, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+"-*")
+func readRecordingManifest(directory string) (*recordingManifest, error) {
+	data, err := os.ReadFile(filepath.Join(directory, recordingManifestFile))
 	if err != nil {
-		return err
+		return nil, failure(nameNotFound, "graphics: ", filepath.Base(directory), " has no ", recordingManifestFile)
 	}
-	err = staging.Chmod(0o644)
-	if err == nil {
-		_, err = staging.Write(data)
+	var manifest recordingManifest
+	if err = json.Unmarshal(data, &manifest); err != nil {
+		return nil, failure(nameData, "graphics: read ", recordingManifestFile, ": ", err.Error())
 	}
-	if closeErr := staging.Close(); err == nil {
-		err = closeErr
+	if manifest.Duration < 0 {
+		return nil, failure(nameData, "graphics: ", recordingManifestFile, " has a negative duration")
 	}
-	if err == nil {
-		err = os.Rename(staging.Name(), path)
+	if manifest.Screen.Scale <= 0 {
+		manifest.Screen.Scale = 1
 	}
-	if err != nil {
-		os.Remove(staging.Name())
+	var segments []recordingSegment
+	for _, segment := range manifest.Segments {
+		if segment.File == "" || segment.File == "." || segment.File == ".." || strings.ContainsAny(segment.File, `/\`) {
+			continue
+		}
+		segment.Turns &= 3
+		segments = append(segments, segment)
 	}
-	return err
+	if len(segments) == 0 {
+		return nil, failure(nameData, "graphics: ", recordingManifestFile, " lists no video")
+	}
+	manifest.Segments = segments
+	return &manifest, nil
+}
+
+func (m *recordingManifest) info() string {
+	encoded, _ := json.Marshal(map[string]float64{"start": rounded(m.Start), "duration": rounded(m.Duration)})
+	return string(encoded)
 }
 
 func rounded(value float64) float64 {

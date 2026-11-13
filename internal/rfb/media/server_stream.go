@@ -89,7 +89,7 @@ func ListenServerStream(config ServerStreamConfig) (*ServerStream, error) {
 		logger: config.Logger,
 		ctx:    ctx,
 		cancel: cancel,
-		video:  newServerLeg("video", videoConn, videoClockRate, initial, config.Logger),
+		video:  newServerLeg("video", videoConn, VideoClockRate, initial, config.Logger),
 	}
 	audioConn, err := config.ListenUDP(config.AudioPort)
 	if err != nil {

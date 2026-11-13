@@ -25,9 +25,9 @@ import (
 var rewriteSource string
 
 var (
-	errReset     = E.New("a reset of the JavaScript state interrupted the call")
-	errSession   = E.New("the JavaScript session ended")
-	errUnsettled = E.New("the script awaits a promise that nothing can settle")
+	errReset        = E.New("a reset of the JavaScript state interrupted the call")
+	ErrSessionEnded = E.New("the JavaScript session ended")
+	errUnsettled    = E.New("the script awaits a promise that nothing can settle")
 )
 
 type TimeLimitError struct {
@@ -75,8 +75,8 @@ func ScriptFailure(err error) (*Failure, bool) {
 		}
 		return failure, true
 	}
-	if E.IsMulti(err, context.DeadlineExceeded, errReset, errSession, errUnsettled) {
-		return &Failure{Name: failureName(err), Message: Message(err)}, true
+	if E.IsMulti(err, context.DeadlineExceeded, errReset, ErrSessionEnded, errUnsettled) {
+		return &Failure{Name: FailureName(err), Message: Message(err)}, true
 	}
 	return nil, false
 }
@@ -127,7 +127,7 @@ func (r *REPL) session() (*engine, error) {
 	r.access.Lock()
 	defer r.access.Unlock()
 	if r.closed {
-		return nil, errSession
+		return nil, ErrSessionEnded
 	}
 	if r.engine == nil {
 		e, err := r.host.newREPLEngine(r.id, r.dialog)
@@ -194,7 +194,7 @@ func (r *REPL) Reset(ctx context.Context) error {
 	r.access.Lock()
 	if r.closed {
 		r.access.Unlock()
-		return errSession
+		return ErrSessionEnded
 	}
 	e := r.engine
 	r.engine = nil
@@ -208,7 +208,7 @@ func (r *REPL) Close() {
 	e := r.engine
 	r.engine = nil
 	r.access.Unlock()
-	_ = r.discard(context.Background(), e, errSession)
+	_ = r.discard(context.Background(), e, ErrSessionEnded)
 }
 
 func (r *REPL) discard(ctx context.Context, e *engine, cause error) error {

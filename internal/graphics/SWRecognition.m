@@ -7,7 +7,6 @@
 #import "SWArguments.h"
 #import "SWCancelToken.h"
 #import "SWError.h"
-#import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWJSON.h"
 #import "SWRaster.h"
@@ -174,7 +173,7 @@ static BOOL SWPerform(VNRequest *request, SWRaster *raster, SWCancelToken *token
     return performed;
 }
 
-void SWRecognitionWarm(void) {
+void SWRecognitionWarm(void (^done)(NSError *failure)) {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         VNRecognizeTextRequest *request = [VNRecognizeTextRequest new];
         request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
@@ -183,9 +182,8 @@ void SWRecognitionWarm(void) {
         if (languages != nil) {
             request.recognitionLanguages = languages;
         }
-        if (languages == nil || !SWRestrict(request, &failure) || !SWPerform(request, [[SWRaster alloc] initWithWidth:64 height:32 channels:4], nil, &failure)) {
-            SWLogError([NSString stringWithFormat:@"warm the text recognizer: %@", SWErrorMessageOf(failure)]);
-        }
+        BOOL warmed = languages != nil && SWRestrict(request, &failure) && SWPerform(request, [[SWRaster alloc] initWithWidth:64 height:32 channels:4], nil, &failure);
+        done(warmed ? nil : failure ?: SWMakeError(SWErrorNameGeneric, @"graphics: the text recognizer did not start"));
     });
 }
 

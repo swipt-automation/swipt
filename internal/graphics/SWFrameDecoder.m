@@ -6,24 +6,6 @@
 #import <stdatomic.h>
 
 #import "SWError.h"
-#import "SWGoBridge.h"
-
-static const int32_t SWMediaTimescale = 24000;
-
-CF_RETURNS_RETAINED static CMVideoFormatDescriptionRef SWHEVCFormat(const swipt_graphics_unit *unit) {
-    if (unit->vps.length == 0 || unit->sps.length == 0 || unit->pps.length == 0) {
-        return NULL;
-    }
-    const uint8_t *pointers[3] = {unit->vps.bytes, unit->sps.bytes, unit->pps.bytes};
-    const size_t sizes[3] = {unit->vps.length, unit->sps.length, unit->pps.length};
-    CMVideoFormatDescriptionRef description = NULL;
-    OSStatus status = CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL, 3, pointers, sizes, 4, NULL, &description);
-    if (status != noErr) {
-        SWLogError([NSString stringWithFormat:@"read the HEVC parameter sets: %@", SWErrorMessageOf(SWErrorStatus(status))]);
-        return NULL;
-    }
-    return description;
-}
 
 CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_unit *unit, CMVideoFormatDescriptionRef format) {
     size_t size = unit->sample.length;
@@ -36,7 +18,7 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
     }
     CMSampleBufferRef sample = NULL;
     if (CMBlockBufferReplaceDataBytes(unit->sample.bytes, block, 0, size) == noErr) {
-        CMSampleTimingInfo timing = {.duration = kCMTimeInvalid, .presentationTimeStamp = CMTimeMake(unit->time, SWMediaTimescale), .decodeTimeStamp = kCMTimeInvalid};
+        CMSampleTimingInfo timing = {.duration = kCMTimeInvalid, .presentationTimeStamp = CMTimeMake(unit->time, unit->timescale), .decodeTimeStamp = kCMTimeInvalid};
         CMSampleBufferCreateReady(NULL, block, format, 1, 1, &timing, 1, &size, &sample);
     }
     CFRelease(block);
@@ -52,6 +34,8 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
 }
 
 @implementation SWFrameDecoder {
+    void (^_onFrame)(CVPixelBufferRef image, double arrival, NSInteger turns);
+    void (^_onFailure)(NSString *message);
     CMVideoFormatDescriptionRef _format;
     VTDecompressionSessionRef _session;
     BOOL _waitingForKeyframe;
@@ -60,23 +44,31 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
     OSStatus _reportedStatus;
 }
 
-- (instancetype)init {
+- (instancetype)initWithFrame:(void (^)(CVPixelBufferRef image, double arrival, NSInteger turns))onFrame failure:(void (^)(NSString *message))onFailure {
     self = [super init];
     if (self) {
+        _onFrame = [onFrame copy];
+        _onFailure = [onFailure copy];
         _waitingForKeyframe = YES;
     }
     return self;
 }
 
 - (void)dealloc {
+    [self close];
+}
+
+- (void)close {
     [self closeSession];
     if (_format != NULL) {
         CFRelease(_format);
+        _format = NULL;
     }
 }
 
 - (void)closeSession {
     if (_session != NULL) {
+        VTDecompressionSessionWaitForAsynchronousFrames(_session);
         VTDecompressionSessionInvalidate(_session);
         CFRelease(_session);
         _session = NULL;
@@ -97,7 +89,7 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
     VTDecompressionSessionRef created = NULL;
     OSStatus status = VTDecompressionSessionCreate(NULL, format, NULL, (__bridge CFDictionaryRef)attributes, NULL, &created);
     if (status != noErr || created == NULL) {
-        SWLogError([NSString stringWithFormat:@"create the screen decoder: %@", SWErrorMessageOf(SWErrorStatus(status))]);
+        _onFailure([NSString stringWithFormat:@"create the screen decoder: %@", SWErrorMessageOf(SWErrorStatus(status))]);
         return NO;
     }
     VTSessionSetProperty(created, kVTDecompressionPropertyKey_RealTime, kCFBooleanTrue);
@@ -108,14 +100,18 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
 - (void)reportStatus:(OSStatus)status {
     if (status != _reportedStatus) {
         _reportedStatus = status;
-        SWLogError([NSString stringWithFormat:@"decode the screen: %@", SWErrorMessageOf(SWErrorStatus(status))]);
+        _onFailure([NSString stringWithFormat:@"decode the screen: %@", SWErrorMessageOf(SWErrorStatus(status))]);
     }
 }
 
 - (BOOL)adoptParameterSets:(const swipt_graphics_unit *)unit {
-    CMVideoFormatDescriptionRef described = SWHEVCFormat(unit);
-    if (described == NULL) {
-        return YES;
+    const uint8_t *pointers[3] = {unit->vps.bytes, unit->sps.bytes, unit->pps.bytes};
+    const size_t sizes[3] = {unit->vps.length, unit->sps.length, unit->pps.length};
+    CMVideoFormatDescriptionRef described = NULL;
+    OSStatus status = CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL, 3, pointers, sizes, 4, NULL, &described);
+    if (status != noErr) {
+        _onFailure([NSString stringWithFormat:@"read the HEVC parameter sets: %@", SWErrorMessageOf(SWErrorStatus(status))]);
+        return NO;
     }
     BOOL adopted = YES;
     if (_format == NULL || !CMFormatDescriptionEqual(_format, described) || _session == NULL) {
@@ -173,7 +169,7 @@ CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_u
                     atomic_store(&decoder->_failed, true);
                     return;
                 }
-                decoder.onFrame(image, arrival, turns);
+                decoder->_onFrame(image, arrival, turns);
             }
         });
     CFRelease(sample);

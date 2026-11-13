@@ -2,13 +2,10 @@
 
 #import "SWCancelToken.h"
 
-#import <stdatomic.h>
-
 #import "SWError.h"
 
 @implementation SWCancelToken {
     BOOL (^_cancelled)(void);
-    atomic_bool _flag;
 }
 
 - (instancetype)initWithCancelled:(BOOL (^)(void))cancelled {
@@ -20,11 +17,7 @@
 }
 
 - (BOOL)isCancelled {
-    return atomic_load(&_flag) || _cancelled();
-}
-
-- (void)cancel {
-    atomic_store(&_flag, true);
+    return _cancelled();
 }
 
 - (BOOL)failIfCancelled:(NSError **)error {

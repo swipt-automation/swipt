@@ -10,9 +10,7 @@ NSString *const SWErrorNameRange = @"RangeError";
 NSString *const SWErrorNameData = @"DataError";
 NSString *const SWErrorNameTimeout = @"TimeoutError";
 NSString *const SWErrorNameUnavailable = @"UnavailableError";
-NSString *const SWErrorNameState = @"InvalidStateError";
 NSString *const SWErrorNameAbort = @"AbortError";
-NSString *const SWErrorNameNotFound = @"NotFoundError";
 
 static NSString *const SWErrorDomain = @"io.nekohasekai.swipt.graphics";
 static NSString *const SWErrorNameKey = @"name";
@@ -67,10 +65,6 @@ NSError *SWErrorFromFailure(NSString *failure) {
 
 NSError *SWErrorAborted(void) {
     return SWMakeError(SWErrorNameAbort, @"the operation was aborted");
-}
-
-NSError *SWErrorEnded(void) {
-    return SWMakeError(SWErrorNameAbort, @"the JavaScript session ended");
 }
 
 NSString *SWErrorNameOf(NSError *error) {

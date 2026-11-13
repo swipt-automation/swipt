@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"encoding/binary"
 	"maps"
 	"slices"
 	"sync"
@@ -44,13 +43,17 @@ type ScreenInfo struct {
 	Scale  float64 `json:"scale"`
 }
 
+type ScreenConsumer interface {
+	ScreenUnit(unit *media.AccessUnit)
+	ScreenEnded(err error)
+}
+
 type ScreenStream struct {
-	screens *screenStreams
-	info    ScreenInfo
-	options ScreenStreamOptions
-	deliver func(batch []byte)
-	end     func(err error)
-	release func()
+	screens  *screenStreams
+	info     ScreenInfo
+	options  ScreenStreamOptions
+	consumer ScreenConsumer
+	release  func()
 }
 
 type screenCapture struct {
@@ -76,7 +79,7 @@ func newScreenStreams(connection *Connection) *screenStreams {
 	return &screenStreams{connection: connection, open: make(map[*ScreenStream]struct{})}
 }
 
-func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamOptions, deliver func(batch []byte), end func(err error)) (*ScreenStream, error) {
+func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamOptions, consumer ScreenConsumer) (*ScreenStream, error) {
 	c, release, err := s.acquire(ctx)
 	if err != nil {
 		return nil, err
@@ -91,12 +94,11 @@ func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamO
 		return nil, E.New("the device lists no usable screen")
 	}
 	stream := &ScreenStream{
-		screens: s.screens,
-		info:    ScreenInfo{Width: primary.Width, Height: primary.Height, Scale: float64(max(primary.PointScale, 1))},
-		options: options,
-		deliver: deliver,
-		end:     end,
-		release: s.hold(),
+		screens:  s.screens,
+		info:     ScreenInfo{Width: primary.Width, Height: primary.Height, Scale: float64(max(primary.PointScale, 1))},
+		options:  options,
+		consumer: consumer,
+		release:  s.hold(),
 	}
 	s.screens.add(stream)
 	return stream, nil
@@ -108,10 +110,6 @@ func (s *ScreenStream) Info() ScreenInfo {
 
 func (s *ScreenStream) RequestKeyFrame() {
 	s.screens.requestKeyFrame()
-}
-
-func (s *ScreenStream) Configure(options ScreenStreamOptions) {
-	s.screens.configure(s, options)
 }
 
 func (s *ScreenStream) Close() {
@@ -146,25 +144,15 @@ func (s *screenStreams) remove(stream *ScreenStream) {
 	s.restartLocked()
 }
 
-func (s *screenStreams) configure(stream *ScreenStream, options ScreenStreamOptions) {
-	s.access.Lock()
-	defer s.access.Unlock()
-	if _, open := s.open[stream]; !open {
-		return
-	}
-	stream.options = options
-	s.restartLocked()
-}
-
 func (s *screenStreams) mergedLocked() ScreenStreamOptions {
 	options := make([]ScreenStreamOptions, 0, len(s.open))
 	for stream := range s.open {
 		options = append(options, stream.options)
 	}
-	return MergeScreenStreamOptions(options)
+	return mergeScreenStreamOptions(options)
 }
 
-func MergeScreenStreamOptions(options []ScreenStreamOptions) ScreenStreamOptions {
+func mergeScreenStreamOptions(options []ScreenStreamOptions) ScreenStreamOptions {
 	merged := ScreenStreamOptions{Mode: ScreenModeCoreDevice}
 	for _, option := range options {
 		if option.Mode != ScreenModeCoreDevice {
@@ -307,13 +295,17 @@ func (s *screenStreams) fail(capture *screenCapture, err error) {
 	s.capture = nil
 	s.access.Unlock()
 	for stream := range streams {
-		stream.end(err)
+		stream.consumer.ScreenEnded(err)
 		stream.release()
 	}
 }
 
 func (s *screenStreams) read(ctx context.Context, capture *screenCapture, stream *deviceStream) error {
 	packets := make([]display.Packet, captureBatch)
+	var (
+		depacketizer media.Depacketizer
+		units        []*media.AccessUnit
+	)
 	for {
 		readContext, cancel := context.WithTimeoutCause(ctx, silenceLimit, errVideoSilent)
 		n, err := stream.stream.ReadPackets(readContext, packets)
@@ -321,19 +313,22 @@ func (s *screenStreams) read(ctx context.Context, capture *screenCapture, stream
 		if err != nil {
 			return err
 		}
-		var batch []byte
+		units = units[:0]
 		for _, packet := range packets[:n] {
 			if !packet.RTCP {
 				s.observe(packet.Buffer.Bytes(), packet.Arrival)
+				units = depacketizer.Push(packet.Buffer.Bytes(), packet.Arrival, units)
 			}
-			batch = appendPacketRecord(batch, packet.Buffer.Bytes(), packet.RTCP, packet.Arrival)
 			packet.Buffer.Release()
 		}
-		s.deliver(batch, func() bool { return s.capture == capture })
+		s.deliver(units, func() bool { return s.capture == capture })
 	}
 }
 
-func (s *screenStreams) deliver(batch []byte, current func() bool) {
+func (s *screenStreams) deliver(units []*media.AccessUnit, current func() bool) {
+	if len(units) == 0 {
+		return
+	}
 	s.access.Lock()
 	if !current() {
 		s.access.Unlock()
@@ -342,7 +337,9 @@ func (s *screenStreams) deliver(batch []byte, current func() bool) {
 	streams := slices.Collect(maps.Keys(s.open))
 	s.access.Unlock()
 	for _, stream := range streams {
-		stream.deliver(batch)
+		for _, unit := range units {
+			stream.consumer.ScreenUnit(unit)
+		}
 	}
 }
 
@@ -360,17 +357,6 @@ func (s *screenStreams) observe(packet []byte, arrival time.Time) {
 
 func (s *screenStreams) steadySince(at time.Time) bool {
 	return time.Since(time.Unix(0, s.seen.Load())) < phoneGeometryLife && s.oriented.Load() < at.UnixNano()
-}
-
-func appendPacketRecord(batch []byte, data []byte, rtcp bool, arrival time.Time) []byte {
-	batch = binary.BigEndian.AppendUint64(batch, uint64(arrival.UnixNano()))
-	flag := byte(0)
-	if rtcp {
-		flag = 1
-	}
-	batch = append(batch, flag)
-	batch = binary.BigEndian.AppendUint32(batch, uint32(len(data)))
-	return append(batch, data...)
 }
 
 func (s *Connection) startCapture(ctx context.Context, options ScreenStreamOptions) (*deviceStream, error) {

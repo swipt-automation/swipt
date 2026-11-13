@@ -2,7 +2,7 @@
 
 #import "SWArguments.h"
 #import "SWCall.h"
-#import "SWEngine.h"
+#import "SWCancelToken.h"
 #import "SWError.h"
 #import "SWGoBridge.h"
 #import "SWImageNode.h"
@@ -12,6 +12,24 @@
 #import "SWTemplateMatching.h"
 
 static const double SWDefaultMatchThreshold = 0.8;
+
+id SWCallScreenshot(SWCall *call, NSError **error) {
+    double started = SWNowMilliseconds();
+    double scale = 0;
+    NSData *data = [call.context screenshotWithScale:&scale error:error];
+    if (data == nil) {
+        return nil;
+    }
+    if (data.length == 0) {
+        SWFail(error, SWErrorNameUnavailable, @"graphics: the device sent no screenshot");
+        return nil;
+    }
+    if ([call.token failIfCancelled:error]) {
+        return nil;
+    }
+    SWImageNode *node = [SWImageNode nodeWithEncoded:data scale:scale > 0 ? @(scale) : nil timestamp:started error:error];
+    return node == nil ? nil : @{@"image": @([call.context registerObject:node])};
+}
 
 id SWCallDecode(SWCall *call, NSError **error) {
     SWArguments *arguments = call.arguments;
@@ -38,7 +56,7 @@ id SWCallDecode(SWCall *call, NSError **error) {
         return nil;
     }
     SWImageNode *node = [SWImageNode nodeWithEncoded:data scale:scale timestamp:NAN error:error];
-    return node == nil ? nil : @{@"image": @([call.engine registerObject:node])};
+    return node == nil ? nil : @{@"image": @([call.context registerObject:node])};
 }
 
 static NSData *SWEncodeFirstImage(SWCall *call, NSError **error) {
@@ -52,7 +70,7 @@ static NSData *SWEncodeFirstImage(SWCall *call, NSError **error) {
 
 id SWCallEncode(SWCall *call, NSError **error) {
     NSData *data = SWEncodeFirstImage(call, error);
-    return data == nil ? nil : @{@"bytes": @([call.engine registerObject:data])};
+    return data == nil ? nil : @{@"bytes": @([call.context registerObject:data])};
 }
 
 id SWCallSave(SWCall *call, NSError **error) {

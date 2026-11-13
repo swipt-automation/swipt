@@ -427,6 +427,8 @@ type videoSource struct {
 
 	readContext                 context.Context
 	packets                     []display.Packet
+	depacketizer                media.Depacketizer
+	units                       []*media.AccessUnit
 	pictureWidth, pictureHeight int
 }
 
@@ -458,42 +460,22 @@ func (v *videoSource) ReadPackets(ctx context.Context, packets []media.ServerPac
 	v.lastHeard.Store(time.Now().UnixNano())
 	screens := v.connection.screens
 	sharing := screens.sharesViewer(v)
-	var batch []byte
+	v.units = v.units[:0]
 	for i, packet := range v.packets[:n] {
 		if !packet.RTCP {
-			screens.observe(packet.Buffer.Bytes(), packet.Arrival)
-			if sps := hevcSPS(rtpPayload(packet.Buffer.Bytes())); sps != nil {
-				v.checkPictureSize(sps)
+			data := packet.Buffer.Bytes()
+			screens.observe(data, packet.Arrival)
+			if sequence := media.PacketSequence(data); sequence != nil {
+				v.checkPictureSize(sequence)
 			}
-		}
-		if sharing {
-			batch = appendPacketRecord(batch, packet.Buffer.Bytes(), packet.RTCP, packet.Arrival)
+			if sharing {
+				v.units = v.depacketizer.Push(data, packet.Arrival, v.units)
+			}
 		}
 		packets[i] = media.ServerPacket{Buffer: packet.Buffer, RTCP: packet.RTCP, Arrival: packet.Arrival}
 	}
-	if sharing {
-		screens.deliver(batch, func() bool { return screens.viewer == v })
-	}
+	screens.deliver(v.units, func() bool { return screens.viewer == v })
 	return n, nil
-}
-
-func (v *videoSource) checkPictureSize(sps []byte) {
-	width, height, ok := media.HEVCPictureSize(sps)
-	if !ok || width == 0 || height == 0 || width > largestPicture || height > largestPicture {
-		return
-	}
-	if v.pictureWidth == 0 {
-		v.pictureWidth, v.pictureHeight = width, height
-		v.connection.logger.Debug("video size in its parameter sets: ", width, "x", height, ", started at ", v.info.Width, "x", v.info.Height)
-		return
-	}
-	if width == v.pictureWidth && height == v.pictureHeight {
-		return
-	}
-	v.pictureWidth, v.pictureHeight = width, height
-	v.connection.logger.Info("the device's video changed size: ", width, "x", height)
-	v.connection.checkDisplay()
-	v.connection.videoSize(width, height)
 }
 
 func (v *videoSource) watchSilence(readContext context.Context, cancel context.CancelCauseFunc) {

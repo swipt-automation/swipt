@@ -2,191 +2,138 @@
 
 package graphics
 
-/*
-#include "screen.h"
-*/
-import "C"
-
 import (
+	"bytes"
 	"context"
 	"maps"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/rfb/media"
 )
 
 const (
 	screenOpenLimit       = 20 * time.Second
-	screenFirstFrameLimit = C.SWIPT_GRAPHICS_FIRST_FRAME_SECONDS * time.Second
+	screenFirstFrameLimit = 5 * time.Second
 	screenBacklog         = 256
 )
 
 var (
-	errScreenSilent = failure(nameUnavailable, "graphics: the screen sent no frame within ", C.SWIPT_GRAPHICS_FIRST_FRAME_SECONDS, " s; it may be off")
+	errScreenSilent = failure(nameUnavailable, "graphics: the screen sent no frame within ", int(screenFirstFrameLimit/time.Second), " s; it may be off")
 	errScreenClosed = failure(nameState, "graphics: the screen stream is closed")
 )
 
-type screenObserver interface {
-	screenUnit(unit *accessUnit) (needsKeyFrame bool)
-	screenEnded(err error)
-	screenClosed()
+type frame interface {
+	reference
+	retain() frame
 }
 
-type screenSource struct {
-	device   *device.ScreenStream
-	info     device.ScreenInfo
-	observer screenObserver
-	batches  chan []byte
-	done     chan struct{}
-	finished chan struct{}
-
-	access  sync.Mutex
-	streams map[*screenStream]device.ScreenStreamOptions
-	options device.ScreenStreamOptions
-	failure error
-	closed  bool
+type decoder interface {
+	decode(unit *media.AccessUnit, format *hevcFormat, formatChanged bool, damaged bool) (needsKeyFrame bool)
+	close()
 }
 
 type screenStream struct {
-	source *screenSource
-	owner  *screenOwner
+	engine   *engine
+	device   *device.ScreenStream
+	info     device.ScreenInfo
+	units    chan *media.AccessUnit
+	dropped  atomic.Bool
+	done     chan struct{}
+	finished chan struct{}
+	format   *hevcFormat
+
+	decoding sync.Mutex
+	decoder  decoder
 
 	access     sync.Mutex
 	recordings map[*recordingSession]struct{}
+	latest     frame
+	sequence   int64
+	changed    chan struct{}
+	failure    error
 	released   bool
 	closed     bool
 }
 
-type screenOwner struct {
-	access  sync.Mutex
-	streams map[*screenStream]struct{}
-	closed  bool
-}
-
-func newScreenOwner() *screenOwner {
-	return &screenOwner{streams: make(map[*screenStream]struct{})}
-}
-
-func openScreen(ctx context.Context, owner *screenOwner, options device.ScreenStreamOptions) (*screenStream, error) {
+func (e *engine) openScreen(ctx context.Context, options device.ScreenStreamOptions) (*screenStream, error) {
 	if options.Mode == "" {
 		options.Mode = device.ScreenModeRemoteDesktop
 	}
-	stream := &screenStream{owner: owner, recordings: make(map[*recordingSession]struct{})}
-	graphics := current.Load()
-	graphics.screenAccess.Lock()
-	defer graphics.screenAccess.Unlock()
-	if source := graphics.screenSource; source != nil && source.join(stream, options) {
-		stream.source = source
-		return stream, nil
+	stream := &screenStream{
+		engine:     e,
+		units:      make(chan *media.AccessUnit, screenBacklog),
+		done:       make(chan struct{}),
+		finished:   make(chan struct{}),
+		recordings: make(map[*recordingSession]struct{}),
+		changed:    make(chan struct{}),
 	}
-	source, err := openScreenSource(ctx, graphics.options.Connection, stream, options)
+	ctx, cancel := context.WithTimeout(ctx, screenOpenLimit)
+	defer cancel()
+	opened, err := e.graphics.connection.OpenScreenStream(ctx, options, stream)
 	if err != nil {
 		return nil, err
 	}
-	graphics.screenSource = source
-	stream.source = source
+	stream.device = opened
+	stream.info = opened.Info()
+	stream.decoder = newDecoder(stream)
+	go stream.run()
+	if !e.addStream(stream) {
+		stream.close()
+		return nil, automation.ErrSessionEnded
+	}
 	return stream, nil
 }
 
-func openScreenSource(ctx context.Context, connection *device.Connection, stream *screenStream, options device.ScreenStreamOptions) (*screenSource, error) {
-	ctx, cancel := context.WithTimeout(ctx, screenOpenLimit)
-	defer cancel()
-	source := &screenSource{
-		batches:  make(chan []byte, screenBacklog),
-		done:     make(chan struct{}),
-		finished: make(chan struct{}),
-		streams:  map[*screenStream]device.ScreenStreamOptions{stream: options},
-		options:  device.MergeScreenStreamOptions([]device.ScreenStreamOptions{options}),
-	}
-	opened, err := connection.OpenScreenStream(ctx, source.options, source.deliver, source.end)
-	if err != nil {
-		return nil, err
-	}
-	source.device = opened
-	source.info = opened.Info()
-	source.access.Lock()
-	source.observer = newScreenObserver(source.info)
-	if source.failure != nil {
-		source.observer.screenEnded(source.failure)
-	}
-	source.access.Unlock()
-	go source.run()
-	return source, nil
-}
-
-func (s *screenSource) join(stream *screenStream, options device.ScreenStreamOptions) bool {
-	s.access.Lock()
-	defer s.access.Unlock()
-	if s.closed || s.failure != nil {
-		return false
-	}
-	s.streams[stream] = options
-	s.configureLocked()
-	s.device.RequestKeyFrame()
-	return true
-}
-
-func (s *screenSource) leave(stream *screenStream) {
-	s.access.Lock()
-	delete(s.streams, stream)
-	unused := len(s.streams) == 0
-	if !unused {
-		s.configureLocked()
-	}
-	s.access.Unlock()
-	if unused {
-		s.close()
-	}
-}
-
-func (s *screenSource) configureLocked() {
-	merged := device.MergeScreenStreamOptions(slices.Collect(maps.Values(s.streams)))
-	if merged != s.options {
-		s.options = merged
-		s.device.Configure(merged)
-	}
-}
-
-func (s *screenSource) deliver(batch []byte) {
+func (s *screenStream) ScreenUnit(unit *media.AccessUnit) {
 	select {
-	case s.batches <- batch:
+	case s.units <- unit:
 	case <-s.done:
 	default:
+		s.dropped.Store(true)
 	}
 }
 
-func (s *screenSource) end(err error) {
+func (s *screenStream) ScreenEnded(err error) {
 	s.access.Lock()
-	defer s.access.Unlock()
-	if s.closed {
+	if s.closed || s.failure != nil {
+		s.access.Unlock()
 		return
 	}
 	s.failure = err
-	if s.observer != nil {
-		s.observer.screenEnded(err)
+	recordings := slices.Collect(maps.Keys(s.recordings))
+	latest := s.takeLatestLocked()
+	s.access.Unlock()
+	if latest != nil {
+		latest.release()
+	}
+	for _, recording := range recordings {
+		recording.fail(err)
 	}
 }
 
-func (s *screenSource) run() {
+func (s *screenStream) run() {
 	defer close(s.finished)
-	var units depacketizer
 	for {
 		select {
 		case <-s.done:
 			return
-		case batch := <-s.batches:
-			recordings, observed := s.consumers()
-			var needsKeyFrame bool
-			for _, unit := range units.depacketize(batch) {
-				for _, recording := range recordings {
-					needsKeyFrame = recording.append(unit) || needsKeyFrame
-				}
-				if observed {
-					needsKeyFrame = s.observer.screenUnit(unit) || needsKeyFrame
-				}
+		case unit := <-s.units:
+			damaged := s.dropped.Swap(false) || unit.Damaged
+			formatChanged := s.adoptFormat(unit)
+			needsKeyFrame := false
+			for _, recording := range s.activeRecordings() {
+				needsKeyFrame = recording.append(unit, s.format, damaged) || needsKeyFrame
 			}
+			s.decoding.Lock()
+			if s.decoder != nil {
+				needsKeyFrame = s.decoder.decode(unit, s.format, formatChanged, damaged) || needsKeyFrame
+			}
+			s.decoding.Unlock()
 			if needsKeyFrame {
 				s.device.RequestKeyFrame()
 			}
@@ -194,40 +141,82 @@ func (s *screenSource) run() {
 	}
 }
 
-func (s *screenSource) consumers() (recordings []*recordingSession, observed bool) {
-	s.access.Lock()
-	defer s.access.Unlock()
-	for stream := range s.streams {
-		stream.access.Lock()
-		recordings = slices.AppendSeq(recordings, maps.Keys(stream.recordings))
-		observed = observed || !stream.released
-		stream.access.Unlock()
-	}
-	return recordings, observed
-}
-
-func (s *screenSource) close() {
-	s.access.Lock()
-	if s.closed {
-		s.access.Unlock()
-		return
-	}
-	s.closed = true
-	s.access.Unlock()
-	close(s.done)
-	<-s.finished
-	s.device.Close()
-	s.observer.screenClosed()
-}
-
-func (s *screenStream) addRecording(recording *recordingSession) bool {
-	s.access.Lock()
-	defer s.access.Unlock()
-	if s.closed {
+func (s *screenStream) adoptFormat(unit *media.AccessUnit) bool {
+	vps, sps, pps := unit.ParameterSets()
+	if vps == nil || sps == nil || pps == nil {
 		return false
 	}
-	s.recordings[recording] = struct{}{}
+	if s.format != nil && bytes.Equal(vps, s.format.vps) && bytes.Equal(sps, s.format.source) && bytes.Equal(pps, s.format.pps) {
+		return false
+	}
+	format, err := newHEVCFormat(vps, sps, pps, s.info)
+	if err != nil {
+		s.engine.graphics.logger.Error("read the screen's parameter sets: ", err)
+		return false
+	}
+	s.format = format
 	return true
+}
+
+func (s *screenStream) activeRecordings() []*recordingSession {
+	s.access.Lock()
+	defer s.access.Unlock()
+	return slices.Collect(maps.Keys(s.recordings))
+}
+
+func (s *screenStream) takeLatestLocked() frame {
+	latest := s.latest
+	s.latest = nil
+	close(s.changed)
+	s.changed = make(chan struct{})
+	return latest
+}
+
+func (s *screenStream) frameAfter(ctx context.Context, previous int64, limited bool) (frame, int64, error) {
+	var deadline <-chan time.Time
+	if limited {
+		timer := time.NewTimer(screenFirstFrameLimit)
+		defer timer.Stop()
+		deadline = timer.C
+	}
+	for {
+		s.access.Lock()
+		switch {
+		case s.closed:
+			s.access.Unlock()
+			return nil, 0, errScreenClosed
+		case s.failure != nil:
+			err := s.failure
+			s.access.Unlock()
+			return nil, 0, err
+		case s.latest != nil && s.sequence > previous:
+			latest, sequence := s.latest.retain(), s.sequence
+			s.access.Unlock()
+			return latest, sequence, nil
+		}
+		changed := s.changed
+		s.access.Unlock()
+		select {
+		case <-changed:
+		case <-ctx.Done():
+			return nil, 0, ctx.Err()
+		case <-deadline:
+			return nil, 0, errScreenSilent
+		}
+	}
+}
+
+func (s *screenStream) addRecording(recording *recordingSession) error {
+	s.access.Lock()
+	defer s.access.Unlock()
+	switch {
+	case s.closed:
+		return errScreenClosed
+	case s.failure != nil:
+		return s.failure
+	}
+	s.recordings[recording] = struct{}{}
+	return nil
 }
 
 func (s *screenStream) removeRecording(recording *recordingSession) {
@@ -240,20 +229,29 @@ func (s *screenStream) removeRecording(recording *recordingSession) {
 	}
 }
 
+func (s *screenStream) closeDecoder() {
+	s.decoding.Lock()
+	defer s.decoding.Unlock()
+	if s.decoder != nil {
+		s.decoder.close()
+		s.decoder = nil
+	}
+}
+
 func (s *screenStream) release() {
 	s.access.Lock()
 	s.released = true
 	unused := len(s.recordings) == 0
+	latest := s.takeLatestLocked()
 	s.access.Unlock()
+	if latest != nil {
+		latest.release()
+	}
 	if unused {
 		s.close()
+		return
 	}
-}
-
-func (s *screenStream) isClosed() bool {
-	s.access.Lock()
-	defer s.access.Unlock()
-	return s.closed
+	s.closeDecoder()
 }
 
 func (s *screenStream) close() {
@@ -265,50 +263,17 @@ func (s *screenStream) close() {
 	s.closed = true
 	recordings := slices.Collect(maps.Keys(s.recordings))
 	clear(s.recordings)
+	latest := s.takeLatestLocked()
 	s.access.Unlock()
+	if latest != nil {
+		latest.release()
+	}
+	close(s.done)
+	<-s.finished
+	s.closeDecoder()
+	s.device.Close()
 	for _, recording := range recordings {
-		recording.abandon()
+		recording.release()
 	}
-	s.source.leave(s)
-	s.owner.remove(s)
-}
-
-func (o *screenOwner) add(stream *screenStream) error {
-	o.access.Lock()
-	added := !o.closed
-	if added {
-		o.streams[stream] = struct{}{}
-	}
-	o.access.Unlock()
-	if !added {
-		stream.close()
-		return failure(nameAbort, "the JavaScript session ended")
-	}
-	return nil
-}
-
-func (o *screenOwner) remove(stream *screenStream) {
-	o.access.Lock()
-	delete(o.streams, stream)
-	o.access.Unlock()
-}
-
-func (o *screenOwner) close() {
-	o.access.Lock()
-	o.closed = true
-	streams := slices.Collect(maps.Keys(o.streams))
-	clear(o.streams)
-	o.access.Unlock()
-	for _, stream := range streams {
-		stream.close()
-	}
-}
-
-func release(object any) {
-	switch owned := object.(type) {
-	case *screenStream:
-		owned.release()
-	case *recordingSession:
-		owned.abandon()
-	}
+	s.engine.removeStream(s)
 }

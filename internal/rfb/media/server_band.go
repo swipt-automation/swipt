@@ -59,7 +59,7 @@ func (p *bandPositioner) rewrite(packet []byte, header rtpPacket) []byte {
 	case nalType < hevcNALAggregation:
 		p.zeros[band] = 0
 		if nalType == hevcNALSPS {
-			p.readHeight(payload[4:])
+			p.readHeight(append([]byte{payload[0], payload[1]}, payload[4:]...))
 		}
 		if header.marker && nalType < 32 {
 			return p.place(packet, offset+4, band, 0, -1)
@@ -73,7 +73,7 @@ func (p *bandPositioner) rewrite(packet []byte, header rtpPacket) []byte {
 			}
 			unit := payload[at+2 : at+2+size]
 			if hevcNALType(unit) == hevcNALSPS {
-				p.readHeight(unit[2:])
+				p.readHeight(unit)
 			}
 			if at+2+size == len(payload) && header.marker && hevcNALType(unit) < 32 {
 				return p.place(packet, offset+at+4, band, 0, offset+at)
@@ -152,10 +152,8 @@ func endingZeros(data []byte, carried uint8) uint8 {
 	return min(zeros+carried, 2)
 }
 
-func (p *bandPositioner) readHeight(sps []byte) {
-	r := &bitReader{data: unescapeRBSP(sps)}
-	_, _, _, height := readHEVCSPSHeader(r)
-	if !r.overrun && height > 0 {
-		p.height = height
+func (p *bandPositioner) readHeight(nal []byte) {
+	if sequence, err := ParseHEVCSequence(nal); err == nil {
+		p.height = sequence.CodedHeight
 	}
 }

@@ -1,10 +1,10 @@
 #import <CoreVideo/CoreVideo.h>
 #import <Foundation/Foundation.h>
 
-#include "graphics.h"
+#include "graphics_darwin.h"
 
 @interface SWFrameDecoder : NSObject
-@property (nonatomic, copy) void (^onFrame)(CVPixelBufferRef image, double arrival, NSInteger turns);
-
+- (instancetype)initWithFrame:(void (^)(CVPixelBufferRef image, double arrival, NSInteger turns))onFrame failure:(void (^)(NSString *message))onFailure;
 - (BOOL)decode:(const swipt_graphics_unit *)unit;
+- (void)close;
 @end

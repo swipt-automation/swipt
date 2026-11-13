@@ -2,8 +2,8 @@
 
 #import "SWArguments.h"
 #import "SWCall.h"
-#import "SWEngine.h"
 #import "SWError.h"
+#import "SWGoBridge.h"
 #import "SWImageNode.h"
 #import "SWJSON.h"
 #import "SWRaster.h"
@@ -13,7 +13,7 @@
 id SWCallText(SWCall *call, NSError **error) {
     SWImageNode *node = [call image:0 error:error];
     SWRecognizedText *text = node == nil ? nil : SWRecognizeText(node, call.arguments, call.token, error);
-    return text == nil ? nil : @{@"lines": text.lines, @"text": @([call.engine registerObject:text])};
+    return text == nil ? nil : @{@"lines": text.lines, @"text": @([call.context registerObject:text])};
 }
 
 id SWCallDifference(SWImageNode *first, SWImageNode *second, NSInteger threshold, SWCancelToken *token, NSError **error) {

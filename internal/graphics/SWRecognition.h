@@ -12,7 +12,7 @@
 - (NSDictionary<NSString *, id> *)boundingBoxLine:(NSInteger)line candidate:(NSInteger)candidate start:(NSInteger)start end:(NSInteger)end error:(NSError **)error;
 @end
 
-void SWRecognitionWarm(void);
+void SWRecognitionWarm(void (^done)(NSError *failure));
 SWRecognizedText *SWRecognizeText(SWImageNode *node, SWArguments *arguments, SWCancelToken *token, NSError **error);
 VNFeaturePrintObservation *SWFeaturePrint(SWImageNode *node, SWCancelToken *token, NSError **error);
 BOOL SWFeatureDistance(VNFeaturePrintObservation *reference, SWImageNode *other, double *distance, SWCancelToken *token, NSError **error);

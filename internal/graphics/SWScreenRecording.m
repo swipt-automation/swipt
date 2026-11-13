@@ -7,11 +7,8 @@
 #import "SWCancelToken.h"
 #import "SWError.h"
 #import "SWImageNode.h"
-#import "SWJSON.h"
 #import "SWRaster.h"
 #import "SWMovieReader.h"
-
-NSString *const SWRecordingManifest = @"recording.json";
 
 @interface SWRecordedSegment : NSObject
 @property (nonatomic, readonly) NSURL *url;
@@ -160,51 +157,25 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
     NSMutableDictionary<NSNumber *, SWMovieReader *> *_readers;
 }
 
-+ (instancetype)openDirectory:(NSURL *)directory error:(NSError **)error {
-    NSURL *manifest = [directory URLByAppendingPathComponent:SWRecordingManifest];
-    NSData *data = [NSData dataWithContentsOfURL:manifest];
-    if (data == nil) {
-        SWFail(error, SWErrorNameNotFound, @"graphics: %@ has no %@", directory.lastPathComponent, SWRecordingManifest);
-        return nil;
-    }
-    NSError *failure = nil;
-    NSDictionary *metadata = [NSJSONSerialization JSONObjectWithData:data options:0 error:&failure];
-    if (![metadata isKindOfClass:NSDictionary.class]) {
-        SWFailCause(error, SWErrorNameData, failure, @"graphics: read %@", SWRecordingManifest);
-        return nil;
-    }
-    double duration = SWAsNumber(metadata[@"duration"]).doubleValue;
-    if (!isfinite(duration) || duration < 0) {
-        SWFail(error, SWErrorNameData, @"graphics: %@ has an invalid duration", SWRecordingManifest);
-        return nil;
-    }
-    SWScreenRecording *recording = [self new];
-    recording->_start = SWAsNumber(metadata[@"start"]).doubleValue;
-    recording->_duration = duration;
-    NSDictionary *screen = [metadata[@"screen"] isKindOfClass:NSDictionary.class] ? metadata[@"screen"] : @{};
-    NSNumber *scale = SWAsNumber(screen[@"scale"]);
-    recording->_scale = scale == nil ? 1 : scale.doubleValue;
-    recording->_screen = (SWScreenGeometry){.width = SWAsNumber(screen[@"width"]).integerValue, .height = SWAsNumber(screen[@"height"]).integerValue, .scale = recording->_scale};
-    NSMutableArray<SWRecordedSegment *> *segments = [NSMutableArray array];
-    NSArray *listed = [metadata[@"segments"] isKindOfClass:NSArray.class] ? metadata[@"segments"] : @[];
-    for (NSDictionary *segment in listed) {
-        if (![segment isKindOfClass:NSDictionary.class]) {
-            continue;
+- (instancetype)initWithRecording:(const swipt_graphics_recording *)recording {
+    self = [super init];
+    if (self) {
+        _info = [NSString stringWithUTF8String:recording->info];
+        _start = recording->start;
+        _duration = recording->duration;
+        _scale = recording->scale;
+        _screen = (SWScreenGeometry){.width = (NSInteger)recording->width, .height = (NSInteger)recording->height, .scale = recording->scale};
+        NSMutableArray<SWRecordedSegment *> *segments = [NSMutableArray arrayWithCapacity:recording->count];
+        for (size_t index = 0; index < recording->count; index++) {
+            const swipt_graphics_segment *segment = &recording->segments[index];
+            NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:segment->file] isDirectory:NO];
+            [segments addObject:[[SWRecordedSegment alloc] initWithURL:url start:segment->start turns:segment->turns]];
         }
-        NSString *file = segment[@"file"];
-        if (![file isKindOfClass:NSString.class] || file.length == 0 || [file isEqualToString:@"."] || [file isEqualToString:@".."] || [file containsString:@"/"]) {
-            continue;
-        }
-        [segments addObject:[[SWRecordedSegment alloc] initWithURL:[directory URLByAppendingPathComponent:file] start:SWAsNumber(segment[@"start"]).doubleValue turns:SWAsNumber(segment[@"turns"]).integerValue]];
+        _segments = segments;
+        _lock = [NSLock new];
+        _readers = [NSMutableDictionary dictionary];
     }
-    if (segments.count == 0) {
-        SWFail(error, SWErrorNameData, @"graphics: %@ lists no video", SWRecordingManifest);
-        return nil;
-    }
-    recording->_segments = segments;
-    recording->_lock = [NSLock new];
-    recording->_readers = [NSMutableDictionary dictionary];
-    return recording;
+    return self;
 }
 
 - (NSInteger)segmentIndexAt:(double)time {
@@ -265,10 +236,6 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
         return raster == nil ? nil : SWRasterResized(raster, raster.width & ~1, raster.height & ~1, failure);
     };
     return SWExportMovie(target, mov, times, frame, token, error);
-}
-
-- (NSString *)info {
-    return SWEncodeJSON(@{@"start": @(SWRounded(_start)), @"duration": @(SWRounded(_duration))}) ?: @"{}";
 }
 
 @end

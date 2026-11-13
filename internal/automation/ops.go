@@ -194,13 +194,13 @@ type failureKind struct {
 var failureKinds = []failureKind{
 	{"UnavailableError", []error{device.ErrUnavailable, device.ErrDisconnected, device.ErrLocked, device.ErrStalled, device.ErrNotAnswering, accessibility.ErrStalled}},
 	{"TimeoutError", []error{context.DeadlineExceeded, device.ErrTimeout}},
-	{"AbortError", []error{context.Canceled, ErrDismissed, errReset, errSession}},
+	{"AbortError", []error{context.Canceled, ErrDismissed, errReset, ErrSessionEnded}},
 	{"TypeError", []error{ErrInvalid, errNetwork}},
 	{"NotFoundError", []error{ErrNotFound, device.ErrNotFound, accessibility.ErrGone}},
 	{"NotAllowedError", []error{ErrNotAllowed}},
 }
 
-func failureName(err error) string {
+func FailureName(err error) string {
 	if scripted, isScripted := errors.AsType[*Failure](err); isScripted && scripted.Name != "" {
 		return scripted.Name
 	}
@@ -216,7 +216,7 @@ func FailureOf(err error) string {
 	data, _ := json.Marshal(struct {
 		Name    string `json:"name"`
 		Message string `json:"message"`
-	}{failureName(err), Message(err)})
+	}{FailureName(err), Message(err)})
 	return string(data)
 }
 

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -15,20 +14,18 @@ import (
 )
 
 type Graphics interface {
-	Entry() uintptr
-	Run(engine uint64, call int64, context *GraphicsCall) (json.RawMessage, error)
-	Watch(engine uint64, call int64, context *GraphicsCall, publish func(any)) error
+	Install(context *jsc.Context, native jsc.Value) GraphicsEngine
 }
 
-const (
-	graphicsInstall int32 = iota
-	graphicsUninstall
-)
+type GraphicsEngine interface {
+	Run(call int64, context *GraphicsCall) (json.RawMessage, error)
+	Watch(call int64, context *GraphicsCall, publish func(any)) error
+	Close()
+}
 
 var (
-	errNoGraphics   = E.New("graphics: this platform has no graphics")
-	errStreamEnded  = E.New("the stream ended")
-	graphicsEngines atomic.Uint64
+	errNoGraphics  = E.New("graphics: this platform has no graphics")
+	errStreamEnded = E.New("the stream ended")
 )
 
 var readOperations = []string{
@@ -119,17 +116,15 @@ func (e *engine) installGraphics(native jsc.Value) {
 	if graphics == nil {
 		return
 	}
-	e.graphics = graphicsEngines.Add(1)
-	e.context.RunNative(graphics.Entry(), graphicsInstall, native, e.graphics)
+	e.graphics = graphics.Install(e.context, native)
 }
 
 func (e *engine) uninstallGraphics() {
-	graphics := e.host.options.Graphics
-	if graphics == nil || e.graphics == 0 {
+	if e.graphics == nil {
 		return
 	}
-	e.context.RunNative(graphics.Entry(), graphicsUninstall, jsc.Value{}, e.graphics)
-	e.graphics = 0
+	e.graphics.Close()
+	e.graphics = nil
 }
 
 func graphicsRun(ctx context.Context, call *operation) (any, error) {
@@ -137,11 +132,11 @@ func graphicsRun(ctx context.Context, call *operation) (any, error) {
 	if err := call.decode(1, &id); err != nil {
 		return nil, err
 	}
-	graphics := call.engine.host.options.Graphics
+	graphics := call.engine.graphics
 	if graphics == nil {
 		return nil, errNoGraphics
 	}
-	return graphics.Run(call.engine.graphics, id, &GraphicsCall{ctx: ctx, call: call})
+	return graphics.Run(id, &GraphicsCall{ctx: ctx, call: call})
 }
 
 func watchGraphics(ctx context.Context, call *operation, publish func(any), ended func(error)) error {
@@ -149,12 +144,12 @@ func watchGraphics(ctx context.Context, call *operation, publish func(any), ende
 	if err := call.decode(1, &id); err != nil {
 		return err
 	}
-	graphics := call.engine.host.options.Graphics
+	graphics := call.engine.graphics
 	if graphics == nil {
 		return errNoGraphics
 	}
 	go func() {
-		err := graphics.Watch(call.engine.graphics, id, &GraphicsCall{ctx: ctx, call: call}, publish)
+		err := graphics.Watch(id, &GraphicsCall{ctx: ctx, call: call}, publish)
 		if err == nil {
 			err = errStreamEnded
 		}

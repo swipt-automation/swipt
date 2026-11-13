@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <JavaScriptCore/JSBasePrivate.h>
+#include <JavaScriptCore/JavaScript.h>
 
 #include "native_other.h"
 #include "_cgo_export.h"
@@ -75,11 +76,11 @@ static uintptr_t swipt_handle_of(JSContextRef context, JSValueRef value) {
     return 0;
 }
 
-static uint64_t swipt_engine_of(JSContextRef context, JSObjectRef object) {
+static uintptr_t swipt_engine_of(JSContextRef context, JSObjectRef object) {
     if (!JSValueIsObjectOfClass(context, object, swipt_native_class)) {
         return 0;
     }
-    return (uint64_t)(uintptr_t)JSObjectGetPrivate(object);
+    return (uintptr_t)JSObjectGetPrivate(object);
 }
 
 static JSValueRef swipt_prepare(JSContextRef context, JSObjectRef function, JSObjectRef self, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -91,7 +92,7 @@ static JSValueRef swipt_prepare(JSContextRef context, JSObjectRef function, JSOb
     size_t total = 0;
     swipt_graphics_failure failure = {0};
     int64_t identifier = 0;
-    uint64_t engine = swipt_engine_of(context, self);
+    uintptr_t engine = swipt_engine_of(context, self);
     if (engine == 0 || count < 3 || !JSValueIsObject(context, arguments[2])) {
         swipt_throw(context, "TypeError", "graphics: prepare needs a method, its arguments and its objects", exception);
         goto done;
@@ -151,7 +152,7 @@ done:
 static JSValueRef swipt_take(JSContextRef context, JSObjectRef function, JSObjectRef self, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     void *lock = swipt_lock(context);
     JSValueRef result = JSValueMakeNull(context);
-    uint64_t engine = swipt_engine_of(context, self);
+    uintptr_t engine = swipt_engine_of(context, self);
     double identifier = count > 0 ? JSValueToNumber(context, arguments[0], NULL) : NAN;
     swipt_graphics_taken taken = {0};
     if (engine != 0 && isfinite(identifier)) {
@@ -160,29 +161,31 @@ static JSValueRef swipt_take(JSContextRef context, JSObjectRef function, JSObjec
     switch (taken.kind) {
     case SWIPT_GRAPHICS_IMAGE: {
         JSObjectRef image = JSObjectMake(context, swipt_image_class, (void *)taken.handle);
-        double width = taken.width;
-        double height = taken.height;
+        swipt_graphics_image shown = swiptGraphicsImage(taken.handle);
+        double width = shown.width;
+        double height = shown.height;
         JSValueRef frame[4] = {JSValueMakeNumber(context, 0), JSValueMakeNumber(context, 0), JSValueMakeNumber(context, width), JSValueMakeNumber(context, height)};
         swipt_set(context, image, "width", JSValueMakeNumber(context, width));
         swipt_set(context, image, "height", JSValueMakeNumber(context, height));
-        swipt_set(context, image, "scale", JSValueMakeNumber(context, taken.scale));
+        swipt_set(context, image, "scale", JSValueMakeNumber(context, shown.scale));
         swipt_set(context, image, "frame", JSObjectMakeArray(context, 4, frame, NULL));
-        swipt_set(context, image, "time", JSValueMakeNumber(context, taken.time));
-        swipt_set(context, image, "timestamp", JSValueMakeNumber(context, taken.timestamp));
-        swipt_set(context, image, "pixelWidth", JSValueMakeNumber(context, (double)taken.pixel_width));
-        swipt_set(context, image, "pixelHeight", JSValueMakeNumber(context, (double)taken.pixel_height));
-        JSReportExtraMemoryCost(context, taken.cost);
+        swipt_set(context, image, "time", JSValueMakeNumber(context, shown.time));
+        swipt_set(context, image, "timestamp", JSValueMakeNumber(context, shown.timestamp));
+        swipt_set(context, image, "pixelWidth", JSValueMakeNumber(context, (double)shown.pixel_width));
+        swipt_set(context, image, "pixelHeight", JSValueMakeNumber(context, (double)shown.pixel_height));
+        JSReportExtraMemoryCost(context, shown.cost);
         result = image;
         break;
     }
     case SWIPT_GRAPHICS_RECORDING: {
         JSObjectRef recording = JSObjectMake(context, swipt_recording_class, (void *)taken.handle);
-        swipt_set(context, recording, "info", swipt_string_value(context, taken.info));
-        free(taken.info);
+        char *info = swiptGraphicsRecordingInfo(taken.handle);
+        swipt_set(context, recording, "info", swipt_string_value(context, info));
+        free(info);
         result = recording;
         break;
     }
-    case SWIPT_GRAPHICS_RESOURCE:
+    case SWIPT_GRAPHICS_HANDLE:
         result = JSObjectMake(context, swipt_resource_class, (void *)taken.handle);
         break;
     }
@@ -193,7 +196,7 @@ static JSValueRef swipt_take(JSContextRef context, JSObjectRef function, JSObjec
 static JSValueRef swipt_bytes(JSContextRef context, JSObjectRef function, JSObjectRef self, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     void *lock = swipt_lock(context);
     JSValueRef result = JSValueMakeNull(context);
-    uint64_t engine = swipt_engine_of(context, self);
+    uintptr_t engine = swipt_engine_of(context, self);
     double identifier = count > 0 ? JSValueToNumber(context, arguments[0], NULL) : NAN;
     size_t length = 0;
     void *bytes = engine == 0 || !isfinite(identifier) ? NULL : swiptGraphicsBytes(engine, (int64_t)identifier, &length);
@@ -251,6 +254,13 @@ static void swipt_finalize(JSObjectRef object) {
     }
 }
 
+static void swipt_finalize_native(JSObjectRef object) {
+    uintptr_t engine = (uintptr_t)JSObjectGetPrivate(object);
+    if (engine != 0) {
+        swiptGraphicsDeleteHandle(engine);
+    }
+}
+
 #define SWIPT_FUNCTION(name, function) {name, function, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete | kJSPropertyAttributeDontEnum}
 
 void swipt_graphics_setup(void *lock, void *unlock) {
@@ -282,6 +292,7 @@ void swipt_graphics_setup(void *lock, void *unlock) {
     JSClassDefinition definition = kJSClassDefinitionEmpty;
     definition.className = "GraphicsNative";
     definition.staticFunctions = native;
+    definition.finalize = swipt_finalize_native;
     swipt_native_class = JSClassCreate(&definition);
     definition = kJSClassDefinitionEmpty;
     definition.className = "Image";
@@ -299,13 +310,8 @@ void swipt_graphics_setup(void *lock, void *unlock) {
     swipt_resource_class = JSClassCreate(&definition);
 }
 
-void swipt_graphics_native(JSGlobalContextRef context, int32_t command, JSValueRef value, uint64_t engine) {
-    if (command == 0) {
-        swiptGraphicsInstall(engine);
-        JSStringRef key = JSStringCreateWithUTF8CString("graphics");
-        JSObjectSetProperty(context, (JSObjectRef)value, key, JSObjectMake(context, swipt_native_class, (void *)(uintptr_t)engine), kJSPropertyAttributeNone, NULL);
-        JSStringRelease(key);
-    } else if (command == 1) {
-        swiptGraphicsUninstall(engine);
-    }
+void swipt_graphics_install(void *context, int32_t command, void *value, uint64_t engine) {
+    JSStringRef key = JSStringCreateWithUTF8CString("graphics");
+    JSObjectSetProperty((JSContextRef)context, (JSObjectRef)value, key, JSObjectMake((JSContextRef)context, swipt_native_class, (void *)(uintptr_t)engine), kJSPropertyAttributeNone, NULL);
+    JSStringRelease(key);
 }

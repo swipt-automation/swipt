@@ -144,7 +144,7 @@ type engine struct {
 	sources   func() *sourcemap.Consumer
 	ctx       context.Context
 	cancel    context.CancelCauseFunc
-	graphics  uint64
+	graphics  GraphicsEngine
 	values    func(json.RawMessage)
 
 	completions chan completion

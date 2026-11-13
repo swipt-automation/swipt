@@ -4,7 +4,6 @@
 
 #import "SWError.h"
 #import "SWImageNode.h"
-#import "SWScreenRecording.h"
 
 const NSInteger SWDefaultDifferenceThreshold = 24;
 
@@ -13,10 +12,6 @@ static const struct {
     SWCallFunction function;
 } SWCallTable[] = {
     {"screenshot", SWCallScreenshot},
-    {"screen.open", SWCallScreenOpen},
-    {"screen.close", SWCallScreenClose},
-    {"screen.frame", SWCallScreenFrame},
-    {"screen.record", SWCallScreenRecord},
     {"decode", SWCallDecode},
     {"encode", SWCallEncode},
     {"save", SWCallSave},
@@ -30,9 +25,6 @@ static const struct {
     {"distance", SWCallDistance},
     {"nearest", SWCallNearest},
     {"barcodes", SWCallBarcodes},
-    {"recording.stop", SWCallRecordingStop},
-    {"recording.open", SWCallRecordingOpen},
-    {"recording.export", SWCallRecordingExport},
 };
 
 id SWCallExecute(SWCall *call, NSError **error) {
@@ -62,15 +54,6 @@ id SWCallExecute(SWCall *call, NSError **error) {
     id object = index < _objects.count ? _objects[index] : nil;
     if (![object isKindOfClass:SWImageNode.class]) {
         SWFail(error, SWErrorNameType, @"graphics: argument %lu of %@ is not an Image", (unsigned long)index + 1, _method);
-        return nil;
-    }
-    return object;
-}
-
-- (SWScreenRecording *)recording:(NSError **)error {
-    id object = _objects.firstObject;
-    if (![object isKindOfClass:SWScreenRecording.class]) {
-        SWFail(error, SWErrorNameType, @"graphics: %@ needs a ScreenRecording", _method);
         return nil;
     }
     return object;

@@ -2,7 +2,8 @@
 
 #import "SWHandles.h"
 
-#import "SWGoBridge.h"
+#include "_cgo_export.h"
+
 #import "SWImageNode.h"
 #import "SWJSON.h"
 #import "SWJavaScript.h"
@@ -113,42 +114,28 @@ static SWImageHandle *SWReported(SWImageNode *node) {
 
 @end
 
-@implementation SWScreenStreamHandle
+@implementation SWResourceHandle
 
-- (instancetype)initWithStream:(SWScreenStream *)stream {
+- (instancetype)initWithHandle:(uintptr_t)handle {
     self = [super init];
     if (self) {
-        _stream = stream;
+        _handle = handle;
     }
     return self;
 }
 
 - (void)dealloc {
-    [_stream relinquish];
+    swiptGraphicsRelease(_handle);
 }
 
 @end
 
-@implementation SWRecordingSessionHandle
-
-- (instancetype)initWithSession:(SWRecordingSession *)session {
-    self = [super init];
-    if (self) {
-        _session = session;
-    }
-    return self;
+@implementation SWScreenRecordingHandle {
+    SWScreenRecording *_recording;
 }
 
-- (void)dealloc {
-    [_session relinquish];
-}
-
-@end
-
-@implementation SWScreenRecordingHandle
-
-- (instancetype)initWithRecording:(SWScreenRecording *)recording {
-    self = [super init];
+- (instancetype)initWithHandle:(uintptr_t)handle recording:(SWScreenRecording *)recording {
+    self = [super initWithHandle:handle];
     if (self) {
         _recording = recording;
     }

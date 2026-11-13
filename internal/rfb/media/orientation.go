@@ -14,23 +14,14 @@ var turnsOrientation = [4]uint16{0, 3, 1, 2}
 const macTurnsOffset = 1
 
 func PacketOrientation(packet []byte) (uint16, bool) {
-	if len(packet) < 12 || packet[0]&0x10 == 0 {
+	header, err := parseRTPHeader(packet)
+	if err != nil || header.extensionProfile&appleExtensionMask != appleExtensionProfile {
 		return 0, false
 	}
-	offset := 12 + 4*int(packet[0]&0x0f)
-	if len(packet) < offset+2 {
-		return 0, false
-	}
-	profile := uint16(packet[offset])<<8 | uint16(packet[offset+1])
-	if profile&appleExtensionMask != appleExtensionProfile {
-		return 0, false
-	}
-	return (profile & orientationMask) >> orientationShift, true
+	return (header.extensionProfile & orientationMask) >> orientationShift, true
 }
 
-// ExtensionTurns returns the clockwise quarter turns of the screen that the
-// profile of an RTP header extension from the device carries.
-func ExtensionTurns(profile uint16) int {
+func extensionTurns(profile uint16) int {
 	if profile&appleExtensionMask != appleExtensionProfile {
 		return 0
 	}
