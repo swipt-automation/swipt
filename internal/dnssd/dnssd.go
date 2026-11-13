@@ -11,6 +11,7 @@ import "C"
 import (
 	"context"
 	"errors"
+	"math"
 	"runtime/cgo"
 	"strconv"
 	"unsafe"
@@ -79,31 +80,40 @@ func swiptDNSSDRegistered(ref C.DNSServiceRef, flags C.DNSServiceFlags, code C.D
 	}
 }
 
-func encodeTXT(txt map[string]string) []byte {
+func encodeTXT(txt map[string]string) ([]byte, error) {
 	var record []byte
 	for key, value := range txt {
 		item := key + "=" + value
+		if len(item) > math.MaxUint8 {
+			return nil, E.New("dnssd: the TXT entry ", key, " is longer than ", math.MaxUint8, " bytes")
+		}
 		record = append(append(record, byte(len(item))), item...)
 	}
-	return record
+	if len(record) > math.MaxUint16 {
+		return nil, E.New("dnssd: the TXT record is longer than ", math.MaxUint16, " bytes")
+	}
+	return record, nil
 }
 
 func Advertise(ctx context.Context, name string, serviceType string, port uint16, txt map[string]string) (*Advertisement, error) {
+	record, err := encodeTXT(txt)
+	if err != nil {
+		return nil, err
+	}
 	a := &Advertisement{registered: make(chan error, 1), stop: make(chan struct{}), done: make(chan struct{})}
-	if err := check(C.DNSServiceCreateConnection(&a.ref)); err != nil {
+	if err = check(C.DNSServiceCreateConnection(&a.ref)); err != nil {
 		return nil, E.Cause(err, "dnssd: connect")
 	}
 	a.handle = cgo.NewHandle(a)
 	cName, cType := C.CString(name), C.CString(serviceType)
 	defer C.free(unsafe.Pointer(cName))
 	defer C.free(unsafe.Pointer(cType))
-	record := encodeTXT(txt)
 	var recordPointer unsafe.Pointer
 	if len(record) > 0 {
 		recordPointer = unsafe.Pointer(&record[0])
 	}
 	var ref C.DNSServiceRef
-	err := check(C.swipt_dnssd_register(a.ref, &ref, cName, cType, C.uint16_t(port), C.uint16_t(len(record)), recordPointer, C.uintptr_t(a.handle)))
+	err = check(C.swipt_dnssd_register(a.ref, &ref, cName, cType, C.uint16_t(port), C.uint16_t(len(record)), recordPointer, C.uintptr_t(a.handle)))
 	go a.pump()
 	if err == nil {
 		select {

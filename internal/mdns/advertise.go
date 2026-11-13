@@ -2,70 +2,60 @@ package mdns
 
 import (
 	"context"
-	"net"
+	"math/rand/v2"
 	"net/netip"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
-	"github.com/sagernet/sing/common/control"
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 
 	"golang.org/x/net/dns/dnsmessage"
-	"golang.org/x/net/ipv4"
-	"golang.org/x/net/ipv6"
 )
 
 const (
 	hostTTL          = 120
 	serviceTTL       = 4500
 	legacyTTL        = 10
-	cacheFlush       = 1 << 15
 	probeCount       = 3
 	probeInterval    = 250 * time.Millisecond
+	probeDefer       = time.Second
 	announceCount    = 2
 	announceInterval = time.Second
 	refreshInterval  = 5 * time.Second
 )
 
-var group6 = netip.MustParseAddrPort("[ff02::fb]:5353")
-
 type Advertisement struct {
-	cancel  context.CancelFunc
-	done    chan struct{}
-	claimed chan struct{}
-	host    string
-	failure error
+	responder *responder
+	cancel    context.CancelFunc
+	done      chan struct{}
+	claimed   chan struct{}
+	failure   error
 }
 
-type multicastConn interface {
-	JoinGroup(*net.Interface, net.Addr) error
-	SetMulticastInterface(*net.Interface) error
-}
-
-type family struct {
-	group     netip.AddrPort
-	conn      *net.UDPConn
-	multicast multicastConn
-}
-
-type link struct {
-	iface    net.Interface
-	prefixes []netip.Prefix
+type linkState struct {
+	link
+	probes        int
+	claimed       bool
+	announcements int
+	due           time.Time
 }
 
 type responder struct {
+	transport   *transport
 	name        string
 	host        string
 	serviceType dnsmessage.Name
 	port        uint16
 	txt         []string
+	attempt     int
 	instance    dnsmessage.Name
 	hostName    dnsmessage.Name
-	families    []*family
-	links       []link
-	packets     chan packet
+	current     atomic.Pointer[string]
+	links       []*linkState
 }
 
 func Advertise(ctx context.Context, name string, serviceType string, host string, port uint16, txt map[string]string) (*Advertisement, error) {
@@ -77,22 +67,21 @@ func Advertise(ctx context.Context, name string, serviceType string, host string
 		return nil, E.Cause(err, "mdns: ", serviceType)
 	}
 	r := &responder{
+		transport:   newTransport(group4.Port()),
 		name:        name,
 		host:        host,
 		serviceType: serviceName,
 		port:        port,
 		txt:         encodeTXT(txt),
-		families:    []*family{{group: group}, {group: group6}},
-		packets:     make(chan packet),
 	}
-	if err = r.rename(1); err == nil {
+	if err = r.rename(); err == nil {
 		_, err = (&dnsmessage.Message{Answers: r.records(link{})}).Pack()
 	}
 	if err != nil {
 		return nil, E.Cause(err, "mdns: advertise ", name, " on ", host)
 	}
 	runCtx, cancel := context.WithCancel(context.Background())
-	a := &Advertisement{cancel: cancel, done: make(chan struct{}), claimed: make(chan struct{})}
+	a := &Advertisement{responder: r, cancel: cancel, done: make(chan struct{}), claimed: make(chan struct{})}
 	go r.run(runCtx, a)
 	select {
 	case <-a.claimed:
@@ -119,7 +108,7 @@ func encodeTXT(txt map[string]string) []string {
 }
 
 func (a *Advertisement) Host() string {
-	return a.host
+	return *a.responder.current.Load()
 }
 
 func (a *Advertisement) Close() {
@@ -127,11 +116,12 @@ func (a *Advertisement) Close() {
 	<-a.done
 }
 
-func (r *responder) rename(attempt int) error {
+func (r *responder) rename() error {
+	r.attempt++
 	name, host := r.name, r.host
-	if attempt > 1 {
-		name += " (" + strconv.Itoa(attempt) + ")"
-		host += "-" + strconv.Itoa(attempt)
+	if r.attempt > 1 {
+		name += " (" + strconv.Itoa(r.attempt) + ")"
+		host += "-" + strconv.Itoa(r.attempt)
 	}
 	instance, err := dnsmessage.NewName(name + "." + r.serviceType.String())
 	if err != nil {
@@ -142,161 +132,135 @@ func (r *responder) rename(attempt int) error {
 		return err
 	}
 	r.instance, r.hostName = instance, hostName
+	current := host + ".local"
+	r.current.Store(&current)
 	return nil
 }
 
 func (r *responder) run(ctx context.Context, a *Advertisement) {
 	defer close(a.done)
-	defer func() {
-		for _, it := range r.families {
-			if it.conn != nil {
-				it.conn.Close()
-			}
-		}
-	}()
+	defer r.transport.close()
 	refresh := time.NewTicker(refreshInterval)
 	defer refresh.Stop()
 	next := time.NewTimer(0)
 	defer next.Stop()
 	r.refresh(ctx)
-	attempt, probes, announcements := 1, 0, announceCount
-	probed := false
+	claimed := false
 	for {
+		if !claimed && !slices.ContainsFunc(r.links, func(it *linkState) bool { return !it.claimed }) {
+			claimed = true
+			close(a.claimed)
+		}
+		scheduled := common.Filter(r.links, func(it *linkState) bool { return !it.due.IsZero() })
+		if len(scheduled) > 0 {
+			next.Reset(time.Until(common.MinBy(scheduled, func(it *linkState) int64 { return it.due.UnixNano() }).due))
+		} else {
+			next.Stop()
+		}
 		select {
 		case <-ctx.Done():
-			if probed {
-				for _, it := range r.links {
-					r.announce(it, true)
+			for _, it := range r.links {
+				if it.claimed {
+					r.announce(it.link, true)
 				}
 			}
 			return
 		case <-refresh.C:
-			if r.refresh(ctx) && probed {
-				announcements = announceCount
-				next.Reset(0)
-			}
-		case received := <-r.packets:
-			if probed {
-				r.answer(received)
-			} else if r.conflicts(received) {
-				attempt++
-				if err := r.rename(attempt); err != nil {
-					a.failure = E.Cause(err, "rename after a conflict")
-					return
-				}
-				probes = 0
-				next.Reset(0)
+			r.refresh(ctx)
+		case received := <-r.transport.packets:
+			if err := r.receive(received); err != nil {
+				a.failure = err
+				return
 			}
 		case <-next.C:
-			if probes < probeCount {
-				for _, it := range r.links {
-					r.probe(it)
-				}
-				probes++
-				next.Reset(probeInterval)
-				continue
-			}
-			if !probed {
-				probed = true
-				a.host = strings.TrimSuffix(r.hostName.String(), ".")
-				close(a.claimed)
-			}
-			for _, it := range r.links {
-				r.announce(it, false)
-			}
-			announcements--
-			if announcements > 0 {
-				next.Reset(announceInterval)
-			}
+			r.act(time.Now())
 		}
 	}
 }
 
-func (r *responder) refresh(ctx context.Context) bool {
-	opened := false
-	for _, it := range r.families {
-		if it.conn != nil {
-			continue
-		}
-		network := "udp6"
-		if it.group.Addr().Is4() {
-			network = "udp4"
-		}
-		listener := net.ListenConfig{Control: control.ReuseAddr()}
-		conn, err := listener.ListenPacket(ctx, network, ":"+strconv.Itoa(int(it.group.Port())))
-		if err != nil {
-			continue
-		}
-		if it.group.Addr().Is4() {
-			multicast := ipv4.NewPacketConn(conn)
-			err = multicast.SetMulticastTTL(255)
-			it.multicast = multicast
-		} else {
-			multicast := ipv6.NewPacketConn(conn)
-			err = multicast.SetMulticastHopLimit(255)
-			it.multicast = multicast
-		}
-		if err != nil {
-			conn.Close()
-			continue
-		}
-		it.conn = conn.(*net.UDPConn)
-		go receive(ctx, socket{conn: it.conn}, r.packets)
-		opened = true
+func (s *linkState) reset(due time.Time) {
+	s.probes, s.claimed, s.announcements, s.due = 0, false, announceCount, due
+}
+
+func (r *responder) reprobe(due time.Time) {
+	for _, it := range r.links {
+		it.reset(due)
 	}
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return opened
+}
+
+func (r *responder) refresh(ctx context.Context) {
+	_ = r.transport.refresh(ctx)
+	links := make([]*linkState, 0, len(r.transport.links))
+	for _, current := range r.transport.links {
+		state := common.Find(r.links, func(it *linkState) bool {
+			return it.iface.Index == current.iface.Index && slices.Equal(it.prefixes, current.prefixes)
+		})
+		if state == nil {
+			state = &linkState{}
+			state.reset(time.Now().Add(rand.N(probeInterval)))
+		}
+		state.link = current
+		links = append(links, state)
 	}
-	var links []link
-	for _, it := range interfaces {
-		if it.Flags&(net.FlagUp|net.FlagRunning|net.FlagMulticast) != net.FlagUp|net.FlagRunning|net.FlagMulticast || it.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addresses, err := it.Addrs()
-		if err != nil {
-			continue
-		}
-		current := link{iface: it}
-		for _, address := range addresses {
-			prefix, isPrefix := address.(*net.IPNet)
-			if !isPrefix {
-				continue
-			}
-			ip, _ := netip.AddrFromSlice(prefix.IP)
-			ones, _ := prefix.Mask.Size()
-			current.prefixes = append(current.prefixes, netip.PrefixFrom(ip.Unmap(), ones))
-		}
-		if len(current.prefixes) == 0 {
-			continue
-		}
-		for _, target := range r.families {
-			if target.conn != nil && current.has(target) {
-				_ = target.multicast.JoinGroup(&current.iface, net.UDPAddrFromAddrPort(target.group))
-			}
-		}
-		links = append(links, current)
-	}
-	changed := opened || !slices.EqualFunc(r.links, links, func(previous link, current link) bool {
-		return previous.iface.Index == current.iface.Index && slices.Equal(previous.prefixes, current.prefixes)
-	})
 	r.links = links
-	return changed
 }
 
-func (l link) has(family *family) bool {
-	return slices.ContainsFunc(l.prefixes, func(prefix netip.Prefix) bool {
-		return prefix.Addr().Is4() == family.group.Addr().Is4()
-	})
+func (r *responder) act(now time.Time) {
+	for _, it := range r.links {
+		if it.due.IsZero() || it.due.After(now) {
+			continue
+		}
+		if it.probes < probeCount {
+			r.probe(it.link)
+			it.probes++
+			it.due = now.Add(probeInterval)
+			continue
+		}
+		it.claimed = true
+		r.announce(it.link, false)
+		it.announcements--
+		it.due = time.Time{}
+		if it.announcements > 0 {
+			it.due = now.Add(announceInterval)
+		}
+	}
 }
 
-func (r *responder) records(l link) []dnsmessage.Resource {
+func (r *responder) receive(received packet) error {
+	parsed, isMessage := parse(received.data)
+	if !isMessage || parsed.header.OpCode != 0 {
+		return nil
+	}
+	source := received.source.Addr()
+	own := r.transport.isOwn(source)
+	if parsed.header.Response {
+		if own || !r.conflicts(parsed) {
+			return nil
+		}
+		if !slices.ContainsFunc(r.links, func(it *linkState) bool { return it.claimed }) {
+			if err := r.rename(); err != nil {
+				return E.Cause(err, "rename after a conflict")
+			}
+		}
+		r.reprobe(time.Now())
+		return nil
+	}
+	arrived, isLink := r.transport.linkOf(source)
+	state := common.Find(r.links, func(it *linkState) bool { return it.iface.Index == arrived.iface.Index })
+	if !isLink || state == nil {
+		return nil
+	}
+	if state.claimed {
+		r.answer(state.link, parsed, received.source)
+	} else if !own && r.loses(state.link, parsed.authorities) {
+		r.reprobe(time.Now().Add(probeDefer))
+	}
+	return nil
+}
+
+func (r *responder) unique(l link) []dnsmessage.Resource {
 	unique := dnsmessage.ClassINET | cacheFlush
 	records := []dnsmessage.Resource{
-		{
-			Header: dnsmessage.ResourceHeader{Name: r.serviceType, Type: dnsmessage.TypePTR, Class: dnsmessage.ClassINET, TTL: serviceTTL},
-			Body:   &dnsmessage.PTRResource{PTR: r.instance},
-		},
 		{
 			Header: dnsmessage.ResourceHeader{Name: r.instance, Type: dnsmessage.TypeSRV, Class: unique, TTL: hostTTL},
 			Body:   &dnsmessage.SRVResource{Port: r.port, Target: r.hostName},
@@ -322,26 +286,20 @@ func (r *responder) records(l link) []dnsmessage.Resource {
 	return records
 }
 
-func (r *responder) send(l link, families []*family, message *dnsmessage.Message) {
-	packed, err := message.Pack()
-	if err != nil {
-		return
-	}
-	for _, it := range families {
-		if it.conn == nil || !l.has(it) || it.multicast.SetMulticastInterface(&l.iface) != nil {
-			continue
-		}
-		_, _ = it.conn.WriteToUDPAddrPort(packed, it.group)
-	}
+func (r *responder) records(l link) []dnsmessage.Resource {
+	return append([]dnsmessage.Resource{{
+		Header: dnsmessage.ResourceHeader{Name: r.serviceType, Type: dnsmessage.TypePTR, Class: dnsmessage.ClassINET, TTL: serviceTTL},
+		Body:   &dnsmessage.PTRResource{PTR: r.instance},
+	}}, r.unique(l)...)
 }
 
 func (r *responder) probe(l link) {
-	r.send(l, r.families, &dnsmessage.Message{
+	_ = r.transport.multicast(l, &dnsmessage.Message{
 		Questions: []dnsmessage.Question{
 			{Name: r.instance, Type: dnsmessage.TypeALL, Class: dnsmessage.ClassINET},
 			{Name: r.hostName, Type: dnsmessage.TypeALL, Class: dnsmessage.ClassINET},
 		},
-		Authorities: slices.DeleteFunc(r.records(l), func(record dnsmessage.Resource) bool { return record.Header.Type == dnsmessage.TypePTR }),
+		Authorities: r.unique(l),
 	})
 }
 
@@ -352,76 +310,56 @@ func (r *responder) announce(l link, goodbye bool) {
 			records[index].Header.TTL = 0
 		}
 	}
-	r.send(l, r.families, &dnsmessage.Message{Header: dnsmessage.Header{Response: true, Authoritative: true}, Answers: records})
+	_ = r.transport.multicast(l, &dnsmessage.Message{Header: dnsmessage.Header{Response: true, Authoritative: true}, Answers: records})
 }
 
-func (r *responder) conflicts(received packet) bool {
-	var parser dnsmessage.Parser
-	header, err := parser.Start(received.data)
-	if err != nil || !header.Response || parser.SkipAllQuestions() != nil {
-		return false
-	}
-	var owned []string
-	for _, it := range r.links {
-		for _, record := range r.records(it) {
-			owned = append(owned, record.Body.GoString())
+func (r *responder) owns(name dnsmessage.Name) bool {
+	return sameName(name, r.instance) || sameName(name, r.hostName)
+}
+
+func (r *responder) conflicts(parsed message) bool {
+	owned := common.FlatMap(r.links, func(it *linkState) []dnsmessage.Resource { return r.unique(it.link) })
+	return slices.ContainsFunc(parsed.records(), func(record dnsmessage.Resource) bool {
+		return record.Header.TTL > 0 && r.owns(record.Header.Name) && !slices.ContainsFunc(owned, func(it dnsmessage.Resource) bool { return sameRecord(it, record) })
+	})
+}
+
+func (r *responder) loses(l link, authorities []dnsmessage.Resource) bool {
+	ours := r.unique(l)
+	for _, name := range []dnsmessage.Name{r.instance, r.hostName} {
+		named := func(it dnsmessage.Resource) bool { return sameName(it.Header.Name, name) }
+		theirs := common.Filter(authorities, named)
+		if len(theirs) == 0 {
+			continue
 		}
-	}
-	for _, section := range []func() ([]dnsmessage.Resource, error){parser.AllAnswers, parser.AllAuthorities, parser.AllAdditionals} {
-		resources, err := section()
-		if slices.ContainsFunc(resources, func(resource dnsmessage.Resource) bool {
-			name := resource.Header.Name.String()
-			return (strings.EqualFold(name, r.instance.String()) || strings.EqualFold(name, r.hostName.String())) && !slices.Contains(owned, resource.Body.GoString())
-		}) {
-			return true
-		}
-		if err != nil {
-			return false
+		if order := compareRecords(common.Filter(ours, named), theirs); order != 0 {
+			return order < 0
 		}
 	}
 	return false
 }
 
-func (r *responder) answer(received packet) {
-	var parser dnsmessage.Parser
-	header, err := parser.Start(received.data)
-	if err != nil || header.Response || header.OpCode != 0 {
-		return
-	}
-	questions, err := parser.AllQuestions()
-	if err != nil {
-		return
-	}
-	source := received.source.Addr()
-	index := slices.IndexFunc(r.links, func(l link) bool {
-		if source.Zone() != "" {
-			return l.iface.Name == source.Zone()
-		}
-		return slices.ContainsFunc(l.prefixes, func(prefix netip.Prefix) bool { return prefix.Contains(source) })
-	})
-	if index < 0 {
-		return
-	}
-	records := r.records(r.links[index])
+func (r *responder) answer(l link, query message, source netip.AddrPort) {
+	records := r.records(l)
 	answered := make([]bool, len(records))
 	related := make(map[string]bool)
 	var answers []dnsmessage.Resource
-	for _, question := range questions {
+	for _, question := range query.questions {
 		if question.Class&^cacheFlush != dnsmessage.ClassINET && question.Class&^cacheFlush != dnsmessage.ClassANY {
 			continue
 		}
-		for recordIndex, record := range records {
-			if answered[recordIndex] || !strings.EqualFold(record.Header.Name.String(), question.Name.String()) || (question.Type != dnsmessage.TypeALL && question.Type != record.Header.Type) {
+		for index, record := range records {
+			if answered[index] || !sameName(record.Header.Name, question.Name) || (question.Type != dnsmessage.TypeALL && question.Type != record.Header.Type) {
 				continue
 			}
-			answered[recordIndex] = true
+			answered[index] = true
 			answers = append(answers, record)
-			related[strings.ToLower(record.Header.Name.String())] = true
+			related[nameKey(record.Header.Name)] = true
 			switch body := record.Body.(type) {
 			case *dnsmessage.PTRResource:
-				related[strings.ToLower(body.PTR.String())] = true
+				related[nameKey(body.PTR)] = true
 			case *dnsmessage.SRVResource:
-				related[strings.ToLower(body.Target.String())] = true
+				related[nameKey(body.Target)] = true
 			}
 		}
 	}
@@ -429,36 +367,29 @@ func (r *responder) answer(received packet) {
 		return
 	}
 	var additionals []dnsmessage.Resource
-	for recordIndex, record := range records {
-		if !related[strings.ToLower(record.Header.Name.String())] {
+	for index, record := range records {
+		if !related[nameKey(record.Header.Name)] {
 			continue
 		}
 		if service, isService := record.Body.(*dnsmessage.SRVResource); isService {
-			related[strings.ToLower(service.Target.String())] = true
+			related[nameKey(service.Target)] = true
 		}
-		if !answered[recordIndex] {
+		if !answered[index] {
 			additionals = append(additionals, record)
 		}
 	}
 	response := &dnsmessage.Message{Header: dnsmessage.Header{Response: true, Authoritative: true}, Answers: answers, Additionals: additionals}
-	receiver := r.families[0]
-	if source.Is6() {
-		receiver = r.families[1]
-	}
-	if received.source.Port() == group.Port() {
-		r.send(r.links[index], []*family{receiver}, response)
+	if source.Port() == group4.Port() {
+		_ = r.transport.multicast(l, response)
 		return
 	}
-	response.Header.ID = header.ID
-	response.Questions = questions
+	response.Header.ID = query.header.ID
+	response.Questions = query.questions
 	for _, section := range [][]dnsmessage.Resource{answers, additionals} {
 		for index := range section {
 			section[index].Header.TTL = min(section[index].Header.TTL, legacyTTL)
 			section[index].Header.Class &^= cacheFlush
 		}
 	}
-	packed, err := response.Pack()
-	if err == nil {
-		_, _ = receiver.conn.WriteToUDPAddrPort(packed, received.source)
-	}
+	_ = r.transport.unicast(source, response)
 }

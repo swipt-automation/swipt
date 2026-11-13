@@ -2,24 +2,19 @@ package mdns
 
 import (
 	"context"
-	"net"
+	"maps"
 	"net/netip"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 
 	"golang.org/x/net/dns/dnsmessage"
-	"golang.org/x/net/ipv4"
 )
 
-const (
-	queryInterval = time.Second
-	maxPacketSize = 9000
-)
-
-var group = netip.MustParseAddrPort("224.0.0.251:5353")
+const queryInterval = time.Second
 
 type Service struct {
 	Port      uint16
@@ -27,223 +22,208 @@ type Service struct {
 	Addresses []netip.Addr
 }
 
-type socket struct {
-	conn          *net.UDPConn
-	interfaceName string
-}
-
-type packet struct {
-	data          []byte
-	source        netip.AddrPort
-	interfaceName string
-}
-
 type instance struct {
-	host   string
-	port   uint16
-	text   map[string]string
-	source netip.Addr
+	name     dnsmessage.Name
+	service  *dnsmessage.SRVResource
+	text     map[string]string
+	reported *Service
+}
+
+type question struct {
+	name string
+	kind dnsmessage.Type
+}
+
+type browser struct {
+	transport *transport
+	service   dnsmessage.Name
+	instances map[string]*instance
+	hosts     map[string][]netip.Addr
+	asked     map[question]bool
 }
 
 func Browse(ctx context.Context, serviceType string, found func(Service) bool) error {
-	domain := strings.ToLower(serviceType) + ".local."
-	name, err := dnsmessage.NewName(domain)
+	service, err := dnsmessage.NewName(strings.ToLower(serviceType) + ".local.")
 	if err != nil {
 		return E.Cause(err, "mdns: ", serviceType)
 	}
-	query, err := (&dnsmessage.Message{Questions: []dnsmessage.Question{{Name: name, Type: dnsmessage.TypePTR, Class: dnsmessage.ClassINET}}}).Pack()
-	if err != nil {
-		return err
-	}
-	sockets, err := listen()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		for _, it := range sockets {
-			it.conn.Close()
-		}
-	}()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	packets := make(chan packet)
-	for _, it := range sockets {
-		go receive(ctx, it, packets)
+	b := &browser{
+		transport: newTransport(0),
+		service:   service,
+		instances: make(map[string]*instance),
+		hosts:     make(map[string][]netip.Addr),
+		asked:     make(map[question]bool),
 	}
-	instances := make(map[string]*instance)
-	hosts := make(map[string][]netip.Addr)
-	reported := make(map[string]bool)
-	ticker := time.NewTicker(queryInterval)
-	defer ticker.Stop()
-	if err = send(sockets, query); err != nil {
+	defer b.transport.close()
+	if err = b.transport.refresh(ctx); err != nil {
 		return err
 	}
-	for {
+	ticker := time.NewTicker(queryInterval)
+	defer ticker.Stop()
+	err = b.query(true)
+	for err == nil {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			if err = send(sockets, query); err != nil {
-				return err
+			_ = b.transport.refresh(ctx)
+			err = b.query(true)
+		case received := <-b.transport.packets:
+			if b.receive(received, found) {
+				return nil
 			}
-		case received := <-packets:
-			if !parse(received, "."+domain, instances, hosts) {
-				continue
-			}
-			for key, it := range instances {
-				if reported[key] || it.port == 0 || it.text == nil || it.host == "" {
-					continue
-				}
-				addresses := hosts[it.host]
-				if len(addresses) == 0 {
-					addresses = []netip.Addr{it.source}
-				}
-				reported[key] = true
-				if found(Service{Port: it.port, Text: it.text, Addresses: addresses}) {
-					return nil
-				}
-			}
+			err = b.query(false)
 		}
 	}
+	return err
 }
 
-func listen() ([]socket, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return nil, E.Cause(err, "mdns: list the network interfaces")
-	}
-	var sockets []socket
-	var failures []error
-	for _, it := range interfaces {
-		if it.Flags&net.FlagUp == 0 || it.Flags&net.FlagMulticast == 0 || it.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addresses, err := it.Addrs()
-		if err != nil {
-			continue
-		}
-		index := slices.IndexFunc(addresses, func(address net.Addr) bool {
-			prefix, isPrefix := address.(*net.IPNet)
-			return isPrefix && prefix.IP.To4() != nil
-		})
-		if index < 0 {
-			continue
-		}
-		conn, err := net.ListenUDP("udp4", &net.UDPAddr{IP: addresses[index].(*net.IPNet).IP})
-		if err == nil {
-			multicast := ipv4.NewPacketConn(conn)
-			err = multicast.SetMulticastInterface(&it)
-			if err == nil {
-				err = multicast.SetMulticastTTL(255)
-			}
-			if err != nil {
-				conn.Close()
-			}
-		}
-		if err != nil {
-			failures = append(failures, E.Cause(err, "mdns: ", it.Name))
-			continue
-		}
-		sockets = append(sockets, socket{conn: conn, interfaceName: it.Name})
-	}
-	if len(sockets) == 0 {
-		if len(failures) > 0 {
-			return nil, E.Errors(failures...)
-		}
-		return nil, E.New("mdns: no network interface supports multicast")
-	}
-	return sockets, nil
+func nameKey(name dnsmessage.Name) string {
+	return strings.ToLower(name.String())
 }
 
-func send(sockets []socket, query []byte) error {
-	var failures []error
-	for _, it := range sockets {
-		_, err := it.conn.WriteToUDPAddrPort(query, group)
-		if err != nil {
-			failures = append(failures, E.Cause(err, "mdns: send to ", it.interfaceName))
+func keyOf(it dnsmessage.Question) question {
+	return question{name: nameKey(it.Name), kind: it.Type}
+}
+
+func (b *browser) questions() []dnsmessage.Question {
+	ask := func(name dnsmessage.Name, kind dnsmessage.Type) dnsmessage.Question {
+		return dnsmessage.Question{Name: name, Type: kind, Class: dnsmessage.ClassINET}
+	}
+	wanted := []dnsmessage.Question{ask(b.service, dnsmessage.TypePTR)}
+	for _, it := range b.instances {
+		if it.service == nil {
+			wanted = append(wanted, ask(it.name, dnsmessage.TypeSRV))
+		} else if len(b.hosts[nameKey(it.service.Target)]) == 0 {
+			wanted = append(wanted, ask(it.service.Target, dnsmessage.TypeA), ask(it.service.Target, dnsmessage.TypeAAAA))
+		}
+		if it.text == nil {
+			wanted = append(wanted, ask(it.name, dnsmessage.TypeTXT))
 		}
 	}
-	if len(failures) < len(sockets) {
+	return common.UniqBy(wanted, keyOf)
+}
+
+func (b *browser) query(repeat bool) error {
+	due := common.Filter(b.questions(), func(it dnsmessage.Question) bool { return repeat || !b.asked[keyOf(it)] })
+	if len(due) == 0 {
+		return nil
+	}
+	for _, it := range due {
+		b.asked[keyOf(it)] = true
+	}
+	var failures []error
+	for _, it := range b.transport.links {
+		if err := b.transport.multicast(it, &dnsmessage.Message{Questions: due}); err != nil {
+			failures = append(failures, err)
+		}
+	}
+	if len(failures) < len(b.transport.links) {
 		return nil
 	}
 	return E.Errors(failures...)
 }
 
-func receive(ctx context.Context, it socket, packets chan<- packet) {
-	buffer := make([]byte, maxPacketSize)
-	for {
-		n, source, err := it.conn.ReadFromUDPAddrPort(buffer)
-		if err != nil {
-			return
+func (b *browser) receive(received packet, found func(Service) bool) bool {
+	parsed, isMessage := parse(received.data)
+	if !isMessage || !parsed.header.Response {
+		return false
+	}
+	var zone string
+	if it, isLink := b.transport.linkOf(received.source.Addr()); isLink {
+		zone = it.iface.Name
+	}
+	for _, record := range parsed.records() {
+		b.cache(record, zone)
+	}
+	for _, it := range b.instances {
+		service, resolved := b.resolve(it)
+		if !resolved || it.reported != nil && sameService(*it.reported, service) {
+			continue
 		}
-		select {
-		case packets <- packet{data: slices.Clone(buffer[:n]), source: netip.AddrPortFrom(source.Addr().Unmap(), source.Port()), interfaceName: it.interfaceName}:
-		case <-ctx.Done():
-			return
+		it.reported = &service
+		if found(service) {
+			return true
 		}
+	}
+	return false
+}
+
+func (b *browser) cache(record dnsmessage.Resource, zone string) {
+	alive := record.Header.TTL > 0
+	switch body := record.Body.(type) {
+	case *dnsmessage.PTRResource:
+		if sameName(record.Header.Name, b.service) {
+			b.update(body.PTR, alive, func(*instance) {})
+		}
+	case *dnsmessage.SRVResource:
+		b.update(record.Header.Name, alive, func(it *instance) { it.service = body })
+	case *dnsmessage.TXTResource:
+		b.update(record.Header.Name, alive, func(it *instance) { it.text = decodeTXT(body.TXT) })
+	case *dnsmessage.AResource:
+		b.address(record.Header.Name, netip.AddrFrom4(body.A), alive)
+	case *dnsmessage.AAAAResource:
+		address := netip.AddrFrom16(body.AAAA)
+		if address.IsLinkLocalUnicast() {
+			if zone == "" {
+				return
+			}
+			address = address.WithZone(zone)
+		}
+		b.address(record.Header.Name, address, alive)
 	}
 }
 
-func parse(received packet, suffix string, instances map[string]*instance, hosts map[string][]netip.Addr) bool {
-	var parser dnsmessage.Parser
-	header, err := parser.Start(received.data)
-	if err != nil || !header.Response {
-		return false
+func (b *browser) update(name dnsmessage.Name, alive bool, apply func(*instance)) {
+	instanceKey := nameKey(name)
+	if !strings.HasSuffix(instanceKey, "."+nameKey(b.service)) {
+		return
 	}
-	if parser.SkipAllQuestions() != nil {
-		return false
+	if !alive {
+		delete(b.instances, instanceKey)
+		return
 	}
-	var resources []dnsmessage.Resource
-	for _, section := range []func() ([]dnsmessage.Resource, error){parser.AllAnswers, parser.AllAuthorities, parser.AllAdditionals} {
-		parsed, err := section()
-		resources = append(resources, parsed...)
-		if err != nil {
-			break
-		}
+	it := b.instances[instanceKey]
+	if it == nil {
+		it = &instance{name: name}
+		b.instances[instanceKey] = it
 	}
-	instanceOf := func(name string) *instance {
-		if !strings.HasSuffix(name, suffix) {
-			return nil
-		}
-		it := instances[name]
-		if it == nil {
-			it = &instance{source: received.source.Addr()}
-			instances[name] = it
-		}
-		return it
-	}
-	for _, resource := range resources {
-		name := strings.ToLower(resource.Header.Name.String())
-		switch body := resource.Body.(type) {
-		case *dnsmessage.SRVResource:
-			if it := instanceOf(name); it != nil {
-				it.host = strings.ToLower(body.Target.String())
-				it.port = body.Port
-			}
-		case *dnsmessage.TXTResource:
-			if it := instanceOf(name); it != nil {
-				it.text = make(map[string]string)
-				for _, entry := range body.TXT {
-					key, value, _ := strings.Cut(entry, "=")
-					it.text[key] = value
-				}
-			}
-		case *dnsmessage.AResource:
-			hosts[name] = appendAddress(hosts[name], netip.AddrFrom4(body.A))
-		case *dnsmessage.AAAAResource:
-			address := netip.AddrFrom16(body.AAAA)
-			if address.IsLinkLocalUnicast() {
-				address = address.WithZone(received.interfaceName)
-			}
-			hosts[name] = appendAddress(hosts[name], address)
-		}
-	}
-	return true
+	apply(it)
 }
 
-func appendAddress(addresses []netip.Addr, address netip.Addr) []netip.Addr {
-	if slices.Contains(addresses, address) {
-		return addresses
+func (b *browser) address(name dnsmessage.Name, address netip.Addr, alive bool) {
+	hostKey := nameKey(name)
+	addresses := slices.DeleteFunc(b.hosts[hostKey], func(it netip.Addr) bool { return it == address })
+	if alive {
+		addresses = append(addresses, address)
 	}
-	return append(addresses, address)
+	b.hosts[hostKey] = addresses
+}
+
+func (b *browser) resolve(it *instance) (Service, bool) {
+	if it.service == nil || it.text == nil {
+		return Service{}, false
+	}
+	addresses := b.hosts[nameKey(it.service.Target)]
+	if len(addresses) == 0 {
+		return Service{}, false
+	}
+	return Service{Port: it.service.Port, Text: it.text, Addresses: slices.Clone(addresses)}, true
+}
+
+func sameService(a Service, b Service) bool {
+	return a.Port == b.Port && maps.Equal(a.Text, b.Text) && slices.Equal(a.Addresses, b.Addresses)
+}
+
+func decodeTXT(entries []string) map[string]string {
+	text := make(map[string]string)
+	for _, entry := range entries {
+		name, value, _ := strings.Cut(entry, "=")
+		if _, exists := text[name]; name != "" && !exists {
+			text[name] = value
+		}
+	}
+	return text
 }
