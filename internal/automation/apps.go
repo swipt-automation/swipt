@@ -12,6 +12,7 @@ import (
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/atomicfile"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
 	"github.com/swipt-automation/swipt/internal/device"
 )
@@ -95,7 +96,7 @@ func deviceAppIcon(ctx context.Context, call *operation) (any, error) {
 	if err = os.MkdirAll(directory, 0o755); err != nil {
 		return nil, err
 	}
-	if err = writeAtomically(path, data); err != nil {
+	if err = atomicfile.Write(path, data, 0o600); err != nil {
 		return nil, err
 	}
 	return fileURL(path), nil

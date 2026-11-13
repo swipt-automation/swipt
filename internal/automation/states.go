@@ -13,6 +13,7 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/atomicfile"
 	"github.com/swipt-automation/swipt/internal/device"
 )
 
@@ -143,7 +144,7 @@ func (h *Host) storeLocation(location *simulatedLocation) error {
 		if err = os.MkdirAll(h.options.Directory, 0o755); err != nil {
 			return err
 		}
-		if err = writeAtomically(path, data); err != nil {
+		if err = atomicfile.Write(path, data, 0o600); err != nil {
 			return err
 		}
 	}
