@@ -5,6 +5,7 @@
     "api",
     "cli",
     "dev",
+    "Swipt/Resources/DeveloperDiskImage",
     "internal/automation/runtime",
     "internal/automation/runtime/modules/*"
   ],

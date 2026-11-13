@@ -46,8 +46,8 @@ func goString(value C.CFStringRef) string {
 	return C.GoString((*C.char)(unsafe.Pointer(&buffer[0])))
 }
 
-func advertise(ctx context.Context, port uint16) (string, func(), error) {
-	advertisement, err := dnssd.Advertise(ctx, Name(), discovery.ServiceType, port, nil)
+func advertise(ctx context.Context, port uint16, udid string) (string, func(), error) {
+	advertisement, err := dnssd.Advertise(ctx, Name(), discovery.ServiceType, port, map[string]string{discovery.UDIDKey: udid})
 	if err != nil {
 		return "", nil, err
 	}

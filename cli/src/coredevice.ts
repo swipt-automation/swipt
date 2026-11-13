@@ -1,11 +1,13 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
+import readline from "node:readline";
 import { promisify } from "node:util";
 
+import { open } from "./client";
 import { label, sameName } from "./connection";
 import { tr } from "./i18n";
 import { choose, interactive, step } from "./output";
@@ -42,6 +44,15 @@ export function driverPath() {
   }
   return fs.existsSync(packaged) ? packaged : driverName;
 }
+
+// A dependency of the CLI, so every driver it runs mounts the disk image that
+// the release was tested with, or a newer one from Xcode.
+const diskImage = () =>
+  path.dirname(
+    createRequire(import.meta.url).resolve(
+      "@swipt/developer-disk-image/package.json",
+    ),
+  );
 
 export class MissingDriverError extends Error {
   constructor() {
@@ -157,14 +168,22 @@ const deviceLine = (device) => `  ${device.name}  ${device.udid}`;
 
 interface DeviceQuery {
   required?: boolean;
+  virtual?: boolean;
   filter?: (devices: any[]) => Promise<any[]> | any[];
 }
 
-async function findDevice(context, { required = true, filter }: DeviceQuery) {
+async function findDevice(
+  context,
+  { required = true, virtual: guestsToo = true, filter }: DeviceQuery,
+) {
   const given = context.options.device;
   const [listed, virtual] = await step(
     tr("looking for devices"),
-    () => Promise.all([driver(["device", "list"]), guests()]),
+    () =>
+      Promise.all([
+        driver(["device", "list"]),
+        guestsToo ? guests() : Promise.resolve([]),
+      ]),
     { transient: true },
   );
   const devices = [
@@ -223,6 +242,8 @@ export const apps = async (device) =>
   device.virtual ? guestApps(device) : onDevice(device, ["apps"]);
 
 export const lockedError = /device is locked/;
+
+export const appRunning = (device, id) => onDevice(device, ["running", id]);
 
 export const installApp = (device, app, id) =>
   onDevice(device, ["install", app, id]);
@@ -319,3 +340,86 @@ export const containerSQL = (
   });
 
 export const provisioningProfiles = (device) => onDevice(device, ["profiles"]);
+
+export const mountDiskImage = (device) =>
+  driver(["mount", "-d", device.udid, "--disk-image", diskImage()]);
+
+export const deviceNotListedExit = 3;
+
+const logTail = 64 * 1024;
+
+// Runs swipt-driver until stop is called; serving resolves to the line it
+// prints once the API answers.
+export function serve(udid, { passcode = undefined, signal }) {
+  const child = spawn(
+    driverPath(),
+    [
+      "-d",
+      udid,
+      "--disk-image",
+      diskImage(),
+      ...(passcode
+        ? ["--passcode-stdin", "--passcode-type", passcode.type]
+        : []),
+    ],
+    { stdio: ["pipe", "pipe", "pipe"], signal },
+  );
+  child.stdin.end(passcode ? `${passcode.passcode}\n` : "");
+  let logs = "";
+  let api;
+  // The tail is enough for the error the driver prints when it exits.
+  child.stderr.on("data", (chunk) => {
+    logs = (logs + chunk).slice(-logTail);
+  });
+  const exited = new Promise<number | null>((resolve) =>
+    child.once("close", resolve),
+  );
+  const failure = (code) =>
+    Object.assign(
+      driverError(
+        logs,
+        `swipt-driver exited with ${code ?? "a signal"}${logs.trim() === "" ? "" : `: ${logs.trim()}`}`,
+      ),
+      { exitCode: code },
+    );
+  let stopping = false;
+  const serving = new Promise<any>((resolve, reject) => {
+    child.once("error", (error: NodeJS.ErrnoException) =>
+      reject(error.code === "ENOENT" ? new MissingDriverError() : error),
+    );
+    exited.then((code) => reject(failure(code)));
+    readline.createInterface({ input: child.stdout }).once("line", (line) => {
+      try {
+        const ready = JSON.parse(line);
+        const local = new URL(ready.api);
+        local.hostname = "127.0.0.1";
+        api = local.origin;
+        resolve({ ...ready, local: api });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+  return {
+    serving,
+    stderr: child.stderr,
+    // Resolves when the driver stops by itself, through the API or by stop.
+    async finished() {
+      const code = await exited;
+      if (code !== 0 && !stopping && !signal.aborted) {
+        throw failure(code);
+      }
+    },
+    async stop() {
+      stopping = true;
+      if (process.platform === "win32" && api !== undefined) {
+        try {
+          await open({ url: api, token: "" }).system.shutdown({});
+          return await exited;
+        } catch {}
+      }
+      child.kill("SIGTERM");
+      return exited;
+    },
+  };
+}

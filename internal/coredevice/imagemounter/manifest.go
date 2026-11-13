@@ -80,6 +80,35 @@ func Outdated(ctx context.Context, mounted, dir string) (available string, outda
 	return manifest.ProductBuildVersion, buildOlder(mountedVersion, availableVersion), nil
 }
 
+// Newest returns the directory whose Developer Disk Image has the newest
+// build, skipping directories without a readable manifest; it returns "" when
+// none has one.
+func Newest(ctx context.Context, directories []string) (string, error) {
+	var newest string
+	var newestVersion [4]uint64
+	var failures []error
+	for _, directory := range directories {
+		manifest, err := loadManifest(ctx, directory)
+		if err == nil {
+			var version [4]uint64
+			if version, err = parseBuild(manifest.ProductBuildVersion); err == nil {
+				if newest == "" || buildOlder(newestVersion, version) {
+					newest, newestVersion = directory, version
+				}
+				continue
+			}
+		}
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		failures = append(failures, E.Cause(err, directory))
+	}
+	if newest == "" {
+		return "", E.Errors(failures...)
+	}
+	return newest, nil
+}
+
 // DDI builds 27A5228h, 27A9266e and 27B52 have cryptex versions 27.1.5228.8,
 // 27.1.9266.5 and 27.2.52.0 (Image.dmg.cryptex_info, those DDI builds).
 func parseBuild(build string) ([4]uint64, error) {

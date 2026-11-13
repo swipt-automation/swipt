@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,25 +25,29 @@ import (
 const exitDeviceNotListed = 3
 
 var (
-	options      computer.Options
-	pairOptions  computer.PairOptions
-	pairOutput   string
-	mountOptions computer.MountOptions
+	options       computer.Options
+	passcodeStdin bool
+	pairOptions   computer.PairOptions
+	pairOutput    string
+	mountOptions  computer.MountOptions
 )
 
 func main() {
 	command := &cobra.Command{
-		Use:           "swipt-driver [-d NAME|UDID]",
-		Short:         "Serve the Swipt API and MCP from this computer",
+		Use:   "swipt-driver [-d NAME|UDID]",
+		Short: "Serve the Swipt API and MCP from this computer",
+		Long: `Serve the Swipt API and MCP from this computer. Run it with "swipt driver".
+
+Once the API answers, it prints one JSON line with the device and the URLs.`,
 		Args:          cobra.NoArgs,
 		RunE:          run,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
 	command.Flags().StringVarP(&options.Device, "device", "d", "", "the device, by name or UDID")
-	command.Flags().StringVar(&options.Passcode, "passcode", "", "unlock device with this passcode")
+	command.Flags().BoolVar(&passcodeStdin, "passcode-stdin", false, "read the passcode for unlocking the device automatically from standard input")
 	command.Flags().StringVar(&options.PasscodeType, "passcode-type", "", "pin (4 or 6 digits, default), numeric or alphanumeric")
-	command.Flags().StringVar(&options.DiskImage, "disk-image", "", "the directory of the Developer Disk Image to mount")
+	command.Flags().StringArrayVar(&options.DiskImages, "disk-image", nil, "a directory with a Developer Disk Image; the newest one is mounted")
 	pairCommand := &cobra.Command{
 		Use:    "pair",
 		Hidden: true,
@@ -57,7 +63,7 @@ func main() {
 		RunE:   runMount,
 	}
 	mountCommand.Flags().StringVarP(&mountOptions.Device, "device", "d", "", "")
-	mountCommand.Flags().StringVar(&mountOptions.DiskImage, "disk-image", "", "")
+	mountCommand.Flags().StringArrayVar(&mountOptions.DiskImages, "disk-image", nil, "")
 	unzipCommand := &cobra.Command{
 		Use:    "unzip ARCHIVE DIRECTORY",
 		Hidden: true,
@@ -154,6 +160,9 @@ func deviceCommand() *cobra.Command {
 	onDevice("terminate BUNDLE_ID", cobra.ExactArgs(1), func(ctx context.Context, session *computer.Session, args []string) (any, error) {
 		return nil, session.Terminate(ctx, args[0])
 	})
+	onDevice("running BUNDLE_ID", cobra.ExactArgs(1), func(ctx context.Context, session *computer.Session, args []string) (any, error) {
+		return session.Running(ctx, args[0])
+	})
 	group.AddCommand(containerCommands(func(ctx context.Context, bundleID string) (*computer.Container, error) {
 		return computer.OpenContainer(ctx, udid, bundleID, logger)
 	})...)
@@ -201,6 +210,13 @@ func containerCommands(open func(context.Context, string) (*computer.Container, 
 }
 
 func run(command *cobra.Command, _ []string) error {
+	if passcodeStdin {
+		line, err := bufio.NewReader(command.InOrStdin()).ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return err
+		}
+		options.Passcode = strings.TrimRight(line, "\r\n")
+	}
 	options.Logs = log.NewFactory(log.Options{Level: log.LevelInfo, PlatformWriter: writer{}})
 	options.Version = version()
 	options.Output = command.OutOrStdout()
