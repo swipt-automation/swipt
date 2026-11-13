@@ -44,7 +44,7 @@ extern void JSGlobalContextSetUnhandledRejectionCallback(JSGlobalContextRef, JSO
 // Bun's WebKit takes no JavaScript lock in some API functions, such as those
 // of typed arrays, JSGlobalContextRelease and
 // JSGlobalContextSetUnhandledRejectionCallback, while the API calls callbacks
-// with every lock dropped (oven-sh/WebKit 5a61071f,
+// with every lock dropped (oven-sh/WebKit d6375c72,
 // Source/JavaScriptCore/API/JSTypedArray.cpp:138, 173, 242, 279;
 // Source/JavaScriptCore/API/JSContextRef.cpp:176, 277;
 // Source/JavaScriptCore/API/APICallbackFunction.h:69).
@@ -403,9 +403,9 @@ static jsc_once jsc_stack_once = JSC_ONCE_INIT;
 // Bun's WebKit suspends threads with SIGPWR and warns on replacing a handler
 // for it, installs its handlers without SA_ONSTACK as the first VM is made,
 // and keeps working once SA_ONSTACK is added to them (oven-sh/WebKit
-// 5a61071f, Source/WTF/wtf/posix/ThreadingPOSIX.cpp:239, 304, 341;
-// Source/WTF/wtf/threads/Signals.cpp:604;
-// Source/JavaScriptCore/runtime/VM.cpp:652).
+// d6375c72, Source/WTF/wtf/posix/ThreadingPOSIX.cpp:239, 304, 341;
+// Source/WTF/wtf/threads/Signals.cpp:597;
+// Source/JavaScriptCore/runtime/VM.cpp:587).
 static void jsc_release_suspend_signal(void) {
 	signal(SIGPWR, SIG_DFL);
 }

@@ -12,7 +12,7 @@ import (
 var linuxTriples = map[string]string{"amd64": "x86_64-linux-gnu", "arm64": "aarch64-linux-gnu"}
 
 // Bun's WebKit is built against glibc 2.31 and gcc 13's libstdc++ (oven-sh/bun
-// 2596ac5, scripts/build/config.ts:705; scripts/build/ci-images/spec.ts:240-299).
+// v1.4.4, scripts/build/config.ts:591; scripts/build/ci-images/spec.ts:240-299).
 var linuxSysroot = map[string][]download{
 	"amd64": {
 		pin("http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/libc6_2.31-0ubuntu9.18_amd64.deb", "1b2281aac4935dfea1f89dfc19e445fdbb45303202af60679ccb8bf035f081a0"),

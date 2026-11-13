@@ -22,7 +22,7 @@ var msvcArchitectures = map[string]msvcArchitecture{
 
 // The versions of the Windows SDK and the MSVC CRT that Bun's WebKit is built
 // with, and the serviced UCRT that replaces the one these bring, which formats
-// numbers wrong on ARM64 (oven-sh/bun 2596ac5, scripts/build/winsysroot.ts:44-60;
+// numbers wrong on ARM64 (oven-sh/bun v1.4.4, scripts/build/winsysroot.ts:43-59;
 // scripts/build/ci-images/spec.ts:304-313).
 var (
 	windowsSDKVersion = "10.0.26100"

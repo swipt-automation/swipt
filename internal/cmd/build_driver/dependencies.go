@@ -20,19 +20,19 @@ type download struct {
 	sha256 string
 }
 
-// The WebKit that Bun pins (oven-sh/bun 2596ac5, scripts/build/deps/webkit.ts:6),
+// The WebKit of a Bun release (oven-sh/bun v1.4.4, scripts/build/deps/webkit.ts:6),
 // with the dependencies its prebuilt archives leave to Bun at the commits Bun
-// builds them from (scripts/build/deps/mimalloc.ts:16, scripts/build/deps/zstd.ts:15).
-const webKitRelease = "https://github.com/oven-sh/WebKit/releases/download/autobuild-5a61071f79134bf41844e7ea31a8449147d85dd4/"
+// builds them from (scripts/build/deps/mimalloc.ts:15, scripts/build/deps/zstd.ts:15).
+const webKitRelease = "https://github.com/oven-sh/WebKit/releases/download/autobuild-d6375c72affe0f70222cdcb45012b10f0bf3a9d5/"
 
 var (
 	webKit = map[target]download{
-		{"linux", "amd64"}:   pin(webKitRelease+"bun-webkit-linux-amd64.tar.gz", "e9da503a3e423ce01e800741ef7e14f1b47c8d138e26a6b108d3a32d080759ec"),
-		{"linux", "arm64"}:   pin(webKitRelease+"bun-webkit-linux-arm64.tar.gz", "424d937285794a6eab000a3fb7b583435aa9b7f94c60659768535061ae8c096c"),
-		{"windows", "amd64"}: pin(webKitRelease+"bun-webkit-windows-amd64.tar.gz", "ad723e93d9bbe4a6328a142ae188300e74696507328ac7506e091e04bec0529a"),
-		{"windows", "arm64"}: pin(webKitRelease+"bun-webkit-windows-arm64.tar.gz", "e549066a032a091cfba87271df08652133f1537cb4f8e2d7423d8802feb14cb5"),
+		{"linux", "amd64"}:   pin(webKitRelease+"bun-webkit-linux-amd64.tar.gz", "e6a0a23bb91d19ec39d3331ed997ad67e156499512ee30a4e0f3fd9e64da80ea"),
+		{"linux", "arm64"}:   pin(webKitRelease+"bun-webkit-linux-arm64.tar.gz", "320c101f5247e0575e3ca41b5dee7f8a2b20365f5f7a58fbd85bee8d63d0e598"),
+		{"windows", "amd64"}: pin(webKitRelease+"bun-webkit-windows-amd64.tar.gz", "70eb12360936d3726081dd196c982a33e2f1e0b6ebfe7603696a1c49b97bd4f9"),
+		{"windows", "arm64"}: pin(webKitRelease+"bun-webkit-windows-arm64.tar.gz", "adca748758acad03f1508c6fc82a858571feab81b17af19db68436a428da16c6"),
 	}
-	mimalloc = pin("https://github.com/oven-sh/mimalloc/archive/5945551d9ea1e3c83dbf5b198b00a3ec51aee395.tar.gz", "da1ce8c714ec7e5a11d2074eacdc13d943954a5798b25ed900098b1bc886ebc4")
+	mimalloc = pin("https://github.com/oven-sh/mimalloc/archive/92ef6587c57b262f6e6abf513f7776a2f8d12aeb.tar.gz", "1e708b1730b96b21b9daad43cd67b10cb4af138a73daf549db5fdc0caac69510")
 	zstd     = pin("https://github.com/facebook/zstd/archive/f8745da6ff1ad1e7bab384bd1f9d742439278e99.tar.gz", "4b0bd1f0cfb25e61b9103c35f27395530ff5b4c0d2513a00fd745849e85ea52c")
 	sqlite   = pin("https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip", "0a9c8e34352dad46006aa82836d5383bff9dc6bc9ce5a60553c05aa30e6ad1f9")
 )
