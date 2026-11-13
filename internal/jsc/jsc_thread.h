@@ -6,11 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#ifdef __APPLE__
-#include <JavaScriptCore/JavaScriptCore.h>
-#else
 #include <JavaScriptCore/JavaScript.h>
-#endif
 
 typedef enum {
 	JSC_CREATE,
@@ -105,6 +101,7 @@ jsc_host_request *jsc_wait(jsc_runtime *rt, jsc_command *cmd);
 void jsc_answer(jsc_runtime *rt, jsc_host_request *request);
 void jsc_cancel(jsc_runtime *rt, uint64_t run);
 uintptr_t *jsc_take_released(jsc_runtime *rt, size_t *count);
+int64_t jsc_monotonic_time(void);
 void jsc_set_languages(const char *languages);
 void jsc_set_time_zone(const char *time_zone);
 

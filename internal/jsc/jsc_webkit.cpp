@@ -1,4 +1,4 @@
-//go:build cgo && (linux || windows)
+//go:build cgo && !darwin
 
 #include "cmakeconfig.h"
 #include "jsc_thread.h"

@@ -5,11 +5,12 @@ package jsc
 /*
 #cgo darwin CFLAGS: -fmodules
 #cgo darwin LDFLAGS: -framework Foundation -framework JavaScriptCore
-#cgo linux LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -licui18n -licuuc -licudata -lmimalloc -lzstd -static-libstdc++ -lm -ldl
-#cgo windows CFLAGS: -DJS_NO_EXPORT
-#cgo windows LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -lsicuin -lsicuuc -lsicudt -lmimalloc -lzstd -lntdll -ladvapi32 -luser32 -lws2_32 -lwinmm -lshell32 -lole32 -ldbghelp
-#cgo windows CXXFLAGS: -O2 -std=c++23 -fno-exceptions -fno-rtti -Wno-inconsistent-dllimport -Wno-unknown-attributes -DNDEBUG -D_HAS_EXCEPTIONS=0 -DNOMINMAX -DJS_NO_EXPORT -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
-#cgo linux CXXFLAGS: -O2 -std=gnu++23 -fno-exceptions -fno-rtti -DNDEBUG -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
+#cgo !darwin CPPFLAGS: -DJS_NO_EXPORT
+#cgo !darwin CXXFLAGS: -O2 -std=c++23 -fno-exceptions -fno-rtti -DNDEBUG -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
+#cgo windows CXXFLAGS: -Wno-inconsistent-dllimport -Wno-unknown-attributes -D_HAS_EXCEPTIONS=0 -DNOMINMAX
+#cgo !darwin LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -lmimalloc -lzstd
+#cgo linux LDFLAGS: -licui18n -licuuc -licudata -static-libstdc++ -lm -ldl
+#cgo windows LDFLAGS: -lsicuin -lsicuuc -lsicudt -lntdll -ladvapi32 -luser32 -lws2_32 -lwinmm -lshell32 -lole32 -ldbghelp
 
 #include <stdlib.h>
 #include "jsc_thread.h"
@@ -276,15 +277,12 @@ func (v Value) SetFunction(name string, function Function) {
 	v.context.submit(cmd)
 }
 
-//go:linkname nanotime runtime.nanotime
-func nanotime() int64
-
 func (v Value) SetClock(name string) time.Time {
 	cmd := command(C.JSC_SET_CLOCK)
 	defer C.free(unsafe.Pointer(cmd))
 	cmd.object = v.ref
 	cmd.name = cString(name)
-	cmd.native_argument = C.uint64_t(nanotime())
+	cmd.native_argument = C.uint64_t(C.jsc_monotonic_time())
 	origin := time.Now()
 	v.context.submit(cmd)
 	return origin

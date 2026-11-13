@@ -1,4 +1,4 @@
-//go:build cgo && (linux || windows)
+//go:build cgo && !darwin
 
 #include <stdint.h>
 #include <stdlib.h>

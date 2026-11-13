@@ -6,12 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __APPLE__
-#include <dlfcn.h>
-#include <mach/mach_time.h>
-#include <objc/objc.h>
-#endif
-
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -27,19 +21,58 @@ typedef void (*jsc_set_time_limit)(JSContextGroupRef, double, jsc_should_termina
 typedef void (*jsc_set_rejection_callback)(JSGlobalContextRef, JSObjectRef, JSValueRef *);
 
 #ifdef __APPLE__
+#include <dlfcn.h>
+
 extern void *objc_autoreleasePoolPush(void);
 extern void objc_autoreleasePoolPop(void *pool);
+
 #define jsc_private(name) dlsym(RTLD_DEFAULT, #name)
-#define jsc_api_lock(context) NULL
-#define jsc_api_unlock(lock) (void)(lock)
-#define jsc_loop_create(group) NULL
-#define jsc_loop_run(loop) (void)(loop)
-#define jsc_loop_stop(loop) (void)(loop)
-#define jsc_loop_free(loop) (void)(loop)
+
+static void *jsc_pool_push(void) {
+	return objc_autoreleasePoolPush();
+}
+
+static void jsc_pool_pop(void *pool) {
+	objc_autoreleasePoolPop(pool);
+}
+
+// The system JavaScriptCore takes the JavaScript lock itself in these API
+// functions, which Bun's WebKit runs without it: JSValueGetTypedArrayType,
+// JSObjectMakeTypedArrayWithBytesNoCopy, JSObjectGetTypedArrayBytesPtr,
+// JSGlobalContextRelease and JSGlobalContextSetUnhandledRejectionCallback
+// (WebKit-7625.2.8.11.9, the source of the JavaScriptCore of macOS 27.2.1
+// 26B131, Source/JavaScriptCore/API/JSTypedArray.cpp:143, 179, 251;
+// Source/JavaScriptCore/API/JSContextRef.cpp:180, 292).
+static void *jsc_api_lock(JSContextRef context) {
+	return NULL;
+}
+
+static void jsc_api_unlock(void *lock) {
+}
+
+static void *jsc_loop_create(JSContextGroupRef group) {
+	return NULL;
+}
+
+static void jsc_loop_run(void *loop) {
+}
+
+static void jsc_loop_stop(void *loop) {
+}
+
+static void jsc_loop_free(void *loop) {
+}
 #else
 extern void JSContextGroupSetExecutionTimeLimit(JSContextGroupRef, double, jsc_should_terminate_callback, void *);
 extern void JSGlobalContextSetUnhandledRejectionCallback(JSGlobalContextRef, JSObjectRef, JSValueRef *);
 #define jsc_private(name) ((void *)name)
+
+static void *jsc_pool_push(void) {
+	return NULL;
+}
+
+static void jsc_pool_pop(void *pool) {
+}
 
 // Bun's WebKit takes no JavaScript lock in some API functions, such as those
 // of typed arrays, JSGlobalContextRelease and
@@ -301,38 +334,15 @@ static void jsc_finalize_host(JSObjectRef function) {
 	jsc_mutex_unlock(&rt->mutex);
 }
 
-#ifdef __APPLE__
-static mach_timebase_info_data_t jsc_timebase;
-static jsc_once jsc_timebase_once = JSC_ONCE_INIT;
-
-static void jsc_load_timebase(void) {
-	mach_timebase_info(&jsc_timebase);
-}
-
-// The same reading and integer conversion as runtime.nanotime (Go 1.26,
-// src/runtime/sys_darwin.go:304; src/runtime/sys_darwin_arm64.s:145).
-static int64_t jsc_nanotime(void) {
-	jsc_call_once(&jsc_timebase_once, jsc_load_timebase);
-	int64_t t = (int64_t)mach_absolute_time();
-	if (jsc_timebase.numer != 1) {
-		t *= (int64_t)jsc_timebase.numer;
-	}
-	if (jsc_timebase.denom != 1) {
-		t /= (int64_t)jsc_timebase.denom;
-	}
-	return t;
-}
-#elif defined(_WIN32)
-// The same reading and conversion as runtime.nanotime (Go 1.26,
-// src/runtime/time_windows.h:13; src/runtime/sys_windows_amd64.s:200;
-// src/runtime/sys_windows_arm64.s:149).
-static int64_t jsc_nanotime(void) {
-	return *(volatile int64_t *)0x7ffe0008 * 100;
+#ifdef _WIN32
+int64_t jsc_monotonic_time(void) {
+	LARGE_INTEGER counter, frequency;
+	QueryPerformanceCounter(&counter);
+	QueryPerformanceFrequency(&frequency);
+	return counter.QuadPart / frequency.QuadPart * 1000000000 + counter.QuadPart % frequency.QuadPart * 1000000000 / frequency.QuadPart;
 }
 #else
-// The same clock as runtime.nanotime (Go 1.26,
-// src/runtime/sys_linux_amd64.s:223; src/runtime/sys_linux_arm64.s:318).
-static int64_t jsc_nanotime(void) {
+int64_t jsc_monotonic_time(void) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	return (int64_t)now.tv_sec * 1000000000 + now.tv_nsec;
@@ -341,7 +351,7 @@ static int64_t jsc_nanotime(void) {
 
 static JSValueRef jsc_call_clock(JSContextRef ctx, JSObjectRef function, JSObjectRef this_object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
 	int64_t origin = (int64_t)(intptr_t)JSObjectGetPrivate(function);
-	return JSValueMakeNumber(ctx, (double)(jsc_nanotime() - origin) / 1e6);
+	return JSValueMakeNumber(ctx, (double)(jsc_monotonic_time() - origin) / 1e6);
 }
 
 static JSClassRef jsc_class;
@@ -419,6 +429,17 @@ static void jsc_handle_signals_on_stack(void) {
 		sigaction(number, &action, NULL);
 	}
 }
+
+static JSContextGroupRef jsc_group_create(void) {
+	jsc_call_once(&jsc_signal_once, jsc_release_suspend_signal);
+	JSContextGroupRef group = JSContextGroupCreate();
+	jsc_call_once(&jsc_stack_once, jsc_handle_signals_on_stack);
+	return group;
+}
+#else
+static JSContextGroupRef jsc_group_create(void) {
+	return JSContextGroupCreate();
+}
 #endif
 
 static void jsc_execute(jsc_runtime *rt, jsc_command *cmd) {
@@ -426,13 +447,7 @@ static void jsc_execute(jsc_runtime *rt, jsc_command *cmd) {
 	JSValueRef exception = NULL;
 	switch (cmd->kind) {
 	case JSC_CREATE:
-#ifdef __linux__
-		jsc_call_once(&jsc_signal_once, jsc_release_suspend_signal);
-		rt->group = JSContextGroupCreate();
-		jsc_call_once(&jsc_stack_once, jsc_handle_signals_on_stack);
-#else
-		rt->group = JSContextGroupCreate();
-#endif
+		rt->group = jsc_group_create();
 		rt->context = JSGlobalContextCreateInGroup(rt->group, NULL);
 		rt->set_limit = (jsc_set_time_limit)jsc_private(JSContextGroupSetExecutionTimeLimit);
 		rt->set_limit(rt->group, jsc_check_interval, jsc_should_terminate, rt);
@@ -579,18 +594,11 @@ static void jsc_service(jsc_runtime *rt, bool *until) {
 		}
 		rt->pending = NULL;
 		jsc_mutex_unlock(&rt->mutex);
-#ifdef __APPLE__
-		void *pool = objc_autoreleasePoolPush();
+		void *pool = jsc_pool_push();
+		void *lock = cmd->kind != JSC_CREATE && cmd->kind != JSC_DESTROY ? jsc_api_lock(rt->context) : NULL;
 		jsc_execute(rt, cmd);
-		objc_autoreleasePoolPop(pool);
-#else
-		bool locked = cmd->kind != JSC_CREATE && cmd->kind != JSC_DESTROY;
-		void *lock = locked ? jsc_api_lock(rt->context) : NULL;
-		jsc_execute(rt, cmd);
-		if (locked) {
-			jsc_api_unlock(lock);
-		}
-#endif
+		jsc_api_unlock(lock);
+		jsc_pool_pop(pool);
 		jsc_mutex_lock(&rt->mutex);
 		cmd->done = true;
 		jsc_wake(&rt->cond);
