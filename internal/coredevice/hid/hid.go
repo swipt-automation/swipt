@@ -50,25 +50,29 @@ const (
 	digitizerStart    = 0
 	digitizerPosition = 1
 	digitizerEnd      = 2
+
+	defaultDisplay = 1
 )
 
 type Client struct {
-	ctx    context.Context
-	device *coredevice.Device
-	logger logger.ContextLogger
+	ctx     context.Context
+	device  *coredevice.Device
+	logger  logger.ContextLogger
+	display func() int
 
 	universal    *xpc.Conn
 	indigo       *xpc.Conn
 	touches      []Touch
 	edge         Edge
+	target       uint64
 	keyboard     uint64
 	keyboardMode KeyboardMode
 	pressed      [keyboardBitmapSize]byte
 	buttons      map[Button]struct{}
 }
 
-func New(ctx context.Context, device *coredevice.Device, logger logger.ContextLogger, keyboardMode KeyboardMode) *Client {
-	return &Client{ctx: ctx, device: device, logger: logger, keyboardMode: keyboardMode}
+func New(ctx context.Context, device *coredevice.Device, logger logger.ContextLogger, display func() int, keyboardMode KeyboardMode) *Client {
+	return &Client{ctx: ctx, device: device, logger: logger, display: display, keyboardMode: keyboardMode}
 }
 
 func (c *Client) PrepareTouches(ctx context.Context) error {
@@ -121,12 +125,22 @@ func (c *Client) LiftTouches(ctx context.Context, touches []Touch) error {
 
 // idevice sends at most pointOne and pointTwo in an IndigoDigitizerEvent
 // (idevice d32c818, idevice/src/services/core_device/hid.rs:601-632).
+// dtuhidd sends an event of target 0 to the touchscreen of display 1, and one
+// of target N, from 1 to 10, to the touchscreen of the display whose displayId
+// is N (DDI 27B52 CoreDeviceUtilities 0x296ae0, 0x2adc98, 0x2adca4, dtuhidd
+// 0x10001b6e8, 0x10001bde0).
 func (c *Client) sendTouches(ctx context.Context, eventType uint64, touches []Touch) error {
+	if eventType == digitizerStart {
+		c.target = 0
+		if display := c.display(); display != defaultDisplay {
+			c.target = uint64(display)
+		}
+	}
 	payload := map[string]any{
 		"pointOne":  digitizerPoint(touches[0]),
 		"eventType": eventType,
 		"edge":      uint64(c.edge),
-		"target":    uint64(0),
+		"target":    c.target,
 	}
 	if len(touches) > 1 {
 		payload["pointTwo"] = digitizerPoint(touches[1])

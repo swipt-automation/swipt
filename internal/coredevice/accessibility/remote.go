@@ -100,10 +100,11 @@ type RemoteClient struct {
 	drained              chan struct{}
 	screenViewing        []translationObject
 	screenViewingPending chan struct{}
+	display              func() int
 	pushed               func(Push)
 }
 
-func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed func(Push)) (_ *RemoteClient, err error) {
+func DialRemote(ctx, owner context.Context, device *coredevice.Device, display func() int, pushed func(Push)) (_ *RemoteClient, err error) {
 	// axauditd starts DTX on a remoteAXService connection without reading an
 	// RSDCheckin (24B5110a axauditd 0x10000d214..0x10000d310).
 	conn, err := device.DialService(ctx, "com.apple.accessibility.axAuditDaemon.remoteAXService")
@@ -128,6 +129,7 @@ func DialRemote(ctx, owner context.Context, device *coredevice.Device, pushed fu
 	c := &RemoteClient{
 		conn: dtxConn, ctx: operation, owner: owner, cancel: cancel,
 		screenViewingPending: make(chan struct{}, 1),
+		display:              display,
 		pushed:               pushed,
 	}
 	c.mu.Lock()

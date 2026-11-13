@@ -1,26 +1,9 @@
 package device
 
 import (
-	"github.com/sagernet/sing/common"
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
 )
-
-type displayGeometry struct {
-	Width, Height             int
-	NativeWidth, NativeHeight int
-	Orientation               string
-}
-
-func geometryOf(info display.DisplayInfo) displayGeometry {
-	return displayGeometry{
-		Width:        info.Width,
-		Height:       info.Height,
-		NativeWidth:  info.NativeWidth,
-		NativeHeight: info.NativeHeight,
-		Orientation:  info.CurrentOrientation,
-	}
-}
 
 type screenGeometry struct {
 	Width, Height  int
@@ -36,18 +19,6 @@ func (g screenGeometry) viewerPoints(distance float64) float64 {
 	return distance * g.Density
 }
 
-func primaryDisplay(displays []display.DisplayInfo) (display.DisplayInfo, bool) {
-	info := common.Find(displays, func(info display.DisplayInfo) bool {
-		return info.Primary && info.Width > 0 && info.Height > 0
-	})
-	if info.Width == 0 {
-		info = common.Find(displays, func(info display.DisplayInfo) bool {
-			return info.ID == display.DefaultDisplayID && info.Width > 0 && info.Height > 0
-		})
-	}
-	return info, info.Width > 0
-}
-
 func orientationTurns(orientation string) int {
 	switch orientation {
 	case "rot90":
@@ -60,8 +31,8 @@ func orientationTurns(orientation string) int {
 	return 0
 }
 
-func touchTurns(geometry displayGeometry, width, height int) int {
-	turns := orientationTurns(geometry.Orientation)
+func touchTurns(geometry display.DisplayInfo, width, height int) int {
+	turns := orientationTurns(geometry.CurrentOrientation)
 	if geometry.NativeWidth > 0 && geometry.NativeHeight > 0 && width > 0 && height > 0 &&
 		geometry.NativeWidth != geometry.NativeHeight && width != height {
 		sideways := (width > height) != (geometry.NativeWidth > geometry.NativeHeight)

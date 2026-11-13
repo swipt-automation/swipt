@@ -54,7 +54,7 @@ func (c *RemoteClient) ReadScreen(ctx context.Context, springboard uint64, depth
 			return err
 		}
 		first := &Batch{}
-		front := first.Frontmost()
+		front := first.Frontmost(c.display())
 		system := first.Application(springboard)
 		if err := run(first); err != nil {
 			return nil, err
@@ -155,7 +155,7 @@ func (c *RemoteClient) ReadApplication(ctx context.Context, options ApplicationO
 		case options.Root != nil:
 			app = first.Application(options.Root.Ref.PID)
 		case options.PID == 0:
-			app = first.Frontmost()
+			app = first.Frontmost(c.display())
 		default:
 			app = first.Application(options.PID)
 		}
@@ -266,7 +266,7 @@ func (c *RemoteClient) silent(ctx context.Context, app Element, check bool, err 
 	}
 	if check {
 		batch := &Batch{}
-		front := batch.Frontmost()
+		front := batch.Frontmost(c.display())
 		if c.Run(ctx, batch) != nil || front.Code != 0 || front.Value.Ref.PID != app.Ref.PID {
 			return err
 		}

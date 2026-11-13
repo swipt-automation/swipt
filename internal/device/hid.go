@@ -206,7 +206,7 @@ func (g *hidGrant) release() {
 func (g *hidGrant) software() *hid.Client {
 	c := g.conn
 	if c.software == nil {
-		c.software = hid.New(c.owner, c.device, g.queue.logger, hid.SoftwareKeyboard)
+		c.software = hid.New(c.owner, c.device, g.queue.logger, c.connection.displayID, hid.SoftwareKeyboard)
 	}
 	return c.software
 }
@@ -235,7 +235,7 @@ func (g *hidGrant) hardware() *hid.Client {
 		q.closeClient()
 	}
 	if q.client == nil {
-		q.client = hid.New(g.conn.owner, g.conn.device, q.logger, hid.HardwareKeyboard)
+		q.client = hid.New(g.conn.owner, g.conn.device, q.logger, q.connection.displayID, hid.HardwareKeyboard)
 		q.conn = g.conn
 		_, _, q.generation = q.connection.streams.inputState()
 	}
@@ -386,7 +386,7 @@ func (q *hidQueue) handle(ctx context.Context, item hidItem) {
 		return
 	}
 	if q.client == nil {
-		q.client = hid.New(c.owner, c.device, q.logger, hid.HardwareKeyboard)
+		q.client = hid.New(c.owner, c.device, q.logger, q.connection.displayID, hid.HardwareKeyboard)
 		q.conn = c
 		q.generation = generation
 	}

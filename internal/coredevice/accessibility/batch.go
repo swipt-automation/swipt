@@ -83,9 +83,12 @@ func parseApplication(response remoteResponse) (Element, uint64) {
 	return Element{}, cmp.Or(response.code, errorNoElement)
 }
 
-func (b *Batch) Frontmost() *Result[Element] {
+// Each display has a frontmost application of its own: with Settings in front
+// on the inner display of an unfolded iPhone Duo, display 1, its cover display,
+// answers SpringBoard (iPhone19,4 27.2 24B91020).
+func (b *Batch) Frontmost(display int) *Result[Element] {
 	result := &Result[Element]{}
-	b.add(remoteRequest{kind: requestFrontmost, params: map[string]any{"displayId": int64(1)}}, func(response remoteResponse, _ *Batch) error {
+	b.add(remoteRequest{kind: requestFrontmost, params: map[string]any{"displayId": int64(display)}}, func(response remoteResponse, _ *Batch) error {
 		result.Value, result.Code = parseApplication(response)
 		return nil
 	})
@@ -290,9 +293,9 @@ func (b *Batch) Search(root Element, parameters map[string]any) *Result[[]Elemen
 // The system-wide hit test asks backboardd for the context on top at a point
 // of the display (24A446 BackBoard.axbundle 0x22a9acfc4), in points of its
 // native orientation (iPadOS 27.2 24B115).
-func (b *Batch) HitTest(point LayoutPoint) *Result[Element] {
+func (b *Batch) HitTest(point LayoutPoint, display int) *Result[Element] {
 	result := &Result[Element]{}
-	b.add(remoteRequest{kind: requestHitTest, params: map[string]any{"point": point.archiveObject(), "displayId": int64(1), "contextId": int64(0)}},
+	b.add(remoteRequest{kind: requestHitTest, params: map[string]any{"point": point.archiveObject(), "displayId": int64(display), "contextId": int64(0)}},
 		func(response remoteResponse, _ *Batch) error {
 			result.Code = response.code
 			if hit, ok := parseTranslation(response.value); ok {

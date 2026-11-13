@@ -32,7 +32,7 @@ const (
 
 	// pymobiledevice3 streams display ID 1 by default (pymobiledevice3 1146717,
 	// pymobiledevice3/remote/core_device/display_service.py:79).
-	DefaultDisplayID = 1
+	defaultDisplayID = 1
 	rtcpTimeout      = 30 * time.Second
 )
 
@@ -122,6 +122,7 @@ type StreamOptions struct {
 	// answers a nonzero SyncStreamToken, and zero without one (iPadOS 27.2
 	// 24B5089g).
 	SessionID      uuid.UUID
+	DisplayID      int
 	SSRC           uint32
 	Mode           Mode
 	MaximumBitrate uint64
@@ -133,7 +134,7 @@ type StreamOptions struct {
 func (c *Client) StartVideo(ctx context.Context, options StreamOptions) (*Stream, error) {
 	return c.start(ctx, Video, options, map[string]any{
 		"CoreDeviceVideoDisplayMode": map[string]any{"string": "DisplayByID"},
-		"VideoStreamForDisplayID":    map[string]any{"int": int64(DefaultDisplayID)},
+		"VideoStreamForDisplayID":    map[string]any{"int": int64(options.DisplayID)},
 	})
 }
 

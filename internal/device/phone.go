@@ -16,6 +16,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/logger"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
+	"github.com/swipt-automation/swipt/internal/coredevice/display"
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
 	"github.com/swipt-automation/swipt/internal/coredevice/pasteboard"
 )
@@ -137,7 +138,8 @@ func (p *Phone) WaitConnected(ctx context.Context) error {
 
 type phoneGeometry struct {
 	PhoneScreen
-	turns int
+	turns   int
+	display display.DisplayInfo
 }
 
 func (c *conn) readGeometry(ctx context.Context) (phoneGeometry, error) {
@@ -147,22 +149,17 @@ func (c *conn) readGeometry(ctx context.Context) (phoneGeometry, error) {
 		return c.geometry, nil
 	}
 	asked := time.Now()
-	displays, err := c.display.Displays(ctx)
+	active, err := c.activeDisplay(ctx)
 	if err != nil {
-		return phoneGeometry{}, E.Cause(err, "read the device's displays")
+		return phoneGeometry{}, err
 	}
-	primary, found := primaryDisplay(displays)
-	if !found {
-		return phoneGeometry{}, E.New("the device lists no usable screen")
-	}
-	c.connection.updateDisplay(primary)
-	scale := float64(max(primary.PointScale, 1))
-	turns := orientationTurns(primary.CurrentOrientation)
-	width, height := primary.Width, primary.Height
+	scale := float64(max(active.PointScale, 1))
+	turns := orientationTurns(active.CurrentOrientation)
+	width, height := active.Width, active.Height
 	if turns%2 == 1 {
 		width, height = height, width
 	}
-	touch := touchTurns(geometryOf(primary), width, height)
+	touch := touchTurns(active, width, height)
 	orientation := "portrait"
 	switch {
 	case width > height:
@@ -173,6 +170,7 @@ func (c *conn) readGeometry(ctx context.Context) (phoneGeometry, error) {
 	c.geometry = phoneGeometry{
 		PhoneScreen: PhoneScreen{Width: float64(width) / scale, Height: float64(height) / scale, Scale: scale, Orientation: orientation},
 		turns:       touch,
+		display:     active,
 	}
 	c.geometryAt = asked
 	return c.geometry, nil

@@ -33,6 +33,7 @@ const (
 	stableConnection    = 30 * time.Second
 	defaultIdleTimeout  = 30 * time.Second
 	displayPollInterval = 5 * time.Second
+	displaySettleDelay  = time.Second
 	routeCheckInterval  = 5 * time.Second
 	failureRetry        = 10 * time.Second
 	connectPatience     = 10 * time.Second
@@ -135,7 +136,7 @@ type Connection struct {
 	attemptCancel  context.CancelCauseFunc
 	deviceWake     chan struct{}
 	screen         rfb.ServerScreen
-	display        displayGeometry
+	display        display.DisplayInfo
 	videoProblem   error
 	rfb            *rfb.Server
 	daemonClean    bool
@@ -650,11 +651,11 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	if err != nil {
 		return lostOr(device, E.Cause(err, "read the device's displays"))
 	}
-	primary, found := primaryDisplay(state)
+	active, found := display.Active(state)
 	if !found {
 		return lostOr(device, E.New("the device lists no usable screen among its ", len(state), " displays"))
 	}
-	s.updateDisplay(primary)
+	s.updateDisplay(active)
 	c := s.attach(session, device, displayClient, owner)
 	s.setRunning()
 	rerouted := s.watchRoute(session, device)
@@ -787,25 +788,22 @@ func (s *Connection) pollDisplay(c *conn) {
 	timer := time.NewTimer(displayPollInterval)
 	defer timer.Stop()
 	for {
+		next := displayPollInterval
 		select {
 		case <-c.ctx.Done():
 			return
 		case <-s.displayWake:
+			next = displaySettleDelay
 		case <-timer.C:
-			if !s.streams.videoRunning() {
+			if !s.streams.showing() {
 				timer.Reset(displayPollInterval)
 				continue
 			}
 		}
-		state, err := c.display.Displays(c.ctx)
-		if err != nil {
-			if c.ctx.Err() == nil {
-				s.logger.Debug(E.Cause(err, "read the device's displays"))
-			}
-		} else if primary, found := primaryDisplay(state); found {
-			s.updateDisplay(primary)
+		if _, err := c.activeDisplay(c.ctx); err != nil && c.ctx.Err() == nil {
+			s.logger.Debug(err)
 		}
-		timer.Reset(displayPollInterval)
+		timer.Reset(next)
 	}
 }
 
@@ -819,21 +817,32 @@ func (s *Connection) checkDisplay() {
 func (s *Connection) updateDisplay(info display.DisplayInfo) {
 	s.access.Lock()
 	previous := s.display
-	s.display = geometryOf(info)
+	s.display = info
 	changed := previous.Width != info.Width || previous.Height != info.Height
 	if changed {
-		screen := rfb.ServerScreen{Width: info.Width, Height: info.Height, Scale: float64(max(info.PointScale, 1)), Model: s.screen.Model}
+		shown := screenInfo(info)
+		screen := rfb.ServerScreen{Width: shown.Width, Height: shown.Height, Scale: shown.Scale, Model: s.screen.Model}
 		changed = screen != s.screen
 		s.screen = screen
 	}
 	s.access.Unlock()
-	if previous.Orientation != info.CurrentOrientation && previous.Orientation != "" {
+	if previous.ID != info.ID && previous.ID != 0 {
+		s.logger.Info("the screen moved from display ", previous.ID, " to display ", info.ID)
+		s.streams.follow(info.ID)
+	}
+	if previous.CurrentOrientation != info.CurrentOrientation && previous.CurrentOrientation != "" {
 		s.logger.Debug("screen orientation: ", info.CurrentOrientation, ", ", info.Width, "x", info.Height)
 	}
 	if changed {
 		s.logger.Debug("screen size changed: ", info.Width, "x", info.Height)
 		s.screenChanged()
 	}
+}
+
+func (s *Connection) displayID() int {
+	s.access.Lock()
+	defer s.access.Unlock()
+	return s.display.ID
 }
 
 func (s *Connection) setModel(model string) {

@@ -25,6 +25,7 @@ const (
 var (
 	errScreenSilent = failure(nameUnavailable, "graphics: the screen sent no frame within ", int(screenFirstFrameLimit/time.Second), " s; it may be off")
 	errScreenClosed = failure(nameState, "graphics: the screen stream is closed")
+	errScreenMoved  = failure(nameState, "graphics: the screen moved to another display, which ended the recording")
 )
 
 type frame interface {
@@ -37,11 +38,16 @@ type decoder interface {
 	close()
 }
 
+type screenEvent struct {
+	unit  *media.AccessUnit
+	moved *device.ScreenInfo
+}
+
 type screenStream struct {
 	engine   *engine
 	device   *device.ScreenStream
 	info     device.ScreenInfo
-	units    chan *media.AccessUnit
+	events   chan screenEvent
 	dropped  atomic.Bool
 	done     chan struct{}
 	finished chan struct{}
@@ -66,7 +72,7 @@ func (e *engine) openScreen(ctx context.Context, options device.ScreenStreamOpti
 	}
 	stream := &screenStream{
 		engine:     e,
-		units:      make(chan *media.AccessUnit, screenBacklog),
+		events:     make(chan screenEvent, screenBacklog),
 		done:       make(chan struct{}),
 		finished:   make(chan struct{}),
 		recordings: make(map[*recordingSession]struct{}),
@@ -91,10 +97,17 @@ func (e *engine) openScreen(ctx context.Context, options device.ScreenStreamOpti
 
 func (s *screenStream) ScreenUnit(unit *media.AccessUnit) {
 	select {
-	case s.units <- unit:
+	case s.events <- screenEvent{unit: unit}:
 	case <-s.done:
 	default:
 		s.dropped.Store(true)
+	}
+}
+
+func (s *screenStream) ScreenMoved(info device.ScreenInfo) {
+	select {
+	case s.events <- screenEvent{moved: &info}:
+	case <-s.done:
 	}
 }
 
@@ -122,7 +135,12 @@ func (s *screenStream) run() {
 		select {
 		case <-s.done:
 			return
-		case unit := <-s.units:
+		case event := <-s.events:
+			if event.moved != nil {
+				s.move(*event.moved)
+				continue
+			}
+			unit := event.unit
 			damaged := s.dropped.Swap(false) || unit.Damaged
 			formatChanged := s.adoptFormat(unit)
 			needsKeyFrame := false
@@ -139,6 +157,23 @@ func (s *screenStream) run() {
 			}
 		}
 	}
+}
+
+func (s *screenStream) move(info device.ScreenInfo) {
+	s.access.Lock()
+	s.info = info
+	recordings := slices.Collect(maps.Keys(s.recordings))
+	s.access.Unlock()
+	for _, recording := range recordings {
+		recording.fail(errScreenMoved)
+	}
+	s.format = nil
+	s.decoding.Lock()
+	if s.decoder != nil {
+		s.decoder.close()
+		s.decoder = newDecoder(s)
+	}
+	s.decoding.Unlock()
 }
 
 func (s *screenStream) adoptFormat(unit *media.AccessUnit) bool {
@@ -216,6 +251,7 @@ func (s *screenStream) addRecording(recording *recordingSession) error {
 		return s.failure
 	}
 	s.recordings[recording] = struct{}{}
+	recording.screen = s.info
 	return nil
 }
 

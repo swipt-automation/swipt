@@ -292,7 +292,7 @@ func (w *axWorker) open(ctx context.Context) (*accessibility.RemoteClient, error
 			w.logger.Debug(E.Cause(err, "restart axauditd"))
 		}
 	}
-	client, err := accessibility.DialRemote(w.conn.ctx, w.conn.owner, w.conn.device, w.conn.pushed)
+	client, err := accessibility.DialRemote(w.conn.ctx, w.conn.owner, w.conn.device, s.displayID, w.conn.pushed)
 	if err != nil {
 		if errors.Is(err, accessibility.ErrStalled) {
 			return nil, w.stalled(&axJob{ctx: ctx}, err)

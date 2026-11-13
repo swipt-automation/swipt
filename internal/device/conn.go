@@ -75,6 +75,19 @@ func newConn(s *Connection, session context.Context, device *coredevice.Device, 
 	return c
 }
 
+func (c *conn) activeDisplay(ctx context.Context) (display.DisplayInfo, error) {
+	displays, err := c.display.Displays(ctx)
+	if err != nil {
+		return display.DisplayInfo{}, E.Cause(err, "read the device's displays")
+	}
+	active, found := display.Active(displays)
+	if !found {
+		return display.DisplayInfo{}, E.New("the device lists no usable screen")
+	}
+	c.connection.updateDisplay(active)
+	return active, nil
+}
+
 func (c *conn) operation(ctx context.Context) (context.Context, context.CancelFunc) {
 	operation, cancel := context.WithCancel(c.ctx)
 	stop := context.AfterFunc(ctx, cancel)

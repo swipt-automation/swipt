@@ -172,6 +172,10 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 				d.blanked, d.undimming = true, false
 			case screenUndimmed:
 				d.undimming = true
+				// Folding or unfolding posted EventUndimmed when the transition began and
+				// again 0.8 to 0.95 s later, with the other display lit by then, and no
+				// displayStatus (iPhone19,4 27.2 24B91020).
+				d.conn.connection.checkDisplay()
 			case blankedScreen:
 				d.displayFollowed = d.displayPosted
 				if d.undimming {

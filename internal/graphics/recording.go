@@ -37,6 +37,7 @@ type recordingManifest struct {
 type recordingSession struct {
 	directory string
 	stream    *screenStream
+	screen    device.ScreenInfo
 	began     chan struct{}
 
 	access   sync.Mutex
@@ -192,7 +193,7 @@ func (r *recordingSession) finish() error {
 	manifest := recordingManifest{
 		Start:    rounded(r.origin),
 		Duration: rounded(duration),
-		Screen:   r.stream.info,
+		Screen:   r.screen,
 		Segments: make([]recordingSegment, len(r.segments)),
 	}
 	for index, segment := range r.segments {

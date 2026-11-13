@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
 	"github.com/swipt-automation/swipt/internal/rfb/media"
@@ -45,11 +46,13 @@ type ScreenInfo struct {
 
 type ScreenConsumer interface {
 	ScreenUnit(unit *media.AccessUnit)
+	ScreenMoved(info ScreenInfo)
 	ScreenEnded(err error)
 }
 
 type ScreenStream struct {
 	screens  *screenStreams
+	display  int
 	info     ScreenInfo
 	options  ScreenStreamOptions
 	consumer ScreenConsumer
@@ -84,18 +87,15 @@ func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamO
 	if err != nil {
 		return nil, err
 	}
-	displays, err := c.display.Displays(ctx)
+	active, err := c.activeDisplay(ctx)
 	release()
 	if err != nil {
-		return nil, E.Cause(err, "read the device's displays")
-	}
-	primary, found := primaryDisplay(displays)
-	if !found {
-		return nil, E.New("the device lists no usable screen")
+		return nil, err
 	}
 	stream := &ScreenStream{
 		screens:  s.screens,
-		info:     ScreenInfo{Width: primary.Width, Height: primary.Height, Scale: float64(max(primary.PointScale, 1))},
+		display:  active.ID,
+		info:     screenInfo(active),
 		options:  options,
 		consumer: consumer,
 		release:  s.hold(),
@@ -104,7 +104,17 @@ func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamO
 	return stream, nil
 }
 
+func screenInfo(shown display.DisplayInfo) ScreenInfo {
+	return ScreenInfo{
+		Width:  shown.StreamWidth,
+		Height: shown.StreamHeight,
+		Scale:  float64(max(shown.PointScale, 1)) * float64(shown.StreamWidth) / float64(shown.Width),
+	}
+}
+
 func (s *ScreenStream) Info() ScreenInfo {
+	s.screens.access.Lock()
+	defer s.screens.access.Unlock()
 	return s.info
 }
 
@@ -130,6 +140,22 @@ func (s *screenStreams) add(stream *ScreenStream) {
 		_ = s.capture.stream.stream.RequestKeyFrame()
 	}
 	s.restartLocked()
+}
+
+func (s *screenStreams) show(shown display.DisplayInfo) {
+	info := screenInfo(shown)
+	s.access.Lock()
+	moved := common.Filter(slices.Collect(maps.Keys(s.open)), func(stream *ScreenStream) bool {
+		return stream.display != shown.ID
+	})
+	for _, stream := range moved {
+		stream.display = shown.ID
+		stream.info = info
+	}
+	s.access.Unlock()
+	for _, stream := range moved {
+		stream.consumer.ScreenMoved(info)
+	}
 }
 
 func (s *screenStreams) remove(stream *ScreenStream) {
@@ -388,12 +414,17 @@ func (s *Connection) startCapture(ctx context.Context, options ScreenStreamOptio
 		}
 		s.logger.Warn(E.Cause(err, "observe screen-viewing notifications"))
 	}
+	active, err := a.activeDisplay(ctx)
+	if err != nil {
+		return nil, err
+	}
 	mode := display.ModeRemoteDesktop
 	if options.Mode == ScreenModeCoreDevice {
 		mode = display.ModeCoreDevice
 	}
 	video, err := a.display.StartVideo(ctx, display.StreamOptions{
 		SessionID:      uuid.New(),
+		DisplayID:      active.ID,
 		Mode:           mode,
 		MaximumBitrate: options.MaximumBitrate,
 	})
@@ -405,12 +436,13 @@ func (s *Connection) startCapture(ctx context.Context, options ScreenStreamOptio
 		}
 		return nil, E.Cause(err, "start the device's video")
 	}
-	stream := &deviceStream{ctx: a.owner, device: a.device, stream: video, owner: a}
+	stream := &deviceStream{ctx: a.owner, device: a.device, stream: video, display: active.ID, owner: a}
 	m.access.Lock()
 	m.failures = 0
 	m.open[stream] = struct{}{}
 	m.remote[stream] = struct{}{}
 	m.access.Unlock()
+	s.screens.show(active)
 	_ = video.RequestKeyFrame()
 	return stream, nil
 }

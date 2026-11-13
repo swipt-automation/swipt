@@ -144,7 +144,7 @@ func (s *axSession) aim(ctx context.Context, target *PhoneNode) (Point, string, 
 	batch := &accessibility.Batch{}
 	mapped := batch.Mapped(target.AX)
 	attributes := batch.Attributes(target.AX)
-	hit := batch.HitTest(s.geometry.digitizer(at))
+	hit := batch.HitTest(s.geometry.digitizer(at), s.geometry.display.ID)
 	animating := batch.AnimationsInProgress(target.AX)
 	if err := s.client.Run(ctx, batch); err != nil {
 		return Point{}, "", err
@@ -179,7 +179,7 @@ func (s *axSession) aim(ctx context.Context, target *PhoneNode) (Point, string, 
 		if !rect.Empty() && !rect.Contains(at) {
 			at = shown.Center()
 			again := &accessibility.Batch{}
-			hit = again.HitTest(s.geometry.digitizer(at))
+			hit = again.HitTest(s.geometry.digitizer(at), s.geometry.display.ID)
 			if err := s.client.Run(ctx, again); err != nil {
 				return Point{}, "", err
 			}

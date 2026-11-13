@@ -51,6 +51,7 @@ type deviceStream struct {
 	ctx      context.Context
 	device   *coredevice.Device
 	stream   *display.Stream
+	display  int
 	video    bool
 	partner  *deviceStream
 	closed   bool
@@ -137,6 +138,27 @@ func (m *streamManager) retireLocked(stream *deviceStream) {
 	}
 }
 
+func (m *streamManager) showing() bool {
+	m.access.Lock()
+	defer m.access.Unlock()
+	for stream := range m.open {
+		if stream.display != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *streamManager) follow(display int) {
+	m.access.Lock()
+	defer m.access.Unlock()
+	for stream := range m.open {
+		if stream.display != 0 && stream.display != display {
+			m.retireLocked(stream)
+		}
+	}
+}
+
 func (m *streamManager) stopDevice(device *coredevice.Device) error {
 	m.retireDevice(device)
 	_ = m.acquire(context.Background())
@@ -207,12 +229,6 @@ func (m *streamManager) inputState() (running bool, wait time.Duration, generati
 		return false, 0, m.generation
 	}
 	return true, time.Until(m.readyAt), m.generation
-}
-
-func (m *streamManager) videoRunning() bool {
-	m.access.Lock()
-	defer m.access.Unlock()
-	return !m.readyAt.IsZero()
 }
 
 func (m *streamManager) takeParked() *deviceStream {
@@ -298,11 +314,14 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 		}
 		s.logger.Warn(E.Cause(err, "observe screen-viewing notifications"))
 	}
+	active, err := a.activeDisplay(ctx)
+	if err != nil {
+		return nil, err
+	}
 	device := a.device
 	sessionID := uuid.New()
 	readOptions := N.ReadWaitOptions{RearHeadroom: media.ServerRearHeadroom}
 	var audio *display.Stream
-	var err error
 	if request.Audio {
 		// The device returned a nonzero video SyncStreamToken with audio, zero without it (iPadOS 27.2 24B5089g).
 		audio, err = a.display.StartAudio(ctx, display.StreamOptions{SessionID: sessionID, ReadOptions: readOptions})
@@ -315,6 +334,7 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 	m.access.Unlock()
 	video, err := a.display.StartVideo(ctx, display.StreamOptions{
 		SessionID:      sessionID,
+		DisplayID:      active.ID,
 		SSRC:           request.ClientSSRC,
 		Mode:           deviceMode(request.Mode),
 		TilesPerFrame:  request.TilesPerFrame,
@@ -343,7 +363,7 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 	}
 	info := video.Info()
 	now := time.Now()
-	source := &videoSource{connection: s, stream: &deviceStream{ctx: a.owner, device: device, stream: video, video: true, owner: a}}
+	source := &videoSource{connection: s, stream: &deviceStream{ctx: a.owner, device: device, stream: video, display: active.ID, video: true, owner: a}}
 	source.lastHeard.Store(now.UnixNano())
 	source.info = media.ServerVideoInfo{
 		SSRC:          info.DeviceSSRC,
@@ -378,6 +398,7 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 	s.videoSize(info.Width, info.Height)
 	s.checkDisplay()
 	s.input.videoReady()
+	s.screens.show(active)
 	s.screens.viewerStarted(source)
 	return source, nil
 }
