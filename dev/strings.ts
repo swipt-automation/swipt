@@ -19,7 +19,7 @@ function collectStrings(cli) {
           if (node.callee.name !== "tr") {
             return;
           }
-          const [source] = node.arguments;
+          const [source, , context] = node.arguments;
           const key =
             source?.type === "ObjectExpression"
               ? source.properties.find((it) => it.key?.name === "other")?.value
@@ -29,7 +29,21 @@ function collectStrings(cli) {
               `${file}:${node.loc.start.line}: tr takes a string literal or its plural forms`,
             );
           }
-          keys.add(key.value);
+          if (context !== undefined && context.type !== "StringLiteral") {
+            throw new Error(
+              `${file}:${node.loc.start.line}: tr takes its context as a string literal`,
+            );
+          }
+          if (/^\[[^\]]*\] /.test(key.value)) {
+            throw new Error(
+              `${file}:${node.loc.start.line}: a string that starts like a context: ${key.value}`,
+            );
+          }
+          keys.add(
+            context === undefined
+              ? key.value
+              : `[${context.value}] ${key.value}`,
+          );
         },
       },
     );

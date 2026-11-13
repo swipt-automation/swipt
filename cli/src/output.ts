@@ -148,15 +148,15 @@ export function printLog(entry, toStdout) {
 }
 
 const serviceStatuses = {
-  [ServiceStatus.UNSPECIFIED]: tr("stopped"),
-  [ServiceStatus.STOPPED]: tr("stopped"),
-  [ServiceStatus.STARTING]: tr("starting"),
-  [ServiceStatus.RUNNING]: tr("running"),
-  [ServiceStatus.FAILED]: tr("failed"),
+  [ServiceStatus.UNSPECIFIED]: tr("stopped", {}, "service"),
+  [ServiceStatus.STOPPED]: tr("stopped", {}, "service"),
+  [ServiceStatus.STARTING]: tr("starting", {}, "service"),
+  [ServiceStatus.RUNNING]: tr("running", {}, "service"),
+  [ServiceStatus.FAILED]: tr("failed", {}, "service"),
 };
 
 export const serviceEnabledText = (enabled) =>
-  enabled ? tr("turned on") : tr("turned off");
+  enabled ? tr("turned on", {}, "service") : tr("turned off", {}, "service");
 
 export const serviceStatusText = (status) => serviceStatuses[status];
 

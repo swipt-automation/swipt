@@ -8,7 +8,7 @@ const removeSwiplet = (context) =>
       { swipletId: context.args[0] },
       { signal: context.signal },
     );
-    console.log(tr("removed {name}", { name: context.args[0] }));
+    console.log(tr("removed {name}", { name: context.args[0] }, "Swiplet"));
   });
 
 export const remove = defineCommand({

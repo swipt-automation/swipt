@@ -315,11 +315,11 @@ export async function attach(context) {
 }
 
 const connectionStates = {
-  [DeviceConnectionState.STOPPED]: tr("stopped"),
-  [DeviceConnectionState.CONNECTING]: tr("connecting"),
-  [DeviceConnectionState.PREPARING]: tr("preparing"),
-  [DeviceConnectionState.RUNNING]: tr("running"),
-  [DeviceConnectionState.FAILED]: tr("failed"),
+  [DeviceConnectionState.STOPPED]: tr("stopped", {}, "device connection"),
+  [DeviceConnectionState.CONNECTING]: tr("connecting", {}, "device connection"),
+  [DeviceConnectionState.PREPARING]: tr("preparing", {}, "device connection"),
+  [DeviceConnectionState.RUNNING]: tr("running", {}, "device connection"),
+  [DeviceConnectionState.FAILED]: tr("failed", {}, "device connection"),
 };
 
 const connectionProblems = {
@@ -448,5 +448,5 @@ export function remove({ args }) {
   }
   delete stored[name];
   save(stored);
-  console.log(tr("removed {name}", { name }));
+  console.log(tr("removed {name}", { name }, "device"));
 }

@@ -332,14 +332,9 @@ function describeExtension(source) {
 }
 
 function evaluateExtension(source, availableResult) {
-  const loading = (name) => {
+  const failing = (message) => {
     const fail = () => {
-      throw new Error(
-        tr(
-          "{name} is used while extension.js loads; use it inside run or an action.",
-          { name },
-        ),
-      );
+      throw new Error(message);
     };
     const get = (_, key) =>
       key === "__esModule"
@@ -349,6 +344,24 @@ function evaluateExtension(source, availableResult) {
           : fail();
     return new Proxy(fail, { get, apply: fail, construct: fail });
   };
+  const loading = (name) =>
+    failing(
+      tr(
+        "{name} is used while extension.js loads; use it inside run or an action.",
+        { name },
+      ),
+    );
+  const database = () =>
+    failing(
+      tr(
+        "The database is used while extension.js loads; use it inside run or an action.",
+      ),
+    );
+  const storage = failing(
+    tr(
+      "The storage is used while extension.js loads; use it inside run or an action.",
+    ),
+  );
   const modules = {
     "@swipt/api": { available: () => availableResult },
     "@swipt/api/swiplet": {
@@ -407,11 +420,10 @@ function evaluateExtension(source, availableResult) {
       SQLiteStatement: loading("SQLiteStatement"),
       SQLiteTaggedQuery: loading("SQLiteTaggedQuery"),
       SQLiteSession: loading("SQLiteSession"),
-      openDatabaseSync: () => loading(tr("The database")),
-      openDatabaseAsync: () => Promise.resolve(loading(tr("The database"))),
-      deserializeDatabaseSync: () => loading(tr("The database")),
-      deserializeDatabaseAsync: () =>
-        Promise.resolve(loading(tr("The database"))),
+      openDatabaseSync: database,
+      openDatabaseAsync: () => Promise.resolve(database()),
+      deserializeDatabaseSync: database,
+      deserializeDatabaseAsync: () => Promise.resolve(database()),
       deleteDatabaseSync: () => {},
       deleteDatabaseAsync: () => Promise.resolve(),
       backupDatabaseSync: () => {},
@@ -456,9 +468,9 @@ function evaluateExtension(source, availableResult) {
     },
     "expo-sqlite/kv-store": {
       SQLiteStorage: loading("SQLiteStorage"),
-      AsyncStorage: loading(tr("The storage")),
-      Storage: loading(tr("The storage")),
-      default: loading(tr("The storage")),
+      AsyncStorage: storage,
+      Storage: storage,
+      default: storage,
     },
     get "expo-sqlite/localStorage/install"() {
       context.localStorage = loading("localStorage");

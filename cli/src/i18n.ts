@@ -109,9 +109,11 @@ const pluralRules = new Intl.PluralRules(language);
 export function tr(
   source: string | { one: string; other: string },
   values: Record<string, any> = {},
+  context?: string,
 ) {
+  const key = typeof source === "string" ? source : source.other;
   const message =
-    messages[typeof source === "string" ? source : source.other] ?? source;
+    messages[context === undefined ? key : `[${context}] ${key}`] ?? source;
   const text =
     typeof message === "string"
       ? message
