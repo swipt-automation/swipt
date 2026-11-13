@@ -8,9 +8,12 @@ RUNTIME_BUNDLE_INPUTS := $(shell find $(RUNTIME)/src $(RUNTIME)/patches -type f)
 lib: runtime
 	go run ./internal/cmd/build_libswipt
 
-.PHONY: server
-server:
-	go build -trimpath -o build/swipt-server ./cmd/swipt-server
+.PHONY: driver drivers
+driver:
+	go build -trimpath -o build/swipt-driver ./cmd/swipt-driver
+
+drivers:
+	go run ./internal/cmd/build_driver -target all
 
 runtime:
 	bun install --frozen-lockfile
@@ -69,8 +72,9 @@ fmt:
 
 lint:
 	golangci-lint run ./...
+	go run ./internal/cmd/build_driver -target linux-arm64,win32-arm64 golangci-lint run ./...
 	! grep -n 'localizedDescription' internal/graphics/*.m | grep -v '^internal/graphics/SWError.m'
 	! grep -nE '[eE]rror:nil' internal/graphics/*.m | grep -vE 'removeItemAtURL|regularExpressionWithPattern|NSJSONSerialization'
 
 lint_install:
-	go install -v github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	GOTOOLCHAIN=go1.27.1+auto go install -v github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest

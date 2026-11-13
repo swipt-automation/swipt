@@ -231,7 +231,7 @@ func (o *deviceObserver) StateChanged(state device.State, err error) {
 	o.handler.OnStateChanged(stateCode(state), code, message)
 }
 
-func (o *deviceObserver) DeviceConnected(info coredevice.DeviceInfo) {}
+func (o *deviceObserver) EnvironmentChanged(device.Environment) {}
 
 func (o *deviceObserver) ViewerConnected(session *rfb.ServerSession) {}
 

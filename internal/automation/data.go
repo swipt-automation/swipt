@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package automation
 
@@ -72,10 +72,14 @@ func cleanName(name string) (string, error) {
 	if cleaned == "." || cleaned == "" {
 		return ".", nil
 	}
-	if !fs.ValidPath(cleaned) {
+	local := filepath.FromSlash(cleaned)
+	if filepath.ToSlash(local) != cleaned {
+		return "", E.Cause1(ErrInvalid, E.New("the path ", strconv.Quote(name), " has a backslash"))
+	}
+	if !fs.ValidPath(cleaned) || !filepath.IsLocal(local) {
 		return "", E.Cause1(ErrInvalid, E.New("the path ", strconv.Quote(name), " leaves the directory"))
 	}
-	return filepath.FromSlash(cleaned), nil
+	return local, nil
 }
 
 func FileNotFound(where, name string) error {
@@ -83,8 +87,12 @@ func FileNotFound(where, name string) error {
 }
 
 func (r *fileRoot) error(name string, err error) error {
-	pathError, isPath := errors.AsType[*fs.PathError](err)
-	if !isPath {
+	var cause error
+	if pathError, isPath := errors.AsType[*fs.PathError](err); isPath {
+		cause = pathError.Err
+	} else if linkError, isLink := errors.AsType[*os.LinkError](err); isLink {
+		cause = linkError.Err
+	} else {
 		return err
 	}
 	shown := strconv.Quote(filepath.ToSlash(name))
@@ -95,10 +103,10 @@ func (r *fileRoot) error(name string, err error) error {
 		return E.Cause1(ErrInvalid, E.New("a file stands where ", shown, " needs a directory in ", r.where))
 	case errors.Is(err, syscall.EISDIR):
 		return E.Cause1(ErrInvalid, E.New(shown, " is a directory in ", r.where))
-	case errors.Is(err, syscall.ENOTEMPTY), errors.Is(err, syscall.EEXIST):
+	case errors.Is(err, fs.ErrExist):
 		return E.Cause1(ErrInvalid, E.New(shown, " already exists in ", r.where))
 	}
-	return E.New(shown, " in ", r.where, ": ", pathError.Err)
+	return E.New(shown, " in ", r.where, ": ", cause)
 }
 
 func (r *fileRoot) notRoot(name string) error {
@@ -131,6 +139,9 @@ func (r *fileRoot) list(name string) ([]FileInfo, error) {
 		return nil, r.error(name, err)
 	}
 	defer directory.Close()
+	if info, err := directory.Stat(); err == nil && !info.IsDir() {
+		return nil, E.Cause1(ErrInvalid, E.New(strconv.Quote(filepath.ToSlash(name)), " is a file in ", r.where))
+	}
 	entries, err := directory.ReadDir(-1)
 	if err != nil {
 		return nil, r.error(name, err)
@@ -166,10 +177,12 @@ func (r *fileRoot) open(name string) (*os.File, error) {
 }
 
 func (r *fileRoot) read(name string) ([]byte, error) {
-	if r.root == nil {
-		return nil, FileNotFound(r.where, name)
+	file, err := r.open(name)
+	if err != nil {
+		return nil, err
 	}
-	data, err := r.root.ReadFile(name)
+	defer file.Close()
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, r.error(name, err)
 	}

@@ -3,7 +3,7 @@ import { defineCommand } from "../../command";
 import { session } from "../../session";
 import { deviceOption } from "../flags";
 
-const stopServer = (context) =>
+const stopServing = (context) =>
   session(context, async (client) => {
     await client.system.shutdown({}, { signal: context.signal });
     console.log(tr("stopped"));
@@ -11,8 +11,8 @@ const stopServer = (context) =>
 
 export const stop = defineCommand({
   name: "stop",
-  short: tr("Stop the Swipt server"),
+  short: tr("Stop serving the Swipt API"),
   args: [0, 0],
   options: deviceOption,
-  run: stopServer,
+  run: stopServing,
 });

@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 #ifndef JSC_THREAD_H
 #define JSC_THREAD_H
@@ -6,7 +6,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#ifdef __APPLE__
 #include <JavaScriptCore/JavaScriptCore.h>
+#else
+#include <JavaScriptCore/JavaScript.h>
+#endif
 
 typedef enum {
 	JSC_CREATE,
@@ -90,6 +94,10 @@ typedef struct {
 
 typedef struct jsc_runtime jsc_runtime;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 jsc_runtime *jsc_runtime_new(void);
 void jsc_runtime_free(jsc_runtime *rt);
 void jsc_post(jsc_runtime *rt, jsc_command *cmd);
@@ -97,5 +105,11 @@ jsc_host_request *jsc_wait(jsc_runtime *rt, jsc_command *cmd);
 void jsc_answer(jsc_runtime *rt, jsc_host_request *request);
 void jsc_cancel(jsc_runtime *rt, uint64_t run);
 uintptr_t *jsc_take_released(jsc_runtime *rt, size_t *count);
+void jsc_set_languages(const char *languages);
+void jsc_set_time_zone(const char *time_zone);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

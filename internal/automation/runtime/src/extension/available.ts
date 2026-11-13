@@ -3,7 +3,7 @@ import { apiLevel } from "@swipt/api/package.json";
 import { parseVersion, versionAtLeast } from "../../../../../cli/src/version";
 import { native } from "./native";
 
-const platforms: Readonly<Record<string, string>> = { iOS: "ios" };
+const platforms: readonly string[] = ["iOS"];
 
 const shown = (value: unknown) =>
   typeof value === "string" ? JSON.stringify(value) : String(value);
@@ -31,9 +31,9 @@ export function available(requirements: {
       satisfied &&= apiLevel >= value;
       continue;
     }
-    if (!Object.hasOwn(platforms, name)) {
+    if (!platforms.includes(name)) {
       throw new TypeError(
-        `unknown requirement ${JSON.stringify(name)}; the requirements are apiLevel, ${Object.keys(platforms).join(", ")}`,
+        `unknown requirement ${JSON.stringify(name)}; the requirements are apiLevel, ${platforms.join(", ")}`,
       );
     }
     if (value === undefined) {
@@ -46,12 +46,10 @@ export function available(requirements: {
       );
     }
     platformed = true;
-    if (platforms[name] === native.os) {
-      onPlatform = versionAtLeast(
-        native.osVersion.split(".").map(Number),
-        version,
-      );
-    }
+    onPlatform = versionAtLeast(
+      native.environment().osVersion.split(".").map(Number),
+      version,
+    );
   }
   return satisfied && (!platformed || onPlatform);
 }

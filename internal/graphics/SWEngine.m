@@ -4,16 +4,7 @@
 
 #import <JavaScriptCore/JavaScriptCore.h>
 
-#import "SWRecordingSession.h"
-#import "SWScreenStream.h"
-
-static void SWReleaseOwned(id object) {
-    if ([object isKindOfClass:SWRecordingSession.class]) {
-        [(SWRecordingSession *)object abandon];
-    } else if ([object isKindOfClass:SWScreenStream.class]) {
-        [(SWScreenStream *)object close];
-    }
-}
+#import "SWGoBridge.h"
 
 @implementation SWEngine {
     JSContext *_context;
@@ -21,7 +12,6 @@ static void SWReleaseOwned(id object) {
     NSInteger _next;
     NSMutableDictionary<NSNumber *, SWCall *> *_prepared;
     NSMutableDictionary<NSNumber *, id> *_objects;
-    NSHashTable<SWScreenStream *> *_streams;
     BOOL _closed;
 }
 
@@ -32,7 +22,7 @@ static void SWReleaseOwned(id object) {
         _lock = [NSLock new];
         _prepared = [NSMutableDictionary dictionary];
         _objects = [NSMutableDictionary dictionary];
-        _streams = [NSHashTable weakObjectsHashTable];
+        _screens = [SWScreenOwner new];
     }
     return self;
 }
@@ -63,8 +53,8 @@ static void SWReleaseOwned(id object) {
         _objects[@(identifier)] = object;
     }
     [_lock unlock];
-    if (!accepted) {
-        SWReleaseOwned(object);
+    if (!accepted && [object isKindOfClass:SWGoResource.class]) {
+        [(SWGoResource *)object relinquish];
     }
     return identifier;
 }
@@ -81,30 +71,20 @@ static void SWReleaseOwned(id object) {
     [self take:identifier];
 }
 
-- (void)trackStream:(SWScreenStream *)stream {
-    [_lock lock];
-    BOOL accepted = !_closed;
-    if (accepted) {
-        [_streams addObject:stream];
-    }
-    [_lock unlock];
-    if (!accepted) {
-        [stream close];
-    }
-}
-
 - (void)close {
     [_lock lock];
     _closed = YES;
     [_prepared removeAllObjects];
-    NSArray *left = [_objects.allValues arrayByAddingObjectsFromArray:_streams.allObjects];
+    NSArray *objects = _objects.allValues;
     [_objects removeAllObjects];
-    [_streams removeAllObjects];
     _context = nil;
     [_lock unlock];
-    for (id object in left) {
-        SWReleaseOwned(object);
+    for (id object in objects) {
+        if ([object isKindOfClass:SWGoResource.class]) {
+            [(SWGoResource *)object relinquish];
+        }
     }
+    [_screens close];
 }
 
 @end

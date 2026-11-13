@@ -199,17 +199,31 @@ func (d *Device) DialXPC(ctx context.Context, name string) (*xpc.Conn, error) {
 }
 
 func (d *Device) DialShim(ctx context.Context, name string) (*rsd.PlistConn, error) {
+	conn, err := d.dialShim(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return rsd.NewPlistConn(conn), nil
+}
+
+// pymobiledevice3 reaches a lockdown service in a tunnel through NAME.shim.remote
+// (pymobiledevice3 9537c0a, pymobiledevice3/services/installation_proxy.py:78,
+// pymobiledevice3/services/afc.py:336).
+func (d *Device) DialLockdownService(ctx context.Context, name string) (net.Conn, error) {
+	return d.dialShim(ctx, name+".shim.remote")
+}
+
+func (d *Device) dialShim(ctx context.Context, name string) (net.Conn, error) {
 	conn, err := d.DialService(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	plistConn := rsd.NewPlistConn(conn)
-	err = plistConn.Checkin(ctx, checkinLabel)
+	err = rsd.NewPlistConn(conn).Checkin(ctx, checkinLabel)
 	if err != nil {
 		conn.Close()
 		return nil, E.Cause(err, "connect to ", name)
 	}
-	return plistConn, nil
+	return conn, nil
 }
 
 func (d *Device) ListenUDP(port uint16, options N.ReadWaitOptions) (*tunnel.UDPConn, error) {

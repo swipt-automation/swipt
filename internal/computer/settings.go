@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package computer
 
@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 )
 
-const settingsFile = "server.json"
+const settingsFile = "driver.json"
 
 const (
 	lowestPort  = 10000
@@ -44,7 +44,7 @@ func (s settings) save(directory string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(directory, settingsFile), append(data, '\n'), 0o600)
+	return writeFileAtomically(filepath.Join(directory, settingsFile), append(data, '\n'))
 }
 
 func randomPort() int {

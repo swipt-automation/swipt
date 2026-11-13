@@ -7,10 +7,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/coredevice/rsd"
 
 	"github.com/google/uuid"
 	"howett.net/plist"
@@ -113,4 +115,58 @@ func NewPairing(ctx context.Context, dial Dialer, systemBUID, udid, hostName str
 		return nil, err
 	}
 	return &Pairing{HostID: hostID, HostRecord: hostRecord, DeviceRecord: deviceRecord}, nil
+}
+
+const pairRetryInterval = time.Second
+
+// A device answers PairingDialogResponsePending until its user trusts this
+// host, and PasswordProtected while locked; once trusted it answers with the
+// EscrowBag that the host's record keeps with its Wi-Fi address (go-ios
+// 63c0d57, ios/pair.go:183-246, 248-299).
+func Pair(ctx context.Context, dial Dialer, pairing *Pairing) ([]byte, error) {
+	var record map[string]any
+	if _, err := plist.Unmarshal(pairing.HostRecord, &record); err != nil {
+		return nil, err
+	}
+	request := map[string]any{
+		"Label":           progName,
+		"ProtocolVersion": "2",
+		"Request":         "Pair",
+		"PairRecord": map[string]any{
+			"DeviceCertificate": record["DeviceCertificate"],
+			"HostCertificate":   record["HostCertificate"],
+			"RootCertificate":   record["RootCertificate"],
+			"HostID":            record["HostID"],
+			"SystemBUID":        record["SystemBUID"],
+		},
+		"PairingOptions": map[string]any{"ExtendedPairingErrors": true},
+	}
+	conn, err := dial(ctx, Port)
+	if err != nil {
+		return nil, E.Cause(err, "connect to lockdown")
+	}
+	defer conn.Close()
+	lockdown := rsd.NewPlistConn(conn)
+	for {
+		reply, err := lockdown.Request(ctx, request)
+		if err != nil {
+			return nil, E.Cause(err, "lockdown Pair")
+		}
+		switch reply["Error"] {
+		case nil:
+			record["EscrowBag"], _ = reply["EscrowBag"].([]byte)
+			if address, err := GetValue(ctx, dial, "WiFiAddress"); err == nil {
+				record["WiFiMACAddress"] = address
+			}
+			return plist.Marshal(record, plist.XMLFormat)
+		case "PairingDialogResponsePending", "PasswordProtected":
+		default:
+			return nil, E.New("lockdown Pair: ", fmt.Sprint(reply["Error"]))
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(pairRetryInterval):
+		}
+	}
 }

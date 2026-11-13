@@ -3,13 +3,12 @@ package media
 import (
 	"net"
 	"net/netip"
+	"syscall"
 
 	"github.com/sagernet/sing/common/bufio"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
-
-	"golang.org/x/sys/unix"
 )
 
 func connectLeg(conn *net.UDPConn, address netip.AddrPort) (N.ConnectedPacketBatchWriter, error) {
@@ -19,16 +18,16 @@ func connectLeg(conn *net.UDPConn, address netip.AddrPort) (N.ConnectedPacketBat
 	}
 	var connectErr error
 	err = rawConn.Control(func(fd uintptr) {
-		var local unix.Sockaddr
-		local, connectErr = unix.Getsockname(int(fd))
+		var local syscall.Sockaddr
+		local, connectErr = syscall.Getsockname(socketFD(fd))
 		if connectErr != nil {
 			return
 		}
-		_, localInet6 := local.(*unix.SockaddrInet6)
-		var remote unix.Sockaddr
+		_, localInet6 := local.(*syscall.SockaddrInet6)
+		var remote syscall.Sockaddr
 		switch {
 		case localInet6:
-			inet6 := &unix.SockaddrInet6{Port: int(address.Port()), Addr: address.Addr().As16()}
+			inet6 := &syscall.SockaddrInet6{Port: int(address.Port()), Addr: address.Addr().As16()}
 			if zone := address.Addr().Zone(); zone != "" {
 				var networkInterface *net.Interface
 				networkInterface, connectErr = net.InterfaceByName(zone)
@@ -39,20 +38,16 @@ func connectLeg(conn *net.UDPConn, address netip.AddrPort) (N.ConnectedPacketBat
 			}
 			remote = inet6
 		case address.Addr().Unmap().Is4():
-			remote = &unix.SockaddrInet4{Port: int(address.Port()), Addr: address.Addr().Unmap().As4()}
+			remote = &syscall.SockaddrInet4{Port: int(address.Port()), Addr: address.Addr().Unmap().As4()}
 		default:
 			connectErr = E.New("media: an IPv4 socket cannot connect to ", address)
 			return
 		}
-		connectErr = unix.Connect(int(fd), remote)
+		connectErr = syscall.Connect(socketFD(fd), remote)
 	})
 	err = E.Errors(err, connectErr)
 	if err != nil {
 		return nil, err
 	}
-	writer, created := bufio.CreateConnectedPacketBatchWriter(bufio.NewUnbindPacketConnWithAddr(conn, M.SocksaddrFromNetIP(address)))
-	if !created {
-		return nil, E.New("media: batched UDP writes are unsupported on this platform")
-	}
-	return writer, nil
+	return bufio.NewConnectedPacketBatchWriter(bufio.NewUnbindPacketConnWithAddr(conn, M.SocksaddrFromNetIP(address))), nil
 }

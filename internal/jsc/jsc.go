@@ -1,10 +1,15 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package jsc
 
 /*
-#cgo CFLAGS: -fmodules
-#cgo LDFLAGS: -framework JavaScriptCore
+#cgo darwin CFLAGS: -fmodules
+#cgo darwin LDFLAGS: -framework Foundation -framework JavaScriptCore
+#cgo linux LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -licui18n -licuuc -licudata -lmimalloc -lzstd -static-libstdc++ -lm -ldl
+#cgo windows CFLAGS: -DJS_NO_EXPORT
+#cgo windows LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -lsicuin -lsicuuc -lsicudt -lmimalloc -lzstd -lntdll -ladvapi32 -luser32 -lws2_32 -lwinmm -lshell32 -lole32 -ldbghelp
+#cgo windows CXXFLAGS: -O2 -std=c++23 -fno-exceptions -fno-rtti -Wno-inconsistent-dllimport -Wno-unknown-attributes -DNDEBUG -D_HAS_EXCEPTIONS=0 -DNOMINMAX -DJS_NO_EXPORT -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
+#cgo linux CXXFLAGS: -O2 -std=gnu++23 -fno-exceptions -fno-rtti -DNDEBUG -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
 
 #include <stdlib.h>
 #include "jsc_thread.h"
@@ -16,6 +21,7 @@ import (
 	"encoding/json"
 	"runtime/cgo"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -45,6 +51,37 @@ func (e *Exception) Error() string {
 		return e.Message
 	}
 	return e.Name + ": " + e.Message
+}
+
+var defaults struct {
+	access    sync.Mutex
+	languages string
+	timeZone  string
+}
+
+func SetLanguages(languages []string) {
+	joined := strings.Join(languages, "\n")
+	defaults.access.Lock()
+	defer defaults.access.Unlock()
+	if joined == defaults.languages {
+		return
+	}
+	defaults.languages = joined
+	text := C.CString(joined)
+	defer C.free(unsafe.Pointer(text))
+	C.jsc_set_languages(text)
+}
+
+func SetTimeZone(timeZone string) {
+	defaults.access.Lock()
+	defer defaults.access.Unlock()
+	if timeZone == defaults.timeZone {
+		return
+	}
+	defaults.timeZone = timeZone
+	text := C.CString(timeZone)
+	defer C.free(unsafe.Pointer(text))
+	C.jsc_set_time_zone(text)
 }
 
 type Function func(arguments []Value) (any, error)

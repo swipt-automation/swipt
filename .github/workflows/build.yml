@@ -18,6 +18,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'release' && 'publish' || inputs.release && 'release' || 'build' }}
   cancel-in-progress: ${{ github.event_name != 'release' && !inputs.release }}
 
+env:
+  PACKAGE_PATHS: >-
+    .github/publish_packages.sh api cli cmd/swipt-driver internal go.mod go.sum
+    :!internal/automation/runtime :!internal/cmd/build_altstore_source :!internal/cmd/build_libswipt :!internal/cmd/format_xcstrings :!*_test.go
+
 jobs:
   calculate_version:
     name: Calculate version
@@ -53,11 +58,11 @@ jobs:
             PREVIOUS=$(git tag -l --format='%(contents:subject)' nightly)
             RELEASED=$(curl -fsSL --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/metadata.json" | jq -r '"\(.version) \(.build)"' || true)
             if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] && git diff --quiet 'nightly^{commit}' HEAD -- . \
-              ':!.github' ':!cli' ':!cmd' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!dev/strings.ts' ':!*_test.go'; then
+              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!dev/strings.ts' ':!*_test.go'; then
               APP_CHANGED=false
             fi
           fi
-          PACKAGE_PATHS=(api cli cmd/swipt-server internal go.mod go.sum ':!internal/automation/runtime' ':!internal/cmd' ':!*_test.go')
+          read -ra PACKAGE_PATHS <<< "$PACKAGE_PATHS"
           PACKAGES_CHANGED=true
           NIGHTLY=$(npm view @swipt/api@nightly version 2> /dev/null || true)
           PUBLISHED=$(npm view @swipt/api@nightly gitHead 2> /dev/null || true)
@@ -240,17 +245,35 @@ jobs:
             build/metadata.json
             build/altstore
           if-no-files-found: error
-  build_server:
-    name: Build server (${{ matrix.cpu }})
-    if: needs.calculate_version.outputs.packages_changed == 'true'
+  list_driver_targets:
+    name: List driver targets
+    if: ${{ !inputs.release }}
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.targets.outputs.targets }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 1
+          sparse-checkout: cli/package.json
+          sparse-checkout-cone-mode: false
+      - name: List targets
+        id: targets
+        run: |-
+          echo "targets=$(jq -c '[.optionalDependencies | keys[] | ltrimstr("@swipt/driver-")]' cli/package.json)" >> "$GITHUB_OUTPUT"
+  build_driver:
+    name: Build driver (${{ matrix.target }})
+    if: >-
+      !cancelled() && !failure() && (needs.calculate_version.outputs.packages_changed == 'true'
+      || github.event_name == 'release' && !github.event.release.prerelease && startsWith(github.event.release.tag_name, 'v'))
     runs-on: xcode-27
     needs:
       - calculate_version
+      - list_driver_targets
     strategy:
       matrix:
-        include:
-          - { arch: arm64, cpu: arm64 }
-          - { arch: amd64, cpu: x64 }
+        target: ${{ fromJSON(needs.list_driver_targets.outputs.targets) }}
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -281,41 +304,51 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/go-build
-          key: go-build-server-darwin-${{ matrix.arch }}-${{ hashFiles('go.mod', 'go.sum', 'cmd/swipt-server/**', 'internal/**', '!internal/automation/runtime/**', '!**/*_test.go') }}
-          restore-keys: go-build-server-darwin-${{ matrix.arch }}-
+          key: go-build-driver-${{ matrix.target }}-${{ hashFiles('go.mod', 'go.sum', 'cmd/swipt-driver/**', 'internal/**', '!internal/automation/runtime/**', '!**/*_test.go') }}
+          restore-keys: go-build-driver-${{ matrix.target }}-
+      - name: Install LLVM
+        if: ${{ !startsWith(matrix.target, 'darwin-') }}
+        run: brew install llvm@23 lld@23 ${{ startsWith(matrix.target, 'win32-') && 'xwin' || '' }}
+      - name: Cache driver dependencies
+        if: ${{ !startsWith(matrix.target, 'darwin-') }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/downloads
+            build/winsysroot-*
+          key: driver-dependencies-${{ matrix.target }}-${{ hashFiles('internal/cmd/build_driver/**') }}
+          restore-keys: driver-dependencies-${{ matrix.target }}-
       - name: Build
-        run: go build -trimpath -ldflags "-s -w -buildid=" -o build/swipt-server-darwin-${{ matrix.cpu }} ./cmd/swipt-server
-        env:
-          CGO_ENABLED: "1"
-          GOOS: darwin
-          GOARCH: ${{ matrix.arch }}
+        run: go run ./internal/cmd/build_driver -target ${{ matrix.target }}
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: swipt-server-darwin-${{ matrix.cpu }}
-          path: build/swipt-server-darwin-${{ matrix.cpu }}
+          name: driver-${{ matrix.target }}
+          path: build/driver
           if-no-files-found: error
   publish_packages:
     name: Publish packages
-    if: github.ref == 'refs/heads/main' && needs.calculate_version.outputs.packages_changed == 'true'
+    if: >-
+      !cancelled() && needs.build_driver.result == 'success'
+      && (github.event_name == 'release' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     needs:
       - calculate_version
-      - build_server
+      - build_driver
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
-      - name: Download servers
+      - name: Download drivers
         uses: actions/download-artifact@v4
         with:
-          pattern: swipt-server-*
+          pattern: driver-*
           merge-multiple: true
-          path: build
+          path: build/driver
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -329,15 +362,17 @@ jobs:
         run: |-
           bun install --frozen-lockfile --filter @swipt/cli
           bun run --cwd cli build
-      - name: Publish
+      - name: Publish nightly
+        if: github.event_name != 'release'
         run: |-
+          read -ra PACKAGE_PATHS <<< "$PACKAGE_PATHS"
           CURRENT=$(npm view @swipt/api@nightly version 2> /dev/null || true)
           NUMBER=1
           if [[ "$CURRENT" == "$BASE-nightly."* ]]; then
             PUBLISHED=$(npm view "@swipt/api@$CURRENT" gitHead 2> /dev/null || true)
             if [ "$PUBLISHED" = "$GITHUB_SHA" ]; then
               NUMBER=${CURRENT##*.}
-            elif [ -n "$PUBLISHED" ] && git cat-file -e "$PUBLISHED^{commit}" 2> /dev/null && git diff --quiet "$PUBLISHED" HEAD -- api cli cmd/swipt-server internal go.mod go.sum ':!internal/automation/runtime' ':!internal/cmd' ':!*_test.go'; then
+            elif [ -n "$PUBLISHED" ] && git cat-file -e "$PUBLISHED^{commit}" 2> /dev/null && git diff --quiet "$PUBLISHED" HEAD -- "${PACKAGE_PATHS[@]}"; then
               echo "the packages are unchanged since $CURRENT"
               exit 0
             else
@@ -346,16 +381,13 @@ jobs:
           fi
           VERSION="$BASE-nightly.$NUMBER"
           .github/publish_packages.sh "$VERSION" nightly
-          if [ -z "$STABLE" ]; then
-            for package in api server-darwin-arm64 server-darwin-x64 cli; do
-              case "$(npm view "@swipt/$package@latest" version 2> /dev/null)" in
-                *-*) npm dist-tag add "@swipt/$package@$VERSION" latest ;;
-              esac
-            done
-          fi
         env:
           BASE: ${{ needs.calculate_version.outputs.version }}
-          STABLE: ${{ needs.calculate_version.outputs.stable }}
+      - name: Publish release
+        if: github.event_name == 'release'
+        run: .github/publish_packages.sh "${TAG#v}" latest
+        env:
+          TAG: ${{ github.event.release.tag_name }}
   publish_nightly:
     name: Publish nightly
     if: github.ref == 'refs/heads/main' && !cancelled() && !failure() && needs.calculate_version.outputs.app_changed == 'true'
@@ -365,7 +397,7 @@ jobs:
     needs:
       - calculate_version
       - build_ios_ipa
-      - build_server
+      - build_driver
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -411,7 +443,7 @@ jobs:
       contents: write
     needs:
       - calculate_version
-      - build_server
+      - build_driver
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -433,7 +465,7 @@ jobs:
     needs:
       - calculate_version
       - build_ios_ipa
-      - build_server
+      - build_driver
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -491,67 +523,3 @@ jobs:
             build/Swipt.ipa build/Swipt-iOS.dSYMs.zip build/metadata.json build/icon.png build/altstore/altstore.json
         env:
           GH_TOKEN: ${{ github.token }}
-  build_release_server:
-    name: Build release server
-    if: github.event_name == 'release' && !github.event.release.prerelease && startsWith(github.event.release.tag_name, 'v')
-    runs-on: xcode-27
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          fetch-depth: 1
-      - name: Select Xcode
-        run: .github/select_xcode.sh
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
-      - name: Build
-        run: |-
-          GOARCH=arm64 go build -trimpath -ldflags "-s -w -buildid=" -o build/swipt-server-darwin-arm64 ./cmd/swipt-server
-          GOARCH=amd64 go build -trimpath -ldflags "-s -w -buildid=" -o build/swipt-server-darwin-x64 ./cmd/swipt-server
-        env:
-          CGO_ENABLED: "1"
-          GOOS: darwin
-      - name: Upload build
-        uses: actions/upload-artifact@v4
-        with:
-          name: swipt-server-darwin
-          path: build/swipt-server-darwin-*
-          if-no-files-found: error
-  publish_release:
-    name: Publish release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    needs:
-      - build_release_server
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          fetch-depth: 1
-      - name: Download servers
-        uses: actions/download-artifact@v4
-        with:
-          name: swipt-server-darwin
-          path: build
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.4
-      - name: Build CLI
-        run: |-
-          bun install --frozen-lockfile --filter @swipt/cli
-          bun run --cwd cli build
-      - name: Publish
-        run: .github/publish_packages.sh "${TAG#v}" latest
-        env:
-          TAG: ${{ github.event.release.tag_name }}

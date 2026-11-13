@@ -27,7 +27,12 @@ export const joinRelative = (base: string, path: string): string => {
 export const nameOf = (path: string): string => path.split("/").at(-1) ?? "";
 
 export const directoryURI = (absolute: string): string =>
-  `file://${encodeURI(absolute).replace(/[?#]/g, encodeURIComponent)}`;
+  `file://${encodeURI(absolute.startsWith("/") ? absolute : `/${absolute}`).replace(/[?#]/g, encodeURIComponent)}`;
+
+export const pathOfFileURI = (uri: string): string => {
+  const path = decodeURIComponent(uri.slice("file://".length));
+  return /^\/[A-Za-z]:\//.test(path) ? path.slice(1) : path;
+};
 
 export const fileURI = (
   root: string,

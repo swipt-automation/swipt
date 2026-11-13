@@ -1,5 +1,4 @@
 import dgram from "node:dgram";
-import { on } from "node:events";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +8,7 @@ import Bonjour from "bonjour-service";
 import multicastDNS from "multicast-dns";
 
 import { Code, RpcError, UsageError, open } from "./client";
+import { configDirectory } from "./directories";
 import { tr } from "./i18n";
 import { columns } from "./output";
 import {
@@ -21,11 +21,7 @@ const browseRequery = 300;
 const publishLimit = 10_000;
 const answerLimit = 5000;
 
-const storeFile = path.join(
-  process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
-  "swipt",
-  "devices.json",
-);
+const storeFile = path.join(configDirectory, "devices.json");
 
 function load() {
   let text;
@@ -89,29 +85,46 @@ function parseURL(text) {
 
 export const withToken = (url) => url.replace("://", "://TOKEN@");
 
+const multicastOptions = () =>
+  Object.values(os.networkInterfaces())
+    .map((addresses) =>
+      addresses.find((it) => it.family === "IPv4" && !it.internal),
+    )
+    .filter(Boolean)
+    .map(({ address }) => ({
+      socket: dgram.createSocket("udp4"),
+      bind: false,
+      interface: address,
+    }));
+
 async function browse(signal, until, limit = browseLimit) {
-  const bonjour = new Bonjour({
-    socket: dgram.createSocket("udp4"),
-    bind: false,
-  } as any);
+  const responders = multicastOptions().map(
+    (options) => new Bonjour(options as any),
+  );
   const found = new Map();
   const enough = new AbortController();
   try {
-    const browser = bonjour.find({ type: "swipt" }, (service) => {
-      if (!service.host || found.has(service.name)) {
-        return;
+    const browsers = responders.map((bonjour) =>
+      bonjour.find({ type: "swipt" }, (service) => {
+        if (!service.host || found.has(service.name)) {
+          return;
+        }
+        const host = service.host.replace(/\.$/, "").toLowerCase();
+        found.set(service.name, {
+          name: label(service.name),
+          url: `http://${host.includes(":") ? `[${host}]` : host}:${service.port}`,
+          authenticates: service.txt?.auth === "1",
+        });
+        if (until?.([...found.values()])) {
+          enough.abort();
+        }
+      }),
+    );
+    const requery = setInterval(() => {
+      for (const browser of browsers) {
+        browser.update();
       }
-      const host = service.host.replace(/\.$/, "").toLowerCase();
-      found.set(service.name, {
-        name: label(service.name),
-        url: `http://${host.includes(":") ? `[${host}]` : host}:${service.port}`,
-        authenticates: service.txt?.auth === "1",
-      });
-      if (until?.([...found.values()])) {
-        enough.abort();
-      }
-    });
-    const requery = setInterval(() => browser.update(), browseRequery);
+    }, browseRequery);
     try {
       await sleep(limit, undefined, {
         signal: AbortSignal.any([signal, enough.signal]),
@@ -123,9 +136,13 @@ async function browse(signal, until, limit = browseLimit) {
     } finally {
       clearInterval(requery);
     }
-    browser.stop();
+    for (const browser of browsers) {
+      browser.stop();
+    }
   } finally {
-    bonjour.destroy();
+    for (const bonjour of responders) {
+      bonjour.destroy();
+    }
   }
   return [...found.values()];
 }
@@ -278,7 +295,15 @@ export async function attach(context) {
     device = parseURL(stored[names[0]]);
   }
   context.target.url = device.url;
-  return open(device);
+  if (process.platform === "darwin") {
+    return open(device);
+  }
+  return open(
+    (await located(
+      device,
+      AbortSignal.any([context.signal, AbortSignal.timeout(answerLimit)]),
+    )) ?? device,
+  );
 }
 
 const connectionStates = {
@@ -318,43 +343,67 @@ function connectionText(connection) {
     .join(": ");
 }
 
-async function onLocalNetwork(host, signal) {
-  const mdns = multicastDNS({
-    socket: dgram.createSocket("udp4"),
-    bind: false,
-  });
-  const query = () =>
-    mdns.query([
-      { name: host, type: "A" },
-      { name: host, type: "AAAA" },
-    ]);
+async function localAddress(host, signal) {
+  const sockets = multicastOptions().map((options) => multicastDNS(options));
+  const query = () => {
+    for (const mdns of sockets) {
+      mdns.query([
+        { name: host, type: "A" },
+        { name: host, type: "AAAA" },
+      ]);
+    }
+  };
   const requery = setInterval(query, browseRequery);
-  query();
   try {
-    for await (const [response] of on(mdns, "response", { signal })) {
-      if (response.answers.some((it) => sameName(it.name, host))) {
-        return true;
+    return await new Promise<string | undefined>((resolve, reject) => {
+      if (signal.aborted) {
+        resolve(undefined);
       }
-    }
-  } catch (error) {
-    if (!signal.aborted) {
-      throw error;
-    }
+      signal.addEventListener("abort", () => resolve(undefined), {
+        once: true,
+      });
+      for (const mdns of sockets) {
+        mdns.on("error", reject);
+        mdns.on("response", (response) => {
+          const answers = response.answers.filter(
+            (it) =>
+              sameName(it.name, host) &&
+              (it.type === "A" ||
+                (it.type === "AAAA" && !/^fe[89ab]/i.test(it.data))),
+          );
+          const answer = answers.find((it) => it.type === "A") ?? answers[0];
+          if (answer) {
+            resolve(answer.data);
+          }
+        });
+      }
+      query();
+    });
   } finally {
     clearInterval(requery);
-    mdns.destroy();
+    for (const mdns of sockets) {
+      mdns.destroy();
+    }
   }
-  return false;
+}
+
+async function located(device, signal) {
+  const url = new URL(device.url);
+  if (!url.hostname.endsWith(".local")) {
+    return device;
+  }
+  const address = await localAddress(url.hostname, signal);
+  if (address === undefined) {
+    return undefined;
+  }
+  url.hostname = address.includes(":") ? `[${address}]` : address;
+  return { ...device, url: url.href.replace(/\/+$/, "") };
 }
 
 async function probe(url, signal) {
   try {
-    const device = parseURL(url);
-    const { hostname } = new URL(device.url);
-    if (
-      hostname.endsWith(".local") &&
-      !(await onLocalNetwork(hostname, signal))
-    ) {
+    const device = await located(parseURL(url), signal);
+    if (device === undefined) {
       return { cells: [tr("offline")] };
     }
     const info = await open(device).system.getInfo({}, { signal });

@@ -5,6 +5,7 @@
 #include "_cgo_export.h"
 
 #import "SWError.h"
+#import "SWScreenFrames.h"
 
 static char *SWCString(NSString *text) {
     return (char *)text.UTF8String;
@@ -119,39 +120,91 @@ static NSURL *SWTakeFileURL(char *path, BOOL directory) {
 
 @end
 
-@implementation SWGoScreenStream
+@implementation SWGoResource
 
-+ (instancetype)openWithMode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate error:(NSError **)error {
-    swipt_graphics_screen_stream screen = swiptGraphicsOpenScreenStream(SWCString(mode), maximumBitrate);
+- (void)relinquish {
+    swiptGraphicsReleaseObject(self.handle);
+}
+
+@end
+
+@implementation SWRecordingSession
+
+- (BOOL)stop:(NSError **)error {
+    char *failure = swiptGraphicsStopRecording(self.handle);
+    if (failure == NULL) {
+        return YES;
+    }
+    SWFailWith(error, SWTakeFailure(failure));
+    return NO;
+}
+
+@end
+
+@implementation SWScreenOwner
+
+- (instancetype)init {
+    return [super initWithHandle:swiptGraphicsNewScreenOwner()];
+}
+
+- (void)close {
+    swiptGraphicsCloseScreenOwner(self.handle);
+}
+
+@end
+
+@implementation SWScreenStream {
+    SWScreenFrames *_frames;
+}
+
++ (instancetype)openWithContext:(SWCallContext *)context owner:(SWScreenOwner *)owner mode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate error:(NSError **)error {
+    swipt_graphics_screen_stream screen = swiptGraphicsOpenScreen(context.handle, owner.handle, SWCString(mode), maximumBitrate);
+    SWScreenFrames *frames = (__bridge_transfer SWScreenFrames *)screen.frames;
     if (screen.failure != NULL) {
         SWFailWith(error, SWTakeFailure(screen.failure));
         return nil;
     }
-    SWGoScreenStream *stream = [[self alloc] initWithHandle:screen.stream];
-    stream->_width = (NSInteger)screen.width;
-    stream->_height = (NSInteger)screen.height;
-    stream->_scale = MAX(screen.scale, 1);
+    SWScreenStream *stream = [[self alloc] initWithHandle:screen.stream];
+    stream->_frames = frames;
     return stream;
 }
 
-- (void)configureMode:(NSString *)mode maximumBitrate:(uint64_t)maximumBitrate {
-    swiptGraphicsConfigureScreenStream(self.handle, SWCString(mode), maximumBitrate);
+- (BOOL)closed {
+    return swiptGraphicsScreenClosed(self.handle);
 }
 
-- (void)requestKeyFrame {
-    swiptGraphicsRequestScreenKeyFrame(self.handle);
+- (SWFrame *)latestFrame:(SWCancelToken *)token error:(NSError **)error {
+    NSInteger sequence = 0;
+    NSError *failure = nil;
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:SWIPT_GRAPHICS_FIRST_FRAME_SECONDS];
+    SWFrame *frame = [self frameAfter:0 until:deadline token:token sequence:&sequence error:&failure];
+    if (frame == nil) {
+        SWFailWith(error, failure ?: SWTakeFailure(swiptGraphicsScreenFailure(self.handle)));
+    }
+    return frame;
+}
+
+- (SWFrame *)frameAfter:(NSInteger)previous until:(NSDate *)deadline token:(SWCancelToken *)token sequence:(NSInteger *)sequence error:(NSError **)error {
+    return [_frames frameAfter:previous until:deadline token:token closed:^BOOL {
+        return self.closed;
+    } sequence:sequence error:error];
+}
+
+- (SWRecordingSession *)recordWithContext:(SWCallContext *)context root:(NSString *)root path:(NSString *)path error:(NSError **)error {
+    swipt_graphics_recording_session recording = swiptGraphicsRecordScreen(context.handle, self.handle, SWCString(root), SWCString(path));
+    if (recording.failure != NULL) {
+        SWFailWith(error, SWTakeFailure(recording.failure));
+        return nil;
+    }
+    return [[SWRecordingSession alloc] initWithHandle:recording.session];
 }
 
 - (void)close {
-    swiptGraphicsCloseScreenStream(self.handle);
+    swiptGraphicsCloseScreen(self.handle);
 }
 
 @end
 
 void SWLogError(NSString *message) {
     swiptGraphicsLogError(SWCString(message));
-}
-
-void SWReportRecordingFailure(NSString *message) {
-    swiptGraphicsRecordingFailed(SWCString(message));
 }

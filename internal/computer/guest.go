@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package computer
 
@@ -10,15 +10,10 @@ import (
 	"fmt"
 	"maps"
 	"net"
-	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/sagernet/sing/common/logger"
-	"github.com/swipt-automation/swipt/internal/coredevice/afc"
-	"github.com/swipt-automation/swipt/internal/coredevice/instproxy"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/usbmuxd"
 
@@ -26,12 +21,10 @@ import (
 )
 
 const (
-	serviceAFC       = "com.apple.afc"
-	stagingDirectory = "PublicStaging"
-
 	lockdownRecords      = "/var/root/Library/Lockdown/pair_records"
 	localNetworkRules    = "/var/preferences/com.apple.networkextension.plist"
 	notificationSettings = "/var/mobile/Library/BulletinBoard/VersionedSectionInfo.plist"
+	mobileOwner          = "501:501"
 )
 
 type vphoned string
@@ -77,13 +70,17 @@ func (socket vphoned) writeFile(ctx context.Context, file string, data []byte) e
 	return err
 }
 
-func (socket vphoned) editFile(ctx context.Context, file string, edit func([]byte) ([]byte, error)) (bool, error) {
+func (socket vphoned) readFile(ctx context.Context, file string) ([]byte, error) {
 	read, err := socket.call(ctx, "files.read", map[string]any{"path": file, "binary": true})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	content, _ := read["content"].(string)
-	data, err := base64.StdEncoding.DecodeString(content)
+	return base64.StdEncoding.DecodeString(content)
+}
+
+func (socket vphoned) editFile(ctx context.Context, file string, edit func([]byte) ([]byte, error)) (bool, error) {
+	data, err := socket.readFile(ctx, file)
 	if err != nil {
 		return false, err
 	}
@@ -151,6 +148,11 @@ func GuestPair(ctx context.Context, udid, socket string) error {
 	return guest.restart(ctx, "lockdownd")
 }
 
+func (socket vphoned) chown(ctx context.Context, file string) error {
+	_, err := socket.call(ctx, "files.chown", map[string]any{"path": file, "owner": mobileOwner})
+	return err
+}
+
 func GuestConfigure(ctx context.Context, socket, bundleID, name string) error {
 	guest := vphoned(socket)
 	_, err := guest.call(ctx, "settings.set", map[string]any{"domain": "com.apple.springboard", "key": "SBDidShowReorderText", "value": true, "type": "bool"})
@@ -175,48 +177,10 @@ func GuestConfigure(ctx context.Context, socket, bundleID, name string) error {
 	if err != nil || !changed {
 		return err
 	}
-	_, err = guest.call(ctx, "files.chown", map[string]any{"path": notificationSettings, "owner": "501:501"})
-	if err != nil {
+	if err = guest.chown(ctx, notificationSettings); err != nil {
 		return err
 	}
 	return guest.restart(ctx, "SpringBoard")
-}
-
-func guestService(ctx context.Context, udid, service string) (net.Conn, error) {
-	peer, err := findLockdownPeer(ctx, udid)
-	if err != nil {
-		return nil, err
-	}
-	return lockdown.DialService(ctx, peer.record, dialer(peer.device.ID), service, logger.NOP())
-}
-
-func GuestInstall(ctx context.Context, udid, archive, bundleID string) error {
-	source, err := os.Open(archive)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-	conn, err := guestService(ctx, udid, serviceAFC)
-	if err != nil {
-		return err
-	}
-	files := afc.New(conn)
-	defer files.Close()
-	err = files.MakeDirectory(stagingDirectory)
-	if err != nil {
-		return err
-	}
-	staged := path.Join(stagingDirectory, filepath.Base(archive))
-	err = files.Upload(staged, source)
-	if err != nil {
-		return E.Cause(err, "upload ", archive)
-	}
-	install, err := guestService(ctx, udid, instproxy.Service)
-	if err != nil {
-		return err
-	}
-	defer install.Close()
-	return instproxy.Install(install, staged, bundleID)
 }
 
 // A local network decision is a NEPathRule of the NEPathController with

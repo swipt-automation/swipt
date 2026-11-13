@@ -101,13 +101,3 @@ func swiptGraphicsPublish(handle C.uintptr_t, value *C.char) {
 func swiptGraphicsLogError(message *C.char) {
 	current.Load().options.Logger.Error(C.GoString(message))
 }
-
-//export swiptGraphicsRecordingFailed
-func swiptGraphicsRecordingFailed(message *C.char) {
-	options := current.Load().options
-	text := C.GoString(message)
-	options.Logger.Error("save the abandoned recording: ", text)
-	if options.OnRecordingFailed != nil {
-		options.OnRecordingFailed(text)
-	}
-}

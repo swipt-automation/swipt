@@ -157,11 +157,19 @@ func (s *screenStreams) configure(stream *ScreenStream, options ScreenStreamOpti
 }
 
 func (s *screenStreams) mergedLocked() ScreenStreamOptions {
-	merged := ScreenStreamOptions{Mode: ScreenModeCoreDevice}
+	options := make([]ScreenStreamOptions, 0, len(s.open))
 	for stream := range s.open {
-		if stream.options.Mode != ScreenModeCoreDevice {
+		options = append(options, stream.options)
+	}
+	return MergeScreenStreamOptions(options)
+}
+
+func MergeScreenStreamOptions(options []ScreenStreamOptions) ScreenStreamOptions {
+	merged := ScreenStreamOptions{Mode: ScreenModeCoreDevice}
+	for _, option := range options {
+		if option.Mode != ScreenModeCoreDevice {
 			merged.Mode = ScreenModeRemoteDesktop
-			merged.MaximumBitrate = max(merged.MaximumBitrate, stream.options.MaximumBitrate)
+			merged.MaximumBitrate = max(merged.MaximumBitrate, option.MaximumBitrate)
 		}
 	}
 	if merged.Mode == ScreenModeRemoteDesktop && merged.MaximumBitrate == 0 {

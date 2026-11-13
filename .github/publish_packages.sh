@@ -4,18 +4,27 @@ set -euo pipefail
 
 VERSION=$1
 TAG=$2
+# The CLI's optional dependencies name the driver packages, one for each target.
+mapfile -t TARGETS < <(jq -r '.optionalDependencies | keys[] | ltrimstr("@swipt/driver-")' cli/package.json)
 npm install -g npm@latest
-for cpu in arm64 x64; do
-  mkdir -p "build/server-darwin-$cpu"
-  install -m 755 "build/swipt-server-darwin-$cpu" "build/server-darwin-$cpu/swipt-server"
-  jq -n --arg cpu "$cpu" --arg version "$VERSION" '{name: "@swipt/server-darwin-\($cpu)", version: $version, license: "GPL-3.0-or-later",
-    repository: {type: "git", url: "https://github.com/swipt-automation/swipt.git", directory: "cmd/swipt-server"},
-    os: ["darwin"], cpu: [$cpu], bin: {"swipt-server": "swipt-server"}, files: ["swipt-server"], publishConfig: {access: "public"}}' \
-    > "build/server-darwin-$cpu/package.json"
+optional=()
+for target in "${TARGETS[@]}"; do
+  os=${target%-*}
+  cpu=${target#*-}
+  package=build/driver/$target
+  executable=$(cd "$package" && echo swipt-driver*)
+  # Artifacts lose the executable bit.
+  chmod 755 "$package/$executable"
+  jq -n --arg target "$target" --arg os "$os" --arg cpu "$cpu" --arg executable "$executable" --arg version "$VERSION" '{name: "@swipt/driver-\($target)", version: $version, license: "GPL-3.0-or-later",
+    repository: {type: "git", url: "https://github.com/swipt-automation/swipt.git", directory: "cmd/swipt-driver"},
+    os: [$os], cpu: [$cpu], bin: {"swipt-driver": $executable}, files: [$executable], publishConfig: {access: "public"}}
+    + if $os == "linux" then {libc: ["glibc"]} else {} end' \
+    > "$package/package.json"
+  optional+=("optionalDependencies.@swipt/driver-$target=$VERSION")
 done
 npm pkg set "version=$VERSION" --prefix api
-npm pkg set "version=$VERSION" "peerDependencies.@swipt/api=$VERSION" "optionalDependencies.@swipt/server-darwin-arm64=$VERSION" "optionalDependencies.@swipt/server-darwin-x64=$VERSION" --prefix cli
-for package in api build/server-darwin-arm64 build/server-darwin-x64 cli; do
+npm pkg set "version=$VERSION" "peerDependencies.@swipt/api=$VERSION" "${optional[@]}" --prefix cli
+for package in api "${TARGETS[@]/#/build/driver/}" cli; do
   cp LICENSE "$package/"
   PACKAGE=$(node -p "require('./$package/package.json').name")
   if npm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
@@ -23,5 +32,11 @@ for package in api build/server-darwin-arm64 build/server-darwin-x64 cli; do
     npm dist-tag add "$PACKAGE@$VERSION" "$TAG"
   else
     npm publish "./$package" --tag "$TAG"
+  fi
+  # Until a package has a stable release, latest follows its prereleases.
+  if [ "$TAG" != latest ]; then
+    case "$(npm view "$PACKAGE@latest" version 2> /dev/null || true)" in
+      *-*) npm dist-tag add "$PACKAGE@$VERSION" latest ;;
+    esac
   fi
 done

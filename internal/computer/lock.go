@@ -1,4 +1,4 @@
-//go:build darwin && cgo
+//go:build cgo
 
 package computer
 
@@ -7,8 +7,6 @@ import (
 	"os"
 
 	E "github.com/sagernet/sing/common/exceptions"
-
-	"golang.org/x/sys/unix"
 )
 
 func acquire(path string, url string) (*os.File, error) {
@@ -16,12 +14,12 @@ func acquire(path string, url string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB); err != nil {
+	if err = lockFile(file); err != nil {
 		_ = file.Close()
-		if !errors.Is(err, unix.EWOULDBLOCK) {
+		if !errors.Is(err, errLocked) {
 			return nil, E.Cause(err, "lock ", path)
 		}
-		return nil, E.New(`another Swipt server is running on this Mac; stop it with "swipt device stop -d `, url, `"`)
+		return nil, E.New(`swipt-driver is already running on this computer; stop it with "swipt device stop -d `, url, `"`)
 	}
 	return file, nil
 }

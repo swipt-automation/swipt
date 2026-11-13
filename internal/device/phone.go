@@ -580,6 +580,27 @@ type PhoneInfo struct {
 	Screen                        PhoneScreen
 }
 
+type Environment struct {
+	OSVersion string
+	Languages []string
+	TimeZone  string
+}
+
+func (p *Phone) Environment() Environment {
+	s := p.connection
+	s.access.Lock()
+	defer s.access.Unlock()
+	return s.environmentLocked()
+}
+
+func (s *Connection) environmentLocked() Environment {
+	environment := Environment{OSVersion: s.info.OSVersion, Languages: []string{"en"}, TimeZone: s.timeZone}
+	if s.language != "" {
+		environment.Languages = []string{s.language}
+	}
+	return environment
+}
+
 func (p *Phone) Info(ctx context.Context) (PhoneInfo, error) {
 	c, ctx, done, err := p.begin(ctx)
 	if err != nil {
@@ -594,7 +615,18 @@ func (p *Phone) Info(ctx context.Context) (PhoneInfo, error) {
 	}
 	out.Screen = geometry.PhoneScreen
 	out.Language, err = c.device.Language(ctx)
-	return out, err
+	if err != nil {
+		return PhoneInfo{}, err
+	}
+	s := p.connection
+	s.access.Lock()
+	defer s.access.Unlock()
+	if out.Language != s.language {
+		s.language = out.Language
+		environment := s.environmentLocked()
+		s.notify(func(observer Observer) { observer.EnvironmentChanged(environment) })
+	}
+	return out, nil
 }
 
 func (p *Phone) Locked(ctx context.Context) (bool, error) {

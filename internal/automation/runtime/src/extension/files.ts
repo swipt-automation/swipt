@@ -1,4 +1,10 @@
-import { directoryURI, fileURI, joinRelative, nameOf } from "../shared/paths";
+import {
+  directoryURI,
+  fileURI,
+  joinRelative,
+  nameOf,
+  pathOfFileURI,
+} from "../shared/paths";
 import { invoke } from "./async";
 import { Blob } from "./blob";
 import { TextDecoder, TextEncoder } from "./encoding";
@@ -254,10 +260,8 @@ export const fileOf = (value: unknown, name: string): FileHandle => {
   throw new TypeError(`${name} must be a FileHandle`);
 };
 
-export const handleOfPath = (value: string): FileHandle => {
-  const absolute = value.startsWith("file://")
-    ? decodeURIComponent(value.slice("file://".length))
-    : value;
+export const handleOfURI = (uri: string): FileHandle => {
+  const absolute = pathOfFileURI(uri);
   for (const root of ["data", "assets", "cache"] as const) {
     const prefix = `${rootPath(root)}/`;
     if (absolute.startsWith(prefix)) {
@@ -268,6 +272,6 @@ export const handleOfPath = (value: string): FileHandle => {
     }
   }
   throw new TypeError(
-    `${JSON.stringify(value)} is outside the directories Swipt provides`,
+    `${JSON.stringify(uri)} is outside the directories Swipt provides`,
   );
 };

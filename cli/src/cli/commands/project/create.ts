@@ -111,9 +111,13 @@ export default function App() {
 };
 
 const quote = (value) =>
-  /^[\w@%+=:,./-]+$/.test(value)
-    ? value
-    : `'${value.replaceAll("'", "'\\''")}'`;
+  process.platform === "win32"
+    ? /^[\w.:\\/-]+$/.test(value)
+      ? value
+      : `"${value}"`
+    : /^[\w@%+=:,./-]+$/.test(value)
+      ? value
+      : `'${value.replaceAll("'", "'\\''")}'`;
 
 function createCommand(directory) {
   const root = path.resolve(directory);
@@ -126,7 +130,7 @@ function createCommand(directory) {
   }
   const manager = process.env.npm_config_user_agent?.split("/")[0] ?? "npm";
   console.log(
-    `cd ${quote(directory)} && ${manager} install && ${manager} run build`,
+    `cd ${quote(directory)}\n${manager} install\n${manager} run build`,
   );
 }
 

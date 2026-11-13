@@ -313,9 +313,8 @@ func (w *axWorker) open(ctx context.Context) (*accessibility.RemoteClient, error
 
 // A remoteAXService connection that ended while its axauditd kept running
 // left that daemon generating the frontmost application's tree at each change
-// of the screen, for no client, until the daemon was killed; this was so after
-// Swipt was killed on the device and after swipt-server was killed on a Mac
-// (iPhone18,2, iOS 27.3 24C5037i).
+// of the screen, for no client, until the daemon was killed (iPhone18,2, iOS
+// 27.3 24C5037i).
 func (w *axWorker) ended() {
 	served := w.daemon
 	w.logger.Debug("the connection to the device's accessibility service ended: ", w.client.Err())

@@ -13,7 +13,7 @@
 #import "SWJSON.h"
 #import "SWNative.h"
 #import "SWRecognition.h"
-#import "SWScreenCapture.h"
+#import "SWScreenFrames.h"
 
 enum {
     SWCommandInstall = 0,
@@ -128,14 +128,32 @@ char *swipt_graphics_watch(uint64_t engine, int64_t identifier, uintptr_t scope)
     }
 }
 
-void swipt_graphics_screen_stream_packets(const void *bytes, size_t length) {
+void *swipt_graphics_frames_create(int64_t width, int64_t height, double scale) {
     @autoreleasepool {
-        [SWScreenCapture.shared onPackets:[NSData dataWithBytes:bytes length:length]];
+        SWScreenGeometry geometry = {.width = (NSInteger)width, .height = (NSInteger)height, .scale = scale};
+        return (__bridge_retained void *)[[SWScreenFrames alloc] initWithGeometry:geometry];
     }
 }
 
-void swipt_graphics_screen_stream_ended(const char *failure) {
+void *swipt_graphics_frames_retain(void *frames) {
+    return (void *)CFRetain(frames);
+}
+
+bool swipt_graphics_frames_decode(void *frames, swipt_graphics_unit unit) {
     @autoreleasepool {
-        [SWScreenCapture.shared onEnd:[NSString stringWithUTF8String:failure]];
+        return [(__bridge SWScreenFrames *)frames decode:&unit];
+    }
+}
+
+void swipt_graphics_frames_end(void *frames, const char *failure) {
+    @autoreleasepool {
+        [(__bridge SWScreenFrames *)frames endWithFailure:SWErrorFromFailure([NSString stringWithUTF8String:failure])];
+    }
+}
+
+void swipt_graphics_frames_close(void *frames) {
+    @autoreleasepool {
+        SWScreenFrames *closing = (__bridge_transfer SWScreenFrames *)frames;
+        [closing close];
     }
 }

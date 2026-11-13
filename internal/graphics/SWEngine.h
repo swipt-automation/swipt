@@ -2,15 +2,16 @@
 
 @class JSContext;
 @class SWCall;
-@class SWScreenStream;
+@class SWScreenOwner;
 
 @interface SWEngine : NSObject
+@property (nonatomic, readonly) SWScreenOwner *screens;
+
 - (instancetype)initWithContext:(JSContext *)context;
 - (NSInteger)prepare:(SWCall *)call;
 - (SWCall *)takePrepared:(NSInteger)identifier;
 - (NSInteger)registerObject:(id)object;
 - (id)take:(NSInteger)identifier;
 - (void)drop:(NSInteger)identifier;
-- (void)trackStream:(SWScreenStream *)stream;
 - (void)close;
 @end

@@ -18,6 +18,7 @@ func scan() ([]tunnel, []netip.Addr, error) {
 	if err != nil {
 		return nil, nil, E.Cause(err, "vpnpeer: read the interfaces")
 	}
+	common.SortBy(interfaces, func(it net.Interface) string { return it.Name })
 	var local []netip.Addr
 	var tunnels []tunnel
 	indexes := map[int]int{}
@@ -48,7 +49,7 @@ func scan() ([]tunnel, []netip.Addr, error) {
 		}
 		indexes[iface.Index] = len(tunnels)
 		pointToPoint[iface.Index] = iface.Flags&net.FlagPointToPoint != 0
-		tunnels = append(tunnels, tunnel{name: iface.Name})
+		tunnels = append(tunnels, tunnel{})
 	}
 	if len(tunnels) == 0 {
 		return nil, local, nil
@@ -84,7 +85,6 @@ func scan() ([]tunnel, []netip.Addr, error) {
 			tunnels[index].peers = append(tunnels[index].peers, address)
 		}
 	}
-	common.SortBy(tunnels, func(it tunnel) string { return it.name })
 	return tunnels, local, E.Errors(routesErr, addressesErr)
 }
 

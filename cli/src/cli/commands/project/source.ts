@@ -1,10 +1,10 @@
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 import { tr } from "../../../i18n";
 import { idPattern } from "../../../project";
+import { readZip } from "../../../zip";
 import { defineCommand } from "../../command";
 
 const manifestEntry = /^(?:[^/]+\/)?manifest\.json$/;
@@ -103,16 +103,13 @@ function workspaceSwiplets(source) {
 }
 
 function readSwiplet(file) {
-  const entry = execFileSync("unzip", ["-Z1", file], { encoding: "utf8" })
-    .split("\n")
-    .filter((name) => manifestEntry.test(name))
-    .sort((a, b) => a.length - b.length)[0];
+  const entry = readZip(file)
+    .filter((it) => manifestEntry.test(it.name))
+    .sort((a, b) => a.name.length - b.name.length)[0];
   if (entry === undefined) {
     throw new Error(`${file} has no manifest.json`);
   }
-  const manifest = JSON.parse(
-    execFileSync("unzip", ["-p", file, entry], { encoding: "utf8" }),
-  );
+  const manifest = JSON.parse(entry.read().toString("utf8"));
   if (typeof manifest.id !== "string" || !idPattern.test(manifest.id)) {
     throw new Error(`${file} has no valid swiplet id in its manifest`);
   }

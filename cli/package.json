@@ -8,6 +8,9 @@
     "directory": "cli"
   },
   "type": "module",
+  "engines": {
+    "node": "^22.13.0 || >=23.5.0"
+  },
   "bin": {
     "swipt": "./dist/bin/swipt.js"
   },
@@ -51,8 +54,12 @@
     "@swipt/api": "0.1.0"
   },
   "optionalDependencies": {
-    "@swipt/server-darwin-arm64": "0.1.0",
-    "@swipt/server-darwin-x64": "0.1.0"
+    "@swipt/driver-darwin-arm64": "0.1.0",
+    "@swipt/driver-darwin-x64": "0.1.0",
+    "@swipt/driver-linux-arm64": "0.1.0",
+    "@swipt/driver-linux-x64": "0.1.0",
+    "@swipt/driver-win32-arm64": "0.1.0",
+    "@swipt/driver-win32-x64": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

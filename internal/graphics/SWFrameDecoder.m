@@ -5,10 +5,51 @@
 #import <VideoToolbox/VideoToolbox.h>
 #import <stdatomic.h>
 
-#import "SWAccessUnit.h"
 #import "SWError.h"
 #import "SWGoBridge.h"
-#import "SWHEVC.h"
+
+static const int32_t SWMediaTimescale = 24000;
+
+CF_RETURNS_RETAINED static CMVideoFormatDescriptionRef SWHEVCFormat(const swipt_graphics_unit *unit) {
+    if (unit->vps.length == 0 || unit->sps.length == 0 || unit->pps.length == 0) {
+        return NULL;
+    }
+    const uint8_t *pointers[3] = {unit->vps.bytes, unit->sps.bytes, unit->pps.bytes};
+    const size_t sizes[3] = {unit->vps.length, unit->sps.length, unit->pps.length};
+    CMVideoFormatDescriptionRef description = NULL;
+    OSStatus status = CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL, 3, pointers, sizes, 4, NULL, &description);
+    if (status != noErr) {
+        SWLogError([NSString stringWithFormat:@"read the HEVC parameter sets: %@", SWErrorMessageOf(SWErrorStatus(status))]);
+        return NULL;
+    }
+    return description;
+}
+
+CF_RETURNS_RETAINED static CMSampleBufferRef SWHEVCSample(const swipt_graphics_unit *unit, CMVideoFormatDescriptionRef format) {
+    size_t size = unit->sample.length;
+    if (size == 0) {
+        return NULL;
+    }
+    CMBlockBufferRef block = NULL;
+    if (CMBlockBufferCreateWithMemoryBlock(NULL, NULL, size, NULL, NULL, 0, size, kCMBlockBufferAssureMemoryNowFlag, &block) != noErr) {
+        return NULL;
+    }
+    CMSampleBufferRef sample = NULL;
+    if (CMBlockBufferReplaceDataBytes(unit->sample.bytes, block, 0, size) == noErr) {
+        CMSampleTimingInfo timing = {.duration = kCMTimeInvalid, .presentationTimeStamp = CMTimeMake(unit->time, SWMediaTimescale), .decodeTimeStamp = kCMTimeInvalid};
+        CMSampleBufferCreateReady(NULL, block, format, 1, 1, &timing, 1, &size, &sample);
+    }
+    CFRelease(block);
+    if (sample != NULL && !unit->keyframe) {
+        CFArrayRef attachments = CMSampleBufferGetSampleAttachmentsArray(sample, true);
+        if (attachments != NULL && CFArrayGetCount(attachments) > 0) {
+            CFMutableDictionaryRef attachment = (CFMutableDictionaryRef)CFArrayGetValueAtIndex(attachments, 0);
+            CFDictionarySetValue(attachment, kCMSampleAttachmentKey_NotSync, kCFBooleanTrue);
+            CFDictionarySetValue(attachment, kCMSampleAttachmentKey_DependsOnOthers, kCFBooleanTrue);
+        }
+    }
+    return sample;
+}
 
 @implementation SWFrameDecoder {
     CMVideoFormatDescriptionRef _format;
@@ -17,14 +58,12 @@
     atomic_bool _failed;
     atomic_int _failedStatus;
     OSStatus _reportedStatus;
-    SWRTPClock *_clock;
 }
 
 - (instancetype)init {
     self = [super init];
     if (self) {
         _waitingForKeyframe = YES;
-        _clock = [SWRTPClock new];
     }
     return self;
 }
@@ -47,7 +86,6 @@
 - (void)invalidate {
     [self closeSession];
     _waitingForKeyframe = YES;
-    _clock = [SWRTPClock new];
 }
 
 - (BOOL)makeSession:(CMVideoFormatDescriptionRef)format {
@@ -74,8 +112,8 @@
     }
 }
 
-- (BOOL)adoptParameterSets:(SWAccessUnit *)unit {
-    CMVideoFormatDescriptionRef described = SWHEVCFormat(unit.nals);
+- (BOOL)adoptParameterSets:(const swipt_graphics_unit *)unit {
+    CMVideoFormatDescriptionRef described = SWHEVCFormat(unit);
     if (described == NULL) {
         return YES;
     }
@@ -93,19 +131,19 @@
     return adopted;
 }
 
-- (BOOL)decode:(SWAccessUnit *)unit {
+- (BOOL)decode:(const swipt_graphics_unit *)unit {
     if (atomic_exchange(&_failed, false)) {
         [self reportStatus:atomic_load(&_failedStatus)];
         [self invalidate];
     }
-    if (unit.damaged) {
+    if (unit->damaged) {
         _waitingForKeyframe = YES;
         return YES;
     }
-    if (unit.hasParameterSets && ![self adoptParameterSets:unit]) {
+    if (unit->sps.length > 0 && ![self adoptParameterSets:unit]) {
         return YES;
     }
-    if (_waitingForKeyframe && !unit.isKeyframe) {
+    if (_waitingForKeyframe && !unit->keyframe) {
         return YES;
     }
     if (_session == NULL && _format != NULL && ![self makeSession:_format]) {
@@ -115,10 +153,12 @@
         return YES;
     }
     _waitingForKeyframe = NO;
-    CMSampleBufferRef sample = SWHEVCSample(unit, _format, [_clock time:unit.rtpTimestamp], kCMTimeInvalid);
+    CMSampleBufferRef sample = SWHEVCSample(unit, _format);
     if (sample == NULL) {
         return NO;
     }
+    double arrival = unit->arrival;
+    NSInteger turns = unit->turns;
     __weak SWFrameDecoder *weakSelf = self;
     VTDecodeInfoFlags info = 0;
     OSStatus status = VTDecompressionSessionDecodeFrameWithOutputHandler(_session, sample, kVTDecodeFrame_1xRealTimePlayback | kVTDecodeFrame_EnableAsynchronousDecompression, &info,
@@ -133,7 +173,7 @@
                     atomic_store(&decoder->_failed, true);
                     return;
                 }
-                decoder.onFrame(image, unit);
+                decoder.onFrame(image, arrival, turns);
             }
         });
     CFRelease(sample);
