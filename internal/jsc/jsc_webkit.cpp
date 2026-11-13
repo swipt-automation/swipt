@@ -32,15 +32,15 @@ struct jsc_loop {
 // made it, and each takes the API lock to fire: deferred work, which calls into
 // JavaScript, and the collections and incremental sweeps, which run
 // finalizers. Collections come due only as the heap takes new memory
-// (oven-sh/WebKit 5a61071f, Source/WTF/wtf/bun/RunLoopBun.cpp:132-151, 159-170;
+// (oven-sh/WebKit d6375c72, Source/WTF/wtf/bun/RunLoopBun.cpp:132-151, 159-170;
 // Source/WTF/wtf/generic/RunLoopGeneric.cpp:156-191, 305-312;
-// Source/WTF/wtf/RunLoop.cpp:160-173;
-// Source/JavaScriptCore/runtime/VM.cpp:319, 393;
+// Source/WTF/wtf/RunLoop.cpp:157-170;
+// Source/JavaScriptCore/runtime/VM.cpp:263, 335;
 // Source/JavaScriptCore/runtime/JSRunLoopTimer.cpp:77-81, 219-240;
 // Source/JavaScriptCore/runtime/DeferredWorkTimer.cpp:90-96, 158-166;
 // Source/JavaScriptCore/heap/GCActivityCallback.cpp:94-103;
-// Source/JavaScriptCore/heap/Heap.cpp:1074, 2729-2742;
-// Source/JavaScriptCore/heap/LocalAllocator.cpp:140;
+// Source/JavaScriptCore/heap/Heap.cpp:981, 2578-2590;
+// Source/JavaScriptCore/heap/LocalAllocator.cpp:136;
 // Source/JavaScriptCore/heap/IncrementalSweeper.cpp:41-44, 95-110;
 // Source/JavaScriptCore/API/JSCallbackObjectFunctions.h:79-92).
 extern "C" void *jsc_loop_create(JSContextGroupRef group) {
@@ -77,8 +77,8 @@ extern "C" void jsc_set_languages(const char *languages) {
 }
 
 // A VM drops its date caches when it enters after the time zone ID moves, and
-// nothing else moves it for an override (oven-sh/WebKit 5a61071f,
-// Source/WTF/wtf/TimeZone.h:38-40; Source/JavaScriptCore/runtime/VM.h:398).
+// nothing else moves it for an override (oven-sh/WebKit d6375c72,
+// Source/WTF/wtf/TimeZone.h:38-40; Source/JavaScriptCore/runtime/VM.h:387).
 extern "C" void jsc_set_time_zone(const char *time_zone) {
 	WTF::setTimeZoneOverride(StringView::fromLatin1(time_zone));
 	WTF::timeZoneDidChange();

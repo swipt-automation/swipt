@@ -33,23 +33,10 @@ static void bun_icu_release(void) {
 }
 #endif
 
-// Bun's WebKit reads which of its features were removed from this state, and
-// calls these only for a removed one (oven-sh/WebKit 5a61071f,
-// Source/JavaScriptCore/aot/runtime/AOTRemovableFeature.h:50, 53, 84-88).
-_Alignas(8) const uint8_t Bun__removableFeatureState[536] = {0};
-
-int64_t Bun__throwForRemovedFeature(void *global, uint16_t feature) {
-	abort();
-}
-
-int64_t Bun__throwForRemovedFunction(void *global, uint16_t feature, void *name) {
-	abort();
-}
-
 // Bun's ICU keeps some data items as zstd frames made with this dictionary,
 // and reads each item it loads, with its length, from what this hook returns
-// for it (oven-sh/WebKit 5a61071f, icu/udata-decompress-hook.patch;
-// oven-sh/bun 2596ac5, src/jsc/bindings/bun_icu_decompress.cpp:115).
+// for it (oven-sh/WebKit d6375c72, icu/udata-decompress-hook.patch;
+// oven-sh/bun v1.4.4, src/jsc/bindings/bun_icu_decompress.cpp:115).
 extern const unsigned char bun_icu_zstd_dict[];
 extern const unsigned int bun_icu_zstd_dict_size;
 
