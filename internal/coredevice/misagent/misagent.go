@@ -21,8 +21,9 @@ type Profile struct {
 	ExpirationDate time.Time
 }
 
-// CopyAll answers with each installed profile, signed, in Payload, and Status
-// 0 (go-ios 63c0d57, ios/misagent/misagent.go:34-69).
+// CopyAll answers Status 0 and, in Payload, each installed profile as bytes
+// that hold its property list (pymobiledevice3 9537c0a,
+// pymobiledevice3/services/misagent.py:14-16, 76-87).
 func Profiles(conn net.Conn) ([]Profile, error) {
 	plistConn := rsd.NewPlistConn(conn)
 	err := plistConn.Send(map[string]any{"MessageType": "CopyAll", "ProfileType": "Provisioning"})

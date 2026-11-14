@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// The names that MSVC, clang and xwin give each architecture.
 type msvcArchitecture struct {
 	library string
 	triple  string
@@ -21,9 +20,9 @@ var msvcArchitectures = map[string]msvcArchitecture{
 }
 
 // The versions of the Windows SDK and the MSVC CRT that Bun's WebKit is built
-// with, and the serviced UCRT that replaces the one these bring, which formats
-// numbers wrong on ARM64 (oven-sh/bun v1.4.4, scripts/build/winsysroot.ts:43-59;
-// scripts/build/ci-images/spec.ts:304-313).
+// with (oven-sh/WebKit d6375c72, Dockerfile.windows:43-44), and the serviced
+// UCRT that Bun lays over the one these bring, which formats numbers wrong on
+// ARM64 (oven-sh/bun v1.4.4, scripts/build/winsysroot.ts:47-62).
 var (
 	windowsSDKVersion = "10.0.26100"
 	msvcCRTVersion    = "14.44.17.14"

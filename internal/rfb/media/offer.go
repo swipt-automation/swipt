@@ -37,15 +37,13 @@ const (
 	negotiatorUserAgent   = "Viceroy 1.7.0"
 	negotiatorBlobVersion = 2
 
-	// Native AVConference mode-7 offers use transport 1, operations 1/2 and
-	// format bitmap 0xc3c3, and add the display-dependent AR/XR after these
-	// codec FLS prefixes. VideoProcessing builds the two prefixes
-	// (VideoProcessing 1395.65.1, macOS 27.0.1 26A434, UUID
-	// D87079FD-5315-32B1-8022-E6144A69A8EE,
-	// _VCPCodecCopyProperties 0x1b4fdf4c4..0x1b4fdf4d8;
-	// VideoProcessing 1415.6.1, macOS 27.2 26B5101f, UUID
-	// A6FC3A01-8834-335F-A877-FDACE2E1AECC,
-	// _VCPCodecCopyProperties 0x1cb6084f0..0x1cb608504).
+	// AVConference's screen rules use transport 1, and it writes a rule of
+	// encoding type 1 as operation 1 and any other as operation 2 (AVConference
+	// 2235.63.5.2, macOS 27.0.1 26A434, UUID
+	// 93D8C8C0-8B9C-3A5E-A47D-01B5FAF73E1B,
+	// -[VCVideoRuleCollectionsScreenAirplayMac setupHEVCRules] 0x1c1018934..0x1c10189a4,
+	// -[VCMediaNegotiationBlobVideoSettings(VideoRules) setVideoRuleCollections:featureStrings:isScreen:isCellular16x9Capable:]
+	// 0x1c130fc18..0x1c130fc2c).
 	videoRuleTransport       = 1
 	videoRuleOperationEncode = 1
 	videoRuleOperationDecode = 2

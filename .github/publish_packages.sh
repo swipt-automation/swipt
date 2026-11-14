@@ -4,7 +4,6 @@ set -euo pipefail
 
 VERSION=$1
 TAG=$2
-# The CLI's optional dependencies name the driver packages, one for each target.
 mapfile -t TARGETS < <(jq -r '.optionalDependencies | keys[] | ltrimstr("@swipt/driver-")' cli/package.json)
 npm install -g npm@latest
 optional=()
@@ -13,7 +12,6 @@ for target in "${TARGETS[@]}"; do
   cpu=${target#*-}
   package=build/driver/$target
   executable=$(cd "$package" && echo swipt-driver*)
-  # Artifacts lose the executable bit.
   chmod 755 "$package/$executable"
   jq -n --arg target "$target" --arg os "$os" --arg cpu "$cpu" --arg executable "$executable" --arg version "$VERSION" '{name: "@swipt/driver-\($target)", version: $version, license: "GPL-3.0-or-later",
     repository: {type: "git", url: "https://github.com/swipt-automation/swipt.git", directory: "cmd/swipt-driver"},
@@ -22,7 +20,6 @@ for target in "${TARGETS[@]}"; do
     > "$package/package.json"
   optional+=("optionalDependencies.@swipt/driver-$target=$VERSION")
 done
-# The Developer Disk Image has its own version, and each version is published once.
 DISK_IMAGE=Swipt/Resources/DeveloperDiskImage
 DISK_IMAGE_VERSION=$(node -p "require('./$DISK_IMAGE/package.json').version")
 if npm view "@swipt/developer-disk-image@$DISK_IMAGE_VERSION" version > /dev/null 2>&1; then
@@ -45,7 +42,6 @@ for package in api "${TARGETS[@]/#/build/driver/}" cli; do
   if [ "$PUBLISHED" = true ]; then
     npm dist-tag add "$PACKAGE@$VERSION" "$TAG"
   fi
-  # Until a package has a stable release, latest follows its prereleases.
   if [ "$TAG" != latest ]; then
     case "$(npm view "$PACKAGE@latest" version 2> /dev/null || true)" in
       *-*) npm dist-tag add "$PACKAGE@$VERSION" latest ;;

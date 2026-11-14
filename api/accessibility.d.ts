@@ -120,7 +120,7 @@ export interface SnapshotOptions extends ReadOptions {
 export interface FindOptions extends ReadOptions {
   /** Omitted or 0 reads once; a positive number or Infinity reads until a match, and answers null at the limit. */
   readonly timeoutMs?: number;
-  /** Reads again as soon as a read ends. Without it, a read waits for the device's next screen push, which comes 0.75 s after a change at the soonest and not at all for a change that adds or removes no element. */
+  /** Reads again as soon as a read ends. Without it, a read waits for the device's next screen push, which the device holds back for up to 0.75 s after a change and does not send at all for a change that adds or removes no element. */
   readonly poll?: boolean;
   readonly pollTimeoutMs?: number;
 }

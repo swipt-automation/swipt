@@ -210,7 +210,7 @@ func decodeImage(data []byte, given *float64, timestamp float64) (*image, error)
 			decoded.height = int(binary.BigEndian.Uint32(chunk[12:]))
 		case kind == pngChunkPHYs && len(chunk) >= 21 && chunk[16] == 1:
 			// ImageIO rounds the resolution of a PNG to whole dots per inch
-			// (sips -g dpiWidth, Mac14,3, macOS 27.0.1 26A434).
+			// (sips -g dpiWidth, macOS 27.2.1 26B131).
 			density = math.Round(float64(binary.BigEndian.Uint32(chunk[8:]))*metersPerInch) / pointsPerInch
 		}
 		return kind != "IDAT"

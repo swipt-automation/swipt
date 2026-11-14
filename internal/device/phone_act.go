@@ -142,9 +142,6 @@ func (s *axSession) setText(ctx context.Context, target *PhoneNode, at Point, te
 	// UIKit.axbundle 0x18a052c34, 0x18a047f50; 24B5110a UIKitCore 0x185cffcc4;
 	// WebKit-7625.2.8.11.9
 	// Source/WebCore/accessibility/AccessibilityRenderObject.cpp:1848-1854).
-	// Claude's chat input did not take a text view's value set this way as an
-	// edit, but took deleting a trailing space with the keyboard as one (iOS
-	// 27.2 24B115).
 	nudge := entry.AX.TextView() && !entry.Web
 	value := text
 	if nudge {

@@ -28,8 +28,8 @@ const (
 
 	noSuchProcess = 3
 
-	// FBSOpenApplicationErrorCodeSecurity, which FBSOpenApplicationErrorCodeToString
-	// names Security (FrontBoardServices, iOS 27.0.1 24A446).
+	// FBSOpenApplicationErrorCodeToString names code 3 Security (24A446
+	// FrontBoardServices 0x1a7d2512c, table 0x1e0fb6220).
 	openApplicationErrorDomain = "FBSOpenApplicationErrorDomain"
 	openApplicationSecurity    = 3
 )

@@ -36,7 +36,8 @@ static void bun_icu_release(void) {
 // Bun's ICU keeps some data items as zstd frames made with this dictionary,
 // and reads each item it loads, with its length, from what this hook returns
 // for it (oven-sh/WebKit d6375c72, icu/udata-decompress-hook.patch;
-// oven-sh/bun v1.4.4, src/jsc/bindings/bun_icu_decompress.cpp:115).
+// oven-sh/bun v1.4.4, src/jsc/bindings/bun_icu_decompress.cpp:5-8, 44-45,
+// 81-83, 97-99, 115).
 extern const unsigned char bun_icu_zstd_dict[];
 extern const unsigned int bun_icu_zstd_dict_size;
 

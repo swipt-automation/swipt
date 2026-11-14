@@ -144,7 +144,10 @@ const resolvePackage = (name: string, from: string) =>
   );
 
 function stage(core: string, config: Config) {
-  // SwiftPM names the package after its directory, and the interfaces record it as -package-name.
+  // The identity of a root package is the name of its directory in lowercase, and the build passes it as
+  // -package-name (swift-package-manager 8054c59, Sources/PackageGraph/PackageGraphRoot.swift:104-105;
+  // Sources/PackageModel/PackageIdentity.swift:304-306;
+  // Sources/SwiftBuildSupport/PackagePIFBuilder+Helpers.swift:437-439).
   const packageDir = path.join(work, product);
   fs.rmSync(packageDir, { recursive: true, force: true });
   const coreProduct = config.products.find(
@@ -291,7 +294,7 @@ ${targets.join(",\n")}
 }
 
 // ExpoModulesCore links the real ExpoModulesJSI; npm ships only its headers, and the app builds it
-// in its "Build ExpoModulesJSI" phase (expo-modules-jsi, apple/scripts/build-swiftpm-app-phase.sh).
+// in its "Build ExpoModulesJSI" phase (expo-modules-jsi 58.0.21, apple/scripts/build-swiftpm-app-phase.sh:4-11).
 function buildJSI(core: string) {
   const jsi = resolvePackage("expo-modules-jsi", core);
   const reactNative = resolvePackage("react-native", root);
@@ -435,7 +438,8 @@ function compose(
         );
       }
     }
-    // Settings from Expo's prebuild (tools/src/prebuilds/SPMBuild.ts) and the ExpoModulesJSI build.
+    // Settings from Expo's prebuild (expo 0bbc67b, tools/src/prebuilds/SPMBuild.ts:370-379) and the ExpoModulesJSI
+    // build (expo-modules-jsi 58.0.21, apple/scripts/build-xcframework.sh:244-270).
     run(
       "xcodebuild",
       [
@@ -463,8 +467,8 @@ function compose(
         "CLANG_COVERAGE_MAPPING=NO",
         "SWIFT_SERIALIZE_DEBUGGING_OPTIONS=NO",
         "SWIFT_ENABLE_EXPLICIT_MODULES=NO",
-        // SwiftPM targets do not get Xcode's default project definitions; React Native's headers
-        // differ without NDEBUG, so Release would reference symbols its React.framework lacks.
+        // React Native builds its Release React.framework with NDEBUG, and a target built without it fails to
+        // link against that framework (react-native 0.88.1, scripts/spm/scaffold-package-swift.js:126-133, 639-643).
         `GCC_PREPROCESSOR_DEFINITIONS=$(inherited) ${configuration === "Release" ? "NDEBUG=1 NS_BLOCK_ASSERTIONS=1" : "DEBUG=1"}`,
         "OTHER_SWIFT_FLAGS=$(inherited) -no-verify-emitted-module-interface",
         `FRAMEWORK_SEARCH_PATHS=$(inherited) ${quote(path.join(jsi, slice))}`,

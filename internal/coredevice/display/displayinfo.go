@@ -73,10 +73,8 @@ func displays(output map[string]any) []DisplayInfo {
 		return info
 	})
 	primary := primaryOf(listed)
-	// A video stream carries a display larger than the primary one scaled down
-	// to the primary display's width or height, with the other side rounded up
-	// to an even number: the 2007x2853 inner display of an iPhone Duo arrives as
-	// 1398x1988 beside its 1398x2034 cover display (iPhone19,4 27.2 24B91020).
+	// The 2007x2853 inner display of an iPhone Duo arrives in a video stream as
+	// 1398x1988, beside its 1398x2034 cover display (iOS 27.2 24B91020).
 	for index, info := range listed {
 		info.StreamWidth, info.StreamHeight = info.Width, info.Height
 		if primary.Width > 0 && (info.Width > primary.Width || info.Height > primary.Height) {
@@ -112,7 +110,7 @@ func primaryOf(displays []DisplayInfo) DisplayInfo {
 // An iPhone Duo lists its cover display as primary and its inner display as a
 // second integrated one. Folded, the cover's backlightState is activeOn and the
 // inner display's is off; unfolded, the cover's is off and the inner display's
-// is activeOn (iPhone19,4 27.2 24B91020).
+// is activeOn (iOS 27.2 24B91020).
 func Active(displays []DisplayInfo) (DisplayInfo, bool) {
 	primary := primaryOf(displays)
 	if primary.lit() {

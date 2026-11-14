@@ -121,7 +121,6 @@ function build(
 
 const frameworks = () => {
   run("bun", ["install", "--frozen-lockfile"]);
-  // ExpoModulesCore builds against the frameworks update links, and update links the ExpoModulesCore it finds.
   const update = () =>
     run("node", [
       "node_modules/react-native/scripts/setup-apple-spm.js",

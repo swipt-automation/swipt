@@ -328,8 +328,11 @@ export class AvailabilityChecker {
       return;
     }
     this.#api ??= new API({ cwd: project.root });
-    // An open file keeps the content it was opened with, whatever fileChanges says
-    // (typescript 7.0.2).
+    // updateSnapshot builds a program again only for a project the API opened or
+    // in a call that opens or closes a file, and drops the opening of a file that
+    // is already open (typescript-go 2bd066d8,
+    // internal/project/projectcollectionbuilder.go:208-213, 234-249;
+    // internal/api/session.go:871-881).
     if (this.#open.size > 0) {
       this.#api.updateSnapshot({ closeFiles: [...this.#open] });
     }

@@ -83,9 +83,12 @@ func parseApplication(response remoteResponse) (Element, uint64) {
 	return Element{}, cmp.Or(response.code, errorNoElement)
 }
 
-// Each display has a frontmost application of its own: with Settings in front
-// on the inner display of an unfolded iPhone Duo, display 1, its cover display,
-// answers SpringBoard (iPhone19,4 27.2 24B91020).
+// AXPTranslator asks for the frontmost application of a display with request
+// type 4 and the parameter displayId (24A446 AccessibilityPlatformTranslation
+// -[AXPTranslator frontmostApplicationWithDisplayId:bridgeDelegateToken:]
+// 0x24fe5509c..0x24fe550f4). With an application in front on the unfolded
+// inner display of an iPhone Duo, display 1, its cover display, answers
+// SpringBoard (iOS 27.2 24B91020).
 func (b *Batch) Frontmost(display int) *Result[Element] {
 	result := &Result[Element]{}
 	b.add(remoteRequest{kind: requestFrontmost, params: map[string]any{"displayId": int64(display)}}, func(response remoteResponse, _ *Batch) error {

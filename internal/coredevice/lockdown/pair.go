@@ -119,10 +119,12 @@ func NewPairing(ctx context.Context, dial Dialer, systemBUID, udid, hostName str
 
 const pairRetryInterval = time.Second
 
-// A device answers PairingDialogResponsePending until its user trusts this
-// host, and PasswordProtected while locked; once trusted it answers with the
-// EscrowBag that the host's record keeps with its Wi-Fi address (go-ios
-// 63c0d57, ios/pair.go:183-246, 248-299).
+// pymobiledevice3 sends Pair again every second while the device answers
+// PairingDialogResponsePending, and takes the error PasswordProtected of a
+// lockdown request as a passcode that is required (pymobiledevice3 9537c0a,
+// pymobiledevice3/lockdown.py:943-950, 992-1004). go-ios keeps the EscrowBag
+// of the answer in the host's record, with the device's WiFiAddress (go-ios
+// 63c0d57, ios/pair.go:201-212, 241).
 func Pair(ctx context.Context, dial Dialer, pairing *Pairing) ([]byte, error) {
 	var record map[string]any
 	if _, err := plist.Unmarshal(pairing.HostRecord, &record); err != nil {

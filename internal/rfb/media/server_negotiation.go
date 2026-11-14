@@ -21,11 +21,21 @@ const (
 	answerEndpointOSBuild      = "26A428"
 	answerAudioPayloads        = 0x1600
 	answerAudioSecondary       = 0x600
-	answerVideoRuleFormats     = 128 // AVConference's native screen answer narrows 0xc3c3 to 128.
-	answerFeatureString        = "FLS;POS:5;EOD:1;SW:1"
-	defaultServerPixelFormat   = PixelFormat420FullRange
-	serverErrorBodySize        = 16
-	offerHeaderSize            = 0x80
+	// AVConference answers a screen offer with the largest rule that both sides
+	// have, by pixel count and then frame rate. Of the formats 0xc3c3 of its
+	// screen rules that is 1664x1248 at 60 fps, bit 128 (AVConference
+	// 2235.63.5.2, macOS 27.0.1 26A434, UUID
+	// 93D8C8C0-8B9C-3A5E-A47D-01B5FAF73E1B,
+	// -[VCVideoRuleCollectionsScreenAirplayMac setupHEVCRules] 0x1c1018934..0x1c10189a4,
+	// -[VCVideoRule compare:] 0x1c0f251e0..0x1c0f2525c,
+	// +[VCMediaNegotiatorBase negotiateVideoMaxResolutionWithEncodeRules:decodeRules:isEncoder:]
+	// 0x1c0e22684..0x1c0e227ec,
+	// -[VCMediaNegotiator newResponseBlob] 0x1c122d7cc..0x1c122d8fc).
+	answerVideoRuleFormats   = 128
+	answerFeatureString      = "FLS;POS:5;EOD:1;SW:1"
+	defaultServerPixelFormat = PixelFormat420FullRange
+	serverErrorBodySize      = 16
+	offerHeaderSize          = 0x80
 	// AVConference caps negotiator mode 7 by the smaller of 60 Mbit/s and the
 	// field-9 entry with bit 262144, and mode 9 by the smaller of 40 Mbit/s and
 	// the entry with bit 4096: RemoteDesktop settings use operatingMode 9
@@ -67,8 +77,6 @@ const (
 	ServerErrorBadConfiguration uint32 = 2
 )
 
-// These field-9 bandwidth entries also occur in AVConference's native
-// screen answers.
 var (
 	answerAudioBandwidth = [][3]uint64{
 		{16, 4100, 0},
@@ -203,7 +211,12 @@ func answerAudioBlob(info ServerAudioInfo) []byte {
 }
 
 func answerVideoBlob(info ServerVideoInfo, pixelFormat PixelFormats) []byte {
-	// AVConference's native screen answer includes an empty audio stream record.
+	// AVConference writes an audio record into every answer, with no payload
+	// when it negotiated none (AVConference 2235.63.5.2, macOS 27.0.1 26A434,
+	// UUID 93D8C8C0-8B9C-3A5E-A47D-01B5FAF73E1B,
+	// -[VCMediaNegotiatorBase setUpU1MediaSettings] 0x1c0e20fc4..0x1c0e21014,
+	// -[VCMediaNegotiatorResultsAudio initWithACC24ForU1Enabled:] 0x1c1059900..0x1c1059910,
+	// -[VCMediaNegotiator newResponseBlob] 0x1c122d4d8..0x1c122d694).
 	var audio protoMessage
 	for number := uint64(1); number <= 5; number++ {
 		audio.addUint(number, 0)

@@ -80,7 +80,8 @@ func (s *Server) serveMCP(w http.ResponseWriter, r *http.Request, credential *Cr
 			return
 		}
 	}
-	// Quick Tunnels hold back the body of a text/event-stream response until it ends.
+	// Quick Tunnels do not support Server-Sent Events
+	// (https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
 	if r.Method == http.MethodGet {
 		w.Header().Set("Allow", "POST, DELETE")
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

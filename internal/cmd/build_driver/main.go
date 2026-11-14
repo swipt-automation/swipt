@@ -16,21 +16,16 @@ import (
 
 const (
 	driverPackage = "./cmd/swipt-driver"
-	// The CLI's optional dependencies are the driver packages that are
-	// published, one for each target.
-	cliManifest = "cli/package.json"
+	cliManifest   = "cli/package.json"
 )
 
 var buildDirectory string
 
-// A target is one published driver package. The CLI's optional dependencies
-// list them by the names Node.js gives platforms and architectures.
 type target struct {
 	os   string
 	arch string
 }
 
-// The names that Node.js gives differently from Go.
 var nodeNames = map[string]string{"windows": "win32", "amd64": "x64"}
 
 func (t target) String() string {

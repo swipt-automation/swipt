@@ -7,7 +7,6 @@ retry() {
     cat "$errors" >&2
     # gh api reports an error response with an empty JSON body as "unexpected end of JSON input"
     # (gh 2.104.0, pkg/cmd/api/api.go:495-500, 657-671).
-    # uploads.github.com can answer 404 for a release that exists during an outage.
     grep -qE 'HTTP 5[0-9]{2}|unexpected end of JSON input|returned error: 5[0-9]{2}|Internal Server Error|fatal error in commit_refs|HTTP 404: Not Found \(https://uploads\.github\.com/' "$errors" || return "$code"
     sleep 10
   done
@@ -36,7 +35,6 @@ create_draft() {
     delete "$draft" || return
   done
   gh release create "$tag" --draft "${@:2}" > /dev/null || return
-  # The release list can leave out a draft for a few seconds after it is created.
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     draft=$(drafts "$tag") || return
     if [ -n "$draft" ]; then

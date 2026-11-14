@@ -94,7 +94,8 @@ func Advertise(ctx context.Context, name string, serviceType string, host string
 	}
 }
 
-// An empty TXT record holds one empty string (RFC 6763, section 6.1).
+// A service with no TXT data has a TXT record of one empty string (RFC 6763,
+// section 6.1).
 func encodeTXT(txt map[string]string) []string {
 	if len(txt) == 0 {
 		return []string{""}

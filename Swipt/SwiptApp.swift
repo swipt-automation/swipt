@@ -61,7 +61,10 @@ struct SwiptApp: App {
 final class AppDelegate: NSObject, UIApplicationDelegate {
     // RCTKeyWindow falls back to the application delegate's window while no scene is in the foreground, unless
     // the scene manifest lists scene configurations (react-native 0.88.1, React/Base/RCTUtils.mm:672-674, 680-695),
-    // and the delegate SwiftUI installs does not answer it.
+    // and the delegate SwiftUI installs has no window method and forwards the call to this delegate
+    // (SwiftUI 8.0.84, iOS 27.0.1 24A446, UUID 1D2A8243-1E78-3E43-AF2A-428BECD7EDD3,
+    // __INSTANCE_METHODS__TtC7SwiftUI11AppDelegate 0x18b906e08,
+    // -[SwiftUI.AppDelegate forwardingTargetForSelector:] 0x18a904c68).
     var window: UIWindow? {
         get {
             let windows = UIApplication.shared.connectedScenes.lazy.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)

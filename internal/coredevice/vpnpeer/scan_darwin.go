@@ -139,7 +139,7 @@ func ipv4(addresses []route.Addr, slot int) (netip.Addr, bool) {
 }
 
 // Virtualization.framework guests report kern.hv_vmm_present as 1
-// (vphone-cli, Research/Patches/hv_vmm_present_usermode_xrefs.md).
+// (vphone-cli 1316940, Research/Patches/hv_vmm_present_usermode_xrefs.md:61-72).
 func guestAddresses() []netip.Addr {
 	present, err := unix.SysctlUint32("kern.hv_vmm_present")
 	if err != nil || present == 0 {

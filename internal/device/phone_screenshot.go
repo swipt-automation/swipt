@@ -29,10 +29,11 @@ func (p *Phone) Capture(ctx context.Context) ([]byte, float64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	// dtscreencaptured turns the picture by the display's currentOrientation less
-	// its nativeOrientation (DDI 27B52 dtscreencaptured 0x100010c9c, 0x100010f4c),
-	// but that of the inner display of an iPhone Duo at rot90 comes unturned, a
-	// quarter turn counterclockwise of its interface (iPhone19,4 27.2 24B91020).
+	// dtscreencaptured turns the picture by the sum of the display's
+	// currentOrientation and nativeOrientation, in quarter turns (DDI 27B52
+	// dtscreencaptured 0x100010f4c..0x100010f94, 0x100012588). The picture of
+	// the inner display of an iPhone Duo at rot90 comes unturned, a quarter turn
+	// counterclockwise of its interface (iOS 27.2 24B91020).
 	shown := geometry.display
 	if turns := orientationTurns(shown.CurrentOrientation); turns%2 == 1 && shown.Width != shown.Height {
 		picture, err := png.DecodeConfig(bytes.NewReader(data))

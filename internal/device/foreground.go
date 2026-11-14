@@ -46,10 +46,11 @@ const (
 	roleService = "/runningboardd"
 )
 
-// The relay of the device's log sent nothing for 12 to 25 s after the device
-// connected and then what had been logged since, while the activity trace tap
-// sent the role changes as they came but kept DTServiceHub and diagnosticd
-// busy many times longer than the relay did (iOS and iPadOS 27.3 24C5037i).
+// The relay of the device's log sent nothing for tens of seconds after the
+// device connected and then what had been logged since, while the activity
+// trace tap sent the role changes as they came but kept DTServiceHub and
+// diagnosticd busy many times longer than the relay did (iOS and iPadOS 27.3
+// 24C5037i).
 const rolePredicate = `process == "runningboardd" AND eventMessage CONTAINS "Set darwin role to: "`
 
 type roleEntry struct {

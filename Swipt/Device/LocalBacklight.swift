@@ -24,9 +24,11 @@ nonisolated enum LocalBacklight {
         guard let hidState = state(of: displayStatusKey), let blanked = state(of: blankedScreenKey) else { return nil }
         if let backlight {
             guard let state = DisplayState(rawValue: backlight.state) else { return nil }
-            // When Home woke a display that had just locked, SpringBoard cleared
-            // com.apple.springboard.hasBlankedScreen 0.22 s after the backlight became activeOn,
-            // and took the keys pressed before that as requests to wake (iPhone18,2, iOS 27.3 24C5037i).
+            // backboardd posts com.apple.springboard.hasBlankedScreen when the state of the display itself has changed
+            // (BacklightServicesHost 24A446, -[BLSHOSDisplayInterface notifyDisplayBlankedIfChangedForCADisplayState:]
+            // 0x22575d748; backboardd 24B5110a, 0x10000e73c). When Home woke a display that had just locked, that came
+            // after the backlight became activeOn, and SpringBoard took the keys pressed before it as requests to wake
+            // (iOS 27.3 24C5037i).
             return (hidState == 0 || blanked != 0) && state.isOn ? .off : state
         }
         return hidState == 0 ? .off : .activeOn

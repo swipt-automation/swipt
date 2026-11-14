@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// mimalloc as Bun builds it for its WebKit (oven-sh/bun v1.4.4,
-// scripts/build/deps/mimalloc.ts:30-118).
+// The definitions Bun builds mimalloc with, apart from those that make it
+// replace malloc (oven-sh/bun v1.4.4, scripts/build/deps/mimalloc.ts:30-125).
 var mimallocFlags = []string{
 	"-DMI_CMAKE_BUILD_TYPE=release", "-DMI_STATIC_LIB", "-DMI_SKIP_COLLECT_ON_EXIT=1", "-DMI_NO_PROCESS_DETACH=1",
 	"-DMI_FREE_USE_PAGEMAP=1", "-DMI_BUILD_RELEASE",

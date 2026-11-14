@@ -124,7 +124,7 @@ static JSValueRef swipt_prepare(JSContextRef context, JSObjectRef function, JSOb
         JSObjectRef array = (JSObjectRef)item;
         size_t size = JSObjectGetTypedArrayByteLength(context, array, NULL);
         // The pointer is to the start of the buffer rather than of the view
-        // (WebKit 21bb1f66, Source/JavaScriptCore/API/JSTypedArray.cpp:257).
+        // (oven-sh/WebKit d6375c72, Source/JavaScriptCore/API/JSTypedArray.cpp:248-251).
         uint8_t *buffer = size > 0 ? JSObjectGetTypedArrayBytesPtr(context, array, NULL) : NULL;
         if (size > 0 && buffer == NULL) {
             continue;

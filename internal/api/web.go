@@ -18,11 +18,12 @@ import (
 	"golang.org/x/net/http/httpguts"
 )
 
-// The gRPC-Web translation and the "grpc-websockets" subprotocol are wire
-// compatible with the improbable-eng/grpc-web client transports: a WebSocket
-// carries one stream, its first message holds the request metadata, each
-// later binary message starts with 0 for body data or is the single byte 1
-// for half-close, and the server answers with gRPC-Web frames.
+// The improbable-eng/grpc-web client opens a WebSocket of the
+// "grpc-websockets" subprotocol for each stream, sends the request metadata as
+// its first message, starts each later binary message with 0 for body data or
+// sends the single byte 1 for half-close, and reads gRPC-Web frames back
+// (improbable-eng/grpc-web c1971f7,
+// client/grpc-web/src/transports/websocket/websocket.ts:10, 26-37, 56-60, 78).
 const (
 	contentTypeGRPC        = "application/grpc"
 	contentTypeGRPCWeb     = "application/grpc-web"

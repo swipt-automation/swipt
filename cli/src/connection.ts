@@ -104,7 +104,8 @@ async function browse(
   until?: Enough,
   limit = browseLimit,
 ) {
-  // bonjour-service hands its options to multicast-dns as they are.
+  // bonjour-service hands its options to multicast-dns as they are
+  // (bonjour-service 1.4.4, dist/lib/bonjour.js:15, dist/lib/mdns-server.js:13).
   const responders = multicastOptions().map(
     (options) =>
       new Bonjour(options as ConstructorParameters<typeof Bonjour>[0]),

@@ -16,8 +16,6 @@ typedef struct {
 	bool is8Bit;
 } jsc_string_view;
 
-// The system JavaScriptCore exports these functions of WTF but keeps them
-// private, so a system may lack one.
 typedef void (*jsc_language_did_change)(void);
 typedef bool (*jsc_set_time_zone_override)(jsc_string_view);
 

@@ -14,8 +14,7 @@ import (
 )
 
 // dtuhidd drops a position-only digitizer event that arrives within 16 ms of
-// the last event it produced (DDI 27B48 0x100040458); 20 ms leaves room for
-// delivery jitter.
+// the last event it produced (DDI 27B48 0x100040458).
 const (
 	touchFrame    = 20 * time.Millisecond
 	swipeDuration = 250 * time.Millisecond

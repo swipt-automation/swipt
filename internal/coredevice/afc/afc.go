@@ -14,8 +14,7 @@ const Service = "com.apple.afc"
 
 // The packet format, operations, file modes and status codes follow go-ios
 // 6910f3b, ios/afc/afc.go:4-22 and ios/afc/client.go:494-499, and go-ios
-// 63c0d57, ios/afc/errors.go:17 and ios/afc/client.go:440-461, and go-ios
-// ca2c56d, ios/afc/afc.go:13.
+// 63c0d57, ios/afc/errors.go:17 and ios/afc/client.go:440-461.
 const (
 	magic        = "CFA6LPAA"
 	headerLength = 40

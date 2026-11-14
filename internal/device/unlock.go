@@ -23,8 +23,6 @@ const (
 
 const maxPasscodeLength = 64
 
-// Read back to back while the display woke, the lock state took 27 ms instead
-// of under 1 ms to answer after about 820 reads (iOS and iPadOS 27.2 24B115).
 const unlockPoll = 10 * time.Millisecond
 
 const unlockLimit = 4500 * time.Millisecond
@@ -262,9 +260,14 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) error {
 		}
 		ready := state == "activeOn"
 		if !synchronized {
-			// CoreDevice kept reporting activeOn up to 0.2 s after SpringBoard blanked
-			// the display for a lock, and throughout when Home woke the display before
-			// that (iPhone18,2, iOS 27.3 24C5037i).
+			// CoreDevice observes the backlight (DDI 27B5028f CoreDeviceUtilities
+			// 0x365e40, 0x369198), and BLSXPCBacklightProxy answers backlightState
+			// from the last update it was told had completed (24A446
+			// BacklightServices -[BLSXPCBacklightProxy backlightState] 0x22581fbb8,
+			// -[BLSXPCBacklightProxy didCompleteUpdateToState:forEvents:abortedEvents:]
+			// 0x22581d170). CoreDevice kept reporting activeOn while the display went
+			// off for a lock, and throughout when Home woke the display before that
+			// ended (iOS 27.3 24C5037i).
 			if !dark && (state == "off" || state == "inactiveOn") {
 				dark, darkAt = true, posted
 			}
@@ -277,10 +280,6 @@ func (t *deviceUnlockTarget) prepare(ctx context.Context) error {
 		if wakeSent {
 			continue
 		}
-		// Creating the keyboard took 0.38 s, so Home wakes the display
-		// meanwhile: it was active 0.48 s after Home, while creating the
-		// keyboard first and pressing Home then took 0.38 + 0.28 s (iPad17,1,
-		// iPadOS 27.2 24B115, from the iPad's own server).
 		var wake func() error
 		select {
 		case <-keyboardPrepared:

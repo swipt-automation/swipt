@@ -10,8 +10,9 @@ import (
 
 const Service = "com.apple.mobile.house_arrest"
 
-// After a Complete reply the connection serves AFC rooted at the app's
-// container (go-ios 63c0d57, ios/house_arrest/house_arrest.go:64-105).
+// go-ios speaks AFC on the connection once VendContainer answers Complete,
+// and calls what it reaches the full app container (go-ios 63c0d57,
+// ios/house_arrest/house_arrest.go:30, 42-44, 98-100).
 func VendContainer(conn net.Conn, bundleID string) error {
 	plist := rsd.NewPlistConn(conn)
 	err := plist.Send(map[string]any{"Command": "VendContainer", "Identifier": bundleID})
