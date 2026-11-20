@@ -7,7 +7,13 @@ import readline from "node:readline";
 
 import { label, sameName } from "./connection";
 import { t } from "./i18n";
-import { type PromptContext, choose, interactive, step } from "./output";
+import {
+  type Choice,
+  type PromptContext,
+  interactive,
+  selectStream,
+  step,
+} from "./output";
 import type { Passcode } from "./passcode";
 
 const require = createRequire(import.meta.url);
@@ -76,9 +82,10 @@ export class DriverError extends Error {
 interface Invocation {
   input?: unknown;
   signal?: AbortSignal;
+  onResult?: (result: unknown) => void;
 }
 
-function start(args: string[], { input, signal }: Invocation = {}) {
+function start(args: string[], { input, signal, onResult }: Invocation = {}) {
   const file = driverPath();
   if (file === undefined || !fs.existsSync(file)) {
     throw new Error(
@@ -100,7 +107,11 @@ function start(args: string[], { input, signal }: Invocation = {}) {
   if (input !== undefined) {
     child.stdin.write(`${JSON.stringify(input)}\n`);
   }
-  signal?.addEventListener("abort", stop, { once: true });
+  if (signal?.aborted) {
+    stop();
+  } else {
+    signal?.addEventListener("abort", stop, { once: true });
+  }
   let logs = "";
   child.stderr.setEncoding("utf8").on("data", (chunk) => {
     logs = (logs + chunk).slice(-crashLogLimit);
@@ -118,6 +129,9 @@ function start(args: string[], { input, signal }: Invocation = {}) {
     }
     last = parsed;
     firstLine(parsed);
+    if ("result" in parsed) {
+      onResult?.(parsed.result);
+    }
   });
   const exited = new Promise<unknown>((resolve, reject) => {
     child.once("error", reject);
@@ -231,12 +245,27 @@ export function serve(
   };
 }
 
+const autoSelectGrace = 50;
+
 const deviceLine = (device: Device) => `  ${device.name}  ${device.udid}`;
+
+const deviceChoice = (device: Device): Choice<Device> => ({
+  key: device.udid,
+  name: `${device.name}  ${device.udid}`,
+  short: device.name,
+  value: device,
+});
+
+export interface DeviceFilter {
+  label: string;
+  empty: string;
+  match: (device: Device, signal: AbortSignal) => Promise<boolean> | boolean;
+}
 
 interface DeviceQuery {
   required?: boolean;
   virtual?: boolean;
-  filter?: (devices: Device[]) => Promise<Device[]> | Device[];
+  filter?: DeviceFilter;
 }
 
 async function findDevice(
@@ -244,54 +273,201 @@ async function findDevice(
   { required = true, virtual = true, filter }: DeviceQuery,
 ) {
   const given = context.options.device;
-  const listed = await step(
-    t("driver.lookingForDevices"),
-    () => driver<Device[]>(["device", "list"]),
-    { transient: true },
-  );
-  const devices = listed
-    .filter((device) => virtual || !device.virtual)
-    .map((device) => ({ ...device, name: device.name || device.udid }));
-  const matches = given
-    ? devices.filter(
-        (device) =>
-          sameName(device.udid, given) ||
-          sameName(label(device.name), label(given)),
-      )
-    : devices;
-  if ((given || !required) && matches.length === 1) {
-    return matches[0];
+  const search = new AbortController();
+  const signal = AbortSignal.any([context.signal, search.signal]);
+  if (given !== undefined || !interactive(context)) {
+    const devices: Device[] = [];
+    try {
+      await step(
+        t("driver.lookingForDevices"),
+        async () => {
+          await driver(["device", "list"], {
+            signal,
+            onResult(result) {
+              const raw = result as Device;
+              if (!virtual && raw.virtual) {
+                return;
+              }
+              const device = { ...raw, name: raw.name || raw.udid };
+              devices.push(device);
+              if (given !== undefined && sameName(device.udid, given)) {
+                search.abort();
+              }
+            },
+          });
+          context.signal.throwIfAborted();
+        },
+        { transient: true },
+      );
+    } finally {
+      search.abort();
+    }
+    const exact = given
+      ? devices.find((device) => sameName(device.udid, given))
+      : undefined;
+    if (exact !== undefined) {
+      return exact;
+    }
+    const matches = given
+      ? devices.filter((device) => sameName(label(device.name), label(given)))
+      : devices;
+    if ((given || !required) && matches.length === 1) {
+      return matches[0];
+    }
+    if (devices.length === 0) {
+      throw new Error(t("driver.noDevice"));
+    }
+    const reason = !given
+      ? t("driver.chooseDeviceHint")
+      : matches.length === 0
+        ? t("driver.nameNotFound", { name: given })
+        : t("driver.ambiguousName", {
+            name: given,
+          });
+    throw new Error(
+      `${t("driver.connectedDevices", { reason })}\n${devices.map(deviceLine).join("\n")}`,
+    );
   }
-  if (devices.length === 0) {
-    throw new Error(t("driver.noDevice"));
-  }
-  const reason = !given
-    ? t("driver.chooseDeviceHint")
-    : matches.length === 0
-      ? t("driver.nameNotFound", { name: given })
-      : t("driver.ambiguousName", {
-          name: given,
+
+  const devices: Device[] = [];
+  const choices: Choice<Device>[] = [];
+  const listeners = new Set<() => void>();
+  let listing = true;
+  let pending = 0;
+  let failure: unknown;
+  const notify = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
+  const waitFor = (ready: () => boolean) =>
+    new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        listeners.delete(check);
+        context.signal.removeEventListener("abort", check);
+      };
+      const check = () => {
+        if (context.signal.aborted) {
+          cleanup();
+          reject(context.signal.reason);
+        } else if (failure !== undefined && choices.length === 0) {
+          cleanup();
+          reject(failure);
+        } else if (ready()) {
+          cleanup();
+          resolve();
+        }
+      };
+      listeners.add(check);
+      context.signal.addEventListener("abort", check, { once: true });
+      check();
+    });
+
+  driver(["device", "list"], {
+    signal,
+    onResult(result) {
+      const raw = result as Device;
+      if (!virtual && raw.virtual) {
+        return;
+      }
+      const device = { ...raw, name: raw.name || raw.udid };
+      devices.push(device);
+      if (filter === undefined) {
+        choices.push(deviceChoice(device));
+        notify();
+        return;
+      }
+      pending++;
+      notify();
+      Promise.resolve(filter.match(device, signal))
+        .catch(() => !signal.aborted)
+        .then((matched) => {
+          pending--;
+          if (!signal.aborted && matched) {
+            choices.push(deviceChoice(device));
+          }
+          notify();
         });
-  const failed = new Error(
-    `${t("driver.connectedDevices", { reason })}\n${devices.map(deviceLine).join("\n")}`,
+    },
+  }).then(
+    () => {
+      listing = false;
+      notify();
+    },
+    (error) => {
+      listing = false;
+      if (!search.signal.aborted) {
+        failure = error;
+      }
+      notify();
+    },
   );
-  if (matches.length === 0) {
-    throw failed;
+
+  const settleAutoSelect = async () => {
+    if (required || choices.length !== 1 || (!listing && pending === 0)) {
+      return;
+    }
+    let elapsed = false;
+    const timer = setTimeout(() => {
+      elapsed = true;
+      notify();
+    }, autoSelectGrace);
+    try {
+      await waitFor(
+        () => elapsed || choices.length > 1 || (!listing && pending === 0),
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  try {
+    await step(
+      t("driver.lookingForDevices"),
+      async () => {
+        await waitFor(() => choices.length > 0 || !listing);
+        await settleAutoSelect();
+      },
+      { transient: true },
+    );
+    if (choices.length === 0 && pending > 0 && filter !== undefined) {
+      await step(
+        filter.label,
+        async () => {
+          await waitFor(() => choices.length > 0 || pending === 0);
+          await settleAutoSelect();
+        },
+        { transient: true },
+      );
+    }
+    if (choices.length === 0) {
+      throw new Error(
+        devices.length === 0 || filter === undefined
+          ? t("driver.noDevice")
+          : filter.empty,
+      );
+    }
+    if (!required && !listing && pending === 0 && choices.length === 1) {
+      return choices[0].value;
+    }
+    return await selectStream(context, t("driver.chooseDevice"), {
+      current: () => ({
+        choices: [...choices],
+        loading: listing
+          ? t("driver.lookingForDevices")
+          : pending > 0
+            ? filter?.label
+            : undefined,
+        autoSelect: !required,
+      }),
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    });
+  } finally {
+    search.abort();
   }
-  const choices =
-    filter !== undefined && interactive(context)
-      ? await filter(matches)
-      : matches;
-  return choose(
-    context,
-    t("driver.chooseDevice"),
-    choices.map((device) => ({
-      name: `${device.name}  ${device.udid}`,
-      short: device.name,
-      value: device,
-    })),
-    failed,
-  );
 }
 
 export async function trustedDevice(
@@ -304,14 +480,15 @@ export async function trustedDevice(
       device.virtual
         ? t("driver.pairing", { device: device.name })
         : t("driver.trustPrompt", { device: device.name }),
-      () => onDevice(device, "trust"),
+      () => onDevice(device, "trust", [], { signal: context.signal }),
       { transient: device.virtual },
     );
   }
   return device;
 }
 
-export const apps = (device: Device) => onDevice<Application[]>(device, "apps");
+export const apps = (device: Device, signal?: AbortSignal) =>
+  onDevice<Application[]>(device, "apps", [], { signal });
 
 export const appRunning = (device: Device, id: string) =>
   onDevice<boolean>(device, "running", [id]);

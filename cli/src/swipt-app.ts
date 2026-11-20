@@ -43,8 +43,11 @@ const schema = [
   "INSERT INTO grdb_migrations VALUES ('0.1.0')",
 ];
 
-export const swiptApps = async (device: Device): Promise<SwiptApp[]> =>
-  (await apps(device)).flatMap((app) => {
+export const swiptApps = async (
+  device: Device,
+  signal?: AbortSignal,
+): Promise<SwiptApp[]> =>
+  (await apps(device, signal)).flatMap((app) => {
     const match = sideloadedPattern.exec(app.bundleIdentifier);
     return match === null ? [] : [{ ...app, team: match[1] ?? bundleTeam }];
   });

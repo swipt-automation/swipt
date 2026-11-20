@@ -124,10 +124,10 @@ func readRemotePairing(file string) *pairing.Record {
 	return record
 }
 
-func browseNetwork(ctx context.Context, listed []usbmuxd.Device, udid string) ([]networkDevice, error) {
+func browseNetwork(ctx context.Context, listed []usbmuxd.Device, udid string, found func(networkDevice)) error {
 	records, err := remotePairings()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for paired := range records {
 		if (udid != "" && paired != udid) || slices.ContainsFunc(listed, func(it usbmuxd.Device) bool { return it.UDID == paired }) {
@@ -135,11 +135,10 @@ func browseNetwork(ctx context.Context, listed []usbmuxd.Device, udid string) ([
 		}
 	}
 	if len(records) == 0 {
-		return nil, nil
+		return nil
 	}
 	browseCtx, cancel := context.WithTimeout(ctx, browseTimeout)
 	defer cancel()
-	var found []networkDevice
 	err = mdns.Browse(browseCtx, remotePairingService, func(service mdns.Service) bool {
 		for paired, record := range records {
 			if !record.MatchesService(service.Text["identifier"], service.Text["authTag"]) {
@@ -153,15 +152,15 @@ func browseNetwork(ctx context.Context, listed []usbmuxd.Device, udid string) ([
 					}
 				}
 			}
-			found = append(found, matched)
 			delete(records, paired)
+			found(matched)
 		}
 		return len(records) == 0
 	})
 	if err == nil {
 		err = ctx.Err()
 	}
-	return found, err
+	return err
 }
 
 type remotePairer struct {

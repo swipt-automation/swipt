@@ -1,6 +1,22 @@
 import { styleText } from "node:util";
 
 import { type Timestamp, timestampDate } from "@bufbuild/protobuf/wkt";
+import {
+  type Status,
+  createPrompt,
+  isBackspaceKey,
+  isDownKey,
+  isEnterKey,
+  isNumberKey,
+  isUpKey,
+  makeTheme,
+  useEffect,
+  useKeypress,
+  usePagination,
+  usePrefix,
+  useRef,
+  useState,
+} from "@inquirer/core";
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
@@ -45,6 +61,22 @@ export const interactive = (context: Pick<PromptContext, "options">) =>
   process.stdin.isTTY &&
   process.stderr.isTTY;
 
+export interface Choice<Value> {
+  key?: string;
+  name: string;
+  short?: string;
+  value: Value;
+}
+
+export interface ChoiceStream<Value> {
+  current: () => {
+    choices: Choice<Value>[];
+    loading?: string;
+    autoSelect?: boolean;
+  };
+  subscribe: (listener: () => void) => () => void;
+}
+
 export function choose<Value>(
   context: PromptContext,
   message: string,
@@ -61,6 +93,160 @@ export function choose<Value>(
 }
 
 const spinner = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+
+const streamPrompt = createPrompt<
+  unknown,
+  { message: string; stream: ChoiceStream<unknown> }
+>((config, done) => {
+  const theme = makeTheme(selectTheme);
+  const { keybindings } = theme;
+  const [status, setStatus] = useState<Status>("idle");
+  const prefix = usePrefix({ status, theme });
+  const [snapshot, setSnapshot] = useState(() => config.stream.current());
+  const [frame, setFrame] = useState(0);
+  const keyOf = (choice: Choice<unknown>) => choice.key ?? choice.name;
+  const [activeKey, setActiveKey] = useState<string | undefined>(() =>
+    snapshot.choices[0] ? keyOf(snapshot.choices[0]) : undefined,
+  );
+  const interacted = useRef(false);
+  const settled = useRef<Choice<unknown> | undefined>(undefined);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    const sync = () => {
+      const next = config.stream.current();
+      setSnapshot(next);
+      if (
+        next.autoSelect &&
+        next.loading === undefined &&
+        next.choices.length === 1 &&
+        !interacted.current &&
+        settled.current === undefined
+      ) {
+        settled.current = next.choices[0];
+        setStatus("done");
+        done(next.choices[0].value);
+      }
+    };
+    const unsubscribe = config.stream.subscribe(sync);
+    sync();
+    return unsubscribe;
+  }, [config.stream]);
+
+  const isLoading = snapshot.loading !== undefined;
+  useEffect(() => {
+    if (!isLoading) {
+      return;
+    }
+    const timer = setInterval(() => {
+      setFrame((current) => (current + 1) % spinner.length);
+    }, 80);
+    return () => clearInterval(timer);
+  }, [isLoading]);
+
+  useEffect(() => () => clearTimeout(searchTimeout.current), []);
+
+  const items = snapshot.choices;
+  const foundIndex =
+    activeKey === undefined
+      ? -1
+      : items.findIndex((item) => keyOf(item) === activeKey);
+  const active = foundIndex === -1 ? 0 : foundIndex;
+  const selectedChoice = items[active];
+
+  useKeypress((key, rl) => {
+    clearTimeout(searchTimeout.current);
+    interacted.current = true;
+    if (isEnterKey(key)) {
+      if (selectedChoice !== undefined && settled.current === undefined) {
+        settled.current = selectedChoice;
+        setStatus("done");
+        done(selectedChoice.value);
+      }
+    } else if (isUpKey(key, keybindings) || isDownKey(key, keybindings)) {
+      rl.clearLine(0);
+      if (items.length > 1) {
+        const offset = isUpKey(key, keybindings) ? -1 : 1;
+        const next = (active + offset + items.length) % items.length;
+        setActiveKey(keyOf(items[next]));
+      }
+    } else if (isNumberKey(key) && !Number.isNaN(Number(rl.line))) {
+      const item = items[Number(rl.line) - 1];
+      if (item !== undefined) {
+        setActiveKey(keyOf(item));
+      }
+      searchTimeout.current = setTimeout(() => rl.clearLine(0), 700);
+    } else if (isBackspaceKey(key)) {
+      rl.clearLine(0);
+    } else {
+      const term = rl.line.toLowerCase();
+      const match = items.find((item) =>
+        item.name.toLowerCase().startsWith(term),
+      );
+      if (match !== undefined) {
+        setActiveKey(keyOf(match));
+      }
+      searchTimeout.current = setTimeout(() => rl.clearLine(0), 700);
+    }
+  });
+
+  const message = theme.style.message(config.message, status);
+  if (status === "done") {
+    const chosen = settled.current ?? selectedChoice;
+    return [
+      prefix,
+      message,
+      chosen ? theme.style.answer(chosen.short ?? chosen.name) : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  const page =
+    items.length === 0
+      ? ""
+      : usePagination({
+          items,
+          active,
+          renderItem({ item, isActive }) {
+            const line = `${isActive ? "❯" : " "} ${item.name}`;
+            return isActive ? theme.style.highlight(line) : line;
+          },
+          pageSize: 7,
+          loop: true,
+        });
+
+  const stream = process.stderr;
+  const loadingLine =
+    snapshot.loading === undefined
+      ? ""
+      : `  ${styleText("cyan", spinner[frame], { stream })} ${styleText("dim", snapshot.loading, { stream })}`;
+
+  const lines = [
+    [prefix, message].filter(Boolean).join(" "),
+    page,
+    loadingLine,
+    " ",
+    selectTheme.style.keysHelpTip(),
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .trimEnd();
+  return `${lines}\x1b[?25l`;
+});
+
+export function selectStream<Value>(
+  context: Pick<PromptContext, "signal">,
+  message: string,
+  stream: ChoiceStream<Value>,
+): Promise<Value> {
+  return streamPrompt(
+    { message, stream: stream as ChoiceStream<unknown> },
+    { output: process.stderr, signal: context.signal },
+  ) as Promise<Value>;
+}
 
 export async function step<Result>(
   label: string,

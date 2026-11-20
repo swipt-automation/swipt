@@ -63,9 +63,12 @@ func findPeer(ctx context.Context, udid string) (peer, error) {
 	devices, listErr := usbmuxd.ListDevices(ctx)
 	found := common.Find(preferUSB(devices), func(it usbmuxd.Device) bool { return it.UDID == udid })
 	if found.ID == 0 {
-		network, err := browseNetwork(ctx, devices, udid)
-		if len(network) > 0 {
-			return peer{network: &network[0]}, nil
+		var network *networkDevice
+		err := browseNetwork(ctx, devices, udid, func(matched networkDevice) {
+			network = &matched
+		})
+		if network != nil {
+			return peer{network: network}, nil
 		}
 		if ctx.Err() != nil {
 			return peer{}, ctx.Err()

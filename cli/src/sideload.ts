@@ -28,6 +28,7 @@ import {
   DriverError,
   type Application,
   type Device,
+  type DeviceFilter,
   apps,
   configureVirtual,
   failures,
@@ -62,6 +63,7 @@ import {
 import { LogLevel, type ScriptError } from "./proto/common_pb";
 import type { ConsoleOutput } from "./proto/repl_pb";
 import {
+  type SwiptApp,
   bundleId,
   bundleTeam,
   hasPairing,
@@ -685,37 +687,40 @@ const teamChoice = ({ id, name }: Team) => ({
   value: id,
 });
 
-async function sideloadedDevices(
-  devices: Device[],
-  missing: string = t("sideload.noneInstalled"),
-) {
-  const sideloaded = await step(
-    t("sideload.looking"),
-    () =>
-      Promise.all(
-        devices.map((device) =>
-          swiptApps(device).then(
-            (found) => found.length > 0,
-            () => true,
-          ),
-        ),
+function sideloadedFilter(
+  installed: Map<string, SwiptApp[]>,
+  empty: string,
+): DeviceFilter {
+  return {
+    label: t("sideload.looking"),
+    empty,
+    match: (device, signal) =>
+      swiptApps(device, signal).then(
+        (found) => {
+          installed.set(device.udid, found);
+          return found.length > 0;
+        },
+        () => true,
       ),
-    { transient: true },
-  );
-  const found = devices.filter((_, index) => sideloaded[index]);
-  if (found.length === 0) {
-    throw new Error(missing);
-  }
-  return found;
+  };
 }
 
-async function locate(context: PromptContext, device: Device, fresh = false) {
+async function locate(
+  context: PromptContext,
+  device: Device,
+  {
+    fresh = false,
+    installed,
+  }: { fresh?: boolean; installed?: SwiptApp[] } = {},
+) {
   const { options } = context;
-  const found = await step(
-    t("sideload.checking", { device: device.name }),
-    () => swiptApps(device),
-    { transient: true },
-  );
+  const found =
+    installed ??
+    (await step(
+      t("sideload.checking", { device: device.name }),
+      () => swiptApps(device, context.signal),
+      { transient: true },
+    ));
   if (device.virtual) {
     return {
       current: found.find((app) => app.bundleIdentifier === bundleId),
@@ -837,11 +842,13 @@ export async function installPasscode(
 }
 
 async function findInstalled(context: PromptContext) {
+  const installed = new Map<string, SwiptApp[]>();
   const device = await trustedDevice(context, {
-    filter: (devices) =>
-      sideloadedDevices(devices, t("sideload.noneInstalledHint")),
+    filter: sideloadedFilter(installed, t("sideload.noneInstalledHint")),
   });
-  const { team, current } = await locate(context, device);
+  const { team, current } = await locate(context, device, {
+    installed: installed.get(device.udid),
+  });
   if (current === undefined) {
     throw new Error(
       team === undefined
@@ -1232,7 +1239,7 @@ export async function install(context: DeployContext) {
   const device = await trustedDevice(context);
   await deploy(
     context,
-    { device, ...(await locate(context, device, true)) },
+    { device, ...(await locate(context, device, { fresh: true })) },
     false,
   );
 }
@@ -1487,8 +1494,13 @@ async function trustAndOpen(
 }
 
 export async function uninstall(context: PromptContext) {
-  const device = await trustedDevice(context, { filter: sideloadedDevices });
-  const { team, current } = await locate(context, device);
+  const installed = new Map<string, SwiptApp[]>();
+  const device = await trustedDevice(context, {
+    filter: sideloadedFilter(installed, t("sideload.noneInstalled")),
+  });
+  const { team, current } = await locate(context, device, {
+    installed: installed.get(device.udid),
+  });
   if (current === undefined) {
     throw new Error(
       team === undefined

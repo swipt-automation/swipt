@@ -184,9 +184,11 @@ func deviceCommand() *cobra.Command {
 			return run(ctx, container, args[1:])
 		})
 	}
-	add("list", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
-		return computer.Devices(ctx)
-	})
+	group.AddCommand(&cobra.Command{Use: "list", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
+		return computer.Devices(command.Context(), func(device computer.ListedDevice) error {
+			return output.Encode(map[string]any{"result": device})
+		})
+	}})
 	add("trust", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
 		return nil, computer.Trust(ctx, udid)
 	})

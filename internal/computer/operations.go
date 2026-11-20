@@ -8,6 +8,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -32,47 +33,90 @@ type ListedDevice struct {
 	Virtual bool   `json:"virtual"`
 }
 
-func Devices(ctx context.Context) ([]ListedDevice, error) {
+func Devices(ctx context.Context, emit func(ListedDevice) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	listed, err := usbmuxd.ListDevices(ctx)
-	failures := []error{usbmuxdFailure(err)}
+	var (
+		access   sync.Mutex
+		seen     = make(map[string]bool)
+		failures = []error{usbmuxdFailure(err)}
+		writeErr error
+	)
 	paired := func(udid string) bool {
 		_, err := usbmuxd.ReadPairRecord(ctx, udid)
 		return err == nil
 	}
-	devices := []ListedDevice{}
+	report := func(device ListedDevice) {
+		access.Lock()
+		defer access.Unlock()
+		if ctx.Err() != nil || writeErr != nil || seen[device.UDID] {
+			return
+		}
+		seen[device.UDID] = true
+		if writeErr = emit(device); writeErr != nil {
+			cancel()
+		}
+	}
+	fail := func(err error) {
+		if err == nil {
+			return
+		}
+		access.Lock()
+		failures = append(failures, err)
+		access.Unlock()
+	}
+	var tasks sync.WaitGroup
 	for _, found := range preferUSB(listed) {
 		if strings.HasPrefix(found.UDID, virtualPrefix) {
 			continue
 		}
-		name, err := peer{device: found}.name(ctx)
+		tasks.Go(func() {
+			name, err := peer{device: found}.name(ctx)
+			if ctx.Err() != nil {
+				return
+			}
+			fail(err)
+			isPaired := paired(found.UDID)
+			if ctx.Err() != nil {
+				return
+			}
+			report(ListedDevice{Name: name, UDID: found.UDID, Paired: isPaired})
+		})
+	}
+	tasks.Go(func() {
+		err := browseNetwork(ctx, listed, "", func(it networkDevice) {
+			report(ListedDevice{Name: it.record.DeviceName, UDID: it.udid, Paired: true})
+		})
+		if ctx.Err() == nil {
+			fail(err)
+		}
+	})
+	tasks.Go(func() {
+		machines, err := virtualMachines(ctx)
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return
 		}
-		failures = append(failures, err)
-		devices = append(devices, ListedDevice{Name: name, UDID: found.UDID, Paired: paired(found.UDID)})
-	}
-	network, err := browseNetwork(ctx, listed, "")
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-	failures = append(failures, err)
-	for _, it := range network {
-		devices = append(devices, ListedDevice{Name: it.record.DeviceName, UDID: it.udid, Paired: true})
-	}
-	machines, err := virtualMachines(ctx)
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-	failures = append(failures, err)
-	for _, machine := range machines {
-		devices = append(devices, ListedDevice{Name: machine.name, UDID: machine.udid, Paired: paired(machine.udid), Virtual: true})
-	}
-	if len(devices) == 0 {
-		if err = E.Errors(failures...); err != nil {
-			return nil, err
+		fail(err)
+		for _, machine := range machines {
+			isPaired := paired(machine.udid)
+			if ctx.Err() != nil {
+				return
+			}
+			report(ListedDevice{Name: machine.name, UDID: machine.udid, Paired: isPaired, Virtual: true})
 		}
+	})
+	tasks.Wait()
+	if writeErr != nil {
+		return writeErr
 	}
-	return devices, nil
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if len(seen) == 0 {
+		return E.Errors(failures...)
+	}
+	return nil
 }
 
 func Trust(ctx context.Context, udid string) error {
@@ -127,7 +171,12 @@ func (s *Session) Applications(ctx context.Context) ([]Application, error) {
 		return nil, err
 	}
 	defer conn.Close()
+	stop := context.AfterFunc(ctx, func() { conn.Close() })
+	defer stop()
 	listed, err := instproxy.Browse(conn)
+	if !stop() {
+		return nil, ctx.Err()
+	}
 	if err != nil {
 		return nil, err
 	}
