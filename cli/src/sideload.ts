@@ -1191,7 +1191,9 @@ async function openConfigured(
         autoUnlockSetUp: true,
         developerLocalNetworkEnabled: publishes,
       });
-      await configureVirtual(device, id, "Swipt");
+      if (publishes) {
+        await configureVirtual(device, id, "Swipt");
+      }
       await launchApp(device, id);
     });
   } else {
@@ -1348,6 +1350,7 @@ async function trustAndOpen(
   given: Passcode | undefined,
   updated: boolean,
 ) {
+  const publishes = !context.options["no-setup-api"];
   const lines: ConsoleOutput[] = [];
   let failure: ScriptError | undefined;
   let passcode = given;
@@ -1360,7 +1363,7 @@ async function trustAndOpen(
             await launchUnlocking(
               device,
               id,
-              context.options["no-setup-api"] ? [] : [publishArgument],
+              publishes ? [publishArgument] : [],
               context.signal,
             );
             return;
@@ -1436,11 +1439,9 @@ async function trustAndOpen(
               throw new Error(failure.message);
             }
           };
-          const args = [
-            setupArgument,
-            ...(context.options["no-setup-api"] ? [] : [publishArgument]),
-          ];
-          await run([id, "unlock", unlock]);
+          const args = publishes ? [setupArgument, publishArgument] : [];
+          const promptArgs = publishes ? [] : ["no-prompts"];
+          await run([id, "unlock", unlock, "", ...promptArgs]);
           update("");
           try {
             await launchApp(device, id, args);
@@ -1448,11 +1449,13 @@ async function trustAndOpen(
             if (!failedWith(error, failures.untrusted)) {
               throw error;
             }
-            await run([id, "trust", "", error.message]);
+            await run([id, "trust", "", error.message, ...promptArgs]);
             update("");
             await launchApp(device, id, args);
           }
-          await run([id, "prompts"]);
+          if (publishes) {
+            await run([id, "prompts"]);
+          }
         } finally {
           await driven.stop();
         }

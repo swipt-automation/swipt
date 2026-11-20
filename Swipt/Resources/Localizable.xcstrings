@@ -20739,6 +20739,310 @@
         }
       }
     },
+    "Doesn’t actually determine your location." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يحدد موقعك فعليًا."
+          }
+        },
+        "bg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Местоположението Ви всъщност не се определя."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "আসলে আপনার লোকেশন নির্ণয় করা হয় না।"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En realitat no determina la teva ubicació."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poloha se ve skutečnosti nezjišťuje."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestemmer ikke din lokalitet i praksis."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestimmt deinen Standort nicht tatsächlich."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν προσδιορίζει στην πραγματικότητα την τοποθεσία σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No determina tu ubicación realmente."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En realidad no determina tu ubicación."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ei varsinaisesti määritä sijaintiasi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne détermine pas réellement votre position."
+          }
+        },
+        "fr-CA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne détermine pas réellement votre position."
+          }
+        },
+        "gu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "વાસ્તવમાં તમારું સ્થાન નક્કી કરવામાં આવતું નથી."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "לא מאתר בפועל את מיקומך."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वास्तव में आपकी लोकेशन पता नहीं की जाती।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapravo ne određuje vašu lokaciju."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valójában nem határozza meg a helyzetét."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak benar-benar menentukan lokasi Anda."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non rileva effettivamente la tua posizione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実際に測位を行うわけではありません。"
+          }
+        },
+        "kk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Орналасуыңызды іс жүзінде анықтамайды."
+          }
+        },
+        "kn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ನಿಜವಾಗಿಯೂ ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ನಿರ್ಧರಿಸುವುದಿಲ್ಲ."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실제로 위치를 측정하지는 않습니다."
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iš tikrųjų jūsų vietovės nenustato."
+          }
+        },
+        "ml" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "യഥാർത്ഥത്തിൽ നിങ്ങളുടെ ലൊക്കേഷൻ നിർണ്ണയിക്കുന്നില്ല."
+          }
+        },
+        "mr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रत्यक्षात तुमचे स्थान निश्चित केले जात नाही."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak benar-benar menentukan lokasi anda."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestemmer ikke posisjonen din faktisk."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bepaalt je locatie niet daadwerkelijk."
+          }
+        },
+        "or" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ପ୍ରକୃତରେ ଆପଣଙ୍କ ଲୋକେଶନ୍ ନିର୍ଦ୍ଧାରଣ କରାଯାଏ ନାହିଁ।"
+          }
+        },
+        "pa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ਅਸਲ ਵਿੱਚ ਤੁਹਾਡਾ ਟਿਕਾਣਾ ਪਤਾ ਨਹੀਂ ਲਗਾਇਆ ਜਾਂਦਾ।"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie ustala położenia w rzeczywistości."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não determina sua localização de fato."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não determina realmente a sua localização."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu determină efectiv locația."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фактическое определение геопозиции не выполняется."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "V skutočnosti vašu polohu nezisťuje."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejansko ne določa vaše lokacije."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fastställer inte din plats i praktiken."
+          }
+        },
+        "ta" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "உண்மையில் உங்கள் இருப்பிடத்தைக் கண்டறியாது."
+          }
+        },
+        "te" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "నిజానికి మీ లొకేషన్‌ను గుర్తించదు."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่ได้ระบุตำแหน่งที่ตั้งของคุณจริง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konumunuzu gerçekte belirlemez."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фактично не визначає вашу локацію."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درحقیقت آپ کا مقام معلوم نہیں کیا جاتا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thực sự xác định vị trí của bạn."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並不會真的啟用定位。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "并不会真的激活定位。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並不會真的啟用定位。"
+          }
+        }
+      }
+    },
     "Domain" : {
       "localizations" : {
         "ar" : {
@@ -55541,310 +55845,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "儲存庫傳回了另一個 Swiplet。"
-          }
-        }
-      }
-    },
-    "The status bar shows that location is in use." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "يشير شريط الحالة إلى أن الموقع قيد الاستخدام."
-          }
-        },
-        "bg" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Лентата на състоянието показва, че се използва местоположение."
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "স্ট্যাটাস বারে দেখা যায় যে লোকেশন ব্যবহার করা হচ্ছে।"
-          }
-        },
-        "ca" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barra d’estat indica que s’està utilitzant la ubicació."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Stavový řádek ukazuje, že se používá poloha."
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Statuslinjen viser, at lokaliteten bruges."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "In der Statusleiste wird angezeigt, dass der Standort verwendet wird."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Η γραμμή κατάστασης δείχνει ότι χρησιμοποιείται η τοποθεσία."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barra de estado indica que se está usando la localización."
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barra de estado indica que se está usando la ubicación."
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Tilapalkissa näkyy, että sijaintia käytetään."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barre d’état indique que la localisation est utilisée."
-          }
-        },
-        "fr-CA" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barre d’état indique que la localisation est utilisée."
-          }
-        },
-        "gu" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "સ્ટેટસ બારમાં દેખાય છે કે સ્થાનનો ઉપયોગ થઈ રહ્યો છે."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "שורת המצב מציינת שהמיקום נמצא בשימוש."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "स्टेटस बार में दिखता है कि लोकेशन का उपयोग हो रहा है।"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Statusna traka prikazuje da se upotrebljava lokacija."
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Az állapotsor jelzi, hogy a helymeghatározás használatban van."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Bar status menunjukkan bahwa lokasi sedang digunakan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "La barra di stato indica che la posizione è in uso."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "位置情報が使用中であることがステータスバーに表示されます。"
-          }
-        },
-        "kk" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Күй жолағында орналасудың пайдаланылып жатқаны көрсетіледі."
-          }
-        },
-        "kn" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ಸ್ಥಳ ಬಳಕೆಯಲ್ಲಿದೆ ಎಂದು ಸ್ಟೇಟಸ್ ಬಾರ್‌ನಲ್ಲಿ ತೋರಿಸಲಾಗುತ್ತದೆ."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "상태 막대에 위치 사용 중 표시가 나타납니다."
-          }
-        },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Būsenos juostoje rodoma, kad naudojama vietovė."
-          }
-        },
-        "ml" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ലൊക്കേഷൻ ഉപയോഗത്തിലാണെന്ന് സ്റ്റാറ്റസ് ബാറിൽ കാണിക്കുന്നു."
-          }
-        },
-        "mr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "स्टेटस बारमध्ये स्थान वापरले जात असल्याचे दिसते."
-          }
-        },
-        "ms" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Bar status menunjukkan bahawa lokasi sedang digunakan."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Statuslinjen viser at posisjonen er i bruk."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "In de statusbalk is te zien dat de locatie wordt gebruikt."
-          }
-        },
-        "or" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ଷ୍ଟାଟସ୍ ବାର୍‌ରେ ଦେଖାଯାଏ ଯେ ଲୋକେଶନ୍ ବ୍ୟବହାର କରାଯାଉଛି।"
-          }
-        },
-        "pa" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ਸਟੇਟਸ ਬਾਰ ਵਿੱਚ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ ਕਿ ਟਿਕਾਣੇ ਦੀ ਵਰਤੋਂ ਹੋ ਰਹੀ ਹੈ।"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Na pasku statusu widać, że lokalizacja jest używana."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "A barra de status indica que a localização está em uso."
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "A barra de estado indica que a localização está a ser usada."
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Bara de stare arată că localizarea este utilizată."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "В строке состояния отображается, что используется геопозиция."
-          }
-        },
-        "sk" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Stavový riadok zobrazuje, že sa používa poloha."
-          }
-        },
-        "sl" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Vrstica stanja prikazuje, da se uporablja lokacija."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Statusfältet visar att platsen används."
-          }
-        },
-        "ta" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "நிலைப் பட்டியில் இருப்பிடம் பயன்பாட்டில் உள்ளது எனக் காட்டப்படும்."
-          }
-        },
-        "te" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "లొకేషన్ ఉపయోగంలో ఉందని స్టేటస్ బార్‌లో కనిపిస్తుంది."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แถบสถานะจะแสดงว่ากำลังใช้ตำแหน่งที่ตั้งอยู่"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Durum çubuğu konumun kullanıldığını gösterir."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "У рядку стану показано, що використовується локація."
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "اسٹیٹس بار میں دکھایا جاتا ہے کہ مقام استعمال ہو رہا ہے۔"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Thanh trạng thái cho biết vị trí đang được sử dụng."
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "會在狀態列提示正在使用位置。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "会在状态栏提示正在使用位置。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "會在狀態列提示正在使用位置。"
           }
         }
       }

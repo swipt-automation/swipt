@@ -25,7 +25,7 @@ struct BackgroundView: View {
                             .tag(BackgroundMode.system)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Location Service")
-                                Text("The status bar shows that location is in use.")
+                                Text("Doesn’t actually determine your location.")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }

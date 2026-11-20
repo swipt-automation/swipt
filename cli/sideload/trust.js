@@ -1,4 +1,5 @@
-const [encodedMessages, id, mode, unlock, launchError] = args;
+const [encodedMessages, id, mode, unlock, launchError, promptMode] = args;
+const autoAllow = promptMode !== "no-prompts";
 const messages = JSON.parse(encodedMessages);
 const filled = (message, value) => message.replace(/\{\w+\}/, () => value);
 const name = "Swipt";
@@ -50,12 +51,16 @@ async function dismiss(alert, index) {
 }
 
 async function answerPrompt() {
+  if (!autoAllow) {
+    return false;
+  }
   const alert = await sheet();
   const buttons = alert?.findAll({ role: "button" }) ?? [];
   if (alert?.label?.includes(name) && [2, 3].includes(buttons.length)) {
     // The location alert shows an icon and lists Allow Once first; the cellular
     // data alert of China mainland devices shows none and lists Wi-Fi and
-    // cellular first (iOS 27.2 24B115).
+    // cellular first (iOS 27.2 24B115). The background location upgrade alert
+    // has 2 buttons and lists Change to Always Allow second (iOS 27.3 24C5037i).
     const location = alert.findAll({ role: "image" }).length > 0;
     await dismiss(alert, buttons.length === 2 || location ? 1 : 0);
   }
@@ -196,19 +201,51 @@ async function waitForUnlock() {
   }
 }
 
+async function allowLocation() {
+  await device.launchApplication(settings, {
+    url: `app-prefs:${id}`,
+    restart: true,
+  });
+  const until = Date.now() + 10_000;
+  let row = null;
+  do {
+    await answerPrompt();
+    row = await inSettings({ role: "button", identifier: id }, 500);
+  } while (row === null && Date.now() < until);
+  if (row === null) {
+    await device.launchApplication(id);
+    return;
+  }
+  let option = null;
+  do {
+    await tap(row);
+    option = await inSettings(
+      { identifier: "LOCATION_SERVICES_AUTH_ALWAYS" },
+      1_000,
+    );
+  } while (option === null && Date.now() < until);
+  if (option !== null && !option.selected && !option.disabled) {
+    do {
+      await input.tap(option.point);
+      option = await inSettings(
+        { identifier: "LOCATION_SERVICES_AUTH_ALWAYS" },
+        1_000,
+      );
+    } while (option !== null && !option.selected && Date.now() < until);
+  }
+  await device.launchApplication(id);
+}
+
 async function finishSetup() {
   const until = Date.now() + 60_000;
+  let finished = null;
   do {
     try {
       if (!(await answerPrompt())) {
-        const finished = await accessibility.find({
+        finished = await accessibility.find({
           app: id,
           identifier: "setup-finished",
         });
-        if (finished !== null) {
-          console.log(filled(messages.running, name));
-          return;
-        }
       }
     } catch (error) {
       if (
@@ -218,8 +255,14 @@ async function finishSetup() {
         throw error;
       }
     }
-  } while (Date.now() < until);
-  throw new Error(`${name} did not finish setting up`);
+  } while (finished === null && Date.now() < until);
+  if (finished === null) {
+    throw new Error(`${name} did not finish setting up`);
+  }
+  if (finished.value !== "always") {
+    await allowLocation();
+  }
+  console.log(filled(messages.running, name));
 }
 
 async function main() {

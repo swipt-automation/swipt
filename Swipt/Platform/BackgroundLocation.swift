@@ -35,7 +35,10 @@ final class BackgroundLocation: NSObject {
         switch authorization {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
-        case .authorizedWhenInUse, .authorizedAlways:
+        case .authorizedWhenInUse:
+            startUpdating()
+            manager.requestAlwaysAuthorization()
+        case .authorizedAlways:
             startUpdating()
         default:
             reportDenial()
@@ -72,7 +75,13 @@ extension BackgroundLocation: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorization = manager.authorizationStatus
         switch authorization {
-        case .authorizedWhenInUse, .authorizedAlways:
+        case .authorizedWhenInUse:
+            isDenialReported = false
+            startUpdating()
+            if isWanted {
+                manager.requestAlwaysAuthorization()
+            }
+        case .authorizedAlways:
             isDenialReported = false
             startUpdating()
         default:

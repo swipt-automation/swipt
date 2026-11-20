@@ -83,19 +83,51 @@ private final class Resolution {
 private final class LocationPermission: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var resolution: Resolution?
+    private var fallback: Task<Void, Never>?
 
     func request() async {
-        guard manager.authorizationStatus == .notDetermined else { return }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            resolution = Resolution(continuation)
-            manager.delegate = self
-            manager.requestWhenInUseAuthorization()
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                resolution = Resolution(continuation)
+                manager.delegate = self
+                manager.requestWhenInUseAuthorization()
+            }
+        case .authorizedWhenInUse:
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                resolution = Resolution(continuation)
+                manager.delegate = self
+                requestAlways()
+            }
+        default:
+            break
         }
     }
 
+    private func requestAlways() {
+        manager.requestAlwaysAuthorization()
+        fallback = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            self?.finish()
+        }
+    }
+
+    private func finish() {
+        fallback?.cancel()
+        fallback = nil
+        resolution?.resume()
+    }
+
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if manager.authorizationStatus != .notDetermined {
-            resolution?.resume()
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            break
+        case .authorizedWhenInUse:
+            if fallback == nil {
+                requestAlways()
+            }
+        default:
+            finish()
         }
     }
 }
