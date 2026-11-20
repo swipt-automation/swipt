@@ -61,6 +61,10 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 	if timeout >= 0 {
 		deadline = started.Add(timeout)
 	}
+	hold := c.ax.hold()
+	defer hold()
+	changed, stop := c.events.watch(true)
+	defer stop()
 	var delay time.Duration
 	var waited string
 	for attempt := 1; ; attempt++ {
@@ -99,16 +103,36 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 		if s.animating {
 			delay = pollFirst
 		}
-		if !s.animating && !deadline.IsZero() && time.Now().Add(delay).After(deadline) {
+		if !s.animating && !deadline.IsZero() && time.Now().After(deadline) {
 			p.connection.trace(started, name+".refused", pending, time.Since(started))
 			if timeout == 0 {
 				return E.Extend(ErrTimeout, pending)
 			}
 			return E.Extend(ErrTimeout, pending, "; gave up after ", timeout)
 		}
-		if err = sleep(ctx, delay); err != nil {
-			return err
+		wait := delay
+		if !s.animating && !deadline.IsZero() {
+			wait = min(wait, time.Until(deadline))
 		}
+		timer := time.NewTimer(wait)
+		if s.animating {
+			select {
+			case <-timer.C:
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			}
+		} else {
+			select {
+			case <-changed:
+				delay = 0
+			case <-timer.C:
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			}
+		}
+		timer.Stop()
 		if s.stale {
 			if _, err = p.read(ctx, c, s.reread); err != nil {
 				return err

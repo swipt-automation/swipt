@@ -82,7 +82,7 @@ func (p *Platform) SetAPI(options *APIOptions) error {
 	if state == nil {
 		state = &apiState{server: api.New(api.Options{
 			Device: p.device.connection, Swiplets: p.host, Dialog: p.dialog, Logs: p.logFactory, Logger: p.logFactory.NewLogger("api"),
-			AppVersion: p.appVersion, AppBuild: p.appBuild, Shutdown: p.handler.OnShutdownRequested,
+			AppVersion: p.appVersion, AppBuild: p.appBuild, Shutdown: func(context.Context) { p.handler.OnShutdownRequested() },
 		})}
 		state.tunnelCredential = state.server.NewCredential(options.CloudflareToken)
 		p.api = state

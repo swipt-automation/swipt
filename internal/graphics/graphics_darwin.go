@@ -13,6 +13,7 @@ package graphics
 import "C"
 
 import (
+	"context"
 	"encoding/json"
 	"path/filepath"
 	"runtime"
@@ -99,7 +100,28 @@ type outcome struct {
 	err   error
 }
 
-func (e *engine) runNative(c *call, _ callArguments, context *automation.GraphicsCall) (any, error) {
+func watchCancel(ctx context.Context) (unsafe.Pointer, func()) {
+	token := C.swipt_graphics_token_create()
+	if ctx.Err() != nil {
+		C.swipt_graphics_token_cancel(token)
+		return token, func() {
+			C.CFRelease(C.CFTypeRef(token))
+		}
+	}
+	C.CFRetain(C.CFTypeRef(token))
+	stop := context.AfterFunc(ctx, func() {
+		C.swipt_graphics_token_cancel(token)
+		C.CFRelease(C.CFTypeRef(token))
+	})
+	return token, func() {
+		if stop() {
+			C.CFRelease(C.CFTypeRef(token))
+		}
+		C.CFRelease(C.CFTypeRef(token))
+	}
+}
+
+func (e *engine) runNative(c *call, _ callArguments, callCtx *automation.GraphicsCall) (any, error) {
 	objects := make([]unsafe.Pointer, max(len(c.objects), 1))
 	for index, object := range c.objects {
 		if native, isNative := object.(nativeObject); isNative {
@@ -109,10 +131,12 @@ func (e *engine) runNative(c *call, _ callArguments, context *automation.Graphic
 	owned := c.owned
 	c.owned = nil
 	method, arguments := C.CString(c.method), C.CString(string(c.arguments))
-	handle := cgo.NewHandle(&scope{engine: e, call: context})
+	handle := cgo.NewHandle(&scope{engine: e, call: callCtx})
 	done := make(chan outcome, 1)
 	go func() {
-		text := C.swipt_graphics_execute(method, arguments, &objects[0], C.size_t(len(c.objects)), C.uintptr_t(handle))
+		token, releaseToken := watchCancel(callCtx.Context())
+		text := C.swipt_graphics_execute(method, arguments, &objects[0], C.size_t(len(c.objects)), C.uintptr_t(handle), token)
+		releaseToken()
 		handle.Delete()
 		C.free(unsafe.Pointer(method))
 		C.free(unsafe.Pointer(arguments))
@@ -125,8 +149,8 @@ func (e *engine) runNative(c *call, _ callArguments, context *automation.Graphic
 	select {
 	case result := <-done:
 		return result.value, result.err
-	case <-context.Context().Done():
-		return nil, context.Context().Err()
+	case <-callCtx.Context().Done():
+		return nil, callCtx.Context().Err()
 	}
 }
 
@@ -204,12 +228,12 @@ func newScreenRecording(directory string, manifest *recordingManifest) (*screenR
 	return recording, nil
 }
 
-func (r *screenRecording) export(context *automation.GraphicsCall, target string, mp4 bool) error {
+func (r *screenRecording) export(callCtx *automation.GraphicsCall, target string, mp4 bool) error {
 	path := C.CString(target)
 	defer C.free(unsafe.Pointer(path))
-	handle := cgo.NewHandle(&scope{call: context})
-	defer handle.Delete()
-	_, err := decodeOutcome(C.swipt_graphics_recording_export(r.native, path, C.bool(mp4), C.uintptr_t(handle)))
+	token, releaseToken := watchCancel(callCtx.Context())
+	defer releaseToken()
+	_, err := decodeOutcome(C.swipt_graphics_recording_export(r.native, path, C.bool(mp4), token))
 	runtime.KeepAlive(r)
 	return err
 }
@@ -250,11 +274,6 @@ func swiptGraphicsScreenFrame(stream C.uintptr_t, image unsafe.Pointer) {
 //export swiptGraphicsRegister
 func swiptGraphicsRegister(handle C.uintptr_t, native unsafe.Pointer) C.int64_t {
 	return C.int64_t(scopeOf(handle).engine.register(nativeObject{native}))
-}
-
-//export swiptGraphicsCancelled
-func swiptGraphicsCancelled(handle C.uintptr_t) C.bool {
-	return C.bool(scopeOf(handle).call.Context().Err() != nil)
 }
 
 //export swiptGraphicsReadFile

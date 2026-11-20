@@ -97,6 +97,8 @@ func (e *events) publish(event Event) {
 }
 
 func (c *conn) wait(ctx context.Context, deadline time.Time, check func(ctx context.Context) (bool, error)) (bool, error) {
+	release := c.ax.hold()
+	defer release()
 	changed, stop := c.events.watch(false)
 	defer stop()
 	delay := pollFirst

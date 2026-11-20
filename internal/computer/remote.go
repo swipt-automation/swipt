@@ -271,8 +271,60 @@ func waitUnlocked(ctx context.Context, target *coredevice.Device) error {
 		return err
 	}
 	defer conn.Close()
+	state, err := conn.LockState(ctx)
+	if err != nil || !state.PasscodeRequired {
+		return err
+	}
+	if proxy, proxyErr := target.DialShim(ctx, "com.apple.mobile.notification_proxy.shim.remote"); proxyErr == nil {
+		stop := context.AfterFunc(ctx, func() {
+			_ = proxy.Close()
+		})
+		observing := true
+		for _, name := range []string{"com.apple.mobile.keybagd.lock_status", "com.apple.springboard.lockstate"} {
+			if proxy.Send(map[string]any{"Command": "ObserveNotification", "Name": name}) != nil {
+				observing = false
+				break
+			}
+		}
+		if observing {
+			state, err = conn.LockState(ctx)
+			if err != nil || !state.PasscodeRequired {
+				stop()
+				_ = proxy.Close()
+				return err
+			}
+			for {
+				message, receiveErr := proxy.Receive()
+				if receiveErr != nil {
+					stop()
+					_ = proxy.Close()
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+					break
+				}
+				if message["Command"] == "ProxyDeath" {
+					stop()
+					_ = proxy.Close()
+					break
+				}
+				if message["Command"] != "RelayNotification" {
+					continue
+				}
+				state, err = conn.LockState(ctx)
+				if err != nil || !state.PasscodeRequired {
+					stop()
+					_ = proxy.Close()
+					return err
+				}
+			}
+		} else {
+			stop()
+			_ = proxy.Close()
+		}
+	}
 	for {
-		state, err := conn.LockState(ctx)
+		state, err = conn.LockState(ctx)
 		if err != nil || !state.PasscodeRequired {
 			return err
 		}

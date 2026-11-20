@@ -14,14 +14,14 @@ import (
 	"math"
 	"runtime/cgo"
 	"strconv"
+	"sync"
+	"syscall"
 	"unsafe"
 
 	E "github.com/sagernet/sing/common/exceptions"
 
 	"golang.org/x/sys/unix"
 )
-
-const pollInterval = 200
 
 type Error int32
 
@@ -40,21 +40,22 @@ type Advertisement struct {
 	ref        C.DNSServiceRef
 	handle     cgo.Handle
 	registered chan error
-	stop       chan struct{}
+	wake       [2]int
 	done       chan struct{}
+	closeOnce  sync.Once
 	failed     error
 }
 
 func (a *Advertisement) pump() {
 	defer close(a.done)
 	fd := int32(C.DNSServiceRefSockFD(a.ref))
+	wake := int32(a.wake[0])
 	for {
-		select {
-		case <-a.stop:
-			return
-		default:
+		fds := []unix.PollFd{
+			{Fd: fd, Events: unix.POLLIN},
+			{Fd: wake, Events: unix.POLLIN},
 		}
-		ready, err := unix.Poll([]unix.PollFd{{Fd: fd, Events: unix.POLLIN}}, pollInterval)
+		_, err := unix.Poll(fds, -1)
 		if errors.Is(err, unix.EINTR) {
 			continue
 		}
@@ -62,7 +63,10 @@ func (a *Advertisement) pump() {
 			a.failed = E.Cause(err, "dnssd: poll")
 			return
 		}
-		if ready == 0 {
+		if fds[1].Revents != 0 {
+			return
+		}
+		if fds[0].Revents == 0 {
 			continue
 		}
 		if err = check(C.DNSServiceProcessResult(a.ref)); err != nil {
@@ -100,8 +104,19 @@ func Advertise(ctx context.Context, name string, serviceType string, port uint16
 	if err != nil {
 		return nil, err
 	}
-	a := &Advertisement{registered: make(chan error, 1), stop: make(chan struct{}), done: make(chan struct{})}
+	a := &Advertisement{registered: make(chan error, 1), done: make(chan struct{})}
+	syscall.ForkLock.RLock()
+	if err = unix.Pipe(a.wake[:]); err == nil {
+		unix.CloseOnExec(a.wake[0])
+		unix.CloseOnExec(a.wake[1])
+	}
+	syscall.ForkLock.RUnlock()
+	if err != nil {
+		return nil, E.Cause(err, "dnssd: pipe")
+	}
 	if err = check(C.DNSServiceCreateConnection(&a.ref)); err != nil {
+		_ = unix.Close(a.wake[0])
+		_ = unix.Close(a.wake[1])
 		return nil, E.Cause(err, "dnssd: connect")
 	}
 	a.handle = cgo.NewHandle(a)
@@ -133,8 +148,11 @@ func Advertise(ctx context.Context, name string, serviceType string, port uint16
 }
 
 func (a *Advertisement) Close() {
-	close(a.stop)
-	<-a.done
-	C.DNSServiceRefDeallocate(a.ref)
-	a.handle.Delete()
+	a.closeOnce.Do(func() {
+		_ = unix.Close(a.wake[1])
+		<-a.done
+		_ = unix.Close(a.wake[0])
+		C.DNSServiceRefDeallocate(a.ref)
+		a.handle.Delete()
+	})
 }

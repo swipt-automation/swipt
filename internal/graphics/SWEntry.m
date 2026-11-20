@@ -36,13 +36,19 @@ void swipt_graphics_warm(uintptr_t logger) {
     });
 }
 
-static SWCancelToken *SWTokenOf(SWCallContext *context) {
-    return [[SWCancelToken alloc] initWithCancelled:^BOOL {
-        return context.cancelled;
-    }];
+void *swipt_graphics_token_create(void) {
+    @autoreleasepool {
+        return (void *)CFBridgingRetain([SWCancelToken new]);
+    }
 }
 
-char *swipt_graphics_execute(const char *method, const char *arguments, void *const *objects, size_t count, uintptr_t scope) {
+void swipt_graphics_token_cancel(void *token) {
+    @autoreleasepool {
+        [(__bridge SWCancelToken *)token cancel];
+    }
+}
+
+char *swipt_graphics_execute(const char *method, const char *arguments, void *const *objects, size_t count, uintptr_t scope, void *token) {
     @autoreleasepool {
         NSError *failure = nil;
         SWArguments *parsed = [[SWArguments alloc] initWithJSON:[NSString stringWithUTF8String:arguments] error:&failure];
@@ -55,7 +61,7 @@ char *swipt_graphics_execute(const char *method, const char *arguments, void *co
         }
         SWCall *call = [[SWCall alloc] initWithMethod:[NSString stringWithUTF8String:method] arguments:parsed objects:unwrapped];
         call.context = [[SWCallContext alloc] initWithScope:scope];
-        call.token = SWTokenOf(call.context);
+        call.token = (__bridge SWCancelToken *)token;
         id value = SWCallExecute(call, &failure);
         return strdup((value != nil ? SWOutcomeSuccess(value) : SWOutcomeFailure(failure)).UTF8String);
     }
@@ -93,12 +99,11 @@ void *swipt_graphics_recording_open(swipt_graphics_recording recording) {
     }
 }
 
-char *swipt_graphics_recording_export(void *recording, const char *target, bool mp4, uintptr_t scope) {
+char *swipt_graphics_recording_export(void *recording, const char *target, bool mp4, void *token) {
     @autoreleasepool {
-        SWCallContext *context = [[SWCallContext alloc] initWithScope:scope];
         NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:target] isDirectory:NO];
         NSError *failure = nil;
-        BOOL exported = [(__bridge SWScreenRecording *)recording exportTo:url mov:!mp4 token:SWTokenOf(context) error:&failure];
+        BOOL exported = [(__bridge SWScreenRecording *)recording exportTo:url mov:!mp4 token:(__bridge SWCancelToken *)token error:&failure];
         return strdup((exported ? SWOutcomeSuccess(NSNull.null) : SWOutcomeFailure(failure)).UTF8String);
     }
 }

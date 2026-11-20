@@ -109,10 +109,10 @@ export interface CallOptions {
   signal?: AbortSignal;
 }
 
-async function locate(connection: Connection, signal?: AbortSignal) {
-  const url = new URL(connection.url);
+export async function locate(urlText: string, signal?: AbortSignal) {
+  const url = new URL(urlText);
   if (!url.hostname.endsWith(".local")) {
-    return connection.url;
+    return urlText;
   }
   let address;
   try {
@@ -140,7 +140,7 @@ async function locate(connection: Connection, signal?: AbortSignal) {
 }
 
 async function base(connection: Connection, signal?: AbortSignal) {
-  connection.resolved ??= await locate(connection, signal);
+  connection.resolved ??= await locate(connection.url, signal);
   return connection.resolved;
 }
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/netwatch"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -141,8 +142,25 @@ func (r *responder) rename() error {
 func (r *responder) run(ctx context.Context, a *Advertisement) {
 	defer close(a.done)
 	defer r.transport.close()
-	refresh := time.NewTicker(refreshInterval)
-	defer refresh.Stop()
+	changes, watchErr := netwatch.Watch(ctx)
+	var (
+		refresh  *time.Ticker
+		refreshC <-chan time.Time
+	)
+	defer func() {
+		if refresh != nil {
+			refresh.Stop()
+		}
+	}()
+	startRefresh := func() {
+		if refresh == nil {
+			refresh = time.NewTicker(refreshInterval)
+			refreshC = refresh.C
+		}
+	}
+	if watchErr != nil {
+		startRefresh()
+	}
 	next := time.NewTimer(0)
 	defer next.Stop()
 	r.refresh(ctx)
@@ -166,7 +184,14 @@ func (r *responder) run(ctx context.Context, a *Advertisement) {
 				}
 			}
 			return
-		case <-refresh.C:
+		case _, ok := <-changes:
+			if !ok {
+				changes = nil
+				startRefresh()
+				continue
+			}
+			r.refresh(ctx)
+		case <-refreshC:
 			r.refresh(ctx)
 		case received := <-r.transport.packets:
 			if err := r.receive(received); err != nil {

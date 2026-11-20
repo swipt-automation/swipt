@@ -192,6 +192,9 @@ func deviceCommand() *cobra.Command {
 	add("trust", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
 		return nil, computer.Trust(ctx, udid)
 	})
+	add("wait", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
+		return nil, computer.WaitPeer(ctx, udid)
+	})
 	mount := add("mount", cobra.NoArgs, func(ctx context.Context, _ []string) (any, error) {
 		return nil, computer.Mount(ctx, udid, diskImages, logger)
 	})

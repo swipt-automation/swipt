@@ -53,11 +53,13 @@ typedef struct {
 
 void swipt_graphics_warm(uintptr_t logger);
 void swipt_graphics_install(void *context, int32_t command, void *value, uint64_t engine);
-char *swipt_graphics_execute(const char *method, const char *arguments, void *const *objects, size_t count, uintptr_t scope);
+void *swipt_graphics_token_create(void);
+void swipt_graphics_token_cancel(void *token);
+char *swipt_graphics_execute(const char *method, const char *arguments, void *const *objects, size_t count, uintptr_t scope, void *token);
 void *swipt_graphics_decoder_create(uintptr_t stream, int64_t width, int64_t height, double scale);
 bool swipt_graphics_decoder_decode(void *decoder, swipt_graphics_unit unit);
 void swipt_graphics_decoder_close(void *decoder);
 void *swipt_graphics_recording_open(swipt_graphics_recording recording);
-char *swipt_graphics_recording_export(void *recording, const char *target, bool mp4, uintptr_t scope);
+char *swipt_graphics_recording_export(void *recording, const char *target, bool mp4, void *token);
 
 #endif

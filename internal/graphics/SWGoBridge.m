@@ -28,10 +28,6 @@ static NSError *SWTakeFailure(char *failure) {
     return self;
 }
 
-- (BOOL)cancelled {
-    return swiptGraphicsCancelled(_scope);
-}
-
 - (NSData *)readRoot:(NSString *)root path:(NSString *)path error:(NSError **)error {
     swipt_graphics_file file = swiptGraphicsReadFile(_scope, SWCString(root), SWCString(path));
     if (file.failure != NULL) {

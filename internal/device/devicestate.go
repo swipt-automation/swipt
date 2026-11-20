@@ -25,12 +25,11 @@ var stateNotifications = []string{
 	"com.apple.springboard.lockstate",
 	blankedScreen,
 	displayStatus,
+	screenDimmed,
+	screenUndimmed,
 }
 
-const (
-	lockedPoll  = 5 * time.Second
-	displayPoll = time.Second
-)
+const displayPoll = time.Second
 
 type darwinNotifications struct {
 	conn *conn
@@ -38,6 +37,7 @@ type darwinNotifications struct {
 	access   sync.Mutex
 	watchers map[chan struct{}]struct{}
 	active   *notificationRelay
+	failedAt time.Time
 
 	displayPosted   uint64
 	displayFollowed uint64
@@ -59,20 +59,32 @@ func newDarwinNotifications(c *conn) *darwinNotifications {
 	return &darwinNotifications{conn: c, watchers: make(map[chan struct{}]struct{})}
 }
 
-func (d *darwinNotifications) watch() (changed <-chan struct{}, relayed func() bool, cancel func()) {
-	signal := make(chan struct{}, 1)
-	d.access.Lock()
-	d.watchers[signal] = struct{}{}
-	if d.active == nil {
+func (d *darwinNotifications) startLocked(force bool) *notificationRelay {
+	if d.active == nil && len(d.watchers) > 0 && d.conn.ctx.Err() == nil && (force || d.failedAt.IsZero() || time.Since(d.failedAt) >= displayPoll) {
 		ctx, stop := context.WithCancel(d.conn.ctx)
 		d.active = &notificationRelay{ctx: ctx, stop: stop, ready: make(chan struct{}), stopped: make(chan struct{})}
 		go d.observe(d.active)
 	}
+	return d.active
+}
+
+func (d *darwinNotifications) isActive() bool {
+	d.access.Lock()
+	defer d.access.Unlock()
+	return d.active != nil && d.active.relayed
+}
+
+func (d *darwinNotifications) watch() (changed <-chan struct{}, relayed func() bool, cancel func()) {
+	signal := make(chan struct{}, 1)
+	d.access.Lock()
+	d.watchers[signal] = struct{}{}
+	d.startLocked(true)
 	d.access.Unlock()
 	var once sync.Once
 	return signal, func() bool {
 			d.access.Lock()
 			defer d.access.Unlock()
+			d.startLocked(false)
 			return d.active != nil && d.active.relayed
 		}, func() {
 			once.Do(func() {
@@ -89,9 +101,12 @@ func (d *darwinNotifications) watch() (changed <-chan struct{}, relayed func() b
 
 func (d *darwinNotifications) waitReady(ctx context.Context) error {
 	d.access.Lock()
-	active := d.active
+	active := d.startLocked(true)
 	d.access.Unlock()
 	if active == nil {
+		if err := d.conn.ctx.Err(); err != nil {
+			return err
+		}
 		return E.New("the device's notification observation is not running")
 	}
 	select {
@@ -106,23 +121,43 @@ func (d *darwinNotifications) waitReady(ctx context.Context) error {
 	}
 	d.access.Lock()
 	defer d.access.Unlock()
-	if d.active != active {
-		return context.Canceled
-	}
 	if active.err != nil {
 		return active.err
+	}
+	if d.active != active {
+		return context.Canceled
 	}
 	return active.ctx.Err()
 }
 
+func (d *darwinNotifications) notifyLocked() {
+	for signal := range d.watchers {
+		select {
+		case signal <- struct{}{}:
+		default:
+		}
+	}
+}
+
 func (d *darwinNotifications) observe(active *notificationRelay) {
 	defer close(active.stopped)
+	defer active.stop()
 	err := d.relay(active)
 	d.access.Lock()
 	active.err = err
 	active.relayed = false
+	if err != nil && active.ctx.Err() == nil {
+		d.failedAt = time.Now()
+	}
+	if d.active == active {
+		d.active = nil
+	}
 	active.readyOnce.Do(func() { close(active.ready) })
+	d.notifyLocked()
 	d.access.Unlock()
+	if d.conn.ctx.Err() == nil && !d.isActive() {
+		d.conn.connection.viewing.close()
+	}
 	if err != nil && active.ctx.Err() == nil {
 		d.conn.logger.Debug(E.Cause(err, "observe the device's lock and display notifications"))
 	}
@@ -137,7 +172,7 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
 	defer stop()
 	defer conn.Close()
-	for _, name := range append(stateNotifications, substantialTransition, screenDimmed, screenUndimmed) {
+	for _, name := range append(slices.Clone(stateNotifications), substantialTransition) {
 		if err = conn.Send(map[string]any{"Command": "ObserveNotification", "Name": name}); err != nil {
 			return E.Cause(err, "observe ", name)
 		}
@@ -145,6 +180,7 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 	d.access.Lock()
 	active.relayed = ctx.Err() == nil
 	active.readyOnce.Do(func() { close(active.ready) })
+	d.notifyLocked()
 	d.access.Unlock()
 	for {
 		message, err := conn.Receive()
@@ -167,6 +203,7 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 			switch name {
 			case displayStatus:
 				d.displayPosted++
+				d.conn.connection.checkDisplay()
 			case screenDimmed:
 				d.blanked, d.undimming = true, false
 			case screenUndimmed:
@@ -180,15 +217,11 @@ func (d *darwinNotifications) relay(active *notificationRelay) error {
 				if d.undimming {
 					d.blanked, d.undimming = false, false
 				}
+				d.conn.connection.checkDisplay()
 			}
 			d.conn.events.publish(Event{Kind: EventDevice, Name: name})
 			if slices.Contains(stateNotifications, name) {
-				for signal := range d.watchers {
-					select {
-					case signal <- struct{}{}:
-					default:
-					}
-				}
+				d.notifyLocked()
 			}
 			d.access.Unlock()
 		case "ProxyDeath":
@@ -225,10 +258,6 @@ func (p *Phone) WatchState(ctx context.Context, name string, emit func(any)) err
 		}
 		return c.backlight(ctx)
 	}
-	poll := displayPoll
-	if name == "locked" {
-		poll = lockedPoll
-	}
 	var last any
 	first := true
 	for {
@@ -238,6 +267,7 @@ func (p *Phone) WatchState(ctx context.Context, name string, emit func(any)) err
 		}
 		changed, relayed, cancel := c.darwin.watch()
 		operation, stop := c.operation(ctx)
+		_ = c.darwin.waitReady(operation)
 		for operation.Err() == nil {
 			value, err := read(operation, c)
 			switch {
@@ -247,17 +277,20 @@ func (p *Phone) WatchState(ctx context.Context, name string, emit func(any)) err
 				first, last = false, value
 				emit(value)
 			}
-			wait := poll
-			if !relayed() {
-				wait = displayPoll
+			var fallback <-chan time.Time
+			var timer *time.Timer
+			if err != nil || !relayed() {
+				timer = time.NewTimer(displayPoll)
+				fallback = timer.C
 			}
-			timer := time.NewTimer(wait)
 			select {
 			case <-changed:
-			case <-timer.C:
+			case <-fallback:
 			case <-operation.Done():
 			}
-			timer.Stop()
+			if timer != nil {
+				timer.Stop()
+			}
 		}
 		stop()
 		cancel()

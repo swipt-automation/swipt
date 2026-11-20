@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -35,8 +34,6 @@ const (
 	StateNeedsMachineAuth
 	StateRunning
 )
-
-const watchRetryDelay = time.Second
 
 var setVersion sync.Once
 
@@ -125,28 +122,47 @@ func (n *Node) Close() error {
 
 func (n *Node) watch() {
 	localBackend := n.server.ExportLocalBackend()
+	wake := make(chan struct{}, 1)
+	var (
+		access   sync.Mutex
+		messages []string
+	)
+	go localBackend.WatchNotifications(n.ctx, ipn.NotifyInitialState|ipn.NotifyInProcessNoDisconnect, nil, func(notify *ipn.Notify) bool {
+		changed := notify.State != nil || notify.SelfChange != nil
+		if notify.ErrMessage != nil {
+			access.Lock()
+			messages = append(messages, *notify.ErrMessage)
+			access.Unlock()
+			changed = true
+		}
+		if changed {
+			select {
+			case wake <- struct{}{}:
+			default:
+			}
+		}
+		return true
+	})
 	var reported *Status
 	for {
-		localBackend.WatchNotifications(n.ctx, ipn.NotifyInitialState, nil, func(notify *ipn.Notify) bool {
-			if notify.ErrMessage != nil {
-				err := E.New("tailscale: ", *notify.ErrMessage)
-				n.logger.Error(err)
-				n.onError(err)
-			}
-			if notify.State == nil && notify.SelfChange == nil {
-				return true
-			}
-			status := n.status()
-			if reported == nil || !status.equal(*reported) {
-				reported = &status
-				n.onStatus(status)
-			}
-			return true
-		})
 		select {
 		case <-n.ctx.Done():
 			return
-		case <-time.After(watchRetryDelay):
+		case <-wake:
+		}
+		access.Lock()
+		pending := messages
+		messages = nil
+		access.Unlock()
+		for _, message := range pending {
+			err := E.New("tailscale: ", message)
+			n.logger.Error(err)
+			n.onError(err)
+		}
+		status := n.status()
+		if reported == nil || !status.equal(*reported) {
+			reported = &status
+			n.onStatus(status)
 		}
 	}
 }

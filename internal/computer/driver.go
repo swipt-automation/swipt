@@ -57,6 +57,12 @@ func Run(ctx context.Context, options Options) error {
 	url := func(host string) string {
 		return "http://" + net.JoinHostPort(host, strconv.Itoa(stored.Port))
 	}
+	var stopAdvertising func()
+	defer func() {
+		if stopAdvertising != nil {
+			stopAdvertising()
+		}
+	}()
 	held, err := acquire(filepath.Join(directory, lockName))
 	if err != nil {
 		return err
@@ -92,11 +98,11 @@ func Run(ctx context.Context, options Options) error {
 		if options.Token != "" {
 			txt[discovery.AuthenticatesKey] = "1"
 		}
-		host, stopAdvertising, err := advertise(ctx, name, uint16(stored.Port), txt)
+		var host string
+		host, stopAdvertising, err = advertise(ctx, name, uint16(stored.Port), txt)
 		if err != nil {
 			return err
 		}
-		defer stopAdvertising()
 		serving.Network = url(host)
 	}
 
@@ -135,11 +141,32 @@ func Run(ctx context.Context, options Options) error {
 	defer swiplets.Close()
 
 	stop := make(chan struct{})
-	var stopOnce sync.Once
+	released := make(chan struct{})
+	var stopOnce, releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			swiplets.Close()
+			_ = connection.Close()
+			pairer.Close()
+			_ = held.Close()
+			if stopAdvertising != nil {
+				stopAdvertising()
+				stopAdvertising = nil
+			}
+			close(released)
+		})
+	}
+	defer release()
 	server := api.New(api.Options{
 		Device: connection, Swiplets: swiplets, Logs: options.Logs, Logger: options.Logs.NewLogger("api"),
 		AppVersion: options.Version,
-		Shutdown:   func() { stopOnce.Do(func() { close(stop) }) },
+		Shutdown: func(reqCtx context.Context) {
+			stopOnce.Do(func() { close(stop) })
+			select {
+			case <-released:
+			case <-reqCtx.Done():
+			}
+		},
 	})
 	var credential *api.Credential
 	if options.Token != "" {
@@ -158,6 +185,7 @@ func Run(ctx context.Context, options Options) error {
 			return E.Cause(err, "serve the API")
 		}
 	}
+	release()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
 	defer cancel()
 	if err = server.Shutdown(shutdownCtx); err != nil {

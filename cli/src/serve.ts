@@ -111,7 +111,7 @@ async function takeOver(context: PromptContext, device: Device) {
       serves,
     );
     await step(t("serve.stoppingDriver", parameters), () =>
-      stopDriver(driving.url, device.udid, context.signal),
+      stopDriver(driving.url, context.signal),
     );
   }
   if (running.length > 0) {

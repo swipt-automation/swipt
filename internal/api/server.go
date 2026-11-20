@@ -68,7 +68,7 @@ type Options struct {
 	Logger     logger.ContextLogger
 	AppVersion string
 	AppBuild   string
-	Shutdown   func()
+	Shutdown   func(context.Context)
 }
 
 type Server struct {

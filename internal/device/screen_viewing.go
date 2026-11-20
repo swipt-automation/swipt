@@ -59,6 +59,10 @@ func (v *screenViewing) ended(c *conn, stopping time.Time) {
 		v.release = v.connection.hold()
 	}
 	v.access.Unlock()
+	if c.ctx.Err() == nil && !c.darwin.isActive() {
+		v.close()
+		return
+	}
 	v.connection.logger.Debug("waiting for the next unlock to dismiss the screen-viewing banner")
 	if current := v.connection.currentConn(); current != nil {
 		select {
@@ -130,7 +134,7 @@ func (v *screenViewing) unlocked(c *conn, at time.Time) {
 	}()
 }
 
-func (c *conn) watchScreenViewing(received <-chan Event, stop func(), relayDone <-chan struct{}) {
+func (c *conn) watchScreenViewing(received <-chan Event, stop func()) {
 	defer stop()
 	var unlocked time.Time
 	for {
@@ -155,11 +159,6 @@ func (c *conn) watchScreenViewing(received <-chan Event, stop func(), relayDone 
 				unlocked = event.at
 			}
 		case <-c.viewingWake:
-		case <-relayDone:
-			if c.ctx.Err() == nil {
-				c.connection.viewing.close()
-			}
-			return
 		case <-c.ctx.Done():
 			return
 		}

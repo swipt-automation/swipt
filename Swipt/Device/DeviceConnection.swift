@@ -129,9 +129,23 @@ final class DeviceConnection {
         pathMonitor = monitor
     }
 
+    private func syncAttachedTunnel() {
+        let throughLocalNetwork = device.loopbackAddress()?.localNetwork ?? false
+        if tunnelFound != true {
+            tunnelFound = true
+        }
+        if tunnelThroughLocalNetwork != throughLocalNetwork {
+            tunnelThroughLocalNetwork = throughLocalNetwork
+        }
+    }
+
     private func probe() {
         probeTask?.cancel()
         probeTask = nil
+        if phase.isAttached {
+            syncAttachedTunnel()
+            return
+        }
         if usesCellular, tunnelFound != false {
             tunnelFound = false
         }
@@ -139,38 +153,33 @@ final class DeviceConnection {
         probeTask = Task {
             var reportedFailure: String?
             while !Task.isCancelled {
-                let found: Bool
-                let throughLocalNetwork: Bool
                 if phase.isAttached {
-                    found = true
-                    throughLocalNetwork = device.loopbackAddress()?.localNetwork ?? false
-                } else {
-                    let port = remotePairing.port ?? 0
-                    let probe = UncheckedSendable(value: LibSwiptNewLoopbackProbe(Int32(port))!)
-                    let result = await withTaskCancellationHandler {
-                        do {
-                            let localNetwork = try await blocking { try probe.value.run().localNetwork }
-                            return (found: true, localNetwork: localNetwork, failure: String?.none)
-                        } catch {
-                            return (found: false, localNetwork: false, failure: error.localizedDescription)
-                        }
-                    } onCancel: {
-                        probe.value.cancel()
+                    syncAttachedTunnel()
+                    return
+                }
+                let port = remotePairing.port ?? 0
+                let probe = UncheckedSendable(value: LibSwiptNewLoopbackProbe(Int32(port))!)
+                let result = await withTaskCancellationHandler {
+                    do {
+                        let localNetwork = try await blocking { try probe.value.run().localNetwork }
+                        return (found: true, localNetwork: localNetwork, failure: String?.none)
+                    } catch {
+                        return (found: false, localNetwork: false, failure: error.localizedDescription)
                     }
-                    guard !Task.isCancelled else { return }
-                    found = result.found
-                    throughLocalNetwork = result.localNetwork
-                    if let failure = result.failure, failure != reportedFailure {
-                        Self.logger.notice("Look for the tunnel: \(failure, privacy: .public)")
-                    }
-                    reportedFailure = result.failure
+                } onCancel: {
+                    probe.value.cancel()
                 }
-                if tunnelFound != found {
-                    tunnelFound = found
+                guard !Task.isCancelled else { return }
+                if tunnelFound != result.found {
+                    tunnelFound = result.found
                 }
-                if tunnelThroughLocalNetwork != throughLocalNetwork {
-                    tunnelThroughLocalNetwork = throughLocalNetwork
+                if tunnelThroughLocalNetwork != result.localNetwork {
+                    tunnelThroughLocalNetwork = result.localNetwork
                 }
+                if let failure = result.failure, failure != reportedFailure {
+                    Self.logger.notice("Look for the tunnel: \(failure, privacy: .public)")
+                }
+                reportedFailure = result.failure
                 try? await Task.sleep(seconds: 2)
             }
         }
@@ -254,7 +263,11 @@ final class DeviceConnection {
         default:
             phase = change.errorCode == LibSwiptDeviceErrorNone ? .idle : .failed
         }
-        if wasAttached, !phase.isAttached {
+        if phase.isAttached {
+            probeTask?.cancel()
+            probeTask = nil
+            syncAttachedTunnel()
+        } else if wasAttached {
             probe()
         }
     }

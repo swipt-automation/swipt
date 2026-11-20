@@ -159,3 +159,58 @@ func Dial(ctx context.Context, device uint64, port uint16) (net.Conn, error) {
 	conn, _, err := open(ctx, map[string]any{"MessageType": "Connect", "DeviceID": device, "PortNumber": port<<8 | port>>8})
 	return conn, err
 }
+
+func Listen(ctx context.Context, onDevice func(Device) bool) (err error) {
+	conn, _, err := open(ctx, map[string]any{"MessageType": "Listen"})
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	stop := context.AfterFunc(ctx, func() {
+		_ = conn.Close()
+	})
+	defer func() {
+		if !stop() {
+			err = ctx.Err()
+		}
+	}()
+	attached := make(map[uint64]Device)
+	for {
+		var reply header
+		if err = binary.Read(conn, binary.LittleEndian, &reply); err != nil {
+			return E.Cause(err, "usbmuxd: read Listen")
+		}
+		if reply.Length < 16 {
+			return E.New("usbmuxd: bad reply length ", reply.Length)
+		}
+		payload := make([]byte, reply.Length-16)
+		if _, err = io.ReadFull(conn, payload); err != nil {
+			return E.Cause(err, "usbmuxd: read Listen")
+		}
+		var message map[string]any
+		if _, err = plist.Unmarshal(payload, &message); err != nil {
+			return E.Cause(err, "usbmuxd: decode Listen")
+		}
+		id, _ := message["DeviceID"].(uint64)
+		switch message["MessageType"] {
+		case "Attached":
+			properties, _ := message["Properties"].(map[string]any)
+			udid, _ := properties["SerialNumber"].(string)
+			connection, _ := properties["ConnectionType"].(string)
+			if id == 0 || udid == "" {
+				continue
+			}
+			device := Device{ID: id, UDID: udid, Connection: connection}
+			attached[id] = device
+			if onDevice(device) {
+				return nil
+			}
+		case "Paired":
+			if device, known := attached[id]; known && onDevice(device) {
+				return nil
+			}
+		case "Detached":
+			delete(attached, id)
+		}
+	}
+}

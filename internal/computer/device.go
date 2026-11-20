@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net"
 	"slices"
+	"sync"
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -15,6 +16,7 @@ import (
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/jsc"
 	"github.com/swipt-automation/swipt/internal/log"
+	"github.com/swipt-automation/swipt/internal/mdns"
 	"github.com/swipt-automation/swipt/internal/rfb"
 	"github.com/swipt-automation/swipt/internal/usbmuxd"
 )
@@ -115,6 +117,76 @@ func connect(udid string, logger log.ContextLogger) func(ctx context.Context) (*
 		}
 		return found.connect(ctx, logger)
 	}
+}
+
+func WaitPeer(ctx context.Context, udid string) error {
+	waitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var (
+		access   sync.Mutex
+		matched  bool
+		failures []error
+		tasks    sync.WaitGroup
+	)
+	found := func() {
+		access.Lock()
+		matched = true
+		access.Unlock()
+		cancel()
+	}
+	fail := func(err error) {
+		if err == nil {
+			return
+		}
+		access.Lock()
+		failures = append(failures, err)
+		access.Unlock()
+	}
+	records, err := remotePairings()
+	if err != nil {
+		fail(err)
+	}
+	record := records[udid]
+	tasks.Go(func() {
+		err := usbmuxd.Listen(waitCtx, func(it usbmuxd.Device) bool {
+			if it.UDID != udid {
+				return false
+			}
+			if _, err := usbmuxd.ReadPairRecord(waitCtx, udid); err != nil {
+				return false
+			}
+			found()
+			return true
+		})
+		if waitCtx.Err() == nil && (!errors.Is(err, usbmuxd.ErrUnavailable) || record == nil) {
+			fail(err)
+		}
+	})
+	if record != nil {
+		tasks.Go(func() {
+			err := mdns.Browse(waitCtx, remotePairingService, func(service mdns.Service) bool {
+				if !record.MatchesService(service.Text["identifier"], service.Text["authTag"]) {
+					return false
+				}
+				found()
+				return true
+			})
+			if waitCtx.Err() == nil {
+				fail(err)
+			}
+		})
+	}
+	tasks.Wait()
+	if matched {
+		return nil
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if err := E.Errors(failures...); err != nil {
+		return err
+	}
+	return E.Extend(ErrDeviceNotListed, udid)
 }
 
 type Session struct {

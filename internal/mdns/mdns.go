@@ -10,6 +10,7 @@ import (
 
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/netwatch"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -57,6 +58,8 @@ func Browse(ctx context.Context, serviceType string, found func(Service) bool) e
 		asked:     make(map[question]bool),
 	}
 	defer b.transport.close()
+	changes, watchErr := netwatch.Watch(ctx)
+	pollLinks := watchErr != nil
 	if err = b.transport.refresh(ctx); err != nil {
 		return err
 	}
@@ -67,8 +70,18 @@ func Browse(ctx context.Context, serviceType string, found func(Service) bool) e
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
+		case _, ok := <-changes:
+			if !ok {
+				changes = nil
+				pollLinks = true
+				continue
+			}
 			_ = b.transport.refresh(ctx)
+			err = b.query(true)
+		case <-ticker.C:
+			if pollLinks {
+				_ = b.transport.refresh(ctx)
+			}
 			err = b.query(true)
 		case received := <-b.transport.packets:
 			if b.receive(received, found) {

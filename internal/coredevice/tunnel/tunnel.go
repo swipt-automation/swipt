@@ -112,8 +112,6 @@ const maxWrite = 256 << 10
 // USB).
 const maxRecord = 8192
 
-const retryDelay = time.Millisecond
-
 type Tunnel struct {
 	conn          net.Conn
 	reader        *bufio.Reader
@@ -238,8 +236,6 @@ func (t *Tunnel) write(data []byte) bool {
 func (t *Tunnel) readLoop() {
 	packets := make([][]byte, 0, batchSize)
 	lengths := make([]int, 0, batchSize)
-	retry := time.NewTimer(retryDelay)
-	retry.Stop()
 	var tooLong uint64
 	for {
 		length, err := t.peekPacket(0, true)
@@ -274,7 +270,7 @@ func (t *Tunnel) readLoop() {
 			}
 			packets = append(packets, packet)
 		}
-		err = t.deliver(packets, retry)
+		err = t.deliver(packets)
 		if err != nil {
 			t.fail(err)
 			return
@@ -306,28 +302,22 @@ func (t *Tunnel) peekPacket(offset int, wait bool) (int, error) {
 	return length, nil
 }
 
-// sing-tun MemoryTun.WritePackets copies accepted packets and reports
-// their count; a full queue accepts none
-// (sing-tun v0.9.7-0.20261002083955-3f8acd9da65b, tun_memory.go:101-133).
-func (t *Tunnel) deliver(packets [][]byte, retry *time.Timer) error {
-	for len(packets) > 0 {
-		accepted, err := t.device.WritePackets(packets)
-		if err != nil {
-			return err
-		}
-		packets = packets[accepted:]
-		if len(packets) == 0 {
-			return nil
-		}
-		retry.Reset(retryDelay)
-		select {
-		case <-t.done:
-			retry.Stop()
-			return net.ErrClosed
-		case <-retry.C:
-		}
+// sing-tun MemoryTun.WaitWritePackets returns nil when the stack detaches
+// before the TUN closes (sing-tun v0.9.7-0.20261028024126-5b0a1a7a394e,
+// tun_memory.go:118-121, 140-143; stack_go_io_memory.go:254-260).
+func (t *Tunnel) deliver(packets [][]byte) error {
+	if len(packets) == 0 {
+		return nil
 	}
-	return nil
+	if err := t.device.WaitWritePackets(packets); err != nil {
+		return err
+	}
+	select {
+	case <-t.done:
+		return net.ErrClosed
+	default:
+		return nil
+	}
 }
 
 func (t *Tunnel) fail(err error) {

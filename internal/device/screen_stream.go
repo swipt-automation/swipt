@@ -377,6 +377,7 @@ func (s *screenStreams) observe(packet []byte, arrival time.Time) {
 	at := arrival.UnixNano()
 	if s.orientation.Swap(int32(orientation)+1) != int32(orientation)+1 {
 		s.oriented.Store(at)
+		s.connection.checkDisplay()
 	}
 	s.seen.Store(at)
 }

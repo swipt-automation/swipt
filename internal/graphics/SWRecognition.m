@@ -13,8 +13,6 @@
 
 static const double SWGlyphPixels = 24;
 
-static const uint64_t SWCancelPollInterval = 20 * NSEC_PER_MSEC;
-
 typedef CGPoint (^SWPlacePoint)(CGPoint point);
 
 static NSDictionary<NSString *, id> *SWShape(VNRectangleObservation *observation, SWPlacePoint place) {
@@ -145,29 +143,34 @@ static NSArray<NSString *> *SWDeviceLanguages(VNRecognizeTextRequest *request, N
 }
 
 static BOOL SWPerform(VNRequest *request, SWRaster *raster, SWCancelToken *token, NSError **error) {
+    if ([token failIfCancelled:error]) {
+        return NO;
+    }
     CGImageRef image = SWRasterCreateImage(raster, error);
     if (image == NULL) {
         return NO;
     }
     VNImageRequestHandler *handler = [[VNImageRequestHandler alloc] initWithCGImage:image options:@{}];
-    dispatch_source_t watch = nil;
-    if (token != nil) {
-        watch = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0));
-        dispatch_source_set_timer(watch, DISPATCH_TIME_NOW, SWCancelPollInterval, SWCancelPollInterval / 4);
-        dispatch_source_set_event_handler(watch, ^{
-            if (token.isCancelled) {
-                [request cancel];
-            }
-        });
-        dispatch_resume(watch);
+    void (^stop)(void) = [token whenCancelled:^{
+        [request cancel];
+    }];
+    if ([token failIfCancelled:error]) {
+        if (stop != nil) {
+            stop();
+        }
+        CGImageRelease(image);
+        return NO;
     }
     NSError *failure = nil;
     BOOL performed = [handler performRequests:@[request] error:&failure];
-    if (watch != nil) {
-        dispatch_source_cancel(watch);
+    if (stop != nil) {
+        stop();
     }
     CGImageRelease(image);
-    if (!performed && ![token failIfCancelled:error]) {
+    if ([token failIfCancelled:error]) {
+        return NO;
+    }
+    if (!performed) {
         SWFailCause(error, SWErrorNameGeneric, failure, @"graphics: run %@", NSStringFromClass(request.class));
     }
     return performed;

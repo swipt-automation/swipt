@@ -3,6 +3,7 @@
 @interface SWCancelToken : NSObject
 @property (nonatomic, readonly) BOOL isCancelled;
 
-- (instancetype)initWithCancelled:(BOOL (^)(void))cancelled;
+- (void)cancel;
+- (void (^)(void))whenCancelled:(void (^)(void))handler;
 - (BOOL)failIfCancelled:(NSError **)error;
 @end

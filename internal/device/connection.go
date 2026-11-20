@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/netip"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	"github.com/swipt-automation/swipt/internal/coredevice"
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
+	"github.com/swipt-automation/swipt/internal/netwatch"
 	"github.com/swipt-automation/swipt/internal/rfb"
 	"github.com/swipt-automation/swipt/internal/version"
 )
@@ -689,14 +691,50 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	return &Error{Problem: ProblemNoTunnel, Err: E.Cause(device.Err(), "device connection lost")}
 }
 
+func (s *Connection) routeChanged(local, remote netip.AddrPort) bool {
+	conn, err := net.DialUDP("udp", nil, net.UDPAddrFromAddrPort(remote))
+	if err != nil {
+		return false
+	}
+	current := M.AddrPortFromNet(conn.LocalAddr()).Addr().Unmap()
+	_ = conn.Close()
+	if current != local.Addr().Unmap() {
+		s.logger.Debug("device route changed from ", local.Addr(), " to ", current)
+		return true
+	}
+	return false
+}
+
 func (s *Connection) watchRoute(session context.Context, device *coredevice.Device) error {
 	local, remote := device.TransportAddr()
 	routed := local.IsValid() && remote.IsValid()
-	var tick <-chan time.Time
+	watchCtx, stopWatch := context.WithCancel(session)
+	defer stopWatch()
+	var (
+		changes <-chan struct{}
+		ticker  *time.Ticker
+		tick    <-chan time.Time
+	)
+	defer func() {
+		if ticker != nil {
+			ticker.Stop()
+		}
+	}()
+	startTicker := func() {
+		if ticker == nil && s.options.Reachable == nil {
+			ticker = time.NewTicker(routeCheckInterval)
+			tick = ticker.C
+		}
+	}
 	if routed {
-		ticker := time.NewTicker(routeCheckInterval)
-		defer ticker.Stop()
-		tick = ticker.C
+		var err error
+		changes, err = netwatch.Watch(watchCtx)
+		if err != nil {
+			startTicker()
+		}
+		if s.routeChanged(local, remote) {
+			return errRerouted
+		}
 	}
 	for {
 		var requested bool
@@ -705,20 +743,18 @@ func (s *Connection) watchRoute(session context.Context, device *coredevice.Devi
 			return nil
 		case <-session.Done():
 			return nil
+		case _, ok := <-changes:
+			if !ok {
+				changes = nil
+				startTicker()
+				continue
+			}
 		case <-tick:
 		case <-s.routeCheck:
 			requested = true
 		}
-		if routed {
-			conn, err := net.DialUDP("udp", nil, net.UDPAddrFromAddrPort(remote))
-			if err == nil {
-				current := M.AddrPortFromNet(conn.LocalAddr()).Addr().Unmap()
-				_ = conn.Close()
-				if current != local.Addr().Unmap() {
-					s.logger.Debug("device route changed from ", local.Addr(), " to ", current)
-					return errRerouted
-				}
-			}
+		if routed && s.routeChanged(local, remote) {
+			return errRerouted
 		}
 		if requested && s.options.Reachable != nil {
 			err := s.options.Reachable(session)
@@ -764,7 +800,7 @@ func (s *Connection) attach(session context.Context, device *coredevice.Device, 
 	s.wakeWaitersLocked()
 	s.access.Unlock()
 	go s.input.prepareTouches(c)
-	go s.pollDisplay(c)
+	go s.watchDisplay(c)
 	s.clip.update()
 	s.phone.attached(c)
 	return c
@@ -793,26 +829,41 @@ func (s *Connection) currentConn() *conn {
 	return nil
 }
 
-func (s *Connection) pollDisplay(c *conn) {
-	timer := time.NewTimer(displayPollInterval)
-	defer timer.Stop()
+func (s *Connection) watchDisplay(c *conn) {
+	changed, relayed, cancel := c.darwin.watch()
+	defer cancel()
+	_ = c.darwin.waitReady(c.ctx)
+	settle := time.NewTimer(displaySettleDelay)
+	settle.Stop()
+	defer settle.Stop()
+	fallback := time.NewTimer(displayPollInterval)
+	fallback.Stop()
+	defer fallback.Stop()
+	var settleC, fallbackC <-chan time.Time
 	for {
-		next := displayPollInterval
+		if !relayed() && fallbackC == nil {
+			fallback.Reset(displayPollInterval)
+			fallbackC = fallback.C
+		}
 		select {
 		case <-c.ctx.Done():
 			return
 		case <-s.displayWake:
-			next = displaySettleDelay
-		case <-timer.C:
+			settle.Reset(displaySettleDelay)
+			settleC = settle.C
+		case <-settleC:
+			settleC = nil
+		case <-changed:
+			continue
+		case <-fallbackC:
+			fallbackC = nil
 			if !s.streams.showing() {
-				timer.Reset(displayPollInterval)
 				continue
 			}
 		}
 		if _, err := c.activeDisplay(c.ctx); err != nil && c.ctx.Err() == nil {
 			s.logger.Debug(err)
 		}
-		timer.Reset(next)
 	}
 }
 

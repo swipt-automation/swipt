@@ -65,10 +65,7 @@ func newConn(s *Connection, session context.Context, device *coredevice.Device, 
 		return event.Kind == EventDevice && event.Name == keybagLockStatus
 	})
 	_, _, unwatch := c.darwin.watch()
-	c.darwin.access.Lock()
-	relayDone := c.darwin.active.stopped
-	c.darwin.access.Unlock()
-	go c.watchScreenViewing(received, func() { unsubscribe(); unwatch() }, relayDone)
+	go c.watchScreenViewing(received, func() { unsubscribe(); unwatch() })
 	go c.ax.run()
 	c.front.start()
 	go func() { _, _ = c.lockState.recent(ctx) }()

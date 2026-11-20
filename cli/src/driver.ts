@@ -536,3 +536,8 @@ export const provisioningProfiles = (device: Device) =>
 
 export const mountDiskImage = (device: Device) =>
   onDevice(device, "mount", ["--disk-image", diskImage()]);
+
+export async function waitForDevice(device: Device, signal: AbortSignal) {
+  await onDevice(device, "wait", [], { signal });
+  signal.throwIfAborted();
+}

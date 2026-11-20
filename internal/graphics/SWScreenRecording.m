@@ -73,7 +73,32 @@ static BOOL SWAppendFrame(AVAssetWriter *writer, AVAssetWriterInputPixelBufferAd
 
 static const double SWExportFrameRate = 30;
 
+@interface SWWriterObserver : NSObject
+- (instancetype)initWithChanged:(dispatch_block_t)changed;
+@end
+
+@implementation SWWriterObserver {
+    dispatch_block_t _changed;
+}
+
+- (instancetype)initWithChanged:(dispatch_block_t)changed {
+    self = [super init];
+    if (self) {
+        _changed = [changed copy];
+    }
+    return self;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context {
+    _changed();
+}
+
+@end
+
 static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, SWExportFrame frame, SWCancelToken *token, NSError **error) {
+    if ([token failIfCancelled:error]) {
+        return NO;
+    }
     SWRaster *first = frame(times[0].doubleValue, error);
     if (first == nil) {
         return NO;
@@ -103,46 +128,99 @@ static BOOL SWExportMovie(NSURL *target, BOOL mov, NSArray<NSNumber *> *times, S
         return NO;
     }
     [writer startSessionAtSourceTime:kCMTimeZero];
-    NSError *failure = nil;
-    for (NSUInteger index = 0; index < times.count && failure == nil; index++) {
-        @autoreleasepool {
-            if ([token failIfCancelled:&failure]) {
-                break;
-            }
-            double time = times[index].doubleValue;
-            SWRaster *raster = index == 0 ? first : frame(time, &failure);
-            if (raster != nil && (raster.width != first.width || raster.height != first.height)) {
-                double scale = MIN((double)first.width / raster.width, (double)first.height / raster.height);
-                NSInteger width = MIN(MAX(lround(raster.width * scale), 1), first.width);
-                NSInteger height = MIN(MAX(lround(raster.height * scale), 1), first.height);
-                raster = SWRasterResized(raster, width, height, &failure);
-            }
-            if (raster == nil) {
-                break;
-            }
-            while (!input.isReadyForMoreMediaData && failure == nil) {
-                if (writer.status != AVAssetWriterStatusWriting) {
-                    SWFailCause(&failure, SWErrorNameGeneric, writer.error, @"graphics: write the video");
-                } else if (![token failIfCancelled:&failure]) {
-                    usleep(2000);
+    dispatch_queue_t queue = dispatch_queue_create("swipt.export", DISPATCH_QUEUE_SERIAL);
+    dispatch_semaphore_t finished = dispatch_semaphore_create(0);
+    __block NSUInteger index = 0;
+    __block BOOL ended = NO;
+    __block NSError *failure = nil;
+    void (^fail)(NSError *) = ^(NSError *reason) {
+        if (ended) {
+            return;
+        }
+        ended = YES;
+        failure = reason;
+        [writer cancelWriting];
+        dispatch_semaphore_signal(finished);
+    };
+    void (^checkWriter)(void) = ^{
+        if (ended || writer.status == AVAssetWriterStatusWriting) {
+            return;
+        }
+        NSError *stepFailure = nil;
+        SWFailCause(&stepFailure, SWErrorNameGeneric, writer.error, @"graphics: write the video");
+        fail(stepFailure);
+    };
+    SWWriterObserver *observer = [[SWWriterObserver alloc] initWithChanged:^{
+        dispatch_async(queue, checkWriter);
+    }];
+    __block void (^stopCancel)(void) = nil;
+    __block BOOL observing = NO;
+    dispatch_sync(queue, ^{
+        NSError *cancelled = nil;
+        if ([token failIfCancelled:&cancelled]) {
+            fail(cancelled);
+            return;
+        }
+        if (writer.status != AVAssetWriterStatusWriting) {
+            checkWriter();
+            return;
+        }
+        [writer addObserver:observer forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:NULL];
+        observing = YES;
+        [input requestMediaDataWhenReadyOnQueue:queue usingBlock:^{
+            while (!ended && input.isReadyForMoreMediaData) {
+                @autoreleasepool {
+                    NSError *stepFailure = nil;
+                    if ([token failIfCancelled:&stepFailure]) {
+                        fail(stepFailure);
+                        return;
+                    }
+                    if (index >= times.count) {
+                        ended = YES;
+                        [input markAsFinished];
+                        [writer finishWritingWithCompletionHandler:^{
+                            dispatch_semaphore_signal(finished);
+                        }];
+                        return;
+                    }
+                    double time = times[index].doubleValue;
+                    SWRaster *raster = index == 0 ? first : frame(time, &stepFailure);
+                    if (raster != nil && (raster.width != first.width || raster.height != first.height)) {
+                        double scale = MIN((double)first.width / raster.width, (double)first.height / raster.height);
+                        NSInteger width = MIN(MAX(lround(raster.width * scale), 1), first.width);
+                        NSInteger height = MIN(MAX(lround(raster.height * scale), 1), first.height);
+                        raster = SWRasterResized(raster, width, height, &stepFailure);
+                    }
+                    if (raster == nil || [token failIfCancelled:&stepFailure] || !SWAppendFrame(writer, adaptor, raster, CMTimeMake((int64_t)round(time), 1000), &stepFailure)) {
+                        fail(stepFailure);
+                        return;
+                    }
+                    index++;
                 }
             }
-            if (failure == nil) {
-                SWAppendFrame(writer, adaptor, raster, CMTimeMake((int64_t)round(time), 1000), &failure);
-            }
-        }
+            checkWriter();
+        }];
+        stopCancel = [token whenCancelled:^{
+            dispatch_async(queue, ^{
+                NSError *stepFailure = nil;
+                if (!ended && [token failIfCancelled:&stepFailure]) {
+                    fail(stepFailure);
+                }
+            });
+        }];
+    });
+    dispatch_semaphore_wait(finished, DISPATCH_TIME_FOREVER);
+    if (stopCancel != nil) {
+        stopCancel();
     }
+    if (observing) {
+        [writer removeObserver:observer forKeyPath:@"status"];
+    }
+    dispatch_sync(queue, ^{});
     if (failure != nil) {
-        [writer cancelWriting];
         SWFailWith(error, failure);
         return NO;
     }
-    [input markAsFinished];
-    dispatch_semaphore_t finished = dispatch_semaphore_create(0);
-    [writer finishWritingWithCompletionHandler:^{
-        dispatch_semaphore_signal(finished);
-    }];
-    dispatch_semaphore_wait(finished, DISPATCH_TIME_FOREVER);
     if (writer.status != AVAssetWriterStatusCompleted) {
         SWFailCause(error, SWErrorNameGeneric, writer.error, @"graphics: finish the video");
         return NO;

@@ -66,7 +66,7 @@ func (s *systemService) GetInfo(context.Context, *emptypb.Empty) (*proto.GetInfo
 	}, nil
 }
 
-func (s *systemService) Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
-	s.options.Shutdown()
+func (s *systemService) Shutdown(ctx context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
+	s.options.Shutdown(ctx)
 	return &emptypb.Empty{}, nil
 }

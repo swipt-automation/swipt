@@ -8,16 +8,93 @@ const springboard = "com.apple.springboard";
 const developerPattern =
   /(?:Apple Development|iPhone Developer): .+?\([A-Z0-9]{10}\)/;
 
-const sheet = (timeoutMs) =>
+const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const sheet = (timeoutMs, signal) =>
   accessibility.find(
     { app: springboard, role: "sheet", label: /./ },
-    { timeoutMs, poll: true },
+    { timeoutMs, signal },
   );
 
-const inSettings = (selector, timeoutMs) =>
-  accessibility.find({ app: settings, ...selector }, { timeoutMs, poll: true });
+const sheetGone = (label, timeoutMs, signal) =>
+  accessibility.find(
+    {
+      app: springboard,
+      role: "application",
+      not: { has: { role: "sheet", label } },
+    },
+    { timeoutMs, signal },
+  );
 
-const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+async function matchingSheet(accept, timeoutMs, signal) {
+  const until = Date.now() + (timeoutMs ?? 0);
+  for (;;) {
+    const remaining = Math.max(until - Date.now(), 0);
+    const alert = await sheet(remaining, signal);
+    if (alert === null) {
+      return null;
+    }
+    if (accept(alert)) {
+      return alert;
+    }
+    const left = until - Date.now();
+    if (left <= 0) {
+      return null;
+    }
+    if ((await sheetGone(alert.label, left, signal)) === null) {
+      return null;
+    }
+  }
+}
+
+const promptSheet = (timeoutMs, signal) =>
+  matchingSheet(
+    (alert) =>
+      Boolean(alert.label?.includes(name)) &&
+      [2, 3].includes(alert.findAll({ role: "button" }).length),
+    timeoutMs,
+    signal,
+  );
+
+const inSettings = (selector, timeoutMs, signal) =>
+  accessibility.find({ app: settings, ...selector }, { timeoutMs, signal });
+
+async function firstFound(branches, timeoutMs) {
+  const stop = new AbortController();
+  let pending = branches.length;
+  return new Promise((resolve, reject) => {
+    if (pending === 0) {
+      resolve(null);
+      return;
+    }
+    for (const branch of branches) {
+      Promise.resolve(branch(timeoutMs, stop.signal)).then(
+        (found) => {
+          if (found !== null) {
+            stop.abort();
+            resolve(found);
+            return;
+          }
+          pending -= 1;
+          if (pending === 0) {
+            resolve(null);
+          }
+        },
+        (error) => {
+          if (stop.signal.aborted && error?.name === "AbortError") {
+            pending -= 1;
+            if (pending === 0) {
+              resolve(null);
+            }
+            return;
+          }
+          stop.abort();
+          reject(error);
+        },
+      );
+    }
+  });
+}
 
 async function tap(element) {
   try {
@@ -31,32 +108,25 @@ async function tap(element) {
 
 async function dismiss(alert, index) {
   const until = Date.now() + 10_000;
-  let absent = 0;
-  do {
+  for (;;) {
     const shown = await sheet();
-    if (shown === null) {
-      absent += 1;
-      if (absent === 2) {
-        return;
-      }
-      continue;
-    }
-    if (shown.label !== alert.label) {
+    if (shown === null || shown.label !== alert.label) {
       return;
     }
-    absent = 0;
+    const remaining = until - Date.now();
+    if (remaining <= 0) {
+      throw new Error(`the alert stays: ${alert.label}`);
+    }
     await tap(shown.findAll({ role: "button" })[index]);
-  } while (Date.now() < until);
-  throw new Error(`the alert stays: ${alert.label}`);
+    if ((await sheetGone(alert.label, Math.min(remaining, 1_000))) !== null) {
+      return;
+    }
+  }
 }
 
-async function answerPrompt() {
-  if (!autoAllow) {
-    return false;
-  }
-  const alert = await sheet();
-  const buttons = alert?.findAll({ role: "button" }) ?? [];
-  if (alert?.label?.includes(name) && [2, 3].includes(buttons.length)) {
+async function dismissPrompt(alert) {
+  const buttons = alert.findAll({ role: "button" });
+  if (alert.label?.includes(name) && [2, 3].includes(buttons.length)) {
     // The location alert shows an icon and lists Allow Once first; the cellular
     // data alert of China mainland devices shows none and lists Wi-Fi and
     // cellular first (iOS 27.2 24B115). The background location upgrade alert
@@ -64,27 +134,36 @@ async function answerPrompt() {
     const location = alert.findAll({ role: "image" }).length > 0;
     await dismiss(alert, buttons.length === 2 || location ? 1 : 0);
   }
+}
+
+async function answerPrompt() {
+  if (!autoAllow) {
+    return false;
+  }
+  const alert = await sheet();
+  if (alert !== null) {
+    await dismissPrompt(alert);
+  }
   return alert !== null;
 }
 
 async function untrustedDeveloper() {
-  const until = Date.now() + 5_000;
-  do {
-    const alert = await sheet(Math.max(until - Date.now(), 0));
-    const buttons = alert?.findAll({ role: "button" }) ?? [];
-    if (buttons.length === 1) {
-      const developer = alert
-        .findAll({ role: "text" })
-        .map((text) => developerPattern.exec(text.label ?? "")?.[0])
-        .find((found) => found !== undefined);
-      await dismiss(alert, 0);
-      if (developer === undefined) {
-        throw new Error(`the alert names no developer: ${alert.label}`);
-      }
-      return developer;
-    }
-  } while (Date.now() < until);
-  throw new Error(launchError);
+  const alert = await matchingSheet(
+    (shown) => shown.findAll({ role: "button" }).length === 1,
+    5_000,
+  );
+  if (alert === null) {
+    throw new Error(launchError);
+  }
+  const developer = alert
+    .findAll({ role: "text" })
+    .map((text) => developerPattern.exec(text.label ?? "")?.[0])
+    .find((found) => found !== undefined);
+  await dismiss(alert, 0);
+  if (developer === undefined) {
+    throw new Error(`the alert names no developer: ${alert.label}`);
+  }
+  return developer;
 }
 
 function developerRows(list, developer) {
@@ -129,14 +208,50 @@ async function openDeviceManagement(developer) {
     url: "prefs:root=General&path=ManagedConfigurationList",
   });
   const until = Date.now() + 10_000;
-  do {
+  while (Date.now() < until) {
+    const remaining = Math.max(until - Date.now(), 0);
+    const branches = [
+      async (timeoutMs, signal) => {
+        const candidate = await inSettings(
+          {
+            role: "button",
+            within: {
+              role: "application",
+              has: { role: "button", identifier: "VPN" },
+            },
+            not: (row) =>
+              row.identifier === undefined ||
+              row.identifier === "BackButton" ||
+              row.identifier === "VPN" ||
+              row.identifier.startsWith("com.apple.settings.") ||
+              row.identifier === row.label,
+          },
+          timeoutMs,
+          signal,
+        );
+        return candidate === null ? null : { candidate };
+      },
+    ];
+    if (autoAllow) {
+      branches.push(async (timeoutMs, signal) => {
+        const alert = await promptSheet(timeoutMs, signal);
+        return alert === null ? null : { alert };
+      });
+    }
+    const found = await firstFound(branches, remaining);
+    if (found === null) {
+      break;
+    }
+    if ("alert" in found) {
+      await dismissPrompt(found.alert);
+      continue;
+    }
     const list = await accessibility.snapshot({ scope: "frontApp" });
     const rows = developerRows(list, developer);
     if (rows.length > 0) {
       return rows;
     }
-    await answerPrompt();
-  } while (Date.now() < until);
+  }
   throw new Error(`Settings lists no app from ${developer}`);
 }
 
@@ -156,13 +271,15 @@ async function allowDeveloper(row) {
     if (shown !== null) {
       await input.tap(shown.point);
     }
-    const alert = await sheet();
-    const buttons = alert?.findAll({ role: "button" }) ?? [];
-    if (buttons.length === 2) {
+    const alert = await matchingSheet(
+      (candidate) => candidate.findAll({ role: "button" }).length === 2,
+      Math.min(Math.max(until - Date.now(), 0), 1_000),
+    );
+    if (alert !== null) {
       await dismiss(alert, 0);
-      while (
-        (await inSettings(control)) !== null &&
-        Date.now() < until + 10_000
+      await inSettings(
+        { role: "application", not: { has: control } },
+        Math.max(until + 10_000 - Date.now(), 0),
       );
       return true;
     }
@@ -178,7 +295,10 @@ async function trust(developer) {
     let opened = null;
     do {
       await tap(row);
-      opened = await inSettings(page);
+      opened = await inSettings(
+        page,
+        Math.min(Math.max(until - Date.now(), 0), 1_000),
+      );
     } while (opened === null && Date.now() < until);
     if (opened !== null && (await allowDeveloper(row))) {
       return;
@@ -208,10 +328,34 @@ async function allowLocation() {
   });
   const until = Date.now() + 10_000;
   let row = null;
-  do {
-    await answerPrompt();
-    row = await inSettings({ role: "button", identifier: id }, 500);
-  } while (row === null && Date.now() < until);
+  while (row === null && Date.now() < until) {
+    const remaining = Math.max(until - Date.now(), 0);
+    const branches = [
+      async (timeoutMs, signal) => {
+        const button = await inSettings(
+          { role: "button", identifier: id },
+          timeoutMs,
+          signal,
+        );
+        return button === null ? null : { row: button };
+      },
+    ];
+    if (autoAllow) {
+      branches.push(async (timeoutMs, signal) => {
+        const alert = await promptSheet(timeoutMs, signal);
+        return alert === null ? null : { alert };
+      });
+    }
+    const found = await firstFound(branches, remaining);
+    if (found === null) {
+      break;
+    }
+    if ("alert" in found) {
+      await dismissPrompt(found.alert);
+    } else {
+      row = found.row;
+    }
+  }
   if (row === null) {
     await device.launchApplication(id);
     return;
@@ -221,17 +365,30 @@ async function allowLocation() {
     await tap(row);
     option = await inSettings(
       { identifier: "LOCATION_SERVICES_AUTH_ALWAYS" },
-      1_000,
+      Math.min(Math.max(until - Date.now(), 0), 1_000),
     );
   } while (option === null && Date.now() < until);
   if (option !== null && !option.selected && !option.disabled) {
+    let selected = null;
     do {
-      await input.tap(option.point);
-      option = await inSettings(
-        { identifier: "LOCATION_SERVICES_AUTH_ALWAYS" },
-        1_000,
-      );
-    } while (option !== null && !option.selected && Date.now() < until);
+      const target =
+        option ??
+        (await inSettings(
+          { identifier: "LOCATION_SERVICES_AUTH_ALWAYS" },
+          Math.min(Math.max(until - Date.now(), 0), 1_000),
+        ));
+      option = null;
+      if (target !== null) {
+        if (target.selected || target.disabled) {
+          break;
+        }
+        await input.tap(target.point);
+        selected = await inSettings(
+          { identifier: "LOCATION_SERVICES_AUTH_ALWAYS", selected: true },
+          Math.min(Math.max(until - Date.now(), 0), 1_000),
+        );
+      }
+    } while (selected === null && Date.now() < until);
   }
   await device.launchApplication(id);
 }
@@ -239,13 +396,32 @@ async function allowLocation() {
 async function finishSetup() {
   const until = Date.now() + 60_000;
   let finished = null;
-  do {
+  while (finished === null && Date.now() < until) {
     try {
-      if (!(await answerPrompt())) {
-        finished = await accessibility.find({
-          app: id,
-          identifier: "setup-finished",
+      const remaining = Math.max(until - Date.now(), 0);
+      const branches = [
+        async (timeoutMs, signal) => {
+          const marker = await accessibility.find(
+            { app: id, identifier: "setup-finished" },
+            { timeoutMs, signal },
+          );
+          return marker === null ? null : { finished: marker };
+        },
+      ];
+      if (autoAllow) {
+        branches.push(async (timeoutMs, signal) => {
+          const alert = await promptSheet(timeoutMs, signal);
+          return alert === null ? null : { alert };
         });
+      }
+      const found = await firstFound(branches, remaining);
+      if (found === null) {
+        break;
+      }
+      if ("alert" in found) {
+        await dismissPrompt(found.alert);
+      } else {
+        finished = found.finished;
       }
     } catch (error) {
       if (
@@ -255,7 +431,7 @@ async function finishSetup() {
         throw error;
       }
     }
-  } while (finished === null && Date.now() < until);
+  }
   if (finished === null) {
     throw new Error(`${name} did not finish setting up`);
   }

@@ -10,7 +10,6 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 
 import select from "@inquirer/select";
@@ -42,6 +41,7 @@ import {
   terminateApp,
   trustedDevice,
   uninstallApp,
+  waitForDevice,
 } from "./driver";
 import { language, t } from "./i18n";
 import {
@@ -1410,7 +1410,7 @@ async function trustAndOpen(
               throw error;
             }
             update(t("sideload.waiting", { device: device.name }));
-            await sleep(1_000, undefined, { signal: context.signal });
+            await waitForDevice(device, context.signal);
           }
         }
         try {

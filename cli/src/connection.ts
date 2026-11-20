@@ -1,11 +1,19 @@
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import Bonjour from "bonjour-service";
 
 import type { Context } from "./cli/command";
-import { type Client, Code, RpcError, UsageError, open } from "./client";
+import {
+  type Client,
+  Code,
+  RpcError,
+  UsageError,
+  locate,
+  open,
+} from "./client";
 import { configDirectory } from "./directories";
 import { t } from "./i18n";
 import { multicastOptions } from "./mdns";
@@ -176,17 +184,104 @@ export async function findDriver(udid: string, signal: AbortSignal) {
   );
 }
 
-export async function stopDriver(
-  url: string,
-  udid: string,
-  signal: AbortSignal,
-) {
-  await open({ url, token: "" }).system.shutdown({}, { signal });
+function watchServerClose(resolvedUrl: string, signal: AbortSignal) {
+  const parsed = new URL(resolvedUrl);
+  const host = parsed.hostname.replace(/^\[|\]$/g, "");
+  const port =
+    parsed.port !== ""
+      ? Number(parsed.port)
+      : parsed.protocol === "https:"
+        ? 443
+        : 80;
+  const socket = net.connect({ host, port });
+  let shutdownDone = false;
+  let ended = false;
+  const abort = () => {
+    socket.destroy(
+      signal.reason instanceof Error
+        ? signal.reason
+        : new Error(String(signal.reason)),
+    );
+  };
+  if (signal.aborted) {
+    abort();
+  } else {
+    signal.addEventListener("abort", abort, { once: true });
+  }
+  const closed = new Promise<void>((resolve, reject) => {
+    const finish = () => {
+      ended = true;
+      socket.destroy();
+      resolve();
+    };
+    socket.once("end", finish);
+    socket.once("close", () => {
+      if (!ended && signal.aborted) {
+        reject(signal.reason);
+        return;
+      }
+      resolve();
+    });
+    socket.once("error", (error) => {
+      if (ended || (shutdownDone && !signal.aborted)) {
+        resolve();
+        return;
+      }
+      reject(error);
+    });
+  });
+  const idle = new Promise<void>((resolve, reject) => {
+    let response = "";
+    const onData = (chunk: Buffer) => {
+      response += chunk.toString("latin1");
+      if (response.includes("\r\n\r\n")) {
+        socket.off("data", onData);
+        socket.resume();
+        resolve();
+      }
+    };
+    socket.on("data", onData);
+    socket.once("connect", () => {
+      socket.write(`HEAD / HTTP/1.1\r\nHost: ${parsed.host}\r\n\r\n`);
+    });
+    socket.once("end", resolve);
+    socket.once("close", () => {
+      if (signal.aborted) {
+        reject(signal.reason);
+        return;
+      }
+      resolve();
+    });
+    socket.once("error", reject);
+  });
+  closed.catch(() => {});
+  idle.catch(() => {});
+  return {
+    idle,
+    closed,
+    markShutdown: () => {
+      shutdownDone = true;
+    },
+    dispose: () => {
+      signal.removeEventListener("abort", abort);
+      socket.destroy();
+    },
+  };
+}
+
+export async function stopDriver(url: string, signal: AbortSignal) {
   const deadline = AbortSignal.any([signal, AbortSignal.timeout(stopLimit)]);
+  let watch: ReturnType<typeof watchServerClose> | undefined;
   try {
-    while ((await findDriver(udid, deadline)) !== undefined) {
-      await sleep(browseRequery, undefined, { signal: deadline });
-    }
+    const resolved = await locate(url, deadline);
+    watch = watchServerClose(resolved, deadline);
+    await watch.idle;
+    await open({ url: resolved, token: "" }).system.shutdown(
+      {},
+      { signal: deadline },
+    );
+    watch.markShutdown();
+    await watch.closed;
   } catch (error) {
     if (signal.aborted) {
       throw error;
@@ -196,6 +291,8 @@ export async function stopDriver(
         computer: new URL(url).hostname,
       }),
     );
+  } finally {
+    watch?.dispose();
   }
 }
 

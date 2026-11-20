@@ -7,7 +7,6 @@ import (
 	"maps"
 	"slices"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -364,7 +363,6 @@ func (s *Connection) startVideo(ctx context.Context, a *conn, request media.Serv
 	info := video.Info()
 	now := time.Now()
 	source := &videoSource{connection: s, stream: &deviceStream{ctx: a.owner, device: device, stream: video, display: active.ID, video: true, owner: a}}
-	source.lastHeard.Store(now.UnixNano())
 	source.info = media.ServerVideoInfo{
 		SSRC:          info.DeviceSSRC,
 		ReceiverSSRC:  info.SSRC,
@@ -444,9 +442,7 @@ type videoSource struct {
 	connection *Connection
 	stream     *deviceStream
 	info       media.ServerVideoInfo
-	lastHeard  atomic.Int64
 
-	readContext                 context.Context
 	packets                     []display.Packet
 	depacketizer                media.Depacketizer
 	units                       []*media.AccessUnit
@@ -458,27 +454,24 @@ func (v *videoSource) Info() media.ServerVideoInfo {
 }
 
 func (v *videoSource) ReadPackets(ctx context.Context, packets []media.ServerPacket) (int, error) {
-	if v.readContext == nil {
-		readContext, cancel := context.WithCancelCause(ctx)
-		v.readContext = readContext
-		v.watchSilence(readContext, cancel)
-	}
 	if len(v.packets) < len(packets) {
 		v.packets = make([]display.Packet, len(packets))
 	}
-	n, err := v.stream.stream.ReadPackets(v.readContext, v.packets[:len(packets)])
+	readContext, cancel := context.WithTimeoutCause(ctx, silenceLimit, errVideoSilent)
+	n, err := v.stream.stream.ReadPackets(readContext, v.packets[:len(packets)])
+	cause := context.Cause(readContext)
+	cancel()
 	if err != nil {
 		if ctx.Err() != nil {
 			return 0, ctx.Err()
 		}
-		if errors.Is(context.Cause(v.readContext), errVideoSilent) {
+		if errors.Is(cause, errVideoSilent) {
 			v.connection.logger.Warn("the device's video went silent; another client such as Xcode's Device Hub may have taken the screen")
 			v.connection.setVideoProblem(&Error{Problem: ProblemScreenInUse, Err: errVideoSilent})
 			return 0, errVideoSilent
 		}
 		return 0, err
 	}
-	v.lastHeard.Store(time.Now().UnixNano())
 	screens := v.connection.screens
 	sharing := screens.sharesViewer(v)
 	v.units = v.units[:0]
@@ -497,18 +490,6 @@ func (v *videoSource) ReadPackets(ctx context.Context, packets []media.ServerPac
 	}
 	screens.deliver(v.units, func() bool { return screens.viewer == v })
 	return n, nil
-}
-
-func (v *videoSource) watchSilence(readContext context.Context, cancel context.CancelCauseFunc) {
-	if readContext.Err() != nil {
-		return
-	}
-	wait := time.Until(time.Unix(0, v.lastHeard.Load()).Add(silenceLimit))
-	if wait <= 0 {
-		cancel(errVideoSilent)
-		return
-	}
-	time.AfterFunc(wait, func() { v.watchSilence(readContext, cancel) })
 }
 
 func (v *videoSource) WriteRTCP(packet []byte) error {
