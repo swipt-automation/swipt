@@ -19,6 +19,7 @@ type containerFiles interface {
 	exists(ctx context.Context, file string) (bool, error)
 	read(ctx context.Context, file string) ([]byte, error)
 	write(ctx context.Context, file string, content []byte) error
+	remove(ctx context.Context, file string) error
 	close()
 }
 
@@ -57,6 +58,11 @@ func (c *Container) Write(ctx context.Context, file string, content []byte) erro
 	return c.files.write(ctx, path.Join("/", file), content)
 }
 
+var (
+	sqliteRecoverySidecars = []string{"-journal", "-wal"}
+	sqliteCleanupSidecars  = []string{"-journal", "-wal", "-shm"}
+)
+
 func (c *Container) SQLite(ctx context.Context, file, statements string, query bool) ([]map[string]any, error) {
 	target := path.Join("/", file)
 	exists, err := c.files.exists(ctx, target)
@@ -66,21 +72,27 @@ func (c *Container) SQLite(ctx context.Context, file, statements string, query b
 	if query && !exists {
 		return []map[string]any{}, nil
 	}
-	var content []byte
-	if exists {
-		content, err = c.files.read(ctx, target)
-		if err != nil {
-			return nil, E.Cause(err, "read ", file)
-		}
-	}
 	work, err := os.MkdirTemp("", "swipt-database-")
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(work)
 	database := filepath.Join(work, "database")
-	if err = os.WriteFile(database, content, 0o600); err != nil {
-		return nil, err
+	if exists {
+		if err = c.pullFile(ctx, target, file, database); err != nil {
+			return nil, err
+		}
+		for _, suffix := range sqliteRecoverySidecars {
+			hasSidecar, err := c.files.exists(ctx, target+suffix)
+			if err != nil {
+				return nil, err
+			}
+			if hasSidecar {
+				if err = c.pullFile(ctx, target+suffix, file+suffix, database+suffix); err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
 	if query {
 		return sqliteQuery(database, statements)
@@ -88,11 +100,27 @@ func (c *Container) SQLite(ctx context.Context, file, statements string, query b
 	if err = sqliteExecute(database, statements); err != nil {
 		return nil, err
 	}
-	content, err = os.ReadFile(database)
+	content, err := os.ReadFile(database)
 	if err != nil {
 		return nil, err
 	}
-	return nil, c.files.write(ctx, target, content)
+	if err = c.files.write(ctx, target, content); err != nil {
+		return nil, err
+	}
+	for _, suffix := range sqliteCleanupSidecars {
+		if err = c.files.remove(ctx, target+suffix); err != nil {
+			return nil, E.Cause(err, "remove ", file+suffix)
+		}
+	}
+	return nil, nil
+}
+
+func (c *Container) pullFile(ctx context.Context, target, name, destination string) error {
+	content, err := c.files.read(ctx, target)
+	if err != nil {
+		return E.Cause(err, "read ", name)
+	}
+	return os.WriteFile(destination, content, 0o600)
 }
 
 type deviceContainer struct {
@@ -112,6 +140,10 @@ func (d deviceContainer) write(_ context.Context, file string, content []byte) e
 		return err
 	}
 	return d.client.Upload(file, bytes.NewReader(content))
+}
+
+func (d deviceContainer) remove(_ context.Context, file string) error {
+	return d.client.Remove(file)
 }
 
 func (d deviceContainer) close() {
@@ -160,6 +192,11 @@ func (g guestContainer) write(ctx context.Context, file string, content []byte) 
 		return err
 	}
 	return g.guest.chown(ctx, target)
+}
+
+func (g guestContainer) remove(ctx context.Context, file string) error {
+	_, err := g.guest.call(ctx, "files.remove", map[string]any{"path": path.Join(g.root, file)})
+	return err
 }
 
 func (guestContainer) close() {}

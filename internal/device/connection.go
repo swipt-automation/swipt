@@ -147,10 +147,11 @@ type Connection struct {
 	retired   bool
 	sharing   *frontend
 
-	images   diskImages
-	info     coredevice.DeviceInfo
-	language string
-	timeZone string
+	environmentAccess sync.Mutex
+	images            diskImages
+	info              coredevice.DeviceInfo
+	language          string
+	timeZone          string
 }
 
 func New(options Options) *Connection {
@@ -453,6 +454,15 @@ func (s *Connection) notify(call func(Observer)) {
 	s.notifier.post(func() { call(s.options.Observer) })
 }
 
+func (s *Connection) syncEnvironment() {
+	if s.options.Observer == nil {
+		return
+	}
+	s.environmentAccess.Lock()
+	defer s.environmentAccess.Unlock()
+	s.options.Observer.EnvironmentChanged(s.phone.Environment())
+}
+
 func (s *Connection) streamingChanged(active bool) {
 	s.logger.Debug("device video running: ", active)
 	s.notify(func(observer Observer) { observer.StreamingChanged(active) })
@@ -629,9 +639,8 @@ func (s *Connection) serveDevice(session context.Context, device *coredevice.Dev
 	if timeZone != "" {
 		s.timeZone = timeZone
 	}
-	environment := s.environmentLocked()
-	s.notify(func(observer Observer) { observer.EnvironmentChanged(environment) })
 	s.access.Unlock()
+	s.syncEnvironment()
 	s.setModel(info.ProductType)
 	if current, ok := version.Parse(info.OSVersion); ok && !current.AtLeast(version.Version{17, 4}) {
 		return newError(ProblemUnsupported, "iOS ", info.OSVersion, " cannot share its screen; it needs iOS 17.4 or later")

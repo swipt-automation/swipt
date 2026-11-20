@@ -5,15 +5,11 @@ package computer
 import (
 	"context"
 
-	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/coredevice/pairing"
 )
 
 func (s *Session) Pair(ctx context.Context, bundleID, file string) error {
-	if s.peer.network != nil {
-		return E.New("pairing needs the device connected to this computer with a cable")
-	}
 	conn, err := s.service(ctx, lockdown.RemotePairing)
 	if err != nil {
 		return err

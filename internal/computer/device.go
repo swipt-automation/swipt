@@ -100,12 +100,6 @@ func (p peer) connect(ctx context.Context, logger log.ContextLogger) (*coredevic
 	if p.network != nil {
 		return p.network.connect(ctx, logger)
 	}
-	if err := rememberRemotePairing(ctx, p, logger); err != nil {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		logger.Warn("pair for connections over the local network: ", err)
-	}
 	logger.Debug("connecting through ", p.device.Connection, " as usbmuxd device ", p.device.ID)
 	return coredevice.ConnectLockdown(ctx, coredevice.LockdownOptions{Record: p.record, Dial: dialer(p.device.ID), Logger: logger})
 }

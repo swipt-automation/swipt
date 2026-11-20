@@ -40,11 +40,16 @@ func sqliteExecute(file, statements string) error {
 	if err != nil {
 		return err
 	}
-	defer C.sqlite3_close(db)
 	script := C.CString(statements)
 	defer C.free(unsafe.Pointer(script))
 	if code := C.sqlite3_exec(db, script, nil, nil, nil); code != C.SQLITE_OK {
-		return sqliteError(db, code)
+		err = sqliteError(db, code)
+		C.sqlite3_close(db)
+		return err
+	}
+	C.sqlite3_wal_checkpoint_v2(db, nil, C.SQLITE_CHECKPOINT_TRUNCATE, nil, nil)
+	if code := C.sqlite3_close(db); code != C.SQLITE_OK {
+		return sqliteError(nil, code)
 	}
 	return nil
 }

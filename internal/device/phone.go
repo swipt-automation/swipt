@@ -618,11 +618,11 @@ func (p *Phone) Info(ctx context.Context) (PhoneInfo, error) {
 	}
 	s := p.connection
 	s.access.Lock()
-	defer s.access.Unlock()
-	if out.Language != s.language {
-		s.language = out.Language
-		environment := s.environmentLocked()
-		s.notify(func(observer Observer) { observer.EnvironmentChanged(environment) })
+	changed := out.Language != s.language
+	s.language = out.Language
+	s.access.Unlock()
+	if changed {
+		s.syncEnvironment()
 	}
 	return out, nil
 }

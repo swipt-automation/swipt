@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -29,6 +30,7 @@ const (
 	remotePairingSuffix  = ".plist"
 	remotePairingService = "_remotepairing._tcp"
 	browseTimeout        = 2 * time.Second
+	remotePairingTimeout = 10 * time.Second
 )
 
 type networkDevice struct {
@@ -100,7 +102,7 @@ func remotePairings() (map[string]*pairing.Record, error) {
 	records := make(map[string]*pairing.Record)
 	for _, entry := range entries {
 		udid, isRecord := strings.CutSuffix(entry.Name(), remotePairingSuffix)
-		if !isRecord {
+		if !isRecord || coredevice.IsGuest(udid) {
 			continue
 		}
 		if record := readRemotePairing(filepath.Join(directory, entry.Name())); record != nil {
@@ -162,9 +164,135 @@ func browseNetwork(ctx context.Context, listed []usbmuxd.Device, udid string) ([
 	return found, err
 }
 
-func rememberRemotePairing(ctx context.Context, found peer, logger logger.ContextLogger) error {
+type remotePairer struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	logger logger.ContextLogger
+	wake   chan struct{}
+	done   chan struct{}
+
+	access sync.Mutex
+	peer   peer
+	target *coredevice.Device
+	paired bool
+}
+
+func newRemotePairer(parent context.Context, logger logger.ContextLogger) *remotePairer {
+	ctx, cancel := context.WithCancel(parent)
+	r := &remotePairer{ctx: ctx, cancel: cancel, logger: logger, wake: make(chan struct{}, 1), done: make(chan struct{})}
+	go r.run()
+	return r
+}
+
+func (r *remotePairer) connect(udid string) func(ctx context.Context) (*coredevice.Device, error) {
+	return func(ctx context.Context) (*coredevice.Device, error) {
+		found, err := findPeer(ctx, udid)
+		if err != nil {
+			return nil, err
+		}
+		connected, err := found.connect(ctx, r.logger)
+		if err != nil {
+			return nil, err
+		}
+		r.remember(found, connected)
+		return connected, nil
+	}
+}
+
+func (r *remotePairer) remember(found peer, target *coredevice.Device) {
+	if found.network != nil || coredevice.IsGuest(found.record.UDID) {
+		return
+	}
+	r.access.Lock()
+	if r.paired {
+		r.access.Unlock()
+		return
+	}
+	r.peer, r.target = found, target
+	r.access.Unlock()
+	select {
+	case r.wake <- struct{}{}:
+	default:
+	}
+}
+
+func (r *remotePairer) run() {
+	defer close(r.done)
+	for r.ctx.Err() == nil {
+		r.access.Lock()
+		found, target, paired := r.peer, r.target, r.paired
+		r.access.Unlock()
+		if paired {
+			return
+		}
+		if target == nil || target.Closed() {
+			select {
+			case <-r.ctx.Done():
+				return
+			case <-r.wake:
+			}
+			continue
+		}
+		ctx, cancel := context.WithCancel(r.ctx)
+		go func() {
+			select {
+			case <-target.Done():
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+		err := rememberRemotePairing(ctx, found, target, r.logger)
+		stopped := ctx.Err() != nil
+		cancel()
+		if err == nil {
+			r.access.Lock()
+			r.paired = true
+			r.access.Unlock()
+			return
+		}
+		if !stopped {
+			r.logger.Warn("pair for connections over the local network: ", err)
+			r.access.Lock()
+			if r.target == target {
+				r.target = nil
+			}
+			r.access.Unlock()
+		}
+	}
+}
+
+func (r *remotePairer) Close() {
+	r.cancel()
+	<-r.done
+}
+
+func waitUnlocked(ctx context.Context, target *coredevice.Device) error {
+	conn, err := target.DialLockState(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	for {
+		state, err := conn.LockState(ctx)
+		if err != nil || !state.PasscodeRequired {
+			return err
+		}
+		timer := time.NewTimer(time.Second)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func rememberRemotePairing(ctx context.Context, found peer, target *coredevice.Device, logger logger.ContextLogger) error {
 	file, err := remotePairingFile(found.record.UDID)
 	if err != nil {
+		return err
+	}
+	if err = waitUnlocked(ctx, target); err != nil {
 		return err
 	}
 	if record := readRemotePairing(file); record != nil {
@@ -172,13 +300,18 @@ func rememberRemotePairing(ctx context.Context, found peer, logger logger.Contex
 		if err != nil || accepted {
 			return err
 		}
+		if err = forgetRemotePairing(found.record.UDID); err != nil {
+			return err
+		}
 		logger.Info("the device no longer accepts the pairing for connections over the local network, pairing again")
 	}
-	conn, err := lockdown.DialService(ctx, found.record, dialer(found.device.ID), lockdown.RemotePairing, logger)
+	setupCtx, cancel := context.WithTimeout(ctx, remotePairingTimeout)
+	defer cancel()
+	conn, err := lockdown.DialService(setupCtx, found.record, dialer(found.device.ID), lockdown.RemotePairing, logger)
 	if err != nil {
 		return err
 	}
-	record, err := pairing.Setup(ctx, conn, pairing.SetupOptions{HostName: Name(), Logger: logger})
+	record, err := pairing.Setup(setupCtx, conn, pairing.SetupOptions{HostName: Name(), Logger: logger})
 	if err != nil {
 		return err
 	}
@@ -193,11 +326,13 @@ func rememberRemotePairing(ctx context.Context, found peer, logger logger.Contex
 }
 
 func remotePairingAccepted(ctx context.Context, found peer, record *pairing.Record, logger logger.ContextLogger) (bool, error) {
-	conn, err := lockdown.DialService(ctx, found.record, dialer(found.device.ID), lockdown.RemotePairing, logger)
+	verifyCtx, cancel := context.WithTimeout(ctx, remotePairingTimeout)
+	defer cancel()
+	conn, err := lockdown.DialService(verifyCtx, found.record, dialer(found.device.ID), lockdown.RemotePairing, logger)
 	if err != nil {
 		return false, err
 	}
-	session, err := pairing.Verify(ctx, conn, record, logger)
+	session, err := pairing.Verify(verifyCtx, conn, record, logger)
 	if errors.Is(err, pairing.ErrPairVerifyFailed) {
 		return false, nil
 	}

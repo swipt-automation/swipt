@@ -105,9 +105,11 @@ func Run(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
+	pairer := newRemotePairer(ctx, deviceLogger)
+	defer pairer.Close()
 	connection := device.New(device.Options{
 		Name:               name,
-		Connect:            connect(options.UDID, deviceLogger),
+		Connect:            pairer.connect(options.UDID),
 		Logger:             deviceLogger,
 		Observer:           observer{},
 		DiskImageDirectory: diskImages,
