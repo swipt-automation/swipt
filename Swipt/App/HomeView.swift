@@ -1,8 +1,5 @@
 import Perception
 import SwiftUI
-#if os(iOS)
-import CoreLocation
-#endif
 
 @Perceptible
 final class HomeRequest {
@@ -37,14 +34,7 @@ struct HomeView: View {
             .modifier(SwipletOpener())
             .background {
                 if AutomatedSetupView.isRequested, !isSettingUp {
-                    let status = CLLocationManager().authorizationStatus
-                    Color.clear
-                        .accessibilityElement()
-                        .accessibilityIdentifier("setup-finished")
-                        .accessibilityValue(
-                            status == .authorizedAlways || status == .restricted
-                                ? Text(verbatim: "always") : Text(verbatim: "")
-                        )
+                    AutomatedSetupFinished()
                 }
             }
             #endif

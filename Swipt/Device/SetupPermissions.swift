@@ -1,15 +1,20 @@
 import CoreLocation
 import CoreTelephony
 import Network
+import Perception
+import SwiftUI
+import UIKit
 import UserNotifications
 
 enum SetupPermissions {
     static func request() async {
-        async let location: Void = LocationPermission().request()
+        let location = LocationPermission()
+        async let whenInUse: Void = location.requestWhenInUse()
         async let notifications: Void = requestNotifications()
         async let localNetwork: Void = requestLocalNetwork()
         async let cellularData: Void = requestCellularData()
-        _ = await (location, notifications, localNetwork, cellularData)
+        _ = await (whenInUse, notifications, localNetwork, cellularData)
+        await location.requestAlways()
     }
 
     private static func requestNotifications() async {
@@ -80,53 +85,143 @@ private final class Resolution {
     }
 }
 
+struct AutomatedSetupFinished: View {
+    @State private var observer = LocationStatusObserver()
+
+    var body: some View {
+        WithPerceptionTracking {
+            Color.clear
+                .accessibilityElement()
+                .accessibilityIdentifier("setup-finished")
+                .accessibilityValue(
+                    observer.status == .authorizedAlways || observer.status == .restricted
+                        ? Text(verbatim: "always") : Text(verbatim: "")
+                )
+        }
+    }
+}
+
+@Perceptible
+private final class LocationStatusObserver: NSObject, CLLocationManagerDelegate {
+    var status: CLAuthorizationStatus
+    @PerceptionIgnored private let manager = CLLocationManager()
+
+    override init() {
+        status = manager.authorizationStatus
+        super.init()
+        manager.delegate = self
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        status = manager.authorizationStatus
+    }
+}
+
 private final class LocationPermission: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var resolution: Resolution?
-    private var fallback: Task<Void, Never>?
+    private var waitingForActive = false
+    private var waitingForAlways = false
+    private var promptShown = false
+    private var timer: Task<Void, Never>?
+    private var settle: Task<Void, Never>?
 
-    func request() async {
-        switch manager.authorizationStatus {
-        case .notDetermined:
-            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                resolution = Resolution(continuation)
-                manager.delegate = self
-                manager.requestWhenInUseAuthorization()
-            }
-        case .authorizedWhenInUse:
-            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                resolution = Resolution(continuation)
-                manager.delegate = self
-                requestAlways()
-            }
-        default:
-            break
+    func requestWhenInUse() async {
+        guard manager.authorizationStatus == .notDetermined else { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            resolution = Resolution(continuation)
+            manager.delegate = self
+            manager.requestWhenInUseAuthorization()
         }
     }
 
-    private func requestAlways() {
-        manager.requestAlwaysAuthorization()
-        fallback = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            self?.finish()
+    func requestAlways() async {
+        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
+        if UIApplication.shared.applicationState != .active {
+            await waitUntilActive()
+        }
+        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            resolution = Resolution(continuation)
+            waitingForAlways = true
+            promptShown = false
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(willResignActive), name: UIApplication.willResignActiveNotification, object: nil
+            )
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(didBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil
+            )
+            timer = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled, let self, !self.promptShown else { return }
+                self.finish()
+            }
+            manager.delegate = self
+            manager.requestAlwaysAuthorization()
+        }
+    }
+
+    private func waitUntilActive() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            resolution = Resolution(continuation)
+            waitingForActive = true
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(didBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil
+            )
+            if UIApplication.shared.applicationState == .active {
+                finish()
+                return
+            }
+            timer = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.finish()
+            }
         }
     }
 
     private func finish() {
-        fallback?.cancel()
-        fallback = nil
-        resolution?.resume()
+        timer?.cancel()
+        timer = nil
+        settle?.cancel()
+        settle = nil
+        waitingForActive = false
+        waitingForAlways = false
+        promptShown = false
+        NotificationCenter.default.removeObserver(self)
+        let current = resolution
+        resolution = nil
+        current?.resume()
+    }
+
+    @objc private func willResignActive() {
+        guard waitingForAlways else { return }
+        promptShown = true
+        timer?.cancel()
+        timer = nil
+    }
+
+    @objc private func didBecomeActive() {
+        if waitingForActive {
+            finish()
+            return
+        }
+        guard waitingForAlways, promptShown else { return }
+        settle?.cancel()
+        settle = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            self?.finish()
+        }
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .notDetermined:
-            break
-        case .authorizedWhenInUse:
-            if fallback == nil {
-                requestAlways()
+        let status = manager.authorizationStatus
+        if waitingForAlways {
+            if status != .authorizedWhenInUse {
+                finish()
             }
-        default:
+        } else if !waitingForActive, status != .notDetermined {
             finish()
         }
     }
