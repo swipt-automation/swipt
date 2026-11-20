@@ -107,7 +107,10 @@ final class DeviceConnection {
     private func monitorPath() {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            let cellular = path.usesInterfaceType(.cellular)
+            // availableInterfaces starts with the direct interface, while usesInterfaceType
+            // also matches the fallback interface (Network 26B131,
+            // nw_path_enumerate_interfaces 0x183ea51c8, nw_path_uses_interface_type 0x183ccf324).
+            let cellular = path.status != .unsatisfied && path.availableInterfaces.first?.type == .cellular
             Task { @MainActor in
                 guard let self else { return }
                 if self.usesCellular != cellular {
