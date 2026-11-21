@@ -8,6 +8,7 @@ package graphics
 import "C"
 
 import (
+	"bytes"
 	"encoding/json"
 	"maps"
 	"path/filepath"
@@ -44,12 +45,28 @@ type call struct {
 }
 
 type callArguments struct {
-	Root           string   `json:"root"`
-	Path           string   `json:"path"`
-	Mode           string   `json:"mode"`
-	MaximumBitrate uint64   `json:"maximumBitrate"`
-	Scale          *float64 `json:"scale"`
-	Format         string   `json:"format"`
+	Root           string       `json:"root"`
+	Path           string       `json:"path"`
+	Mode           string       `json:"mode"`
+	MaximumBitrate uint64       `json:"maximumBitrate"`
+	Display        int          `json:"display"`
+	Scale          *float64     `json:"scale"`
+	Format         string       `json:"format"`
+	Quality        *float64     `json:"quality"`
+	Point          []float64    `json:"point"`
+	Region         []float64    `json:"region"`
+	Threshold      *float64     `json:"threshold"`
+	Scales         []float64    `json:"scales"`
+	Limit          *int         `json:"limit"`
+	Overlap        *float64     `json:"overlap"`
+	MinimumPixels  *int         `json:"minimumPixels"`
+	Checks         []colorCheck `json:"checks"`
+	Languages      []string     `json:"languages"`
+	DetectLanguage *bool        `json:"detectLanguage"`
+	Level          string       `json:"level"`
+	Words          []string     `json:"words"`
+	Correction     *bool        `json:"correction"`
+	MinimumHeight  *float64     `json:"minimumHeight"`
 }
 
 func newEngine(graphics *Graphics) *engine {
@@ -109,7 +126,7 @@ func (e *engine) run(c *call, context *automation.GraphicsCall) (any, error) {
 	}
 	switch c.method {
 	case "screen.open":
-		stream, err := e.openScreen(context.Context(), screen.Options{Mode: arguments.Mode, MaximumBitrate: arguments.MaximumBitrate})
+		stream, err := e.openScreen(context.Context(), screen.Options{Mode: arguments.Mode, MaximumBitrate: arguments.MaximumBitrate, Display: arguments.Display})
 		if err != nil {
 			return nil, err
 		}
@@ -122,9 +139,6 @@ func (e *engine) run(c *call, context *automation.GraphicsCall) (any, error) {
 		stream.close()
 		return struct{}{}, nil
 	case "screen.frame":
-		if !framesAvailable {
-			return nil, unsupported("frames")
-		}
 		stream, err := c.stream()
 		if err != nil {
 			return nil, err
@@ -159,11 +173,7 @@ func (e *engine) run(c *call, context *automation.GraphicsCall) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		recording, err := newScreenRecording(directory, manifest)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]int64{"recording": e.register(recording)}, nil
+		return map[string]int64{"recording": e.register(newScreenRecording(directory, manifest))}, nil
 	case "recording.export":
 		recording, isRecording := c.first().(*screenRecording)
 		if !isRecording {
@@ -183,7 +193,7 @@ func (e *engine) run(c *call, context *automation.GraphicsCall) (any, error) {
 		}
 		return struct{}{}, staged.Commit()
 	}
-	return e.runNative(c, arguments, context)
+	return e.runImage(c, arguments, context)
 }
 
 func (e *engine) Watch(identifier int64, context *automation.GraphicsCall, publish func(any)) error {
@@ -195,9 +205,6 @@ func (e *engine) Watch(identifier int64, context *automation.GraphicsCall, publi
 	if c.method != "screen.frames" {
 		return failure(nameType, "graphics: there is no stream ", c.method)
 	}
-	if !framesAvailable {
-		return unsupported("frames")
-	}
 	stream, err := c.stream()
 	if err != nil {
 		return err
@@ -207,7 +214,7 @@ func (e *engine) Watch(identifier int64, context *automation.GraphicsCall, publi
 		release(e.take(previous))
 	}()
 	for {
-		var next frame
+		var next *imageNode
 		next, sequence, err = stream.frameAfter(context.Context(), sequence, false)
 		if err != nil {
 			return err
@@ -334,16 +341,38 @@ func swiptGraphicsPrepare(handle C.uintptr_t, method *C.char, arguments *C.char,
 	return C.int64_t(identifier)
 }
 
+func objectOf(object C.swipt_graphics_object) (any, reference, bool) {
+	switch object.kind {
+	case C.SWIPT_GRAPHICS_BYTES:
+		return bytes.Clone(unsafe.Slice((*byte)(object.bytes), int(object.length))), nil, true
+	case C.SWIPT_GRAPHICS_HANDLE:
+		value := cgo.Handle(object.handle).Value()
+		if node, isImage := value.(*imageNode); isImage {
+			return node.retain(), node, true
+		}
+		return value, nil, true
+	}
+	return nil, nil, false
+}
+
 //export swiptGraphicsTake
 func swiptGraphicsTake(handle C.uintptr_t, identifier C.int64_t) C.swipt_graphics_taken {
 	object := engineOf(handle).take(int64(identifier))
+	var kind C.int32_t
 	switch object.(type) {
-	case nil:
-		return C.swipt_graphics_taken{}
+	case *imageNode:
+		kind = C.SWIPT_GRAPHICS_IMAGE
+	case *screenRecording:
+		kind = C.SWIPT_GRAPHICS_RECORDING
+	case *recognizedText:
+		kind = C.SWIPT_GRAPHICS_TEXT
 	case *screenStream, *recordingSession:
-		return C.swipt_graphics_taken{kind: C.SWIPT_GRAPHICS_HANDLE, handle: C.uintptr_t(cgo.NewHandle(object))}
+		kind = C.SWIPT_GRAPHICS_HANDLE
+	default:
+		release(object)
+		return C.swipt_graphics_taken{}
 	}
-	return takenOf(object)
+	return C.swipt_graphics_taken{kind: kind, handle: C.uintptr_t(cgo.NewHandle(object))}
 }
 
 //export swiptGraphicsRelease

@@ -8,8 +8,10 @@ package jsc
 #cgo !darwin CPPFLAGS: -DJS_NO_EXPORT
 #cgo !darwin CXXFLAGS: -O2 -std=c++23 -fno-exceptions -fno-rtti -DNDEBUG -DSTATICALLY_LINKED_WITH_JavaScriptCore=1 -DBUILDING_WITH_CMAKE=1 -DJSC_OBJC_API_ENABLED=0 -DBUILDING_JSCONLY__ -DUSE_BUN_MIMALLOC=1
 #cgo windows CXXFLAGS: -Wno-inconsistent-dllimport -Wno-unknown-attributes -D_HAS_EXCEPTIONS=0 -DNOMINMAX
-#cgo !darwin LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -lmimalloc -lzstd
+#cgo !darwin LDFLAGS: -lJavaScriptCore -lWTF -lbmalloc -lmimalloc
+#cgo !darwin,!android LDFLAGS: -lzstd
 #cgo linux LDFLAGS: -licui18n -licuuc -licudata -static-libstdc++ -lm -ldl
+#cgo android LDFLAGS: -llog
 #cgo windows LDFLAGS: -lsicuin -lsicuuc -lsicudt -lntdll -ladvapi32 -luser32 -lws2_32 -lwinmm -lshell32 -lole32 -ldbghelp
 
 #include <stdlib.h>

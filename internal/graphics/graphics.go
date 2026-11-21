@@ -25,12 +25,12 @@ type Graphics struct {
 
 func New(options Options) *Graphics {
 	g := &Graphics{screen: options.Screen, logger: options.Logger, onRecordingFailed: options.OnRecordingFailed}
-	setupNative(g)
+	warmVision(g.logger)
 	return g
 }
 
 func (g *Graphics) Install(context *jsc.Context, native jsc.Value) automation.GraphicsEngine {
 	e := newEngine(g)
-	context.RunNative(nativeInstaller(), 0, native, uint64(cgo.NewHandle(e)))
+	context.RunNative(installer(), 0, native, uint64(cgo.NewHandle(e)))
 	return e
 }

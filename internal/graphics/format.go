@@ -20,13 +20,13 @@ type hevcFormat struct {
 	configuration []byte
 }
 
-func newHEVCFormat(vps, sps, pps []byte, screen screen.Info) (*hevcFormat, error) {
+func newHEVCFormat(vps, sps, pps []byte, info screen.Info) (*hevcFormat, error) {
 	sequence, err := media.ParseHEVCSequence(sps)
 	if err != nil {
 		return nil, err
 	}
-	if screen.Width > 0 && screen.Height > 0 {
-		sequence = sequence.CroppedTo(screen.Width, screen.Height)
+	if info.Width > 0 && info.Height > 0 {
+		sequence = sequence.CroppedTo(info.Width, info.Height)
 	}
 	format := &hevcFormat{vps: vps, source: sps, sps: sequence.NAL(), pps: pps}
 	format.width, format.height = sequence.Size()

@@ -165,9 +165,17 @@ func (w *movieWriter) flush() {
 	w.data = w.data[:0]
 }
 
-func (w *movieWriter) finish() error {
+func clockTicks(duration time.Duration) int64 {
+	return int64(duration * media.VideoClockRate / time.Second)
+}
+
+func clockMilliseconds(ticks int64) float64 {
+	return float64(ticks) * 1000 / media.VideoClockRate
+}
+
+func (w *movieWriter) finish(end int64) error {
 	if w.pending != nil {
-		w.write(w.pending, w.pendingTime, int64(lastFrameDuration*media.VideoClockRate/time.Second))
+		w.write(w.pending, w.pendingTime, end-w.base-w.pendingTime)
 		w.pending = nil
 	}
 	w.flush()

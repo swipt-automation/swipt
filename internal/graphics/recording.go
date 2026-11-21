@@ -5,7 +5,6 @@ package graphics
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,14 +39,17 @@ type recordingSession struct {
 	screen    screen.Info
 	began     chan struct{}
 
-	access   sync.Mutex
-	origin   float64
-	last     float64
-	segments []recordingSegment
-	writer   *movieWriter
-	waiting  bool
-	stopped  bool
-	failure  error
+	access      sync.Mutex
+	origin      float64
+	base        int64
+	last        int64
+	lastArrival time.Time
+	ended       time.Time
+	segments    []recordingSegment
+	writer      *movieWriter
+	waiting     bool
+	stopped     bool
+	failure     error
 }
 
 func milliseconds(at time.Time) float64 {
@@ -104,7 +106,7 @@ func (r *recordingSession) append(unit *media.AccessUnit, format *hevcFormat, da
 	}
 	if r.writer == nil || (format != nil && (r.writer.turns != unit.Turns || format != r.writer.format)) {
 		if r.writer != nil {
-			r.closeWriter()
+			r.closeWriter(unit.Time)
 			if r.failure != nil {
 				return false
 			}
@@ -119,13 +121,13 @@ func (r *recordingSession) append(unit *media.AccessUnit, format *hevcFormat, da
 			r.failLocked(err)
 			return false
 		}
-		arrival := milliseconds(unit.Arrival)
 		if len(r.segments) == 0 {
-			r.origin = arrival
+			r.origin = milliseconds(unit.Arrival)
+			r.base = unit.Time
 			close(r.began)
 		}
 		r.writer = writer
-		r.segments = append(r.segments, recordingSegment{File: file, Start: arrival - r.origin, Turns: unit.Turns})
+		r.segments = append(r.segments, recordingSegment{File: file, Start: clockMilliseconds(unit.Time - r.base), Turns: unit.Turns})
 		r.waiting = false
 	}
 	if r.waiting {
@@ -135,9 +137,10 @@ func (r *recordingSession) append(unit *media.AccessUnit, format *hevcFormat, da
 		r.waiting = false
 	}
 	r.writer.append(unit)
-	r.last = milliseconds(unit.Arrival)
+	r.last = unit.Time
+	r.lastArrival = unit.Arrival
 	if r.writer.failure != nil {
-		r.closeWriter()
+		r.closeWriter(unit.Time + clockTicks(lastFrameDuration))
 	}
 	return false
 }
@@ -153,13 +156,24 @@ func (r *recordingSession) failLocked(err error) {
 		return
 	}
 	r.failure = err
+	r.endLocked()
 	if len(r.segments) == 0 {
 		close(r.began)
 	}
 }
 
-func (r *recordingSession) closeWriter() {
-	if err := r.writer.finish(); err != nil {
+func (r *recordingSession) endLocked() {
+	if r.ended.IsZero() {
+		r.ended = time.Now()
+	}
+}
+
+func (r *recordingSession) endTime() int64 {
+	return r.last + max(clockTicks(r.ended.Sub(r.lastArrival)), clockTicks(lastFrameDuration))
+}
+
+func (r *recordingSession) closeWriter(end int64) {
+	if err := r.writer.finish(end); err != nil {
 		r.failLocked(err)
 	}
 	r.writer = nil
@@ -172,6 +186,7 @@ func (r *recordingSession) stop() error {
 		return failure(nameState, "graphics: the recording already stopped")
 	}
 	r.stopped = true
+	r.endLocked()
 	r.access.Unlock()
 	return r.finish()
 }
@@ -181,7 +196,7 @@ func (r *recordingSession) finish() error {
 	r.access.Lock()
 	defer r.access.Unlock()
 	if r.writer != nil {
-		r.closeWriter()
+		r.closeWriter(r.endTime())
 	}
 	if len(r.segments) == 0 {
 		if r.failure != nil {
@@ -189,7 +204,7 @@ func (r *recordingSession) finish() error {
 		}
 		return failure(nameUnavailable, "graphics: the recording got no frames; the screen may be off or another app may hold it")
 	}
-	duration := max(r.last-r.origin, 0) + float64(lastFrameDuration)/float64(time.Millisecond)
+	duration := clockMilliseconds(r.endTime() - r.base)
 	manifest := recordingManifest{
 		Start:    rounded(r.origin),
 		Duration: rounded(duration),
@@ -217,6 +232,7 @@ func (r *recordingSession) release() {
 	r.access.Lock()
 	running := !r.stopped
 	r.stopped = true
+	r.endLocked()
 	r.access.Unlock()
 	if !running {
 		return
@@ -268,11 +284,4 @@ func readRecordingManifest(directory string) (*recordingManifest, error) {
 func (m *recordingManifest) info() string {
 	encoded, _ := json.Marshal(map[string]float64{"start": rounded(m.Start), "duration": rounded(m.Duration)})
 	return string(encoded)
-}
-
-func rounded(value float64) float64 {
-	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return 0
-	}
-	return math.Round(value*100) / 100
 }

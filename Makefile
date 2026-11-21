@@ -73,7 +73,7 @@ fmt:
 lint:
 	golangci-lint run ./...
 	go run ./internal/cmd/build_driver -target linux-arm64,win32-arm64 golangci-lint run ./...
-	! grep -n 'localizedDescription' internal/graphics/*.m | grep -v '^internal/graphics/SWError.m'
+	! grep -n 'localizedDescription' internal/graphics/*.m | grep -v '^internal/graphics/error_darwin.m'
 	! grep -nE '[eE]rror:nil' internal/graphics/*.m | grep -vE 'removeItemAtURL|regularExpressionWithPattern|NSJSONSerialization'
 
 lint_install:

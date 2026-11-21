@@ -8,7 +8,9 @@ import (
 )
 
 const (
+	nameGeneric      = "Error"
 	nameType         = "TypeError"
+	nameRange        = "RangeError"
 	nameData         = "DataError"
 	nameUnavailable  = "UnavailableError"
 	nameState        = "InvalidStateError"
@@ -20,8 +22,4 @@ const argumentsMalformed = "graphics: the arguments are not JSON"
 
 func failure(name string, message ...any) error {
 	return &automation.Failure{Name: name, Message: F.ToString(message...)}
-}
-
-func unsupported(name string) error {
-	return failure(nameNotSupported, "graphics: ", name, " is not available on this platform")
 }

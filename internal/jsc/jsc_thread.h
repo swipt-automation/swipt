@@ -104,6 +104,9 @@ uintptr_t *jsc_take_released(jsc_runtime *rt, size_t *count);
 int64_t jsc_monotonic_time(void);
 void jsc_set_languages(const char *languages);
 void jsc_set_time_zone(const char *time_zone);
+#ifdef __linux__
+void jsc_release_suspend_signal(void);
+#endif
 
 #ifdef __cplusplus
 }

@@ -65,6 +65,7 @@ static void jsc_loop_free(void *loop) {
 #else
 extern void JSContextGroupSetExecutionTimeLimit(JSContextGroupRef, double, jsc_should_terminate_callback, void *);
 extern void JSGlobalContextSetUnhandledRejectionCallback(JSGlobalContextRef, JSObjectRef, JSValueRef *);
+extern void JSReportExtraMemoryCost(JSContextRef, size_t);
 #define jsc_private(name) ((void *)name)
 
 static void *jsc_pool_push(void) {
@@ -88,6 +89,12 @@ extern void jsc_loop_run(void *loop);
 extern void jsc_loop_stop(void *loop);
 extern void jsc_loop_free(void *loop);
 #endif
+
+void jsc_api_functions(void **lock, void **unlock, void **report_cost) {
+	*lock = (void *)jsc_api_lock;
+	*unlock = (void *)jsc_api_unlock;
+	*report_cost = jsc_private(JSReportExtraMemoryCost);
+}
 
 #ifdef _WIN32
 typedef HANDLE jsc_thread;
@@ -406,16 +413,15 @@ static void jsc_recover(jsc_runtime *rt) {
 }
 
 #ifdef __linux__
-static jsc_once jsc_signal_once = JSC_ONCE_INIT;
 static jsc_once jsc_stack_once = JSC_ONCE_INIT;
 
 // Bun's WebKit suspends threads with SIGPWR and warns on replacing a handler
-// for it, installs its handlers without SA_ONSTACK as the first VM is made,
-// and keeps working once SA_ONSTACK is added to them (oven-sh/WebKit
-// d6375c72, Source/WTF/wtf/posix/ThreadingPOSIX.cpp:239, 304, 341;
-// Source/WTF/wtf/threads/Signals.cpp:597;
+// for it, installs its handlers without SA_ONSTACK as WTF initializes, which
+// JSClassCreate does too, and keeps working once SA_ONSTACK is added to them
+// (oven-sh/WebKit d6375c72, Source/WTF/wtf/posix/ThreadingPOSIX.cpp:239, 304,
+// 341; Source/WTF/wtf/threads/Signals.cpp:597;
 // Source/JavaScriptCore/runtime/VM.cpp:587).
-static void jsc_release_suspend_signal(void) {
+void jsc_release_suspend_signal(void) {
 	signal(SIGPWR, SIG_DFL);
 }
 
@@ -431,7 +437,6 @@ static void jsc_handle_signals_on_stack(void) {
 }
 
 static JSContextGroupRef jsc_group_create(void) {
-	jsc_call_once(&jsc_signal_once, jsc_release_suspend_signal);
 	JSContextGroupRef group = JSContextGroupCreate();
 	jsc_call_once(&jsc_stack_once, jsc_handle_signals_on_stack);
 	return group;

@@ -25,16 +25,11 @@ const (
 var (
 	errScreenSilent = failure(nameUnavailable, "graphics: the screen sent no frame within ", int(screenFirstFrameLimit/time.Second), " s; it may be off")
 	errScreenClosed = failure(nameState, "graphics: the screen stream is closed")
-	errScreenMoved  = failure(nameState, "graphics: the screen moved to another display, which ended the recording")
+	errScreenMoved  = failure(nameState, "graphics: the screen changed its size or moved to another display, which ended the recording")
 )
 
-type frame interface {
-	reference
-	retain() frame
-}
-
-type decoder interface {
-	decode(unit *media.AccessUnit, format *hevcFormat, formatChanged bool, damaged bool) (needsKeyFrame bool)
+type liveFrames interface {
+	unit(unit *media.AccessUnit, format *hevcFormat, formatChanged bool, damaged bool) (needsKeyFrame bool)
 	close()
 }
 
@@ -54,16 +49,17 @@ type screenStream struct {
 	format   *hevcFormat
 
 	decoding sync.Mutex
-	decoder  decoder
+	frames   liveFrames
 
-	access     sync.Mutex
-	recordings map[*recordingSession]struct{}
-	latest     frame
-	sequence   int64
-	changed    chan struct{}
-	failure    error
-	released   bool
-	closed     bool
+	access      sync.Mutex
+	recordings  map[*recordingSession]struct{}
+	latest      *imageNode
+	sequence    int64
+	changed     chan struct{}
+	failure     error
+	undecodable error
+	released    bool
+	closed      bool
 }
 
 func (e *engine) openScreen(ctx context.Context, options screen.Options) (*screenStream, error) {
@@ -83,7 +79,9 @@ func (e *engine) openScreen(ctx context.Context, options screen.Options) (*scree
 	}
 	stream.device = opened
 	stream.info = opened.Info()
-	stream.decoder = newDecoder(stream)
+	stream.decoding.Lock()
+	stream.openFramesLocked()
+	stream.decoding.Unlock()
 	go stream.run()
 	if !e.addStream(stream) {
 		stream.close()
@@ -145,8 +143,8 @@ func (s *screenStream) run() {
 				needsKeyFrame = recording.append(unit, s.format, damaged) || needsKeyFrame
 			}
 			s.decoding.Lock()
-			if s.decoder != nil {
-				needsKeyFrame = s.decoder.decode(unit, s.format, formatChanged, damaged) || needsKeyFrame
+			if s.frames != nil {
+				needsKeyFrame = s.frames.unit(unit, s.format, formatChanged, damaged) || needsKeyFrame
 			}
 			s.decoding.Unlock()
 			if needsKeyFrame {
@@ -166,11 +164,19 @@ func (s *screenStream) move(info screen.Info) {
 	}
 	s.format = nil
 	s.decoding.Lock()
-	if s.decoder != nil {
-		s.decoder.close()
-		s.decoder = newDecoder(s)
+	if s.frames != nil {
+		s.frames.close()
+		s.openFramesLocked()
 	}
 	s.decoding.Unlock()
+}
+
+func (s *screenStream) openFramesLocked() {
+	frames, err := newLiveFrames(s)
+	s.frames = frames
+	s.access.Lock()
+	s.undecodable = err
+	s.access.Unlock()
 }
 
 func (s *screenStream) adoptFormat(unit *media.AccessUnit) bool {
@@ -181,7 +187,7 @@ func (s *screenStream) adoptFormat(unit *media.AccessUnit) bool {
 	if s.format != nil && bytes.Equal(vps, s.format.vps) && bytes.Equal(sps, s.format.source) && bytes.Equal(pps, s.format.pps) {
 		return false
 	}
-	format, err := newHEVCFormat(vps, sps, pps, s.info)
+	format, err := newHEVCFormat(vps, sps, pps, s.encodedInfo())
 	if err != nil {
 		s.engine.graphics.logger.Error("read the screen's parameter sets: ", err)
 		return false
@@ -196,7 +202,7 @@ func (s *screenStream) activeRecordings() []*recordingSession {
 	return slices.Collect(maps.Keys(s.recordings))
 }
 
-func (s *screenStream) takeLatestLocked() frame {
+func (s *screenStream) takeLatestLocked() *imageNode {
 	latest := s.latest
 	s.latest = nil
 	close(s.changed)
@@ -204,7 +210,7 @@ func (s *screenStream) takeLatestLocked() frame {
 	return latest
 }
 
-func (s *screenStream) frameAfter(ctx context.Context, previous int64, limited bool) (frame, int64, error) {
+func (s *screenStream) frameAfter(ctx context.Context, previous int64, limited bool) (*imageNode, int64, error) {
 	var deadline <-chan time.Time
 	if limited {
 		timer := time.NewTimer(screenFirstFrameLimit)
@@ -219,6 +225,10 @@ func (s *screenStream) frameAfter(ctx context.Context, previous int64, limited b
 			return nil, 0, errScreenClosed
 		case s.failure != nil:
 			err := s.failure
+			s.access.Unlock()
+			return nil, 0, err
+		case s.undecodable != nil:
+			err := s.undecodable
 			s.access.Unlock()
 			return nil, 0, err
 		case s.latest != nil && s.sequence > previous:
@@ -240,15 +250,18 @@ func (s *screenStream) frameAfter(ctx context.Context, previous int64, limited b
 
 func (s *screenStream) addRecording(recording *recordingSession) error {
 	s.access.Lock()
-	defer s.access.Unlock()
 	switch {
 	case s.closed:
+		s.access.Unlock()
 		return errScreenClosed
 	case s.failure != nil:
+		s.access.Unlock()
 		return s.failure
 	}
 	s.recordings[recording] = struct{}{}
-	recording.screen = s.info
+	recording.screen = s.encodedInfo()
+	s.encodeLocked()
+	s.access.Unlock()
 	return nil
 }
 
@@ -256,18 +269,32 @@ func (s *screenStream) removeRecording(recording *recordingSession) {
 	s.access.Lock()
 	delete(s.recordings, recording)
 	unused := s.released && len(s.recordings) == 0
+	s.encodeLocked()
 	s.access.Unlock()
 	if unused {
 		s.close()
 	}
 }
 
-func (s *screenStream) closeDecoder() {
+func (s *screenStream) encodedInfo() screen.Info {
+	if local, isLocal := s.device.(screen.LocalStream); isLocal {
+		return local.EncodedInfo()
+	}
+	return s.info
+}
+
+func (s *screenStream) encodeLocked() {
+	if local, isLocal := s.device.(screen.LocalStream); isLocal {
+		local.Encode(len(s.recordings) > 0)
+	}
+}
+
+func (s *screenStream) closeFrames() {
 	s.decoding.Lock()
 	defer s.decoding.Unlock()
-	if s.decoder != nil {
-		s.decoder.close()
-		s.decoder = nil
+	if s.frames != nil {
+		s.frames.close()
+		s.frames = nil
 	}
 }
 
@@ -284,7 +311,7 @@ func (s *screenStream) release() {
 		s.close()
 		return
 	}
-	s.closeDecoder()
+	s.closeFrames()
 }
 
 func (s *screenStream) close() {
@@ -303,7 +330,7 @@ func (s *screenStream) close() {
 	}
 	close(s.done)
 	<-s.finished
-	s.closeDecoder()
+	s.closeFrames()
 	s.device.Close()
 	for _, recording := range recordings {
 		recording.release()
