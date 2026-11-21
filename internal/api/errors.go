@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func apiError(err error) error {
+func StatusError(err error) error {
 	if err == nil {
 		return nil
 	}

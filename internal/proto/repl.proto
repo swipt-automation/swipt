@@ -14,7 +14,7 @@ service REPLService {
 
 message ExecuteRequest {
   string code = 1;
-  uint32 timeout_ms = 2;
+  reserved 2;
   repeated string args = 3;
   bool program = 4;
 }

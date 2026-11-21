@@ -158,7 +158,7 @@ func Run(ctx context.Context, options Options) error {
 	}
 	defer release()
 	server := api.New(api.Options{
-		Device: connection, Swiplets: swiplets, Logs: options.Logs, Logger: options.Logs.NewLogger("api"),
+		Device: api.NewDevice(connection), Swiplets: swiplets, Logs: options.Logs, Logger: options.Logs.NewLogger("api"),
 		AppVersion: options.Version,
 		Shutdown: func(reqCtx context.Context) {
 			stopOnce.Do(func() { close(stop) })

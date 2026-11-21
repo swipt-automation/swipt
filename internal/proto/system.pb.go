@@ -26,7 +26,7 @@ type GetInfoResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	ServerVersion    string                 `protobuf:"bytes,1,opt,name=server_version,json=serverVersion,proto3" json:"server_version,omitempty"`
 	DeviceName       string                 `protobuf:"bytes,2,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
-	Udid             string                 `protobuf:"bytes,3,opt,name=udid,proto3" json:"udid,omitempty"`
+	DeviceId         string                 `protobuf:"bytes,3,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	DeviceConnection *DeviceConnection      `protobuf:"bytes,4,opt,name=device_connection,json=deviceConnection,proto3" json:"device_connection,omitempty"`
 	AppVersion       string                 `protobuf:"bytes,5,opt,name=app_version,json=appVersion,proto3" json:"app_version,omitempty"`
 	AppBuild         string                 `protobuf:"bytes,6,opt,name=app_build,json=appBuild,proto3" json:"app_build,omitempty"`
@@ -78,9 +78,9 @@ func (x *GetInfoResponse) GetDeviceName() string {
 	return ""
 }
 
-func (x *GetInfoResponse) GetUdid() string {
+func (x *GetInfoResponse) GetDeviceId() string {
 	if x != nil {
-		return x.Udid
+		return x.DeviceId
 	}
 	return ""
 }
@@ -110,12 +110,12 @@ var File_system_proto protoreflect.FileDescriptor
 
 const file_system_proto_rawDesc = "" +
 	"\n" +
-	"\fsystem.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\fcommon.proto\"\xf1\x01\n" +
+	"\fsystem.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\fcommon.proto\"\xfa\x01\n" +
 	"\x0fGetInfoResponse\x12%\n" +
 	"\x0eserver_version\x18\x01 \x01(\tR\rserverVersion\x12\x1f\n" +
 	"\vdevice_name\x18\x02 \x01(\tR\n" +
-	"deviceName\x12\x12\n" +
-	"\x04udid\x18\x03 \x01(\tR\x04udid\x12D\n" +
+	"deviceName\x12\x1b\n" +
+	"\tdevice_id\x18\x03 \x01(\tR\bdeviceId\x12D\n" +
 	"\x11device_connection\x18\x04 \x01(\v2\x17.swipt.DeviceConnectionR\x10deviceConnection\x12\x1f\n" +
 	"\vapp_version\x18\x05 \x01(\tR\n" +
 	"appVersion\x12\x1b\n" +

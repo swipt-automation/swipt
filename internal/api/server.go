@@ -18,7 +18,6 @@ import (
 	"github.com/sagernet/sing/common/logger"
 	"github.com/swipt-automation/swipt/api"
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/log"
 	"github.com/swipt-automation/swipt/internal/proto"
 
@@ -60,15 +59,22 @@ type request struct {
 	credential *Credential
 }
 
+type Device interface {
+	Name() string
+	Identifier() string
+	Status() *proto.DeviceConnection
+}
+
 type Options struct {
-	Device     *device.Connection
-	Swiplets   *automation.Host
-	Dialog     automation.Dialog
-	Logs       *log.Factory
-	Logger     logger.ContextLogger
-	AppVersion string
-	AppBuild   string
-	Shutdown   func(context.Context)
+	Device          Device
+	Swiplets        *automation.Host
+	Dialog          automation.Dialog
+	Logs            *log.Factory
+	Logger          logger.ContextLogger
+	AppVersion      string
+	AppBuild        string
+	Shutdown        func(context.Context)
+	OnPublishFailed func(network string, err error)
 }
 
 type Server struct {
@@ -79,6 +85,8 @@ type Server struct {
 	servers []*http.Server
 	mcp     *mcp.Server
 	mcpHTTP http.Handler
+
+	published published
 
 	access   sync.Mutex
 	session  *automation.REPL
@@ -341,6 +349,7 @@ func (s *Server) Close() error {
 	ended := s.takeSessions()
 	servers := slices.Clone(s.servers)
 	s.access.Unlock()
+	_ = s.Publish(nil)
 	var err error
 	for _, server := range servers {
 		err = E.Errors(err, server.Close())

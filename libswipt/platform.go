@@ -8,6 +8,7 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/api"
 	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/graphics"
@@ -66,7 +67,7 @@ type Platform struct {
 	lastDialog   int64
 
 	apiAccess sync.Mutex
-	api       *apiState
+	api       *api.Server
 }
 
 func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOptions *DeviceOptions, deviceHandler DeviceHandler) *Platform {

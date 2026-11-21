@@ -14,7 +14,7 @@ service SystemService {
 message GetInfoResponse {
   string server_version = 1;
   string device_name = 2;
-  string udid = 3;
+  string device_id = 3;
   DeviceConnection device_connection = 4;
   string app_version = 5;
   string app_build = 6;

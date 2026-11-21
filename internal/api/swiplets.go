@@ -73,15 +73,15 @@ func serviceStateOf(state automation.ServiceState) *proto.ServiceState {
 func (s *swipletService) swipletOf(swiplet automation.Swiplet) *proto.Swiplet {
 	manifest := swiplet.Manifest
 	out := &proto.Swiplet{
-		Id: swiplet.ID, Title: manifest.Name, Version: manifest.Version, HasService: manifest.Service,
+		Id: manifest.ID, Title: manifest.Name, Version: manifest.Version, HasService: manifest.Service,
 		Actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *proto.SwipletAction {
 			return &proto.SwipletAction{
-				Name: action.Name, Title: action.Title, Description: action.Description,
+				Name: action.Name, Title: action.Title, Description: action.Description, Stream: action.Stream,
 				InputSchema: schemaOf(action.Input), OutputSchema: schemaOf(action.Output),
 			}
 		}),
 	}
-	if manifest.Service {
+	if out.HasService {
 		if state, err := s.options.Swiplets.Service(swiplet.ID); err == nil {
 			out.Service = serviceStateOf(state)
 		}
@@ -92,7 +92,7 @@ func (s *swipletService) swipletOf(swiplet automation.Swiplet) *proto.Swiplet {
 func (s *swipletService) ListSwiplets(context.Context, *emptypb.Empty) (*proto.ListSwipletsResponse, error) {
 	swiplets, err := s.options.Swiplets.Swiplets()
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &proto.ListSwipletsResponse{Swiplets: common.Map(swiplets, s.swipletOf)}, nil
 }
@@ -126,11 +126,11 @@ func actionResult(output json.RawMessage, err error) (*proto.ActionResult, error
 		return &proto.ActionResult{Outcome: &proto.ActionResult_Error{Error: scriptError(failure)}}, nil
 	}
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	value := &structpb.Value{}
 	if err = protojson.Unmarshal(output, value); err != nil {
-		return nil, apiError(E.Cause(err, "read the output"))
+		return nil, StatusError(E.Cause(err, "read the output"))
 	}
 	return &proto.ActionResult{Outcome: &proto.ActionResult_Output{Output: value}}, nil
 }
@@ -145,7 +145,7 @@ func (s *swipletService) CallAction(request *proto.CallActionRequest, stream grp
 	defer cancel(nil)
 	input, err := inputOf(request.Input)
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	tag := "swiplet/" + request.SwipletId
 	parts := make(chan *proto.CallActionResponse, logBuffer)
@@ -196,7 +196,7 @@ func (s *swipletService) CallAction(request *proto.CallActionRequest, stream grp
 		return revoked
 	}
 	if cause := context.Cause(ctx); cause != nil && stream.Context().Err() == nil {
-		return apiError(cause)
+		return StatusError(cause)
 	}
 	if result.err == nil && len(result.output) == 0 {
 		return stream.Send(&proto.CallActionResponse{Part: &proto.CallActionResponse_Result{Result: &proto.ActionResult{}}})
@@ -212,11 +212,11 @@ func (s *swipletService) SetServiceEnabled(ctx context.Context, request *proto.S
 	host := s.options.Swiplets
 	requested := time.Now()
 	if err := host.SetServiceEnabled(request.SwipletId, request.Enabled); err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	state, err := host.AwaitService(ctx, request.SwipletId, request.Enabled, requested)
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &proto.SetServiceEnabledResponse{Service: serviceStateOf(state)}, nil
 }
@@ -224,7 +224,7 @@ func (s *swipletService) SetServiceEnabled(ctx context.Context, request *proto.S
 func (s *swipletService) WatchServices(request *proto.WatchServicesRequest, stream grpc.ServerStreamingServer[proto.WatchServicesResponse]) error {
 	if id := request.SwipletId; id != "" {
 		if _, err := s.options.Swiplets.Service(id); err != nil {
-			return apiError(err)
+			return StatusError(err)
 		}
 	}
 	ctx, cancel := context.WithCancelCause(stream.Context())
@@ -240,7 +240,7 @@ func (s *swipletService) WatchServices(request *proto.WatchServicesRequest, stre
 	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {
 		return cause
 	}
-	return apiError(err)
+	return StatusError(err)
 }
 
 func (s *swipletService) DeploySwiplet(stream grpc.ClientStreamingServer[proto.DeploySwipletRequest, proto.DeploySwipletResponse]) error {
@@ -258,22 +258,23 @@ func (s *swipletService) DeploySwiplet(stream grpc.ClientStreamingServer[proto.D
 		}
 		archive.Write(request.Chunk)
 	}
-	reader, err := zip.NewReader(bytes.NewReader(archive.Bytes()), int64(archive.Len()))
+	reader := bytes.NewReader(archive.Bytes())
+	zipped, err := zip.NewReader(reader, reader.Size())
 	if err != nil {
-		return apiError(E.Cause1(fault.ErrInvalid, E.Cause(err, "open the archive")))
+		return StatusError(E.Cause1(fault.ErrInvalid, E.Cause(err, "open the archive")))
 	}
-	contents, err := automation.ReadArchive(reader)
+	contents, err := automation.ReadArchive(zipped)
 	if err != nil {
 		if !errors.Is(err, fault.ErrInvalid) {
 			err = E.Cause1(fault.ErrInvalid, err)
 		}
-		return apiError(err)
+		return StatusError(err)
 	}
 	host := s.options.Swiplets
 	_, missing := host.Swiplet(contents.Manifest.ID)
-	installed, err := host.Install(bytes.NewReader(archive.Bytes()), int64(archive.Len()))
+	installed, err := host.Install(reader, reader.Size())
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	s.options.Logger.Info("deployed ", installed.ID, " ", installed.Manifest.Version)
 	return stream.SendAndClose(&proto.DeploySwipletResponse{Swiplet: s.swipletOf(installed), Replaced: missing == nil})
@@ -281,7 +282,7 @@ func (s *swipletService) DeploySwiplet(stream grpc.ClientStreamingServer[proto.D
 
 func (s *swipletService) RemoveSwiplet(_ context.Context, request *proto.RemoveSwipletRequest) (*emptypb.Empty, error) {
 	if err := s.options.Swiplets.Remove(request.SwipletId); err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -345,7 +346,7 @@ func (s *swipletService) walkFiles(id, directory string, visit func(*proto.FileI
 func (s *swipletService) ListDataFiles(_ context.Context, request *proto.ListDataFilesRequest) (*proto.ListDataFilesResponse, error) {
 	directory, err := dataPath(request.Path)
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	var out []*proto.FileInfo
 	if request.Recursive {
@@ -359,7 +360,7 @@ func (s *swipletService) ListDataFiles(_ context.Context, request *proto.ListDat
 		out = common.Map(files, func(file automation.FileInfo) *proto.FileInfo { return fileInfoOf(directory, file) })
 	}
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &proto.ListDataFilesResponse{Files: out}, nil
 }
@@ -381,7 +382,7 @@ func (s *swipletService) ReadDataFile(request *proto.ReadDataFileRequest, stream
 	id := request.SwipletId
 	name, err := dataPath(request.Path)
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	send := func(info *proto.FileInfo, chunk *proto.FileChunk) error {
 		if info != nil {
@@ -391,16 +392,16 @@ func (s *swipletService) ReadDataFile(request *proto.ReadDataFileRequest, stream
 	}
 	info, err := s.statFile(id, name)
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	if !info.Directory {
 		data, err := s.options.Swiplets.ReadFile(id, automation.DataFolder, name)
 		if err != nil {
-			return apiError(err)
+			return StatusError(err)
 		}
 		return sendFile(info, data, send)
 	}
-	return apiError(s.walkFiles(id, name, func(info *proto.FileInfo) error {
+	return StatusError(s.walkFiles(id, name, func(info *proto.FileInfo) error {
 		if info.Directory {
 			return send(info, nil)
 		}
@@ -426,12 +427,12 @@ func (s *swipletService) WriteDataFile(stream grpc.ClientStreamingServer[proto.W
 		switch part := request.Part.(type) {
 		case *proto.WriteDataFileRequest_Header:
 			if header != nil {
-				return apiError(E.Extend(fault.ErrInvalid, "the header was sent twice"))
+				return StatusError(E.Extend(fault.ErrInvalid, "the header was sent twice"))
 			}
 			header = part.Header
 		case *proto.WriteDataFileRequest_Data:
 			if header == nil {
-				return apiError(E.Extend(fault.ErrInvalid, "the data came before the header"))
+				return StatusError(E.Extend(fault.ErrInvalid, "the data came before the header"))
 			}
 			if data.Len()+len(part.Data) > largestUpload {
 				return status.Error(codes.ResourceExhausted, F.ToString("the file is larger than ", largestUpload>>20, " MiB"))
@@ -440,7 +441,7 @@ func (s *swipletService) WriteDataFile(stream grpc.ClientStreamingServer[proto.W
 		}
 	}
 	if header == nil {
-		return apiError(E.Extend(fault.ErrInvalid, "the header is missing"))
+		return StatusError(E.Extend(fault.ErrInvalid, "the header is missing"))
 	}
 	name, err := dataPath(header.Path)
 	if err == nil && name == "" {
@@ -450,11 +451,11 @@ func (s *swipletService) WriteDataFile(stream grpc.ClientStreamingServer[proto.W
 		err = s.options.Swiplets.WriteFile(header.SwipletId, automation.DataFolder, name, data.Bytes())
 	}
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	info, err := s.statFile(header.SwipletId, name)
 	if err != nil {
-		return apiError(err)
+		return StatusError(err)
 	}
 	return stream.SendAndClose(&proto.WriteDataFileResponse{File: info})
 }
@@ -479,7 +480,7 @@ func (s *swipletService) RemoveDataFile(_ context.Context, request *proto.Remove
 		err = s.options.Swiplets.RemoveFile(id, automation.DataFolder, name)
 	}
 	if err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }

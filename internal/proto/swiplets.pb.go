@@ -86,6 +86,7 @@ type SwipletAction struct {
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	InputSchema   *structpb.Struct       `protobuf:"bytes,5,opt,name=input_schema,json=inputSchema,proto3" json:"input_schema,omitempty"`
 	OutputSchema  *structpb.Struct       `protobuf:"bytes,6,opt,name=output_schema,json=outputSchema,proto3" json:"output_schema,omitempty"`
+	Stream        bool                   `protobuf:"varint,7,opt,name=stream,proto3" json:"stream,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -153,6 +154,13 @@ func (x *SwipletAction) GetOutputSchema() *structpb.Struct {
 		return x.OutputSchema
 	}
 	return nil
+}
+
+func (x *SwipletAction) GetStream() bool {
+	if x != nil {
+		return x.Stream
+	}
+	return false
 }
 
 type ServiceState struct {
@@ -1321,13 +1329,14 @@ var File_swiplets_proto protoreflect.FileDescriptor
 
 const file_swiplets_proto_rawDesc = "" +
 	"\n" +
-	"\x0eswiplets.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\fcommon.proto\"\xdb\x01\n" +
+	"\x0eswiplets.proto\x12\x05swipt\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\fcommon.proto\"\xf3\x01\n" +
 	"\rSwipletAction\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12:\n" +
 	"\finput_schema\x18\x05 \x01(\v2\x17.google.protobuf.StructR\vinputSchema\x12<\n" +
-	"\routput_schema\x18\x06 \x01(\v2\x17.google.protobuf.StructR\foutputSchemaJ\x04\b\x04\x10\x05\"\xb2\x01\n" +
+	"\routput_schema\x18\x06 \x01(\v2\x17.google.protobuf.StructR\foutputSchema\x12\x16\n" +
+	"\x06stream\x18\a \x01(\bR\x06streamJ\x04\b\x04\x10\x05\"\xb2\x01\n" +
 	"\fServiceState\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12,\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x14.swipt.ServiceStatusR\x06status\x12(\n" +

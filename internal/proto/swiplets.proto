@@ -28,6 +28,7 @@ message SwipletAction {
   reserved 4;
   google.protobuf.Struct input_schema = 5;
   google.protobuf.Struct output_schema = 6;
+  bool stream = 7;
 }
 
 enum ServiceStatus {

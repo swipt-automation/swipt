@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file system.proto.
  */
 export const file_system: GenFile = /*@__PURE__*/
-  fileDesc("CgxzeXN0ZW0ucHJvdG8SBXN3aXB0IqgBCg9HZXRJbmZvUmVzcG9uc2USFgoOc2VydmVyX3ZlcnNpb24YASABKAkSEwoLZGV2aWNlX25hbWUYAiABKAkSDAoEdWRpZBgDIAEoCRIyChFkZXZpY2VfY29ubmVjdGlvbhgEIAEoCzIXLnN3aXB0LkRldmljZUNvbm5lY3Rpb24SEwoLYXBwX3ZlcnNpb24YBSABKAkSEQoJYXBwX2J1aWxkGAYgASgJMoYBCg1TeXN0ZW1TZXJ2aWNlEjkKB0dldEluZm8SFi5nb29nbGUucHJvdG9idWYuRW1wdHkaFi5zd2lwdC5HZXRJbmZvUmVzcG9uc2USOgoIU2h1dGRvd24SFi5nb29nbGUucHJvdG9idWYuRW1wdHkaFi5nb29nbGUucHJvdG9idWYuRW1wdHlCMlowZ2l0aHViLmNvbS9zd2lwdC1hdXRvbWF0aW9uL3N3aXB0L2ludGVybmFsL3Byb3RvYgZwcm90bzM", [file_google_protobuf_empty, file_common]);
+  fileDesc("CgxzeXN0ZW0ucHJvdG8SBXN3aXB0Iq0BCg9HZXRJbmZvUmVzcG9uc2USFgoOc2VydmVyX3ZlcnNpb24YASABKAkSEwoLZGV2aWNlX25hbWUYAiABKAkSEQoJZGV2aWNlX2lkGAMgASgJEjIKEWRldmljZV9jb25uZWN0aW9uGAQgASgLMhcuc3dpcHQuRGV2aWNlQ29ubmVjdGlvbhITCgthcHBfdmVyc2lvbhgFIAEoCRIRCglhcHBfYnVpbGQYBiABKAkyhgEKDVN5c3RlbVNlcnZpY2USOQoHR2V0SW5mbxIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoWLnN3aXB0LkdldEluZm9SZXNwb25zZRI6CghTaHV0ZG93bhIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eUIyWjBnaXRodWIuY29tL3N3aXB0LWF1dG9tYXRpb24vc3dpcHQvaW50ZXJuYWwvcHJvdG9iBnByb3RvMw", [file_google_protobuf_empty, file_common]);
 
 /**
  * @generated from message swipt.GetInfoResponse
@@ -31,9 +31,9 @@ export type GetInfoResponse = Message<"swipt.GetInfoResponse"> & {
   deviceName: string;
 
   /**
-   * @generated from field: string udid = 3;
+   * @generated from field: string device_id = 3;
    */
-  udid: string;
+  deviceId: string;
 
   /**
    * @generated from field: swipt.DeviceConnection device_connection = 4;

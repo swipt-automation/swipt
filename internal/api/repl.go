@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"time"
 
 	"github.com/swipt-automation/swipt/internal/automation"
 	"github.com/swipt-automation/swipt/internal/automation/declarations"
@@ -24,7 +23,7 @@ func (s *replService) Execute(request *proto.ExecuteRequest, stream grpc.ServerS
 		return err
 	}
 	var sendErr error
-	err = session.Execute(ctx, automation.Script{Code: request.Code, Args: request.Args, Program: request.Program}, time.Duration(request.TimeoutMs)*time.Millisecond, func(output automation.Output) {
+	err = session.Execute(ctx, automation.Script{Code: request.Code, Args: request.Args, Program: request.Program}, 0, func(output automation.Output) {
 		if sendErr != nil {
 			return
 		}
@@ -50,7 +49,7 @@ func (s *replService) Execute(request *proto.ExecuteRequest, stream grpc.ServerS
 	}
 	failure, isFailure := automation.ScriptFailure(err)
 	if !isFailure {
-		return apiError(err)
+		return StatusError(err)
 	}
 	return stream.Send(&proto.ExecuteResponse{Part: &proto.ExecuteResponse_Error{Error: scriptError(failure)}})
 }
@@ -61,7 +60,7 @@ func (s *replService) Reset(ctx context.Context, _ *emptypb.Empty) (*emptypb.Emp
 		return nil, err
 	}
 	if err = session.Reset(ctx); err != nil {
-		return nil, apiError(err)
+		return nil, StatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
