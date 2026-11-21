@@ -1,8 +1,8 @@
 import type * as swiplet from "@swipt/api/swiplet";
 
-import { appIntents } from "./app-intents";
 import { available } from "./available";
 import { chunk } from "./chunks";
+import { deviceModules } from "./device";
 import { DOMException, failureOf } from "./errors";
 import { AbortController } from "./events";
 import { assets, cacheDirectory, dataDirectory } from "./files";
@@ -147,17 +147,11 @@ export const defineExtension: typeof swiplet.defineExtension = (
   return out as never;
 };
 
-interface Modules {
+interface RuntimeModules {
   "@swipt/api": typeof import("@swipt/api");
   "@swipt/api/swiplet": typeof import("@swipt/api/swiplet");
   "@swipt/api/file-system": typeof import("@swipt/api/file-system");
-  "@swipt/api/accessibility": typeof import("@swipt/api/accessibility");
-  "@swipt/api/input": typeof import("@swipt/api/input");
-  "@swipt/api/device": typeof import("@swipt/api/device");
-  "@swipt/api/process": typeof import("@swipt/api/process");
-  "@swipt/api/screen": typeof import("@swipt/api/screen");
   "@swipt/api/image": typeof import("@swipt/api/image");
-  "@swipt/api/app-intents": typeof import("@swipt/api/app-intents");
   "@swipt/api/localization": typeof import("@swipt/api/localization");
   "@swipt/api/http": typeof import("@swipt/api/http");
   "expo-sqlite": typeof import("./types/expo-sqlite");
@@ -165,11 +159,15 @@ interface Modules {
   "expo-sqlite/localStorage/install": typeof import("./types/expo-sqlite/localStorage/install");
 }
 
+export type Table<Modules> = {
+  [Specifier in keyof Modules]: () => Modules[Specifier];
+};
+
 const interfaceOnly = (name: string) => (): never => {
   throw new Error(`${name} works only in the swiplet interface`);
 };
 
-const moduleTable = {
+const runtimeModules = {
   "@swipt/api": () => ({ __esModule: true, available }),
   "@swipt/api/swiplet": () => ({
     __esModule: true,
@@ -191,16 +189,7 @@ const moduleTable = {
       return assets();
     },
   }),
-  "@swipt/api/accessibility": () => ({
-    __esModule: true,
-    ...chunk("api").accessibility,
-  }),
-  "@swipt/api/input": () => ({ __esModule: true, ...chunk("api").input }),
-  "@swipt/api/device": () => ({ __esModule: true, ...chunk("api").device }),
-  "@swipt/api/process": () => ({ __esModule: true, ...chunk("api").process }),
-  "@swipt/api/screen": () => ({ __esModule: true, ...chunk("api").screen }),
   "@swipt/api/image": () => ({ __esModule: true, ...chunk("api").image }),
-  "@swipt/api/app-intents": () => ({ __esModule: true, ...appIntents }),
   "@swipt/api/localization": () => ({
     __esModule: true,
     preferredLocalizations,
@@ -209,22 +198,38 @@ const moduleTable = {
   "expo-sqlite": sqlite,
   "expo-sqlite/kv-store": sqliteStore,
   "expo-sqlite/localStorage/install": installLocalStorage,
-} satisfies { [Specifier in keyof Modules]: () => Modules[Specifier] };
+} satisfies Table<RuntimeModules>;
 
-type Declared<Undeclared extends never> = Undeclared;
-type UndeclaredExports = Declared<
-  {
-    [Specifier in keyof Modules]: Exclude<
-      keyof ReturnType<(typeof moduleTable)[Specifier]>,
-      keyof Modules[Specifier] | "__esModule"
-    >;
-  }[keyof Modules]
+const renamed: ReadonlyMap<string, string> = new Map(
+  ["accessibility", "input", "device", "process", "screen", "app-intents"].map(
+    (name) => [`@swipt/api/${name}`, `@swipt/api/ios/${name}`],
+  ),
+);
+
+export const canonicalSpecifier = (specifier: string): string =>
+  renamed.get(specifier) ?? specifier;
+
+export type Declared<Undeclared extends never> = Undeclared;
+export type UndeclaredExports<Modules, Tables> = {
+  [
+    Specifier in keyof Modules & keyof Tables
+  ]: Tables[Specifier] extends () => infer Exported
+    ? Exclude<keyof Exported, keyof Modules[Specifier] | "__esModule">
+    : never;
+}[keyof Modules & keyof Tables];
+type UndeclaredRuntimeExports = Declared<
+  UndeclaredExports<RuntimeModules, typeof runtimeModules>
 >;
 
-export const modules: Record<string, () => object> = moduleTable;
+let bound: Readonly<Record<string, () => object>> | undefined;
+
+export const modules = (): Readonly<Record<string, () => object>> =>
+  (bound ??= Object.freeze(
+    Object.assign(Object.create(null), runtimeModules, deviceModules),
+  ));
 
 const require = (specifier: string): object => {
-  const module = modules[specifier];
+  const module = modules()[canonicalSpecifier(specifier)];
   if (module === undefined) {
     throw new Error(
       `Swipt doesn't provide "${specifier}" to extensions; bundle it into extension.js`,

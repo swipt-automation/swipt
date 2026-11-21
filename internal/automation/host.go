@@ -16,10 +16,8 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/api"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
-	"github.com/swipt-automation/swipt/internal/version"
 )
 
 type Caller string
@@ -33,7 +31,7 @@ const (
 const UpdateGuide = "https://swipt.io/"
 
 var (
-	ErrNotFound        = E.New("not found")
+	ErrNotFound        = fault.ErrNotFound
 	ErrNotAllowed      = E.New("not allowed")
 	ErrInvalid         = fault.ErrInvalid
 	ErrOutdated        = E.New("Swipt is outdated")
@@ -47,24 +45,32 @@ var (
 
 var packageFiles = []string{SourceFolder, AssetsFolder, ManifestFile, IconFile}
 
-type IOSOutdatedError struct {
+type UnsupportedOSError struct{}
+
+func (*UnsupportedOSError) Error() string {
+	return "the swiplet doesn't support " + hostOS.String()
+}
+
+type OSOutdatedError struct {
 	Minimum string
 	Version string
 }
 
-func (e *IOSOutdatedError) Error() string {
-	return "the swiplet requires iOS " + e.Minimum + ", and this device runs iOS " + e.Version
+type Dialog struct {
+	InApp    bool
+	Ask      func(ctx context.Context, request string) (string, error)
+	Backdrop func(image []byte)
+	Active   func() bool
 }
 
 type Options struct {
-	Device            *device.Phone
-	Environment       func() device.Environment
-	Directory         string
-	Caches            string
-	LogFactory        *log.Factory
-	Dialog            Dialog
-	Graphics          Graphics
-	OnSwipletsChanged func()
+	Device      Device
+	Environment func() Environment
+	Directory   string
+	Caches      string
+	LogFactory  *log.Factory
+	Dialog      Dialog
+	Graphics    Graphics
 }
 
 type Host struct {
@@ -73,7 +79,6 @@ type Host struct {
 	logger     log.ContextLogger
 	ctx        context.Context
 	cancel     context.CancelCauseFunc
-	lease      *foregroundLease
 
 	installAccess sync.Mutex
 
@@ -81,18 +86,12 @@ type Host struct {
 	runners  map[string]*runner
 	removing string
 	closed   bool
+	changed  chan struct{}
 
 	watchAccess sync.Mutex
 	watchers    map[*serviceWatcher]struct{}
 
-	locationAccess  sync.Mutex
-	locationState   sync.Mutex
-	location        *simulatedLocation
-	locationChanged chan struct{}
-
 	databases databaseStore
-
-	appVersions sync.Map
 
 	transports   sync.Map
 	cookieAccess sync.Mutex
@@ -102,6 +101,8 @@ type Swiplet struct {
 	ID        string
 	Directory string
 	Manifest  Manifest
+	Platform  Platform
+	Supported bool
 }
 
 func New(options Options) *Host {
@@ -115,22 +116,21 @@ func New(options Options) *Host {
 	h := &Host{
 		options: options, logFactory: logFactory, logger: logFactory.Logger(),
 		runners: make(map[string]*runner), watchers: make(map[*serviceWatcher]struct{}),
-		locationChanged: make(chan struct{}),
-		databases:       newDatabaseStore(),
+		changed:   make(chan struct{}),
+		databases: newDatabaseStore(),
 	}
 	h.ctx, h.cancel = context.WithCancelCause(context.Background())
-	h.lease = &foregroundLease{host: h}
 	return h
 }
 
 func (h *Host) Start() {
-	h.restoreLocation()
+	h.restoreDeviceState()
 	swiplets, err := h.Swiplets()
 	if err != nil {
 		h.logger.Error("start the services: ", err)
 	}
 	for _, swiplet := range swiplets {
-		if !swiplet.Manifest.Service {
+		if !swiplet.Manifest.Service || !swiplet.Supported {
 			continue
 		}
 		if _, err := os.Stat(filepath.Join(swiplet.Directory, serviceFile)); err != nil {
@@ -159,6 +159,10 @@ func (h *Host) Close() {
 	}
 }
 
+func (h *Host) OS() OS {
+	return hostOS
+}
+
 func (h *Host) Swiplets() ([]Swiplet, error) {
 	entries, err := os.ReadDir(h.options.Directory)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -184,7 +188,7 @@ func (h *Host) Swiplets() ([]Swiplet, error) {
 			h.logger.Error("load the swiplet ", entry.Name(), ": ", err)
 			continue
 		}
-		swiplets = append(swiplets, Swiplet{ID: manifest.ID, Directory: directory, Manifest: manifest})
+		swiplets = append(swiplets, h.swiplet(directory, manifest))
 	}
 	return swiplets, nil
 }
@@ -201,7 +205,12 @@ func (h *Host) Swiplet(id string) (Swiplet, error) {
 	if err != nil {
 		return Swiplet{}, err
 	}
-	return Swiplet{ID: id, Directory: directory, Manifest: manifest}, nil
+	return h.swiplet(directory, manifest), nil
+}
+
+func (h *Host) swiplet(directory string, manifest Manifest) Swiplet {
+	platform, supported := manifest.Platforms[hostOS]
+	return Swiplet{ID: manifest.ID, Directory: directory, Manifest: manifest, Platform: platform, Supported: supported}
 }
 
 func (h *Host) runner(id string) (*runner, error) {
@@ -240,13 +249,11 @@ func (h *Host) Compatible(manifest Manifest) error {
 		return E.Extend(ErrSwipletOutdated, "it is built for API level ", manifest.MinimumAPILevel,
 			", and this Swipt runs swiplets built for API level ", api.OldestLevel, " or later")
 	}
-	osVersion := h.options.Environment().OSVersion
-	if minimum, required := version.Parse(manifest.MinimumIOSVersion); required && osVersion != "" {
-		if current, _ := version.Parse(osVersion); !current.AtLeast(minimum) {
-			return &IOSOutdatedError{Minimum: manifest.MinimumIOSVersion, Version: osVersion}
-		}
+	platform, supported := manifest.Platforms[hostOS]
+	if !supported {
+		return &UnsupportedOSError{}
 	}
-	return nil
+	return h.checkOSVersion(platform)
 }
 
 func (h *Host) Install(archive io.ReaderAt, size int64) (Swiplet, error) {
@@ -266,9 +273,7 @@ func (h *Host) Install(archive io.ReaderAt, size int64) (Swiplet, error) {
 	if err != nil {
 		return Swiplet{}, err
 	}
-	if h.options.OnSwipletsChanged != nil {
-		h.options.OnSwipletsChanged()
-	}
+	h.swipletsChanged()
 	return h.Swiplet(id)
 }
 
@@ -355,12 +360,12 @@ func swap(directory, staging string) error {
 	return nil
 }
 
-func (h *Host) cacheDirectory(owner string) string {
+func (h *Host) CacheDirectory(owner string) string {
 	return filepath.Join(h.options.Caches, owner)
 }
 
 func (h *Host) clearCaches(id string) error {
-	directory := h.cacheDirectory(id)
+	directory := h.CacheDirectory(id)
 	entries, err := os.ReadDir(directory)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
@@ -392,7 +397,7 @@ func (h *Host) ClearData(id string) error {
 	_, markerErr := os.Stat(filepath.Join(swiplet.Directory, serviceFile))
 	r.access.Lock()
 	defer r.access.Unlock()
-	if swiplet.Manifest.Service && markerErr == nil {
+	if swiplet.Manifest.Service && swiplet.Supported && markerErr == nil {
 		r.startLocked()
 	}
 	return err
@@ -403,10 +408,21 @@ func (h *Host) Remove(id string) error {
 	if err != nil {
 		return err
 	}
-	if h.options.OnSwipletsChanged != nil {
-		h.options.OnSwipletsChanged()
-	}
+	h.swipletsChanged()
 	return nil
+}
+
+func (h *Host) SwipletsChanged() <-chan struct{} {
+	h.access.Lock()
+	defer h.access.Unlock()
+	return h.changed
+}
+
+func (h *Host) swipletsChanged() {
+	h.access.Lock()
+	defer h.access.Unlock()
+	close(h.changed)
+	h.changed = make(chan struct{})
 }
 
 func (h *Host) remove(id string) error {
@@ -430,9 +446,9 @@ func (h *Host) remove(id string) error {
 		r.cancel(errRemoved)
 		r.end()
 	}
-	h.releaseLocation(id)
+	h.releaseDeviceState(id)
 	h.CloseDatabases(nil, id)
-	if err = E.Errors(os.RemoveAll(h.cacheDirectory(id)), os.RemoveAll(swiplet.Directory)); err != nil {
+	if err = E.Errors(os.RemoveAll(h.CacheDirectory(id)), os.RemoveAll(swiplet.Directory)); err != nil {
 		return err
 	}
 	if swiplet.Manifest.Service {

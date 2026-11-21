@@ -55,14 +55,16 @@ func ReadArchive(reader *zip.Reader) (Archive, error) {
 	if err = CheckID(manifest.ID); err != nil {
 		return Archive{}, err
 	}
-	has := func(entry string) bool {
-		return slices.ContainsFunc(archive.Files, func(file ArchiveFile) bool { return file.Name == path.Join(SourceFolder, entry) })
+	has := func(name string) bool {
+		return slices.ContainsFunc(archive.Files, func(file ArchiveFile) bool { return file.Name == name })
 	}
-	switch {
-	case !has(InterfaceFile):
-		return Archive{}, E.New("the archive has no ", path.Join(SourceFolder, InterfaceFile))
-	case (manifest.Service || len(manifest.Actions) > 0) && !has(ExtensionFile):
-		return Archive{}, E.New("the manifest declares a service or actions, but the archive has no ", path.Join(SourceFolder, ExtensionFile))
+	for target, platform := range manifest.Platforms {
+		switch {
+		case !has(path.Join(platform.Sources, InterfaceFile)):
+			return Archive{}, E.New("the archive has no ", path.Join(platform.Sources, InterfaceFile))
+		case (manifest.Service || len(manifest.Actions) > 0) && !has(path.Join(platform.Sources, ExtensionFile)):
+			return Archive{}, E.New("the manifest declares a service or actions for ", target, ", but the archive has no ", path.Join(platform.Sources, ExtensionFile))
+		}
 	}
 	archive.Manifest = manifest
 	return archive, nil

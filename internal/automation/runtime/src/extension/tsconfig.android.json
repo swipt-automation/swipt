@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "moduleSuffixes": [".android", ""]
+  },
+  "exclude": ["ios", "*.ios.ts"]
+}

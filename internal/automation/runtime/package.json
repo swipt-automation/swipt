@@ -4,7 +4,7 @@
   "main": "src/app/index.tsx",
   "scripts": {
     "build": "bun build.mjs",
-    "check": "tsc -p . && tsc -p src/app"
+    "check": "tsc -p src/extension && tsc -p src/extension/tsconfig.android.json && tsc -p src/app && tsc -p src/app/tsconfig.android.json"
   },
   "dependencies": {
     "@expo/ui": "~58.0.26",

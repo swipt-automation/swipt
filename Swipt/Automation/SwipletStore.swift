@@ -76,13 +76,12 @@ final class SwipletStore {
             AppDirectory.logger.error("load the swiplet order: \(error, privacy: .public)")
         }
         icons = directories.mapValues { SwipletIcon.load(from: $0) }
-        interfaces = directories.filter { !outdated.contains($0.key) }.compactMapValues { directory in
-            let entry = directory
-                .appendingPathComponent(LibSwiptSwipletSourceFolder, isDirectory: true)
-                .appendingPathComponent(LibSwiptSwipletInterfaceFile)
+        interfaces = Dictionary(uniqueKeysWithValues: swiplets.compactMap { swiplet in
+            guard !swiplet.interfaceFile.isEmpty else { return nil }
+            let entry = URL(fileURLWithPath: swiplet.interfaceFile)
             guard let modified = try? entry.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate else { return nil }
-            return SwipletEntry(url: entry, modified: modified)
-        }
+            return (swiplet.id_, SwipletEntry(url: entry, modified: modified))
+        })
         actions = manifests.mapValues { manifest in
             (manifest.actions()?.toArray() ?? []).map { action in
                 SwipletAction(
@@ -293,7 +292,7 @@ final class SwipletStore {
                         RepositorySwiplet(
                             id: swiplet.id_, name: swiplet.name, localizedNames: swiplet.localizedNames()?.toDictionary() ?? [:],
                             description: swiplet.summary, version: swiplet.version, versionCode: swiplet.versionCode,
-                            minimumAPILevel: swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion,
+                            minimumAPILevel: swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumOSVersion,
                             icon: swiplet.icon.map(SwipletIcon.init) ?? .default, url: swiplet.url, checksum: swiplet.checksum)
                     })
             }
@@ -428,6 +427,16 @@ nonisolated struct IOSOutdatedError: LocalizedError {
         isPad
             ? String(localized: "This swiplet requires iPadOS \(version) or later.")
             : String(localized: "This swiplet requires iOS \(version) or later.")
+    }
+}
+
+nonisolated struct UnsupportedOSError: LocalizedError {
+    let isPad: Bool
+
+    var errorDescription: String? {
+        isPad
+            ? String(localized: "This swiplet doesn’t support iPadOS.")
+            : String(localized: "This swiplet doesn’t support iOS.")
     }
 }
 

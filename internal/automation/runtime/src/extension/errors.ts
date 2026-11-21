@@ -161,6 +161,7 @@ export function errorFrom({ name = "Error", message = "" }: Failure): Error {
     case "NotSupportedError":
     case "NotAllowedError":
     case "NotFoundError":
+    case "InvalidStateError":
     case "DataError":
       return new DOMException(message, name);
     case "TypeError":

@@ -106,113 +106,136 @@ export function stream<T>(
   decode: (value: unknown) => T | undefined = (value) => value as T,
 ): AsyncIterable<T> {
   return {
-    [Symbol.asyncIterator](): AsyncIterator<T> {
-      const site = new Error();
-      let id: string | undefined;
-      let buffered: T[] = [];
-      interface Waiter {
-        resolve(result: IteratorResult<T>): void;
-        reject(error: unknown): void;
-      }
-      let waiters: Waiter[] = [];
-      let failure: unknown;
-      let done = false;
-      const finish = (
-        settle: (first: Waiter) => void = (first) =>
-          first.resolve({ value: undefined, done: true }),
-      ): boolean => {
-        done = true;
-        signal?.removeEventListener("abort", abort);
-        if (id !== undefined) {
-          subscriptions.delete(id);
-          native.unsubscribe(id);
-          id = undefined;
-        }
-        const [first, ...rest] = waiters;
-        waiters = [];
-        if (first !== undefined) {
-          settle(first);
-        }
-        for (const waiter of rest) {
-          waiter.resolve({ value: undefined, done: true });
-        }
-        return first !== undefined;
-      };
-      const abort = () => {
-        finish((first) => first.reject(signal!.reason));
-      };
-      const fail = (error: Error) => {
-        error.stack = site.stack;
-        if (!finish((first) => first.reject(error))) {
-          failure = error;
-        }
-      };
-      const open = () => {
-        if (id !== undefined) {
+    [Symbol.asyncIterator]: () =>
+      iterate(kind, args, signal, keep, decode, false),
+  };
+}
+
+export function subscribe<T>(
+  kind: string,
+  args: unknown[],
+  signal: AbortSignal | undefined,
+  decode: (value: unknown) => T | undefined,
+): AsyncIterableIterator<T> {
+  return iterate(kind, args, signal, "all", decode, true);
+}
+
+function iterate<T>(
+  kind: string,
+  args: unknown[] | (() => unknown[]),
+  signal: AbortSignal | undefined,
+  keep: "latest" | "all",
+  decode: (value: unknown) => T | undefined,
+  eager: boolean,
+): AsyncIterableIterator<T> {
+  const site = new Error();
+  let id: string | undefined;
+  let buffered: T[] = [];
+  interface Waiter {
+    resolve(result: IteratorResult<T>): void;
+    reject(error: unknown): void;
+  }
+  let waiters: Waiter[] = [];
+  let failure: unknown;
+  let done = false;
+  const finish = (
+    settle: (first: Waiter) => void = (first) =>
+      first.resolve({ value: undefined, done: true }),
+  ): boolean => {
+    done = true;
+    signal?.removeEventListener("abort", abort);
+    if (id !== undefined) {
+      subscriptions.delete(id);
+      native.unsubscribe(id);
+      id = undefined;
+    }
+    const [first, ...rest] = waiters;
+    waiters = [];
+    if (first !== undefined) {
+      settle(first);
+    }
+    for (const waiter of rest) {
+      waiter.resolve({ value: undefined, done: true });
+    }
+    return first !== undefined;
+  };
+  const abort = () => {
+    finish((first) => first.reject(signal!.reason));
+  };
+  const fail = (error: Error) => {
+    error.stack = site.stack;
+    if (!finish((first) => first.reject(error))) {
+      failure = error;
+    }
+  };
+  const open = () => {
+    if (id !== undefined) {
+      return;
+    }
+    const encoded = JSON.stringify(typeof args === "function" ? args() : args);
+    id = nextID();
+    subscriptions.set(id, {
+      push: (value) => {
+        const decoded = decode(value);
+        if (decoded === undefined) {
           return;
         }
-        const encoded = JSON.stringify(
-          typeof args === "function" ? args() : args,
-        );
-        id = nextID();
-        subscriptions.set(id, {
-          push: (value) => {
-            const decoded = decode(value);
-            if (decoded === undefined) {
-              return;
-            }
-            const waiter = waiters.shift();
-            if (waiter) {
-              waiter.resolve({ value: decoded, done: false });
-            } else if (keep === "latest") {
-              buffered = [decoded];
-            } else if (buffered.length < backlog) {
-              buffered.push(decoded);
-            } else {
-              fail(new Error(`the stream ended with ${backlog} events unread`));
-            }
-          },
-          fail,
-          complete: () => {
-            finish();
-          },
-        });
-        signal?.addEventListener("abort", abort);
-        try {
-          native.subscribe(id, kind, encoded, keep);
-        } catch (error) {
-          finish();
-          throw error;
+        const waiter = waiters.shift();
+        if (waiter) {
+          waiter.resolve({ value: decoded, done: false });
+        } else if (keep === "latest") {
+          buffered = [decoded];
+        } else if (buffered.length < backlog) {
+          buffered.push(decoded);
+        } else {
+          fail(new Error(`the stream ended with ${backlog} events unread`));
         }
-      };
-      return {
-        next(): Promise<IteratorResult<T>> {
-          if (signal?.aborted) {
-            finish();
-            return Promise.reject(signal.reason);
-          }
-          if (buffered.length > 0) {
-            return Promise.resolve({ value: buffered.shift()!, done: false });
-          }
-          if (failure !== undefined) {
-            const error = failure;
-            failure = undefined;
-            return Promise.reject(error);
-          }
-          if (done) {
-            return Promise.resolve({ value: undefined, done: true });
-          }
-          open();
-          return new Promise((resolve, reject) => {
-            waiters.push({ resolve, reject });
-          });
-        },
-        return(): Promise<IteratorResult<T>> {
-          buffered = [];
-          finish();
-          return Promise.resolve({ value: undefined, done: true });
-        },
-      };
+      },
+      fail,
+      complete: () => {
+        finish();
+      },
+    });
+    signal?.addEventListener("abort", abort);
+    try {
+      native.subscribe(id, kind, encoded, keep);
+    } catch (error) {
+      finish();
+      throw error;
+    }
+  };
+  if (eager && !signal?.aborted) {
+    open();
+  }
+  return {
+    [Symbol.asyncIterator]() {
+      return this;
+    },
+    next(): Promise<IteratorResult<T>> {
+      if (signal?.aborted) {
+        finish();
+        return Promise.reject(signal.reason);
+      }
+      if (buffered.length > 0) {
+        return Promise.resolve({ value: buffered.shift()!, done: false });
+      }
+      if (failure !== undefined) {
+        const error = failure;
+        failure = undefined;
+        return Promise.reject(error);
+      }
+      if (done) {
+        return Promise.resolve({ value: undefined, done: true });
+      }
+      open();
+      return new Promise((resolve, reject) => {
+        waiters.push({ resolve, reject });
+      });
+    },
+    return(): Promise<IteratorResult<T>> {
+      buffered = [];
+      finish();
+      return Promise.resolve({ value: undefined, done: true });
     },
   };
 }

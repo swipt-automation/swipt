@@ -1,4 +1,4 @@
-//go:build cgo && !darwin
+//go:build !android && cgo && !darwin
 
 package computer
 

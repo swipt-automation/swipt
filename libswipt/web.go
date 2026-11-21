@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import (
@@ -79,7 +81,7 @@ func (w *SwipletWeb) Compression(format, mode string) (StringIterator, error) {
 }
 
 func (w *SwipletWeb) Random(length int32) (*SwipletWebValue, error) {
-	data, err := w.session.Random(int(length))
+	data, err := automation.RandomBytes(int(length))
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,7 @@ func (w *SwipletWeb) Random(length int32) (*SwipletWebValue, error) {
 }
 
 func (w *SwipletWeb) Digest(algorithm string, data []byte) (*SwipletWebValue, error) {
-	sum, err := w.session.Digest(algorithm, data)
+	sum, err := automation.Digest(algorithm, data)
 	if err != nil {
 		return nil, err
 	}

@@ -2,8 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    "moduleSuffixes": [".ios", ""],
     "types": ["react-native"]
   },
   "include": ["."],
-  "exclude": ["web.ts"]
+  "exclude": ["web.ts", "*.android.ts", "*.android.tsx"]
 }

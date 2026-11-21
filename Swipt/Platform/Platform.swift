@@ -273,7 +273,7 @@ final class Platform {
     }
 
     func isSwipletCompatible(_ swiplet: RepositorySwiplet) -> Bool {
-        core.swipletCompatible(swiplet.minimumAPILevel, minimumIOSVersion: swiplet.minimumIOSVersion)
+        core.swipletCompatible(swiplet.minimumAPILevel, minimumOSVersion: swiplet.minimumIOSVersion)
     }
 
     private static func result(of installed: LibSwiptSwipletInstall) throws -> String {
@@ -282,8 +282,10 @@ final class Platform {
             return installed.id_
         case LibSwiptSwipletErrorOutdated:
             throw SwiptOutdatedError()
-        case LibSwiptSwipletErrorIOSOutdated:
-            throw IOSOutdatedError(version: installed.minimumIOSVersion, isPad: UIDevice.isPad)
+        case LibSwiptSwipletErrorOSOutdated:
+            throw IOSOutdatedError(version: installed.minimumOSVersion, isPad: UIDevice.isPad)
+        case LibSwiptSwipletErrorUnsupportedOS:
+            throw UnsupportedOSError(isPad: UIDevice.isPad)
         default:
             throw MessageError(installed.errorMessage)
         }

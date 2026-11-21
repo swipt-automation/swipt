@@ -1,4 +1,3 @@
-import type { Raw } from "./elements";
 import type { Position } from "./format";
 
 export interface Native {
@@ -29,7 +28,8 @@ export interface Native {
     json: string,
     mode: "one" | "all",
     call: (kind: string, id: string, value: string) => string,
-  ): { elements?: Raw[]; failure?: string; thrown?: boolean };
+  ): { elements?: unknown[]; failure?: string; thrown?: boolean };
+  dropSnapshot(snapshot: string): void;
   preferredLocalizations(localizations: string): string[];
   environment(): { osVersion: string; languages: string[] };
   locate(line: number, column: number): Position | undefined;

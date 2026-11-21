@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import (
@@ -6,8 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -27,12 +27,12 @@ type SwipletIcon struct {
 	SymbolColor string
 }
 
-func newSwipletIcon(icon automation.Icon) *SwipletIcon {
-	return &SwipletIcon{Color: icon.Color, Symbol: icon.Symbol, SymbolColor: icon.SymbolColor}
+func newSwipletIcon(icon automation.Icon, symbol string) *SwipletIcon {
+	return &SwipletIcon{Color: icon.Color, Symbol: symbol, SymbolColor: icon.SymbolColor}
 }
 
 func LoadSwipletIcon(directory string) *SwipletIcon {
-	return newSwipletIcon(automation.LoadIcon(directory))
+	return newSwipletIcon(automation.LoadIcon(directory, deviceOS))
 }
 
 type LocalizedName struct {
@@ -81,7 +81,7 @@ func (m *SwipletManifest) Actions() SwipletActionIterator {
 
 func newSwipletManifest(manifest automation.Manifest) *SwipletManifest {
 	return &SwipletManifest{
-		ID: manifest.ID, Name: manifest.Name, Icon: newSwipletIcon(manifest.Icon), Version: manifest.Version,
+		ID: manifest.ID, Name: manifest.Name, Icon: newSwipletIcon(manifest.Icon, manifest.Symbol(deviceOS)), Version: manifest.Version,
 		VersionCode: manifest.VersionCode, Service: manifest.Service, localizedNames: newLocalizedNames(manifest.LocalizedNames),
 		actions: common.Map(manifest.Actions, func(action automation.ActionInfo) *SwipletAction {
 			return &SwipletAction{Name: action.Name, Title: action.Title, Summary: action.Description, Stream: action.Stream, expose: action.Expose}
@@ -113,10 +113,11 @@ func readSwipletArchive(file string) (automation.Archive, error) {
 }
 
 type SwipletInfo struct {
-	ID          string
-	Directory   string
-	Manifest    *SwipletManifest
-	NeedsUpdate bool
+	ID            string
+	Directory     string
+	Manifest      *SwipletManifest
+	NeedsUpdate   bool
+	InterfaceFile string
 }
 
 func (p *Platform) Swiplets() (SwipletInfoIterator, error) {
@@ -125,19 +126,23 @@ func (p *Platform) Swiplets() (SwipletInfoIterator, error) {
 		return nil, err
 	}
 	return newIterator(common.Map(swiplets, func(swiplet automation.Swiplet) *SwipletInfo {
-		return &SwipletInfo{
-			ID: swiplet.ID, Directory: swiplet.Directory, Manifest: newSwipletManifest(swiplet.Manifest),
-			NeedsUpdate: errors.Is(p.host.Compatible(swiplet.Manifest), automation.ErrSwipletOutdated),
+		info := &SwipletInfo{ID: swiplet.ID, Directory: swiplet.Directory, Manifest: newSwipletManifest(swiplet.Manifest)}
+		switch err := p.host.Compatible(swiplet.Manifest); {
+		case err == nil:
+			info.InterfaceFile = filepath.Join(swiplet.Directory, swiplet.Platform.Sources, automation.InterfaceFile)
+		case errors.Is(err, automation.ErrSwipletOutdated):
+			info.NeedsUpdate = true
 		}
+		return info
 	})), nil
 }
 
 type SwipletInstall struct {
 	ID string
 
-	ErrorCode         int32
-	ErrorMessage      string
-	MinimumIOSVersion string
+	ErrorCode        int32
+	ErrorMessage     string
+	MinimumOSVersion string
 }
 
 func (p *Platform) InstallSwiplet(file string) *SwipletInstall {
@@ -145,12 +150,14 @@ func (p *Platform) InstallSwiplet(file string) *SwipletInstall {
 	return newSwipletInstall(id, err)
 }
 
-func (p *Platform) SwipletCompatible(minimumAPILevel int64, minimumIOSVersion string) bool {
-	return p.host.Compatible(automation.Manifest{MinimumAPILevel: minimumAPILevel, MinimumIOSVersion: minimumIOSVersion}) == nil
+func (p *Platform) SwipletCompatible(minimumAPILevel int64, minimumOSVersion string) bool {
+	return p.host.Compatible(automation.Manifest{
+		MinimumAPILevel: minimumAPILevel, Platforms: map[automation.OS]automation.Platform{deviceOS: {MinimumVersion: minimumOSVersion}},
+	}) == nil
 }
 
 func newSwipletInstall(id string, err error) *SwipletInstall {
-	var outdatedIOS *automation.IOSOutdatedError
+	var outdatedOS *automation.OSOutdatedError
 	switch {
 	case err == nil:
 		return &SwipletInstall{ID: id}
@@ -158,8 +165,10 @@ func newSwipletInstall(id string, err error) *SwipletInstall {
 		return &SwipletInstall{ErrorCode: SwipletErrorOutdated, ErrorMessage: err.Error()}
 	case errors.Is(err, automation.ErrSwipletOutdated):
 		return &SwipletInstall{ErrorCode: SwipletErrorSwipletOutdated, ErrorMessage: err.Error()}
-	case errors.As(err, &outdatedIOS):
-		return &SwipletInstall{ErrorCode: SwipletErrorIOSOutdated, ErrorMessage: err.Error(), MinimumIOSVersion: outdatedIOS.Minimum}
+	case errors.As(err, &outdatedOS):
+		return &SwipletInstall{ErrorCode: SwipletErrorOSOutdated, ErrorMessage: err.Error(), MinimumOSVersion: outdatedOS.Minimum}
+	case errors.As(err, new(*automation.UnsupportedOSError)):
+		return &SwipletInstall{ErrorCode: SwipletErrorUnsupportedOS, ErrorMessage: err.Error()}
 	default:
 		return &SwipletInstall{ErrorCode: SwipletErrorFailed, ErrorMessage: err.Error()}
 	}
@@ -188,67 +197,11 @@ func (p *Platform) ClearSwipletData(swiplet string) error {
 }
 
 func (p *Platform) ExportSwiplet(swiplet string, destination string) error {
-	installed, err := p.host.Swiplet(swiplet)
-	if err != nil {
-		return err
-	}
-	names := []string{automation.ManifestFile}
-	if _, err = os.Stat(filepath.Join(installed.Directory, automation.IconFile)); err == nil {
-		names = append(names, automation.IconFile)
-	}
-	for _, folder := range []string{automation.SourceFolder, automation.AssetsFolder} {
-		if _, err = os.Stat(filepath.Join(installed.Directory, folder)); errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		err = fs.WalkDir(os.DirFS(installed.Directory), folder, func(name string, item fs.DirEntry, err error) error {
-			if err == nil && item.Type().IsRegular() {
-				names = append(names, name)
-			}
-			return err
-		})
-		if err != nil {
-			return err
-		}
-	}
 	file, err := os.Create(destination)
 	if err != nil {
 		return err
 	}
-	writer := zip.NewWriter(file)
-	err = writeArchive(writer, installed.Directory, names)
-	return E.Errors(err, writer.Close(), file.Close())
-}
-
-func writeArchive(writer *zip.Writer, directory string, names []string) error {
-	for _, name := range names {
-		info, err := os.Stat(filepath.Join(directory, name))
-		if err != nil {
-			return err
-		}
-		header, err := zip.FileInfoHeader(info)
-		if err != nil {
-			return err
-		}
-		header.Name, header.Method = name, zip.Deflate
-		output, err := writer.CreateHeader(header)
-		if err != nil {
-			return err
-		}
-		if err = copyFile(output, filepath.Join(directory, name)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func copyFile(writer io.Writer, name string) error {
-	file, err := os.Open(name)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = io.Copy(writer, file)
-	return err
+	return E.Errors(p.host.Export(swiplet, file), file.Close())
 }
 
 func (p *Platform) SwipletDatabase(client, swiplet, request string) (string, error) {

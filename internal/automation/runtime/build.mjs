@@ -29,9 +29,12 @@ const chunks = Object.fromEntries(
           `the Chunks member ${JSON.stringify(line.trim())} is not NAME: typeof import("MODULE")`,
         );
       }
-      return [name, path.join("src/extension", `${module}.ts`)];
+      return [name, path.join("src/extension", module)];
     }),
 );
+
+const systems = ["ios", "android"];
+const systemSource = (module, os) => `${module}.${os}.ts`;
 
 const registry = (ids) => ({
   name: "registry",
@@ -63,95 +66,8 @@ const internalSlots = {
   },
 };
 
-const runtime = {
-  ...shared,
-  format: "esm",
-  entryPoints: ["src/extension/index.ts"],
-  inject: ["src/extension/encoding.ts"],
-  write: false,
-  metafile: true,
-};
-const core = new Set(
-  Object.keys(
-    (
-      await build({
-        ...runtime,
-        write: false,
-        plugins: [internalSlots, registry([])],
-      })
-    ).metafile.inputs,
-  ),
-);
-
-const imported = new Set();
-const linked = {
-  name: "linked",
-  setup(build) {
-    build.onResolve({ filter: /.*/ }, async (args) => {
-      if (args.kind === "entry-point" || args.pluginData === linked) {
-        return undefined;
-      }
-      const resolved = await build.resolve(args.path, {
-        kind: args.kind,
-        importer: args.importer,
-        resolveDir: args.resolveDir,
-        pluginData: linked,
-      });
-      const id = path.relative(process.cwd(), resolved.path);
-      if (resolved.errors.length > 0 || !core.has(id)) {
-        return undefined;
-      }
-      imported.add(id);
-      return { path: id, namespace: "core" };
-    });
-    build.onLoad({ filter: /.*/, namespace: "core" }, (args) => ({
-      contents: `module.exports = __swiptCore[${JSON.stringify(args.path)}];`,
-      loader: "js",
-    }));
-  },
-};
-
-const owners = new Map();
-fs.rmSync("../chunks", { recursive: true, force: true });
-fs.mkdirSync("../chunks");
-for (const [name, entry] of Object.entries(chunks)) {
-  if (core.has(entry)) {
-    throw new Error(
-      `runtime.js imports ${entry}, so it cannot be the chunk ${name}`,
-    );
-  }
-  const result = await build({
-    ...shared,
-    globalName: "__swiptChunk",
-    entryPoints: [entry],
-    write: false,
-    metafile: true,
-    plugins: [linked],
-  });
-  for (const input of Object.keys(result.metafile.inputs).filter(
-    (input) => !input.startsWith("core:"),
-  )) {
-    if (owners.has(input)) {
-      throw new Error(
-        `${input} is in both the chunks ${owners.get(input)} and ${name}`,
-      );
-    }
-    owners.set(input, name);
-  }
-  const factory = /^(?:"use strict";)?var __swiptChunk=(.*?);?\n?$/s.exec(
-    result.outputFiles[0].text,
-  );
-  if (factory === null) {
-    throw new Error(
-      `the chunk ${name} is not a single assignment to __swiptChunk`,
-    );
-  }
-  fs.writeFileSync(
-    `../chunks/${name}.js`,
-    `(__swiptCore=>{"use strict";return ${factory[1]}})\n`,
-  );
-}
-
+const bundles = fileURLToPath(new URL("../bundles/", import.meta.url));
+fs.rmSync(bundles, { recursive: true, force: true });
 const blockScript = (code) => {
   const program = parse(code, { module: true, next: true, ranges: true });
   const exported = program.body.at(-1);
@@ -186,11 +102,116 @@ const blockScript = (code) => {
   parse(out, { next: true });
   return out;
 };
-const bundled = await build({
-  ...runtime,
-  plugins: [internalSlots, registry([...imported].sort())],
-});
-fs.writeFileSync("../runtime.js", blockScript(bundled.outputFiles[0].text));
+for (const os of systems) {
+  const resolveExtensions = [
+    `.${os}.ts`,
+    ".tsx",
+    ".ts",
+    ".jsx",
+    ".js",
+    ".css",
+    ".json",
+  ];
+  const runtime = {
+    ...shared,
+    format: "esm",
+    entryPoints: ["src/extension/index.ts"],
+    inject: ["src/extension/encoding.ts"],
+    resolveExtensions,
+    write: false,
+    metafile: true,
+  };
+  const core = new Set(
+    Object.keys(
+      (
+        await build({
+          ...runtime,
+          write: false,
+          plugins: [internalSlots, registry([])],
+        })
+      ).metafile.inputs,
+    ),
+  );
+
+  const imported = new Set();
+  const linked = {
+    name: "linked",
+    setup(build) {
+      build.onResolve({ filter: /.*/ }, async (args) => {
+        if (args.kind === "entry-point" || args.pluginData === linked) {
+          return undefined;
+        }
+        const resolved = await build.resolve(args.path, {
+          kind: args.kind,
+          importer: args.importer,
+          resolveDir: args.resolveDir,
+          pluginData: linked,
+        });
+        const id = path.relative(process.cwd(), resolved.path);
+        if (resolved.errors.length > 0 || !core.has(id)) {
+          return undefined;
+        }
+        imported.add(id);
+        return { path: id, namespace: "core" };
+      });
+      build.onLoad({ filter: /.*/, namespace: "core" }, (args) => ({
+        contents: `module.exports = __swiptCore[${JSON.stringify(args.path)}];`,
+        loader: "js",
+      }));
+    },
+  };
+
+  const owners = new Map();
+  const directory = path.join(bundles, os);
+  fs.mkdirSync(path.join(directory, "chunks"), { recursive: true });
+  for (const [name, module] of Object.entries(chunks)) {
+    const system = fs.existsSync(systemSource(module, os));
+    const entry = system ? systemSource(module, os) : `${module}.ts`;
+    if (core.has(entry)) {
+      throw new Error(
+        `the ${os} runtime.js imports ${entry}, so it cannot be the chunk ${name}`,
+      );
+    }
+    const result = await build({
+      ...shared,
+      globalName: "__swiptChunk",
+      entryPoints: [entry],
+      resolveExtensions,
+      write: false,
+      metafile: true,
+      plugins: [linked],
+    });
+    for (const input of Object.keys(result.metafile.inputs).filter(
+      (input) => !input.startsWith("core:"),
+    )) {
+      if (owners.has(input)) {
+        throw new Error(
+          `${input} is in both the ${os} chunks ${owners.get(input)} and ${name}`,
+        );
+      }
+      owners.set(input, name);
+    }
+    const factory = /^(?:"use strict";)?var __swiptChunk=(.*?);?\n?$/s.exec(
+      result.outputFiles[0].text,
+    );
+    if (factory === null) {
+      throw new Error(
+        `the chunk ${name} is not a single assignment to __swiptChunk`,
+      );
+    }
+    const code = `(__swiptCore=>{"use strict";return ${factory[1]}})\n`;
+    fs.writeFileSync(path.join(directory, "chunks", `${name}.js`), code);
+  }
+
+  const bundled = await build({
+    ...runtime,
+    plugins: [internalSlots, registry([...imported].sort())],
+  });
+  fs.writeFileSync(
+    path.join(directory, "runtime.js"),
+    blockScript(bundled.outputFiles[0].text),
+  );
+}
 const rewriter = await build({
   ...shared,
   entryPoints: ["src/extension/rewrite.ts"],
@@ -219,47 +240,68 @@ const standardSchema = fs
   .replace(/^\s*\n/gm, "")
   .trimEnd();
 
-execFileSync("bun", ["x", "tsc", "-p", "."], { stdio: "inherit" });
-
-const table = parse(
-  (
-    await transform(fs.readFileSync("src/extension/extension.ts", "utf8"), {
-      loader: "ts",
-    })
-  ).code,
-  { module: true },
-)
-  .body.flatMap((node) =>
-    node.type === "VariableDeclaration" ? node.declarations : [],
-  )
-  .find((declarator) => declarator.id.name === "moduleTable");
-if (table === undefined) {
-  throw new Error("src/extension/extension.ts has no module table moduleTable");
+for (const project of [
+  "src/extension/tsconfig.json",
+  "src/extension/tsconfig.android.json",
+]) {
+  execFileSync("bun", ["x", "tsc", "-p", project], { stdio: "inherit" });
 }
+
+const tableOf = async (file, name) => {
+  const table = parse(
+    (await transform(fs.readFileSync(file, "utf8"), { loader: "ts" })).code,
+    { module: true },
+  )
+    .body.map((node) =>
+      node.type === "ExportNamedDeclaration" ? node.declaration : node,
+    )
+    .flatMap((node) =>
+      node?.type === "VariableDeclaration" ? node.declarations : [],
+    )
+    .find((declarator) => declarator.id.name === name)?.init;
+  if (table === undefined) {
+    throw new Error(`${file} has no module table ${name}`);
+  }
+  return table;
+};
+const specifiersOf = (table) =>
+  table.properties.map(({ key }) => key.value ?? key.name);
+const runtimeModules = await tableOf(
+  "src/extension/extension.ts",
+  "runtimeModules",
+);
 const typeFiles = new Set(
   fs
     .readdirSync("src/extension/types", { recursive: true })
     .filter((file) => file.endsWith(".d.ts"))
     .map((file) => file.slice(0, -".d.ts".length)),
 );
+const apiSpecifier = (directory, module) => {
+  const name = path.posix.join(directory, module);
+  return name === "index" ? "@swipt/api" : `@swipt/api/${name}`;
+};
 const ambientModule = (specifier, text) => {
+  const directory = path.posix.dirname(
+    specifier === "@swipt/api"
+      ? "index"
+      : specifier.slice("@swipt/api/".length),
+  );
   const body = text
     .replace(
       /^import type \{[^}]*\} from "@standard-schema\/spec";$/m,
       standardSchema,
     )
     .replace(
-      /^import (type )?(.*) from "\.\/([a-z-]+)";$/gm,
+      /^import (type )?(.*) from "(\.\.?\/[a-z-/]+)";$/gm,
       (_, type = "", names, module) =>
-        `import ${type}${names} from "${module === "index" ? "@swipt/api" : `@swipt/api/${module}`}";`,
+        `import ${type}${names} from "${apiSpecifier(directory, module)}";`,
     )
     .replace(globalBlock, (global) => global.replace(/^declare /, ""))
     .replace(/^(export )?declare /gm, "$1")
     .replace(/\n{3,}/g, "\n\n");
   return `declare module "${specifier}" {\n${body.trim().replace(/^(?=.)/gm, "  ")}\n}`;
 };
-const modules = table.init.properties.map(({ key }) => {
-  const specifier = key.value ?? key.name;
+const moduleDeclarations = (specifier) => {
   if (specifier === "@swipt/api" || specifier.startsWith("@swipt/api/")) {
     return ambientModule(
       specifier,
@@ -277,39 +319,63 @@ const modules = table.init.properties.map(({ key }) => {
     specifier,
     fs.readFileSync(`src/extension/types/${specifier}.d.ts`, "utf8"),
   );
-});
+};
+const runtimeDeclarations =
+  specifiersOf(runtimeModules).map(moduleDeclarations);
 if (typeFiles.size > 0) {
   throw new Error(
     `src/extension/types declares ${[...typeFiles].join(", ")}, which the module table lacks`,
   );
 }
-const repl = [...read("repl").matchAll(globalBlock)]
-  .map(([, body]) =>
-    body.replace(/^ {2}(?=\S)/gm, "declare ").replace(/^ {2}/gm, ""),
-  )
-  .join("")
-  .trimEnd();
+const replGlobals = (name) =>
+  [...read(name).matchAll(globalBlock)]
+    .map(([, body]) =>
+      body
+        .replace(
+          /^ {2}(?=(?:const|let|var|function|class|interface|type|namespace|enum)\b)/gm,
+          "declare ",
+        )
+        .replace(/^ {2}/gm, ""),
+    )
+    .join("")
+    .trimEnd();
 const web = fs.readFileSync("src/extension/web.d.ts", "utf8").trimEnd();
-const declarations = fileURLToPath(
-  new URL("../declarations/api.d.ts", import.meta.url),
+const declarationsDirectory = fileURLToPath(
+  new URL("../declarations/", import.meta.url),
 );
-fs.writeFileSync(declarations, `${[repl, ...modules, web].join("\n\n")}\n`);
-for (const lib of ["es2023", "es2023,dom"]) {
-  execFileSync(
-    "bun",
-    [
-      "x",
-      "tsc",
-      "--ignoreConfig",
-      "--noEmit",
-      "--strict",
-      "--noResolve",
-      "--types",
-      "",
-      "--lib",
-      lib,
-      declarations,
-    ],
-    { stdio: "inherit" },
+for (const os of systems) {
+  const file = path.join(declarationsDirectory, `${os}.d.ts`);
+  const deviceModules = await tableOf(
+    `src/extension/device.${os}.ts`,
+    "deviceModules",
   );
+  fs.writeFileSync(
+    file,
+    `${[
+      replGlobals("repl"),
+      replGlobals(`${os}/repl`),
+      ...runtimeDeclarations,
+      ...specifiersOf(deviceModules).map(moduleDeclarations),
+      web,
+    ].join("\n\n")}\n`,
+  );
+  for (const lib of ["es2023", "es2023,dom"]) {
+    execFileSync(
+      "bun",
+      [
+        "x",
+        "tsc",
+        "--ignoreConfig",
+        "--noEmit",
+        "--strict",
+        "--noResolve",
+        "--types",
+        "",
+        "--lib",
+        lib,
+        file,
+      ],
+      { stdio: "inherit" },
+    );
+  }
 }

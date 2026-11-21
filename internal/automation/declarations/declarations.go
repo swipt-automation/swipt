@@ -1,12 +1,6 @@
 package declarations
 
-import (
-	_ "embed"
-	"regexp"
-)
-
-//go:embed api.d.ts
-var TypeScript string
+import "regexp"
 
 var Modules = func() []string {
 	var modules []string

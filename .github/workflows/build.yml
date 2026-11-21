@@ -21,7 +21,7 @@ concurrency:
 env:
   PACKAGE_PATHS: >-
     .github/publish_packages.sh api cli cmd/swipt-driver internal go.mod go.sum Swipt/Resources/DeveloperDiskImage
-    :!internal/automation/runtime :!internal/cmd/build_altstore_source :!internal/cmd/build_libswipt :!internal/cmd/format_xcstrings :!*_test.go
+    :!internal/automation/runtime :!internal/cmd/build_altstore_source :!internal/cmd/build_libswipt :!internal/cmd/format_xcstrings :!internal/cmd/with_toolchain :!*_test.go
 
 jobs:
   calculate_version:
@@ -58,7 +58,7 @@ jobs:
             PREVIOUS=$(git tag -l --format='%(contents:subject)' nightly)
             RELEASED=$(curl -fsSL --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/metadata.json" | jq -r '"\(.version) \(.build)"' || true)
             if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] && git diff --quiet 'nightly^{commit}' HEAD -- . \
-              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!*_test.go'; then
+              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!internal/cmd/with_toolchain' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!*_test.go'; then
               APP_CHANGED=false
             fi
           fi
@@ -78,7 +78,7 @@ jobs:
           echo "stable=$STABLE" >> "$GITHUB_OUTPUT"
           echo "build_number=$((PREVIOUS + 1))"
           echo "build_number=$((PREVIOUS + 1))" >> "$GITHUB_OUTPUT"
-          echo "library_hash=${{ hashFiles('go.mod', 'go.sum', 'api/*.go', 'api/package.json', 'libswipt/**', 'internal/**', '!internal/automation/runtime/**', '!internal/cmd/**', 'internal/cmd/build_libswipt/**', '!**/*_test.go') }}" >> "$GITHUB_OUTPUT"
+          echo "library_hash=${{ hashFiles('go.mod', 'go.sum', 'api/*.go', 'api/package.json', 'libswipt/**', 'internal/**', '!internal/automation/runtime/**', '!internal/cmd/**', 'internal/cmd/build_libswipt/**', 'internal/cmd/toolchain/**', '!**/*_test.go') }}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Check API level
@@ -316,7 +316,7 @@ jobs:
           path: |
             build/downloads
             build/winsysroot-*
-          key: driver-dependencies-${{ matrix.target }}-${{ hashFiles('internal/cmd/build_driver/**') }}
+          key: driver-dependencies-${{ matrix.target }}-${{ hashFiles('internal/cmd/build_driver/**', 'internal/cmd/toolchain/**') }}
           restore-keys: driver-dependencies-${{ matrix.target }}-
       - name: Build
         run: go run ./internal/cmd/build_driver -target ${{ matrix.target }}

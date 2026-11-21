@@ -3,6 +3,8 @@
 package automation
 
 import (
+	"cmp"
+	"encoding/json"
 	"strconv"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -21,20 +23,50 @@ const (
 	longestID     = 128
 )
 
-var DefaultIcon = Icon{Color: "brown", Symbol: "square.2.layers.3d.fill"}
+var (
+	defaultIcon    = Icon{Color: "brown"}
+	defaultSymbols = map[OS]string{IOS: "square.2.layers.3d.fill", Android: "layers"}
+)
 
 type Icon struct {
-	Color       string `json:"color"`
-	Symbol      string `json:"symbol"`
-	SymbolColor string `json:"symbolColor"`
+	Color       string
+	SymbolColor string
+	Symbols     map[OS]string
 }
 
-func LoadIcon(directory string) Icon {
+func (i Icon) Symbol(target OS) string {
+	return i.Symbols[target]
+}
+
+func (i *Icon) UnmarshalJSON(data []byte) error {
+	var fields struct {
+		Color       string `json:"color"`
+		SymbolColor string `json:"symbolColor"`
+		IOS         string `json:"ios"`
+		Android     string `json:"android"`
+		Symbol      string `json:"symbol"`
+	}
+	fields.Color, fields.SymbolColor = i.Color, i.SymbolColor
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	symbols := make(map[OS]string)
+	if symbol := cmp.Or(fields.IOS, fields.Symbol); symbol != "" {
+		symbols[IOS] = symbol
+	}
+	if fields.Android != "" {
+		symbols[Android] = fields.Android
+	}
+	*i = Icon{Color: fields.Color, SymbolColor: fields.SymbolColor, Symbols: symbols}
+	return nil
+}
+
+func LoadIcon(directory string, target OS) (Icon, string) {
 	manifest, err := LoadManifest(directory)
 	if err != nil {
-		return DefaultIcon
+		manifest.Icon = defaultIcon
 	}
-	return manifest.Icon
+	return manifest.Icon, manifest.Symbol(target)
 }
 
 func CheckID(id string) error {

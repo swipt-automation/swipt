@@ -3,12 +3,10 @@
 package automation
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
 
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/jsc"
 	"github.com/swipt-automation/swipt/internal/selector"
 )
@@ -19,13 +17,6 @@ type scriptCallbacks[T any] struct {
 	engine   *engine
 	callback jsc.Value
 	argument func(T) (string, error)
-}
-
-func shallow(element *device.ViewElement) (string, error) {
-	copied := *element
-	copied.Children = nil
-	data, err := json.Marshal(&copied)
-	return string(data), err
 }
 
 func (c scriptCallbacks[T]) Predicate(id int, element T) (bool, error) {
@@ -86,6 +77,15 @@ func search[T comparable](snapshot tree[T], vocabulary *selector.Vocabulary[T], 
 	return []T{element}, err
 }
 
+func (e *engine) dropSnapshot(arguments []jsc.Value) (any, error) {
+	values, err := texts(arguments, 1)
+	if err != nil {
+		return nil, err
+	}
+	e.snapshots.drop(values[0])
+	return nil, nil
+}
+
 func (e *engine) match(arguments []jsc.Value) (any, error) {
 	values, err := texts(arguments, 4)
 	if err != nil {
@@ -95,17 +95,16 @@ func (e *engine) match(arguments []jsc.Value) (any, error) {
 		return nil, E.New("expected the selector callback")
 	}
 	id, scope, encoded, mode := values[0], values[1], values[2], values[3]
-	view, err := e.snapshots.get(id)
+	snapshot, err := e.snapshots.get(id)
 	if err != nil {
 		return map[string]string{"failure": FailureOf(err)}, nil
 	}
-	callbacks := scriptCallbacks[*device.ViewElement]{engine: e, callback: arguments[4], argument: shallow}
-	found, err := search(view, device.Vocabulary, scope, []byte(encoded), mode == "all", callbacks)
+	found, err := snapshot.search(e, scope, []byte(encoded), mode == "all", arguments[4])
 	switch {
 	case errors.Is(err, errThrown):
 		return map[string]bool{"thrown": true}, nil
 	case err != nil:
 		return map[string]string{"failure": FailureOf(err)}, nil
 	}
-	return map[string][]*device.ViewElement{"elements": found}, nil
+	return map[string]any{"elements": found}, nil
 }

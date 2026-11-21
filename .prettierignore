@@ -1,11 +1,11 @@
 Swipt/
 Swipt.xcodeproj/
 cli/src/proto/
+cli/src/material-icons.ts
 cli/src/resources.d.ts
 cli/dist/
-internal/automation/runtime.js
 internal/automation/rewrite.js
-internal/automation/chunks/
+internal/automation/bundles/
 internal/automation/declarations/
 internal/automation/runtime/src/shared/encodings.ts
 internal/automation/runtime/src/shared/encoding-tables.ts

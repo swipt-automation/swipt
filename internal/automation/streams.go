@@ -28,7 +28,7 @@ var (
 type resource struct {
 	reader    io.Reader
 	writer    io.Writer
-	socket    *webSocket
+	handle    any
 	finish    func(abort error) error
 	interrupt func(abort error)
 	once      sync.Once
@@ -71,6 +71,19 @@ func (e *engine) resource(id string) (*resource, error) {
 		return nil, E.Cause1(ErrInvalid, E.New("the stream ", strconv.Quote(id), " is closed"))
 	}
 	return it, nil
+}
+
+func resourceHandle[T any](e *engine, id string, kind string) (T, error) {
+	var handle T
+	it, err := e.resource(id)
+	if err != nil {
+		return handle, err
+	}
+	handle, matches := it.handle.(T)
+	if !matches {
+		return handle, E.Cause1(ErrInvalid, E.New("the resource is not ", kind))
+	}
+	return handle, nil
 }
 
 func (e *engine) takeResource(id string) (*resource, error) {

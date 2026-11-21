@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import "github.com/sagernet/sing/common"
@@ -6,12 +8,6 @@ type StringIterator interface {
 	Len() int32
 	HasNext() bool
 	Next() string
-}
-
-type TXTRecordEntryIterator interface {
-	Len() int32
-	HasNext() bool
-	Next() *TXTRecordEntry
 }
 
 type LocalizedNameIterator interface {
@@ -40,7 +36,6 @@ type RepositorySwipletIterator interface {
 
 var (
 	_ StringIterator            = (*iterator[string])(nil)
-	_ TXTRecordEntryIterator    = (*iterator[*TXTRecordEntry])(nil)
 	_ LocalizedNameIterator     = (*iterator[*LocalizedName])(nil)
 	_ SwipletActionIterator     = (*iterator[*SwipletAction])(nil)
 	_ SwipletInfoIterator       = (*iterator[*SwipletInfo])(nil)

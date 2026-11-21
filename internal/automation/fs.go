@@ -4,7 +4,10 @@ package automation
 
 import (
 	"context"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/sagernet/sing/common"
@@ -230,4 +233,20 @@ func fsTransfer(move bool) operationFunc {
 		}
 		return nil, from.root.copyTo(from.name, to.root, to.name)
 	}
+}
+
+func fileURL(path string) string {
+	slashed := filepath.ToSlash(path)
+	if !strings.HasPrefix(slashed, "/") {
+		slashed = "/" + slashed
+	}
+	return (&url.URL{Scheme: "file", Path: slashed}).String()
+}
+
+func filePath(location *url.URL) string {
+	path := filepath.FromSlash(location.Path)
+	if trimmed := strings.TrimPrefix(path, string(filepath.Separator)); filepath.VolumeName(trimmed) != "" {
+		return trimmed
+	}
+	return path
 }

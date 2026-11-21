@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/jsc"
@@ -28,11 +27,6 @@ var (
 	errStreamEnded = E.New("the stream ended")
 )
 
-var readOperations = []string{
-	"device.info", "device.state", "device.installedApplications", "device.applicationIcon", "device.pasteboard", "process.list",
-	"accessibility.snapshot", "accessibility.find", "accessibility.changed",
-}
-
 type GraphicsCall struct {
 	ctx  context.Context
 	call *operation
@@ -40,23 +34,6 @@ type GraphicsCall struct {
 
 func (c *GraphicsCall) Context() context.Context {
 	return c.ctx
-}
-
-func (c *GraphicsCall) Screenshot() ([]byte, float64, error) {
-	phone, err := c.call.screen(c.ctx)
-	if err != nil {
-		return nil, 0, err
-	}
-	attempted := time.Now()
-	data, scale, err := phone.Capture(c.ctx)
-	if c.call.dropped(c.ctx, err, attempted) {
-		attempted = time.Now()
-		data, scale, err = phone.Capture(c.ctx)
-	}
-	if c.call.dropped(c.ctx, err, attempted) {
-		err = c.call.droppedError(err, "during the screenshot")
-	}
-	return data, scale, err
 }
 
 func (c *GraphicsCall) ReadFile(kind, name string) ([]byte, error) {

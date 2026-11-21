@@ -1,4 +1,4 @@
-import type * as appIntents from "@swipt/api/app-intents";
+import type * as appIntents from "@swipt/api/ios/app-intents";
 
 import { inspect } from "./inspect";
 

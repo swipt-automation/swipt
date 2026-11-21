@@ -123,7 +123,7 @@ func (c *imageCall) registered(node *imageNode, err error) (any, error) {
 
 func (c *imageCall) screenshot() (any, error) {
 	started := milliseconds(time.Now())
-	data, scale, err := c.context.Screenshot()
+	data, scale, err := c.context.Screenshot(c.arguments.Display)
 	if err != nil {
 		return nil, err
 	}

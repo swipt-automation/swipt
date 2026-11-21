@@ -46,7 +46,7 @@ function surface(ref) {
   const manifest = JSON.parse(git("show", `${ref}:api/package.json`));
   const files = git("ls-tree", "-r", "--name-only", ref, "--", ...declarations)
     .split("\n")
-    .filter((file) => file.endsWith(".d.ts") && file !== "api/repl.d.ts");
+    .filter((file) => file.endsWith(".d.ts") && !file.endsWith("/repl.d.ts"));
   return {
     level: manifest.apiLevel,
     parts: new Map([

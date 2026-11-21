@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/extension", "src/app/web.ts"]
+  "files": []
 }

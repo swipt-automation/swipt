@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import (
@@ -10,18 +12,14 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/api"
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/graphics"
 	"github.com/swipt-automation/swipt/internal/log"
 )
 
 const (
-	SwipletSourceFolder  = automation.SourceFolder
-	SwipletAssetsFolder  = automation.AssetsFolder
-	SwipletDataFolder    = automation.DataFolder
-	SwipletInterfaceFile = automation.InterfaceFile
-	SwipletExtensionFile = automation.ExtensionFile
-	SwipletIconFile      = automation.IconFile
+	SwipletAssetsFolder = automation.AssetsFolder
+	SwipletDataFolder   = automation.DataFolder
+	SwipletIconFile     = automation.IconFile
 )
 
 const (
@@ -55,12 +53,12 @@ type PlatformHandler interface {
 type Platform struct {
 	logFactory *log.Factory
 	handler    PlatformHandler
-	app        string
 	appVersion string
 	appBuild   string
 	device     *Device
 	host       *automation.Host
 	dialog     automation.Dialog
+	closed     chan struct{}
 
 	dialogAccess sync.Mutex
 	dialogs      map[int64]chan dialogAnswer
@@ -71,9 +69,12 @@ type Platform struct {
 }
 
 func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOptions *DeviceOptions, deviceHandler DeviceHandler) *Platform {
-	p := &Platform{logFactory: newLogFactory(), handler: handler, app: options.AppBundleID, appVersion: options.AppVersion, appBuild: options.AppBuild, dialogs: make(map[int64]chan dialogAnswer)}
+	p := &Platform{
+		logFactory: newLogFactory(), handler: handler, appVersion: options.AppVersion, appBuild: options.AppBuild,
+		closed: make(chan struct{}), dialogs: make(map[int64]chan dialogAnswer),
+	}
 	p.device = newDevice(deviceOptions, deviceHandler, p.logFactory)
-	p.dialog = automation.Dialog{App: p.app, InApp: true, Backdrop: handler.OnBackdrop, Active: handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
+	p.dialog = automation.Dialog{InApp: true, Backdrop: handler.OnBackdrop, Active: handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
 		return p.ask(ctx, request, handler.OnDialog, handler.OnDialogWithdrawn)
 	}}
 	languages := iteratorToArray[string](options.Languages)
@@ -81,11 +82,11 @@ func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOption
 	if runtime.GOOS == "ios" {
 		osVersion = func() string { return options.OSVersion }
 	}
-	environment := func() device.Environment {
-		return device.Environment{OSVersion: osVersion(), Languages: languages}
+	environment := func() automation.Environment {
+		return automation.Environment{OSVersion: osVersion(), Languages: languages}
 	}
 	p.host = automation.New(automation.Options{
-		Device:      p.device.connection.Phone(),
+		Device:      automation.NewDevice(p.device.connection.Phone(), options.AppBundleID),
 		Environment: environment,
 		Directory:   options.SwipletDirectory,
 		Caches:      options.SwipletCacheDirectory,
@@ -96,7 +97,6 @@ func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOption
 			Logger:            p.logFactory.NewLogger("graphics"),
 			OnRecordingFailed: handler.OnRecordingFailed,
 		}),
-		OnSwipletsChanged: handler.OnSwipletsChanged,
 	})
 	p.device.services = p.host
 	return p
@@ -121,11 +121,24 @@ func (p *Platform) Start() error {
 	go p.host.WatchDatabases(context.Background(), "", func(change automation.DatabaseChange) {
 		p.handler.OnDatabaseChanged(change.Swiplet, change.Database, change.Path, change.Table, change.RowID)
 	})
+	go func() {
+		changed := p.host.SwipletsChanged()
+		for {
+			select {
+			case <-changed:
+				changed = p.host.SwipletsChanged()
+				p.handler.OnSwipletsChanged()
+			case <-p.closed:
+				return
+			}
+		}
+	}()
 	p.host.Start()
 	return nil
 }
 
 func (p *Platform) Close() error {
+	close(p.closed)
 	_ = p.SetAPI(nil)
 	p.host.Close()
 	return p.device.connection.Close()
@@ -167,7 +180,7 @@ type ActionObserver interface {
 
 func (p *Platform) NewActionCall(swiplet, action, input, caller string, observer ActionObserver, showsInApp bool) *ActionCall {
 	ctx, cancel := context.WithCancel(context.Background())
-	dialog := automation.Dialog{App: p.app, InApp: showsInApp, Backdrop: p.handler.OnBackdrop, Active: p.handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
+	dialog := automation.Dialog{InApp: showsInApp, Backdrop: p.handler.OnBackdrop, Active: p.handler.AppActive, Ask: func(ctx context.Context, request string) (string, error) {
 		return p.ask(ctx, request, observer.OnDialog, observer.OnDialogWithdrawn)
 	}}
 	return &ActionCall{cancel: cancel, run: func() (string, error) {

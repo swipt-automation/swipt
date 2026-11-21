@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,76 +11,56 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+
+	"github.com/swipt-automation/swipt/internal/cmd/toolchain"
 )
 
 const (
-	driverPackage = "./cmd/swipt-driver"
-	cliManifest   = "cli/package.json"
+	driverPackage      = "./cmd/swipt-driver"
+	cliManifest        = "cli/package.json"
+	driverEntitlements = "cmd/swipt-driver/swipt-driver.entitlements"
 )
 
-var buildDirectory string
-
-type target struct {
-	os   string
-	arch string
-}
-
-var nodeNames = map[string]string{"windows": "win32", "amd64": "x64"}
-
-func (t target) String() string {
-	return t.os + "-" + t.arch
-}
-
-func (t target) published() string {
-	return cmp.Or(nodeNames[t.os], t.os) + "-" + cmp.Or(nodeNames[t.arch], t.arch)
-}
-
 func main() {
-	host := target{runtime.GOOS, runtime.GOARCH}.published()
+	host := toolchain.Target{OS: runtime.GOOS, Arch: runtime.GOARCH}.Published()
 	targets := flag.String("target", host, "comma-separated driver packages, such as darwin-arm64 or win32-x64, or all")
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "usage: build_driver [-target TARGET,...|all] [command [argument...]]")
-		fmt.Fprintln(flag.CommandLine.Output(), "Builds swipt-driver into build/driver/TARGET, or runs command with the cgo environment of each target.")
+		fmt.Fprintln(flag.CommandLine.Output(), "usage: build_driver [-target TARGET,...|all]")
+		fmt.Fprintln(flag.CommandLine.Output(), "Builds swipt-driver into build/driver/TARGET.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	var err error
-	buildDirectory, err = filepath.Abs("build")
-	if err != nil {
-		log.Fatal(err)
+	if flag.NArg() > 0 {
+		log.Fatal("unexpected arguments: ", flag.Args())
 	}
-	pruneDownloads()
+	buildDirectory := toolchain.BuildDirectory()
+	toolchain.PruneDownloads(buildDirectory)
 	for _, t := range selectTargets(*targets) {
-		environment := []string{"GOOS=" + t.os, "GOARCH=" + t.arch, "CGO_ENABLED=1"}
 		executable := "swipt-driver"
-		switch t.os {
-		case "darwin":
-			environment = append(environment, darwinEnvironment()...)
-		case "linux":
-			environment = append(environment, linuxEnvironment(t)...)
-		case "windows":
-			environment = append(environment, windowsEnvironment(t)...)
+		if t.OS == "windows" {
 			executable += ".exe"
-		default:
-			log.Fatal("unsupported target ", t.published())
 		}
-		command := exec.Command("go", "build", "-trimpath", "-ldflags", "-s -w -buildid=", "-o", filepath.Join(buildDirectory, "driver", t.published(), executable), driverPackage)
-		if flag.NArg() > 0 {
-			command = exec.Command(flag.Arg(0), flag.Args()[1:]...)
-		}
-		command.Env = append(os.Environ(), environment...)
+		output := filepath.Join(buildDirectory, "driver", t.Published(), executable)
+		command := exec.Command("go", "build", "-trimpath", "-ldflags", "-s -w -buildid=", "-o", output, driverPackage)
+		command.Env = append(os.Environ(), toolchain.Environment(buildDirectory, t)...)
 		run(command)
+		if t.OS == "darwin" {
+			// signDarwin lets JavaScriptCore compile scripts: without allow-jit, the one
+			// of macOS 27.2 only interprets them, and a loop of a million additions takes
+			// 6.4 ms instead of 0.3 ms.
+			run(exec.Command("codesign", "--force", "--sign", "-", "--entitlements", driverEntitlements, output))
+		}
 	}
 }
 
-func selectTargets(list string) []target {
+func selectTargets(list string) []toolchain.Target {
 	targets := publishedTargets()
 	if list == "all" {
 		return targets
 	}
-	var selected []target
+	var selected []toolchain.Target
 	for name := range strings.SplitSeq(list, ",") {
-		index := slices.IndexFunc(targets, func(t target) bool { return t.published() == name })
+		index := slices.IndexFunc(targets, func(t toolchain.Target) bool { return t.Published() == name })
 		if index < 0 {
 			log.Fatal(name, " is not a driver package in ", cliManifest)
 		}
@@ -90,7 +69,7 @@ func selectTargets(list string) []target {
 	return selected
 }
 
-func publishedTargets() []target {
+func publishedTargets() []toolchain.Target {
 	content, err := os.ReadFile(cliManifest)
 	if err != nil {
 		log.Fatal(err)
@@ -101,20 +80,16 @@ func publishedTargets() []target {
 	if err = json.Unmarshal(content, &manifest); err != nil {
 		log.Fatal(cliManifest, ": ", err)
 	}
-	goNames := make(map[string]string)
-	for goName, nodeName := range nodeNames {
-		goNames[nodeName] = goName
-	}
-	var targets []target
+	var targets []toolchain.Target
 	for name := range manifest.OptionalDependencies {
-		platform, arch, found := strings.Cut(strings.TrimPrefix(name, "@swipt/driver-"), "-")
-		if !found {
+		t, ok := toolchain.ParseTarget(strings.TrimPrefix(name, "@swipt/driver-"))
+		if !ok {
 			log.Fatal(cliManifest, ": unexpected optional dependency ", name)
 		}
-		targets = append(targets, target{cmp.Or(goNames[platform], platform), cmp.Or(goNames[arch], arch)})
+		targets = append(targets, t)
 	}
-	slices.SortFunc(targets, func(a, b target) int {
-		return strings.Compare(a.published(), b.published())
+	slices.SortFunc(targets, func(a, b toolchain.Target) int {
+		return strings.Compare(a.Published(), b.Published())
 	})
 	return targets
 }

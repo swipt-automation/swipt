@@ -5,6 +5,9 @@ package automation
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/json"
 	"slices"
 	"sync"
@@ -36,7 +39,7 @@ func (h *Host) OpenWeb(id string) (*WebSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	e := &engine{host: h, swiplet: swiplet, caches: h.cacheDirectory(id), blobs: make(map[string][]byte), resources: make(map[string]*resource), interrupts: make(map[string]func(error))}
+	e := &engine{host: h, swiplet: swiplet, caches: h.CacheDirectory(id), blobs: make(map[string][]byte), resources: make(map[string]*resource), interrupts: make(map[string]func(error))}
 	e.ctx, e.cancel = context.WithCancelCause(h.ctx)
 	return &WebSession{engine: e, operations: make(map[string]context.CancelFunc)}, nil
 }
@@ -91,7 +94,7 @@ func (s *WebSession) Compression(format, mode string) ([]string, error) {
 	return s.engine.newCompression(format, mode == "decompress")
 }
 
-func (s *WebSession) Random(length int) ([]byte, error) {
+func RandomBytes(length int) ([]byte, error) {
 	if length < 0 || length > randomLimit {
 		return nil, E.Cause1(ErrInvalid, E.New("the length of random bytes must be between 0 and ", randomLimit))
 	}
@@ -100,8 +103,22 @@ func (s *WebSession) Random(length int) ([]byte, error) {
 	return data, nil
 }
 
-func (s *WebSession) Digest(algorithm string, data []byte) ([]byte, error) {
-	return digestOf(algorithm, data)
+func Digest(algorithm string, data []byte) ([]byte, error) {
+	switch algorithm {
+	case "SHA-1":
+		sum := sha1.Sum(data)
+		return sum[:], nil
+	case "SHA-256":
+		sum := sha256.Sum256(data)
+		return sum[:], nil
+	case "SHA-384":
+		sum := sha512.Sum384(data)
+		return sum[:], nil
+	case "SHA-512":
+		sum := sha512.Sum512(data)
+		return sum[:], nil
+	}
+	return nil, E.New("unknown digest ", algorithm)
 }
 
 func DecodeText(data []byte, fatal bool) (text string, restored int, ok bool) {

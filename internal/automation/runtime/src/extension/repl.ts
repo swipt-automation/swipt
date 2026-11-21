@@ -1,8 +1,8 @@
 import { inspect } from "../shared/inspect";
-import { appIntents } from "./app-intents";
 import { chunk } from "./chunks";
 import { failureOf } from "./errors";
-import { modules } from "./extension";
+import { deviceGlobals } from "./device";
+import { canonicalSpecifier, modules } from "./extension";
 import { dataDirectory } from "./files";
 import { jsonOf, setInputColumns } from "./format";
 import { native } from "./native";
@@ -22,31 +22,26 @@ const outcome = (value: unknown): string => {
   return `{"text":${JSON.stringify(inspect(value))},"json":${jsonOf(value)}}`;
 };
 
-export const replGlobals = () => {
-  const { accessibility, input, device, screen, image } = chunk("api");
-  return {
-    accessibility,
-    input,
-    device,
-    screen,
-    image,
-    dataDirectory: dataDirectory(),
-    appIntents,
-    show,
-  };
-};
+export const replGlobals = () => ({
+  image: chunk("api").image,
+  dataDirectory: dataDirectory(),
+  show,
+  ...deviceGlobals(),
+});
 
 const namespaces = new Map<string, object>();
 
 const load = (specifier: string, name?: string): unknown => {
-  let namespace = namespaces.get(specifier);
+  const canonical = canonicalSpecifier(specifier);
+  let namespace = namespaces.get(canonical);
   if (namespace === undefined) {
-    if (!Object.hasOwn(modules, specifier)) {
+    const module = modules()[canonical];
+    if (module === undefined) {
       throw new TypeError(
-        `the REPL can't import ${JSON.stringify(specifier)}; it can import ${Object.keys(modules).join(", ")}`,
+        `the REPL can't import ${JSON.stringify(specifier)}; it can import ${Object.keys(modules()).join(", ")}`,
       );
     }
-    const exported = modules[specifier]() as { __esModule?: boolean };
+    const exported = module() as { __esModule?: boolean };
     const descriptors: PropertyDescriptorMap =
       Object.getOwnPropertyDescriptors(exported);
     delete descriptors.__esModule;
@@ -55,7 +50,7 @@ const load = (specifier: string, name?: string): unknown => {
     }
     descriptors[Symbol.toStringTag] = { value: "Module" };
     namespace = Object.freeze(Object.create(null, descriptors)) as object;
-    namespaces.set(specifier, namespace);
+    namespaces.set(canonical, namespace);
   }
   if (name === undefined) {
     return namespace;

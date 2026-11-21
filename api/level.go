@@ -12,6 +12,8 @@ var manifest []byte
 //   - api/*.d.ts: delete the @available apiLevel annotations, and merge defineAction's stream into run as an async generator.
 //   - internal/proto: delete the reserved fields and renumber the rest.
 //   - internal/api: delete unversionedLevel and reject requests without swipt-api-level.
+//   - internal/automation/runtime: delete the renamed specifiers of the iOS modules from extension.ts.
+//   - internal/automation: delete the manifests without platforms from manifest.go.
 var Level, OldestLevel = func() (int64, int64) {
 	var fields struct {
 		APILevel       int64 `json:"apiLevel"`

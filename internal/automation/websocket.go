@@ -123,7 +123,7 @@ func webSocketConnect(ctx context.Context, call *operation) (any, error) {
 		return nil, networkError(err, "connect to ", address)
 	}
 	conn.SetReadLimit(webSocketReadLimit)
-	id := e.addResource(&resource{socket: &webSocket{conn: conn, closed: make(chan struct{})}, finish: func(error) error { return conn.CloseNow() }})
+	id := e.addResource(&resource{handle: &webSocket{conn: conn, closed: make(chan struct{})}, finish: func(error) error { return conn.CloseNow() }})
 	return map[string]any{"socket": id, "protocol": conn.Subprotocol(), "extensions": response.Header.Get("Sec-WebSocket-Extensions")}, nil
 }
 
@@ -148,23 +148,12 @@ func (h handshake) RoundTrip(request *http.Request) (*http.Response, error) {
 	return nil, E.New("the server selected the protocol ", strconv.Quote(protocol), ", which wasn't requested")
 }
 
-func (o *operation) socket(id string) (*webSocket, error) {
-	it, err := o.engine.resource(id)
-	if err != nil {
-		return nil, err
-	}
-	if it.socket == nil {
-		return nil, E.Cause1(ErrInvalid, E.New("the resource is not a WebSocket"))
-	}
-	return it.socket, nil
-}
-
 func webSocketRead(ctx context.Context, call *operation) (any, error) {
 	var id string
 	if err := call.decode(1, &id); err != nil {
 		return nil, err
 	}
-	socket, err := call.socket(id)
+	socket, err := resourceHandle[*webSocket](call.engine, id, "a WebSocket")
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +198,7 @@ func webSocketSend(ctx context.Context, call *operation) (any, error) {
 		}
 		kind = websocket.MessageBinary
 	}
-	socket, err := call.socket(id)
+	socket, err := resourceHandle[*webSocket](call.engine, id, "a WebSocket")
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +211,7 @@ func webSocketClose(_ context.Context, call *operation) (any, error) {
 	if err := call.decode(3, &id, &code, &reason); err != nil {
 		return nil, err
 	}
-	if socket, err := call.socket(id); err == nil {
+	if socket, err := resourceHandle[*webSocket](call.engine, id, "a WebSocket"); err == nil {
 		socket.close(websocket.StatusCode(code), reason)
 	}
 	return nil, nil

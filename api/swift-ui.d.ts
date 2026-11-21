@@ -1,4 +1,4 @@
-/** @available apiLevel 3 */
+/** @available apiLevel 3, iOS */
 import type { CommonViewModifierProps } from "@expo/ui/swift-ui";
 import type { ModifierConfig } from "@expo/ui/swift-ui/modifiers";
 import type { ReactElement } from "react";

@@ -1,10 +1,9 @@
-import type { ObservableState } from "@swipt/api";
 import type {
+  ObservableState,
   RecordingSession as RecordingSessionInterface,
   ScreenRecording as ScreenRecordingInterface,
   ScreenStream as ScreenStreamInterface,
-  ScreenStreamOptions,
-} from "@swipt/api/screen";
+} from "@swipt/api";
 
 import { stream } from "./async";
 import { DOMException } from "./errors";
@@ -18,7 +17,7 @@ import {
   run,
   type ImageHandle,
 } from "./image";
-import { check, optionsOf, signalOf, type Options } from "./options";
+import { check, signalOf, type Options } from "./options";
 
 interface ScreenRecordingHandle {
   readonly info: string;
@@ -145,39 +144,6 @@ export class ScreenRecording implements ScreenRecordingInterface {
   }
 }
 
-export const open = async (
-  options?: ScreenStreamOptions,
-): Promise<ScreenStream> => {
-  const { mode, maximumBitrate } = optionsOf(options, [
-    "mode",
-    "maximumBitrate",
-  ]);
-  if (mode !== undefined && mode !== "remoteDesktop" && mode !== "coreDevice") {
-    throw new TypeError("mode must be remoteDesktop or coreDevice");
-  }
-  if (maximumBitrate !== undefined) {
-    if (mode === "coreDevice") {
-      throw new TypeError("maximumBitrate applies only to remoteDesktop");
-    }
-    if (
-      typeof maximumBitrate !== "number" ||
-      !Number.isInteger(maximumBitrate) ||
-      maximumBitrate <= 0
-    ) {
-      throw new RangeError(
-        "maximumBitrate must be a positive integer of bits per second",
-      );
-    }
-  }
-  const result = await run<{ stream: number }>(
-    "screen.open",
-    { mode: mode ?? "remoteDesktop", maximumBitrate },
-    [],
-    signalOf(options),
-  );
-  return new ScreenStream(take(result.stream, "screen stream"));
-};
-
 export const openRecording = async (
   directory: unknown,
   options?: Options,
@@ -191,4 +157,17 @@ export const openRecording = async (
   return new ScreenRecording(
     take(result.recording, "recording") as ScreenRecordingHandle,
   );
+};
+
+export const openStream = async (
+  args: Record<string, unknown>,
+  options?: Options,
+): Promise<ScreenStream> => {
+  const result = await run<{ stream: number }>(
+    "screen.open",
+    args,
+    [],
+    signalOf(options),
+  );
+  return new ScreenStream(take(result.stream, "screen stream"));
 };

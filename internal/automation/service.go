@@ -15,7 +15,6 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
 )
 
@@ -181,26 +180,21 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 		case <-ctx.Done():
 		}
 	}
-	phone := r.host.options.Device
 	failures := 0
 	for ctx.Err() == nil {
 		select {
 		case <-r.retry:
 		default:
 		}
-		var availability <-chan struct{}
-		if phone != nil {
-			var unavailable error
-			availability, unavailable = phone.Availability()
-			if unavailable != nil {
-				r.logger.Info("the service waits for the device: ", describeError(unavailable))
-				r.set(ServiceStarting, unavailable)
-				select {
-				case <-availability:
-				case <-ctx.Done():
-				}
-				continue
+		availability, unavailable := r.host.availability()
+		if unavailable != nil {
+			r.logger.Info("the service waits for the device: ", describeError(unavailable))
+			r.set(ServiceStarting, unavailable)
+			select {
+			case <-availability:
+			case <-ctx.Done():
 			}
+			continue
 		}
 		r.set(ServiceStarting, nil)
 		started := time.Now()
@@ -208,16 +202,12 @@ func (r *runner) supervise(ctx context.Context, cancel context.CancelFunc, previ
 		if ctx.Err() != nil {
 			break
 		}
-		if r.host.deviceLost(err, started) {
-			r.logger.Info("the service waits for the device: ", describeError(err))
-			r.set(ServiceStarting, err)
-			err = phone.WaitConnected(ctx)
-			if err == nil {
-				continue
-			}
-			if ctx.Err() != nil {
-				break
-			}
+		var reconnected bool
+		if reconnected, err = r.awaitReconnection(ctx, err, started); reconnected {
+			continue
+		}
+		if ctx.Err() != nil {
+			break
 		}
 		select {
 		case <-availability:
@@ -271,7 +261,7 @@ func (r *runner) runService(ctx context.Context, availability <-chan struct{}) e
 	go func() {
 		select {
 		case <-availability:
-			_, unavailable := r.host.options.Device.Availability()
+			_, unavailable := r.host.availability()
 			cancel(unavailable)
 		case <-ctx.Done():
 		}
@@ -328,11 +318,6 @@ func (r *runner) log(entry LogEntry) {
 		default:
 		}
 	}
-}
-
-func (h *Host) deviceLost(err error, since time.Time) bool {
-	phone := h.options.Device
-	return phone != nil && errors.Is(err, fault.ErrUnavailable) && phone.Disconnected(since)
 }
 
 func (h *Host) publish(id string, state ServiceState) {
@@ -460,7 +445,7 @@ func (h *Host) WatchServices(ctx context.Context, observe func(id string, state 
 		return err
 	}
 	for _, swiplet := range swiplets {
-		if !swiplet.Manifest.Service {
+		if !swiplet.Manifest.Service || !swiplet.Supported {
 			continue
 		}
 		if r, err := h.runner(swiplet.ID); err == nil {

@@ -5,10 +5,6 @@ package automation
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"embed"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -29,12 +25,6 @@ import (
 
 	"github.com/go-sourcemap/sourcemap"
 )
-
-//go:embed runtime.js
-var runtimeSource string
-
-//go:embed chunks
-var chunkSources embed.FS
 
 const (
 	extensionHead     = "(function (require, module, exports) {"
@@ -175,8 +165,11 @@ type engine struct {
 }
 
 func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, error) {
+	var needsExposure bool
 	switch request.Caller {
-	case CallerApp, CallerShortcuts, CallerAPI:
+	case CallerApp, CallerAPI:
+	case CallerShortcuts:
+		needsExposure = true
 	default:
 		return nil, E.Cause1(ErrInvalid, E.New("unknown caller ", strconv.Quote(string(request.Caller))))
 	}
@@ -199,8 +192,8 @@ func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, 
 	if index < 0 {
 		return nil, E.Cause1(ErrNotFound, E.New("the swiplet ", strconv.Quote(swiplet.ID), " has no action ", strconv.Quote(request.Action)))
 	}
-	if request.Caller == CallerShortcuts && !slices.Contains(swiplet.Manifest.Actions[index].Expose, CallerShortcuts) {
-		return nil, E.Cause1(ErrNotAllowed, E.New("the action ", strconv.Quote(request.Action), " is not exposed to shortcuts"))
+	if needsExposure && !slices.Contains(swiplet.Manifest.Actions[index].Expose, request.Caller) {
+		return nil, E.Cause1(ErrNotAllowed, E.New("the action ", strconv.Quote(request.Action), " is not exposed to ", string(request.Caller)))
 	}
 	started := time.Now()
 	output, err := h.execute(ctx, swiplet, request.Dialog, request.Log, request.Emit, entry{action: request.Action, input: string(input), caller: request.Caller}, nil)
@@ -215,7 +208,7 @@ func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, 
 }
 
 func (h *Host) execute(ctx context.Context, swiplet Swiplet, dialog Dialog, logs func(LogEntry), emit func(json.RawMessage), entry entry, running func()) (json.RawMessage, error) {
-	source, err := os.ReadFile(filepath.Join(swiplet.Directory, SourceFolder, ExtensionFile))
+	source, err := os.ReadFile(filepath.Join(swiplet.Directory, swiplet.Platform.Sources, ExtensionFile))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, E.Cause1(ErrNotFound, E.New("the swiplet ", strconv.Quote(swiplet.ID), " has no extension"))
 	}
@@ -277,7 +270,7 @@ func (h *Host) newEngine(swiplet Swiplet, dialog Dialog, logger log.ContextLogge
 		subscriptions: make(map[string]*subscription), blobs: make(map[string][]byte), resources: make(map[string]*resource),
 		interrupts: make(map[string]func(error)),
 		sources: sync.OnceValue(func() *sourcemap.Consumer {
-			data, err := os.ReadFile(filepath.Join(swiplet.Directory, SourceFolder, ExtensionMap))
+			data, err := os.ReadFile(filepath.Join(swiplet.Directory, swiplet.Platform.Sources, ExtensionMap))
 			if errors.Is(err, fs.ErrNotExist) {
 				return nil
 			}
@@ -291,7 +284,7 @@ func (h *Host) newEngine(swiplet Swiplet, dialog Dialog, logger log.ContextLogge
 			return consumer
 		}),
 	}
-	e.caches = h.cacheDirectory(e.dataOwner())
+	e.caches = h.CacheDirectory(e.dataOwner())
 	e.ctx, e.cancel = context.WithCancelCause(context.Background())
 	e.main = &execution{ctx: e.ctx, logs: logs}
 	e.current = e.main
@@ -421,6 +414,7 @@ func (e *engine) natives() map[string]jsc.Function {
 		"emit":                   e.emit,
 		"show":                   e.show,
 		"match":                  e.match,
+		"dropSnapshot":           e.dropSnapshot,
 		"preferredLocalizations": e.preferredLocalizations,
 		"environment":            e.environment,
 		"locate":                 e.locate,
@@ -443,7 +437,7 @@ func (e *engine) chunk(arguments []jsc.Value) (any, error) {
 		return nil, err
 	}
 	name := values[0] + ".js"
-	source, err := chunkSources.ReadFile(path.Join("chunks", name))
+	source, err := chunkSources.ReadFile(path.Join(systemChunks, name))
 	if err != nil {
 		return nil, err
 	}
@@ -481,6 +475,9 @@ func (e *engine) startOperation(arguments []jsc.Value) (any, error) {
 	id, name, encoded := values[0], values[1], values[2]
 	run, found := operations[name]
 	if !found {
+		run, found = deviceOperations[name]
+	}
+	if !found {
 		e.ready = append(e.ready, completion{id: id, err: E.New("unknown operation ", name)})
 		e.ops[id] = &pendingOperation{cancel: func() {}, exec: e.current}
 		return nil, nil
@@ -496,7 +493,7 @@ func (e *engine) startOperation(arguments []jsc.Value) (any, error) {
 		started := time.Now()
 		value, err := run(ctx, call)
 		attempted := started
-		if call.dropped(ctx, err, attempted) && slices.Contains(readOperations, name) {
+		if call.dropped(ctx, err, attempted) && slices.Contains(retriedOperations, name) {
 			attempted = time.Now()
 			value, err = run(ctx, call)
 		}
@@ -830,29 +827,11 @@ func (e *engine) digest(arguments []jsc.Value) (any, error) {
 	if !isBytes {
 		return nil, E.New("the data is not a Uint8Array")
 	}
-	sum, err := digestOf(algorithm, data)
+	sum, err := Digest(algorithm, data)
 	if err != nil {
 		return nil, err
 	}
 	return jsc.Bytes(sum), nil
-}
-
-func digestOf(algorithm string, data []byte) ([]byte, error) {
-	switch algorithm {
-	case "SHA-1":
-		sum := sha1.Sum(data)
-		return sum[:], nil
-	case "SHA-256":
-		sum := sha256.Sum256(data)
-		return sum[:], nil
-	case "SHA-384":
-		sum := sha512.Sum384(data)
-		return sum[:], nil
-	case "SHA-512":
-		sum := sha512.Sum512(data)
-		return sum[:], nil
-	}
-	return nil, E.New("unknown digest ", algorithm)
 }
 
 func (e *engine) schedule(interval bool) jsc.Function {

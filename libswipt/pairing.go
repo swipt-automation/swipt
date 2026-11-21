@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import (
@@ -105,6 +107,14 @@ type TXTRecordEntry struct {
 	Key   string
 	Value string
 }
+
+type TXTRecordEntryIterator interface {
+	Len() int32
+	HasNext() bool
+	Next() *TXTRecordEntry
+}
+
+var _ TXTRecordEntryIterator = (*iterator[*TXTRecordEntry])(nil)
 
 type PairingRecordInfo struct {
 	DeviceName      string

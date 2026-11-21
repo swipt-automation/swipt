@@ -1,4 +1,4 @@
-//go:build cgo
+//go:build !android && cgo
 
 package computer
 
@@ -129,13 +129,17 @@ func Run(ctx context.Context, options Options) error {
 		return err
 	}
 	defer connection.Close()
+	phone := connection.Phone()
 	swiplets := automation.New(automation.Options{
-		Device:      connection.Phone(),
-		Environment: connection.Phone().Environment,
-		Directory:   filepath.Join(directory, swipletsFolder),
-		Caches:      filepath.Join(caches, swipletsFolder),
-		LogFactory:  options.Logs,
-		Graphics:    graphics.New(graphics.Options{Screen: connection, Logger: options.Logs.NewLogger("graphics")}),
+		Device: automation.NewDevice(phone, ""),
+		Environment: func() automation.Environment {
+			environment := phone.Environment()
+			return automation.Environment{OSVersion: environment.OSVersion, Languages: environment.Languages}
+		},
+		Directory:  filepath.Join(directory, swipletsFolder),
+		Caches:     filepath.Join(caches, swipletsFolder),
+		LogFactory: options.Logs,
+		Graphics:   graphics.New(graphics.Options{Screen: connection, Logger: options.Logs.NewLogger("graphics")}),
 	})
 	swiplets.Start()
 	defer swiplets.Close()

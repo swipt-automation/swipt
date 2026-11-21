@@ -31,7 +31,8 @@ func StatusError(err error) error {
 		code = codes.NotFound
 	case errors.Is(err, automation.ErrNotAllowed):
 		code = codes.PermissionDenied
-	case E.IsMulti(err, automation.ErrOutdated, automation.ErrSwipletOutdated), errors.As(err, new(*automation.IOSOutdatedError)):
+	case E.IsMulti(err, automation.ErrOutdated, automation.ErrSwipletOutdated),
+		errors.As(err, new(*automation.UnsupportedOSError)), errors.As(err, new(*automation.OSOutdatedError)):
 		code = codes.FailedPrecondition
 	}
 	return status.Error(code, automation.Message(err))

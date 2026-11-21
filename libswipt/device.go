@@ -1,3 +1,5 @@
+//go:build !android
+
 package libSwipt
 
 import (
@@ -15,6 +17,8 @@ import (
 	"github.com/swipt-automation/swipt/internal/log"
 	"github.com/swipt-automation/swipt/internal/rfb"
 )
+
+const deviceOS = automation.IOS
 
 const (
 	DeviceStopped int32 = iota

@@ -13,14 +13,15 @@ import {
   type ReactNode,
 } from "react";
 
-import { createAppIntents } from "../shared/app-intents";
-import { decodeBase64 } from "../shared/base64";
 import { inspect } from "../shared/inspect";
 import {
   createSQLite,
   type DatabaseChangeEvent,
   type SQLiteBridge,
 } from "../shared/sqlite";
+import { untilAborted } from "./abort";
+import { exportsOf } from "./exports";
+import { platformModules } from "./platform";
 import { sqliteHooks } from "./sqlite";
 
 type ServiceStatus = "starting" | "running" | "stopped" | "failed";
@@ -55,9 +56,6 @@ interface SwiptHost {
   call(id: string, action: string, input: string): Promise<string>;
   cancelCall(id: string): Promise<void>;
   setServiceEnabled(enabled: boolean): Promise<void>;
-  searchPlaces(query: string): Promise<string>;
-  presentDialog(id: string, request: string): Promise<string | null>;
-  withdrawDialog(id: string): Promise<void>;
   mounted(surface: string): void;
   exit(): void;
   preferredLocalizations(localizations: string[]): string[];
@@ -174,43 +172,6 @@ exceptions.handleException = (error, isFatal) => {
   allRejections: true,
   onUnhandled: (_, error) => report(error),
 });
-
-const exportsOf = (specifier: string, values: Record<string, unknown>) =>
-  new Proxy(
-    { __esModule: true, ...values },
-    {
-      get: (target, key) => {
-        if (typeof key === "string" && key !== "then" && !(key in target)) {
-          throw new Error(`${specifier} has no export "${key}"`);
-        }
-        return Reflect.get(target, key);
-      },
-    },
-  );
-
-const abortError = (signal: AbortSignal): unknown =>
-  signal.reason ??
-  Object.assign(new Error("the call was aborted"), { name: "AbortError" });
-
-const untilAborted = <T,>(
-  signal: AbortSignal | undefined,
-  start: () => Promise<T>,
-): Promise<T> => {
-  if (signal?.aborted) {
-    return Promise.reject(abortError(signal));
-  }
-  const reply = start();
-  if (signal === undefined) {
-    return reply;
-  }
-  return new Promise((resolve, reject) => {
-    const abort = () => reject(abortError(signal));
-    signal.addEventListener("abort", abort, { once: true });
-    reply
-      .then(resolve, reject)
-      .finally(() => signal.removeEventListener("abort", abort));
-  });
-};
 
 const preferredLocalizations = (localizations: readonly string[]): string[] => {
   if (
@@ -361,34 +322,6 @@ function interfaceModule(props: Props) {
   });
 }
 
-let lastDialog = 0;
-
-const appIntents = createAppIntents(
-  async <T,>(
-    request: Record<string, unknown>,
-    _inApp: boolean,
-    signal?: AbortSignal,
-  ): Promise<T> => {
-    const id = String(++lastDialog);
-    const withdraw = () => void host.withdrawDialog(id).catch(() => {});
-    signal?.addEventListener("abort", withdraw, { once: true });
-    try {
-      const answer = await untilAborted(signal, () =>
-        host.presentDialog(id, JSON.stringify(request)),
-      );
-      if (answer === null) {
-        throw Object.assign(new Error("the person dismissed the dialog"), {
-          name: "AbortError",
-        });
-      }
-      return JSON.parse(answer);
-    } finally {
-      signal?.removeEventListener("abort", withdraw);
-    }
-  },
-  decodeBase64,
-);
-
 const modules: Record<string, () => unknown> = {
   react: () => require("react"),
   "react/jsx-runtime": () => require("react/jsx-runtime"),
@@ -396,10 +329,7 @@ const modules: Record<string, () => unknown> = {
   "react-native-worklets": () => require("react-native-worklets"),
   expo: () => require("expo"),
   "expo-localization": () => require("expo-localization"),
-  "expo-maps": () => require("expo-maps"),
   "@expo/ui": () => require("@expo/ui"),
-  "@expo/ui/swift-ui": () => require("@expo/ui/swift-ui"),
-  "@expo/ui/swift-ui/modifiers": () => require("@expo/ui/swift-ui/modifiers"),
   "@expo/ui/community/bottom-sheet": () =>
     require("@expo/ui/community/bottom-sheet"),
   "@expo/ui/community/datetime-picker": () =>
@@ -413,8 +343,7 @@ const modules: Record<string, () => unknown> = {
   "@expo/ui/community/segmented-control": () =>
     require("@expo/ui/community/segmented-control"),
   "@expo/ui/community/slider": () => require("@expo/ui/community/slider"),
-  "@swipt/api/swift-ui": () =>
-    exportsOf("@swipt/api/swift-ui", require("./swift-ui")),
+  ...platformModules,
 };
 
 const sqliteBridge = (props: Props): SQLiteBridge => ({
@@ -456,21 +385,12 @@ function load(props: Props): { Swiplet: ComponentType; close(): void } {
           props.cacheDirectory,
         ),
       ),
-    "@swipt/api/app-intents": () =>
-      exportsOf("@swipt/api/app-intents", { ...appIntents }),
     "@swipt/api/localization": () =>
       exportsOf("@swipt/api/localization", { preferredLocalizations }),
     "@swipt/api/http": () =>
       exportsOf("@swipt/api/http", {
         Client: web.Client,
         CookieJar: web.CookieJar,
-      }),
-    "@swipt/api/maps": () =>
-      exportsOf("@swipt/api/maps", {
-        searchPlaces: (query: string, options: { signal?: AbortSignal } = {}) =>
-          untilAborted(options.signal, async () =>
-            JSON.parse(await host.searchPlaces(query)),
-          ),
       }),
     "expo-sqlite": () =>
       (sqliteModule ??= Object.freeze({
@@ -480,19 +400,24 @@ function load(props: Props): { Swiplet: ComponentType; close(): void } {
     "expo-sqlite/kv-store": () => sqlite.kvStore,
     "expo-sqlite/localStorage/install": () => installLocalStorage(props),
   };
+  const renamed: ReadonlyMap<string, string> = new Map([
+    ["@swipt/api/app-intents", "@swipt/api/ios/app-intents"],
+    ["@swipt/api/maps", "@swipt/api/ios/maps"],
+  ]);
   const required = new Map<string, unknown>();
   const resolve = (specifier: string) => {
-    if (required.has(specifier)) {
-      return required.get(specifier);
+    const canonical = renamed.get(specifier) ?? specifier;
+    if (required.has(canonical)) {
+      return required.get(canonical);
     }
-    const module = own[specifier] ?? modules[specifier];
+    const module = own[canonical] ?? modules[canonical];
     if (module === undefined) {
       throw new Error(
         `Swipt doesn't provide "${specifier}"; bundle it into ${props.file}`,
       );
     }
     const exports = module();
-    required.set(specifier, exports);
+    required.set(canonical, exports);
     return exports;
   };
   const module: {

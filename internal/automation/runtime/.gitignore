@@ -2,3 +2,5 @@
 /ios/
 /android/
 /artifacts/
+/modules/*/android/build/
+/modules/*/android/.cxx/

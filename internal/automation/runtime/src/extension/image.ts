@@ -789,3 +789,5 @@ export const decode = (
   }
   return imageResult(run("decode", args, objects, signalOf(options)));
 };
+
+export const image = Object.freeze({ decode });

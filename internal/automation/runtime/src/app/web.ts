@@ -161,6 +161,7 @@ export function installWeb(
     emit: unavailable("emit"),
     show: unavailable("show"),
     match: unavailable("match"),
+    dropSnapshot: unavailable("dropSnapshot"),
     preferredLocalizations: unavailable("preferredLocalizations"),
     environment: () => ({
       osVersion: host.osVersion,

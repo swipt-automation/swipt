@@ -77,20 +77,35 @@ export interface DetectedBarcode {
   readonly center: Point;
 }
 
+/**
+ * An image covers frame in the coordinates of where it came from, with scale pixels to one of their units: a
+ * screenshot or a frame of a screen spans the screen in the coordinates that input takes, and an image that decode
+ * answers starts at [0, 0]. Every Point and Rect that an image takes or answers is in these coordinates, so a match in
+ * a screenshot can be tapped as it is. An image made from another keeps these coordinates: crop answers the part of
+ * frame that the rect covers, in its place; resize changes the pixels and the scale, not frame; rotate turns the image
+ * about the center of frame. encode and save keep the pixels and the scale, not the place of frame.
+ */
 export interface RasterImage {
+  /** The width of frame. */
   readonly width: number;
+  /** The height of frame. */
   readonly height: number;
   readonly scale: number;
   readonly frame: Rect;
+  /** For a frame of a recording, the milliseconds after the recording started; otherwise null. */
   readonly time: number | null;
+  /** The Unix time in milliseconds when the screen showed the image; null for an image that decode answers. */
   readonly timestamp: number | null;
 
   crop(rect: Rect): RasterImage;
+  /** Multiplies the pixels on each side by the scale. */
   resize(scale: number): RasterImage;
+  /** In pixels; one side alone keeps the aspect ratio. */
   resize(size: {
     readonly width?: number;
     readonly height?: number;
   }): RasterImage;
+  /** Clockwise. */
   rotate(degrees: number): RasterImage;
   grayscale(): RasterImage;
   threshold(level?: number | "otsu"): RasterImage;
@@ -100,14 +115,28 @@ export interface RasterImage {
   dilate(radius?: number): RasterImage;
   erode(radius?: number): RasterImage;
 
+  /** quality, from 0 to 1, applies to jpeg and heic. */
   encode(
-    format?: ImageFormat,
+    format?: "png" | "jpeg",
+    options?: CallOptions & { readonly quality?: number },
+  ): Promise<Uint8Array>;
+  /** @available iOS */
+  encode(
+    format: "heic",
     options?: CallOptions & { readonly quality?: number },
   ): Promise<Uint8Array>;
   save(
     file: FileHandle,
     options?: CallOptions & {
-      readonly format?: ImageFormat;
+      readonly format?: "png" | "jpeg";
+      readonly quality?: number;
+    },
+  ): Promise<FileHandle>;
+  /** @available iOS */
+  save(
+    file: FileHandle,
+    options: CallOptions & {
+      readonly format: "heic";
       readonly quality?: number;
     },
   ): Promise<FileHandle>;
@@ -137,6 +166,7 @@ export interface RasterImage {
   components(
     options?: CallOptions & { readonly minimumPixels?: number },
   ): Promise<ConnectedComponent[]>;
+  /** @available iOS */
   recognizeText(
     options?: TextRecognitionOptions,
   ): Promise<RecognizedTextLine[]>;
@@ -144,14 +174,18 @@ export interface RasterImage {
     other: RasterImage,
     options?: CallOptions & { readonly threshold?: number },
   ): Promise<ImageDifference>;
+  /** @available iOS */
   distance(other: RasterImage, options?: CallOptions): Promise<number>;
+  /** @available iOS */
   nearest(
     candidates: readonly RasterImage[],
     options?: CallOptions,
   ): Promise<{ readonly index: number; readonly distance: number }>;
+  /** @available iOS */
   detectBarcodes(options?: CallOptions): Promise<DetectedBarcode[]>;
 }
 
+/** scale, from above 0 to 16, is the pixels to a unit; without it, the @2x-style suffix of the file name or the pixel density of the image from 72 to 1152 dpi gives it, and otherwise it is 1. */
 export declare function decode(
   data: Uint8Array | FileHandle,
   options?: CallOptions & { readonly scale?: number },

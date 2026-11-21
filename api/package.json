@@ -1,9 +1,10 @@
 {
   "name": "@swipt/api",
   "version": "0.1.0",
-  "apiLevel": 3,
+  "apiLevel": 4,
   "oldestAPILevel": 2,
   "minimumIOSVersion": 17.4,
+  "minimumAndroidSDK": 34,
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
@@ -24,41 +25,13 @@
       "types": "./file-system.d.ts",
       "default": "./file-system.mjs"
     },
-    "./accessibility": {
-      "types": "./accessibility.d.ts",
-      "default": "./accessibility.mjs"
-    },
-    "./input": {
-      "types": "./input.d.ts",
-      "default": "./input.mjs"
-    },
-    "./device": {
-      "types": "./device.d.ts",
-      "default": "./device.mjs"
-    },
-    "./process": {
-      "types": "./process.d.ts",
-      "default": "./process.mjs"
-    },
-    "./screen": {
-      "types": "./screen.d.ts",
-      "default": "./screen.mjs"
-    },
     "./image": {
       "types": "./image.d.ts",
       "default": "./image.mjs"
     },
-    "./app-intents": {
-      "types": "./app-intents.d.ts",
-      "default": "./app-intents.mjs"
-    },
     "./localization": {
       "types": "./localization.d.ts",
       "default": "./localization.mjs"
-    },
-    "./maps": {
-      "types": "./maps.d.ts",
-      "default": "./maps.mjs"
     },
     "./http": {
       "types": "./http.d.ts",
@@ -68,11 +41,67 @@
       "types": "./swift-ui.d.ts",
       "default": "./swift-ui.mjs"
     },
+    "./ios/accessibility": {
+      "types": "./ios/accessibility.d.ts",
+      "default": "./ios/accessibility.mjs"
+    },
+    "./ios/input": {
+      "types": "./ios/input.d.ts",
+      "default": "./ios/input.mjs"
+    },
+    "./ios/device": {
+      "types": "./ios/device.d.ts",
+      "default": "./ios/device.mjs"
+    },
+    "./ios/process": {
+      "types": "./ios/process.d.ts",
+      "default": "./ios/process.mjs"
+    },
+    "./ios/screen": {
+      "types": "./ios/screen.d.ts",
+      "default": "./ios/screen.mjs"
+    },
+    "./ios/app-intents": {
+      "types": "./ios/app-intents.d.ts",
+      "default": "./ios/app-intents.mjs"
+    },
+    "./ios/maps": {
+      "types": "./ios/maps.d.ts",
+      "default": "./ios/maps.mjs"
+    },
+    "./android/accessibility": {
+      "types": "./android/accessibility.d.ts",
+      "default": "./android/accessibility.mjs"
+    },
+    "./android/input": {
+      "types": "./android/input.d.ts",
+      "default": "./android/input.mjs"
+    },
+    "./android/applications": {
+      "types": "./android/applications.d.ts",
+      "default": "./android/applications.mjs"
+    },
+    "./android/notifications": {
+      "types": "./android/notifications.d.ts",
+      "default": "./android/notifications.mjs"
+    },
+    "./android/device": {
+      "types": "./android/device.d.ts",
+      "default": "./android/device.mjs"
+    },
+    "./android/shell": {
+      "types": "./android/shell.d.ts",
+      "default": "./android/shell.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "*.d.ts",
-    "*.mjs"
+    "*.mjs",
+    "ios/*.d.ts",
+    "ios/*.mjs",
+    "android/*.d.ts",
+    "android/*.mjs"
   ],
   "publishConfig": {
     "access": "public"
