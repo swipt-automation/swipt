@@ -50,7 +50,7 @@ func (l *CloudflareLogin) LoginURL() string {
 	return l.login.URL()
 }
 
-func (l *CloudflareLogin) Wait() (*CloudflareAccount, error) {
+func (l *CloudflareLogin) Complete() (*CloudflareAccount, error) {
 	account, err := l.login.Wait()
 	if err != nil {
 		return nil, err

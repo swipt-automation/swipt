@@ -279,7 +279,7 @@ private struct CloudflareModeView: View {
         Task {
             defer { isLoggingIn = false }
             do {
-                guard let result = try await WebLogin().run(url: login.loginURL(), wait: { try box.value.wait() }, cancel: { box.value.cancel() }) else {
+                guard let result = try await WebLogin().run(url: login.loginURL(), wait: { try box.value.complete() }, cancel: { box.value.cancel() }) else {
                     return
                 }
                 account = result.credential
@@ -403,7 +403,7 @@ private struct TailscaleView: View {
             do {
                 let login = try await blocking { UncheckedSendable(value: try box.value.login()) }.value
                 let loginBox = UncheckedSendable(value: login)
-                _ = try await WebLogin().run(url: login.loginURL(), wait: { try loginBox.value.wait() }, cancel: { loginBox.value.cancel() })
+                _ = try await WebLogin().run(url: login.loginURL(), wait: { try loginBox.value.complete() }, cancel: { loginBox.value.cancel() })
             } catch {
                 alert = AlertState(String(localized: "Can’t Log In"), error: error)
             }

@@ -102,7 +102,7 @@ func (p *Platform) SetAPI(options *APIOptions) error {
 	}
 	var tailnetNode *tailscale.Node
 	if options.Tailscale != nil {
-		tailnetNode = options.Tailscale.runningNode()
+		tailnetNode = options.Tailscale.controller.RunningNode()
 	}
 	authenticatesTailnet := options.TailscaleToken != ""
 	if state.tailnetNode != tailnetNode || (state.tailnetCredential != nil) != authenticatesTailnet {
