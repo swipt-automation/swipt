@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Bunları available() ile denetleyin, bunları kullanan kodu @available ile işaretleyin ya da package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
     "apiLevel": "API düzeyi {{level}}",
-    "entryNeeds": "{{location}}: {{name}}, Swiplet’in giriş noktasıdır ve {{requirement}} gerektirir; package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
-    "importNeeds": "{{location}}: {{name}} öğesini içe aktarmak {{requirement}} gerektirir; package.json dosyasındaki \"swiplet.minimumAPILevel\" veya \"swiplet.minimumIOSVersion\" değerini yükseltin.",
-    "invalidEntry": "{{location}}: @available \"{{entry}}\" içeriyor; virgülle ayrılmış \"apiLevel <level>\" ve \"iOS <version>\" girişlerini kabul eder.",
-    "needs": "{{location}}: {{name}} için {{requirement}} gerekli.",
+    "entryNeeds": "{{location}}: {{name}}, Swiplet’in giriş noktasıdır ve {{requirement}} gerektirir; package.json dosyasındaki {{fields}} değerini yükseltin.",
+    "foreign": "{{location}}: {{name}} yalnızca {{systems}} içindir, ancak {{build}} derlemesi bu dosyayı içeriyor; bunu *.{{os}}.ts veya *.{{os}}.tsx adlı bir dosyaya taşıyın.",
+    "foreignUse": "{{location}}: {{name}} yalnızca {{systems}} içindir, ancak {{build}} derlemesi buraya ulaşıyor; önce available() ile denetleyin ya da bunu *.{{os}}.ts veya *.{{os}}.tsx adlı bir dosyaya taşıyın.",
+    "importNeeds": "{{location}}: {{name}} öğesini içe aktarmak {{requirement}} gerektirir; package.json dosyasındaki {{fields}} değerini yükseltin.",
+    "invalidEntry": "{{location}}: @available \"{{entry}}\" içeriyor; virgülle ayrılmış \"apiLevel <level>\", \"iOS [<version>]\" ve \"android [<SDK level>]\" girişlerini kabul eder.",
+    "needs": "{{location}}: {{name}} için {{requirement}} gerekli; bunu available() ile denetleyin, bunu kullanan kodu @available ile işaretleyin ya da package.json dosyasındaki {{fields}} değerini yükseltin.",
     "repeatedEntry": "{{location}}: @available, {{kind}} değerini iki kez belirtiyor."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "Bu bilgisayardan bir aygıt için Swipt API’sini ve MCP’yi sun",
       "details": "Aygıtı aynı anda yalnızca bir taraf denetleyebilir: aygıttaki Swipt veya bir bilgisayardaki sürücü.",
-      "passcode": "aygıtın kilidini otomatik açmak için parola; boş bırakılırsa otomatik kilit açma kapatılır",
+      "passcode": "Swipt’in aygıtın kilidini açmak için girdiği parola; aygıt için hatırlanır, boş bırakılırsa Swipt parolayı unutur",
       "randomToken": "API istemcilerinden rastgele bir belirteç iste",
       "token": "API istemcilerinden bu belirteci iste"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Yeni veya boş bir dizinde Swiplet projesi oluştur",
-        "notEmpty": "{{directory}} boş değil."
+        "invalidPlatforms": "Swiplet’in desteklediği sistemleri --platforms ile belirtin: ios, android veya ios,android.",
+        "notEmpty": "{{directory}} boş değil.",
+        "platforms": "Swiplet’in desteklediği sistemler: ios, android veya virgülle ayrılmış olarak ikisi"
       },
       "deploy": {
         "description": "Projeyi derle ve aygıta yükle"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Derlenen Swiplet’leri bir swiplets.json ile dist/ içinde topla",
         "duplicateID": "{{id}} kimliği hem {{first}} hem de {{second}} dosyasında kullanılıyor",
-        "invalidIcon": "package.json dosyasındaki \"source.icon\" symbol içermelidir, color içerebilir.",
+        "invalidAndroidSymbol": "package.json dosyasındaki \"source.icon.android\", {{symbol}} değil Swipt'in Android simge kitaplığından bir Material simge adı olmalıdır.",
+        "invalidIcon": "package.json dosyasındaki \"source.icon\" yalnızca \"color\", \"symbolColor\", \"ios\" ve \"android\" dizelerini içerebilir.",
         "invalidLocalizedNames": "package.json dosyasındaki \"source.localizedNames\" dilleri adlarla eşleştirmelidir.",
         "invalidURL": "package.json dosyasındaki \"source.url\" mutlak bir URL değil.",
         "noWorkspaces": "package.json dosyasında Swiplet içeren çalışma alanı listelenmiyor; listelenecek Swiplet’leri belirtin.",
@@ -300,26 +304,35 @@
     "pin": "4 veya 6 basamaklı parola",
     "pinDetail": "4 veya 6 basamak",
     "prompt": "Aygıt parolası",
-    "setUp": "Otomatik kilit açma ayarlansın mı? Böylece Swipt bu aygıtın kilidini kendiliğinden açabilir."
+    "setUp": "Bu aygıtın parolası kaydedilsin mi? Böylece Swipt aygıtın kilidini açabilir."
   },
   "project": {
     "assetConflict": "{{source}} ve {{asset}} Swiplet içinde aynı assets/{{name}} yoluna denk gelir.",
+    "buildFailed": "{{system}} derlemesi başarısız oldu:",
     "conditionalActions": "Uzantı, available() sonucuna göre farklı eylemler tanımlıyor; her sistemde aynı eylemleri tanımlayın ve available() denetimini run veya bir eylem içinde yapın.",
     "databaseAtLoad": "Veritabanı, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın.",
+    "foreignModule": "{{module}} yalnızca {{system}} içindir, ancak {{build}} derlemesi bu dosyayı içeriyor; bunu *.{{os}}.ts veya *.{{os}}.tsx adlı dosyalarda içe aktarın.",
+    "inconsistentExtension": "Uzantı her sistemde aynı hizmeti ve eylemleri tanımlamalıdır; sistemi bunun yerine run veya bir eylem içinde denetleyin.",
     "interfaceImport": "Arayüz çalışma zamanında {{file}} dosyasını içe aktarıyor; türünü `import type` ile içe aktarın.",
     "interfaceOnly": "{{name}} yalnızca Swiplet arayüzünde çalışır.",
+    "invalidAndroidSymbol": "package.json dosyasındaki \"swiplet.icon.android\", {{symbol}} değil Swipt'in Android simge kitaplığından bir Material simge adı olmalıdır.",
     "invalidExposure": "{{action}} eylemi kendini yalnızca \"shortcuts\" için kullanıma sunabilir.",
     "invalidExtension": "Uzantının saptanmış dışa aktarımı defineExtension sonucu değil.",
     "invalidID": "package.json dosyasındaki \"swiplet.id\" 1 ile 128 karakter arasında olmalı, küçük harf, rakam, nokta, alt çizgi ve tirelerden oluşmalı ve harf veya rakamla başlamalıdır.",
+    "invalidIcon": "package.json dosyasındaki \"swiplet.icon\" yalnızca \"color\", \"symbolColor\", \"ios\" ve \"android\" dizelerini içerebilir.",
     "invalidLocalizedNames": "package.json dosyasındaki \"swiplet.localizedNames\" dilleri adlarla eşleştirmelidir.",
     "invalidMinimumAPILevel": "package.json dosyasındaki \"swiplet.minimumAPILevel\" {{oldest}} ile {{level}} (@swipt/api API düzeyi) arasında bir tam sayı olmalıdır.",
-    "invalidMinimumIOSVersion": "package.json dosyasındaki \"swiplet.minimumIOSVersion\" {{version}} (@swipt/api en düşük iOS sürümü) veya daha yüksek bir sürüm numarası olmalıdır.",
+    "invalidMinimumAndroidSDK": "package.json dosyasındaki \"swiplet.platforms.android.minimumSDK\" {{sdk}} (@swipt/api en düşük Android SDK düzeyi) veya daha yüksek bir Android SDK düzeyi olmalıdır.",
+    "invalidMinimumIOSVersion": "package.json dosyasındaki \"swiplet.platforms.ios.minimumVersion\" {{version}} (@swipt/api en düşük iOS sürümü) veya daha yüksek bir sürüm numarası olmalıdır.",
     "invalidName": "package.json dosyasındaki \"swiplet.name\" boş olmayan bir dize olmalıdır.",
+    "invalidPlatforms": "package.json dosyasındaki \"swiplet.platforms\", Swiplet’in desteklediği her sistemi belirtmelidir: \"ios\" ile birlikte \"minimumVersion\", \"android\" ile birlikte \"minimumSDK\".",
     "invalidSchema": "{{action}} eyleminin {{side}} şeması Standard JSON Schema’yı uygulamıyor; Zod 4 gibi bunu uygulayan bir kitaplık kullanın.",
     "invalidString": "package.json dosyasındaki \"{{field}}\" bir dize olmalıdır.",
     "invalidVersionCode": "package.json dosyasındaki \"swiplet.versionCode\" pozitif bir tam sayı olmalıdır.",
     "missingTitle": "{{action}} eylemi için başlık gerekli.",
+    "outdatedAPI": "@swipt/api API düzeyi {{level}} durumunda, ancak bu Swipt komut satırı aracı Swiplet’leri API düzeyi {{oldest}} veya üzeri için derler; @swipt/api paketini güncelleyin.",
     "storageAtLoad": "Depolama, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın.",
+    "undeclaredModule": "{{module}} yalnızca {{system}} içindir, ancak package.json dosyasındaki \"swiplet.platforms\" bu sistemi belirtmiyor.",
     "unprovidedModule": "Swipt, \"{{module}}\" modülünü uzantılara sağlamıyor; modülü extension.js içine paketleyin.",
     "usedAtLoad": "{{name}}, extension.js yüklenirken kullanılıyor; run veya bir eylem içinde kullanın."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "--token ve --random-token birlikte kullanılamaz.",
     "invalidToken": "Belirteç, boşluk içermeyen bir veya daha fazla yazdırılabilir ASCII karakterinden oluşur.",
     "localNetwork": "Yerel ağ",
-    "noAutoUnlock": "{{device}} aygıtının kilidi otomatik açılmıyor; parolasını --passcode ile ayarlayın. Sürücüyü durdurmak için Ctrl-C’ye basın.",
+    "noPasscode": "{{device}} parolasını istediğinde Swipt aygıtın kilidini açamaz; parolayı ayarlamak için Ctrl-C ile sürücüyü durdurun ve \"swipt driver -d {{udid}} --passcode CODE\" komutunu çalıştırın.",
     "quitSwipt": "Swipt’ten çık",
     "quittingSwipt": "{{device}} aygıtında Swipt’ten çıkılıyor",
     "served": "{{computer}} bilgisayarındaki sürücü zaten {{device}} aygıtına hizmet veriyor; önce o sürücüyü durdurun.",

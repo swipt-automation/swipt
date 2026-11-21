@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "יש לבדוק אותם באמצעות available(), לסמן את הקוד שמשתמש בהם באמצעות @available, או להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
     "apiLevel": "רמת API {{level}}",
-    "entryNeeds": "‏{{location}}: {{name}} הוא נקודת כניסה של ה-Swiplet ודורש {{requirement}}; יש להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
-    "importNeeds": "‏{{location}}: ייבוא של {{name}} דורש {{requirement}}; יש להעלות את \"swiplet.minimumAPILevel\" או את \"swiplet.minimumIOSVersion\" ב-package.json.",
-    "invalidEntry": "‏{{location}}: תג ה-@available כולל את \"{{entry}}\"; הוא מקבל \"apiLevel <level>\" ו-\"iOS <version>\", מופרדים בפסיקים.",
-    "needs": "‏{{location}}: {{name}} דורש {{requirement}}.",
+    "entryNeeds": "‏{{location}}: {{name}} הוא נקודת כניסה של ה-Swiplet ודורש {{requirement}}; יש להעלות את {{fields}} ב-package.json.",
+    "foreign": "‏{{location}}: {{name}} מיועד רק ל-{{systems}}, אבל הבנייה עבור {{build}} כוללת את הקובץ הזה; יש להעביר אותו לקובץ בשם *.{{os}}.ts או *.{{os}}.tsx.",
+    "foreignUse": "‏{{location}}: {{name}} מיועד רק ל-{{systems}}, אבל הבנייה עבור {{build}} משתמשת בו כאן; יש לבדוק קודם את available(), או להעביר אותו לקובץ בשם *.{{os}}.ts או *.{{os}}.tsx.",
+    "importNeeds": "‏{{location}}: ייבוא של {{name}} דורש {{requirement}}; יש להעלות את {{fields}} ב-package.json.",
+    "invalidEntry": "‏{{location}}: תג ה-@available כולל את \"{{entry}}\"; הוא מקבל \"apiLevel <level>\", \"iOS [<version>]\" ו-\"android [<SDK level>]\", מופרדים בפסיקים.",
+    "needs": "‏{{location}}: {{name}} דורש {{requirement}}; יש לבדוק זאת באמצעות available(), לסמן את הקוד שמשתמש בו באמצעות @available, או להעלות את {{fields}} ב-package.json.",
     "repeatedEntry": "‏{{location}}: תג ה-@available מציין את {{kind}} פעמיים."
   },
   "cli": {
@@ -87,7 +88,7 @@
     "driver": {
       "description": "אספקת ה-API של Swipt ו-MCP עבור מכשיר מהמחשב הזה",
       "details": "רק גורם אחד יכול לשלוט במכשיר בכל פעם: Swipt במכשיר, או מנהל ההתקן במחשב אחד.",
-      "passcode": "קוד גישה לביטול נעילה אוטומטי של המכשיר; השארת הערך ריק מכבה את ביטול הנעילה האוטומטי",
+      "passcode": "קוד הגישה של המכשיר, ש-Swipt מזין כדי לבטל את נעילתו; הוא נשמר עבור המכשיר, והשארת הערך ריק מוחקת אותו",
       "randomToken": "דרישת אסימון אקראי מלקוחות API",
       "token": "דרישת האסימון הזה מלקוחות API"
     },
@@ -97,7 +98,9 @@
       },
       "create": {
         "description": "יצירת פרויקט Swiplet בתיקייה חדשה או ריקה",
-        "notEmpty": "התיקייה {{directory}} אינה ריקה."
+        "invalidPlatforms": "יש לציין באמצעות --platforms את המערכות שה-Swiplet תומך בהן: ios, android או ios,android.",
+        "notEmpty": "התיקייה {{directory}} אינה ריקה.",
+        "platforms": "המערכות שה-Swiplet תומך בהן: ios, android או שתיהן מופרדות בפסיק"
       },
       "deploy": {
         "description": "בניית הפרויקט והתקנתו במכשיר"
@@ -112,7 +115,8 @@
       "source": {
         "description": "איסוף ה-Swiplet שנבנו אל dist/ עם swiplets.json",
         "duplicateID": "‏{{id}} הוא גם {{first}} וגם {{second}}",
-        "invalidIcon": "‏\"source.icon\" ב-package.json חייב לכלול symbol ויכול לכלול color.",
+        "invalidAndroidSymbol": "‏\"source.icon.android\" ב-package.json חייב להיות שם סמל Material מספריית הסמלים ל-Android של Swipt, ולא {{symbol}}.",
+        "invalidIcon": "‏\"source.icon\" ב-package.json יכול לכלול רק את המחרוזות \"color\", ‏\"symbolColor\", ‏\"ios\" ו-\"android\".",
         "invalidLocalizedNames": "‏\"source.localizedNames\" ב-package.json חייב למפות שפות לשמות.",
         "invalidURL": "‏\"source.url\" ב-package.json אינו כתובת URL מוחלטת.",
         "noWorkspaces": "ב-package.json אין סביבות עבודה עם Swiplet; יש לציין את ה-Swiplet שיש לכלול ברשימה.",
@@ -304,26 +308,35 @@
     "pin": "קוד גישה בן 4 או 6 ספרות",
     "pinDetail": "‏4 או 6 ספרות",
     "prompt": "קוד הגישה של המכשיר",
-    "setUp": "להגדיר ביטול נעילה אוטומטי? כך Swipt יוכל לבטל את נעילת המכשיר הזה בעצמו."
+    "setUp": "לשמור את קוד הגישה של המכשיר הזה? כך Swipt יוכל לבטל את נעילת המכשיר."
   },
   "project": {
     "assetConflict": "‏{{source}} ו-{{asset}} יהיו שניהם assets/{{name}} ב-Swiplet.",
+    "buildFailed": "הבנייה עבור {{system}} נכשלה:",
     "conditionalActions": "ההרחבה מגדירה פעולות שונות בהתאם ל-available(); יש להגדיר את אותן הפעולות בכל מערכת ולבדוק את available() בתוך run או בתוך פעולה.",
     "databaseAtLoad": "מסד הנתונים נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה.",
+    "foreignModule": "המודול {{module}} מיועד רק ל-{{system}}, אבל הבנייה עבור {{build}} כוללת את הקובץ הזה; יש לייבא אותו בקבצים בשם *.{{os}}.ts או *.{{os}}.tsx.",
+    "inconsistentExtension": "ההרחבה חייבת להגדיר את אותו שירות ואותן פעולות בכל מערכת; יש לבדוק את המערכת בתוך run או בתוך פעולה.",
     "interfaceImport": "הממשק מייבא את {{file}} בזמן ריצה; יש לייבא את הטיפוס שלו באמצעות `import type`.",
     "interfaceOnly": "‏{{name}} פועל רק בממשק של ה-Swiplet.",
+    "invalidAndroidSymbol": "‏\"swiplet.icon.android\" ב-package.json חייב להיות שם סמל Material מספריית הסמלים ל-Android של Swipt, ולא {{symbol}}.",
     "invalidExposure": "הפעולה {{action}} יכולה לחשוף את עצמה רק ל-\"shortcuts\".",
     "invalidExtension": "הייצוא המוגדר כברירת מחדל של ההרחבה אינו התוצאה של defineExtension.",
     "invalidID": "‏\"swiplet.id\" ב-package.json חייב להכיל 1 עד 128 אותיות קטנות, ספרות, נקודות, קווים תחתונים ומקפים, ולהתחיל באות או בספרה.",
+    "invalidIcon": "‏\"swiplet.icon\" ב-package.json יכול לכלול רק את המחרוזות \"color\", ‏\"symbolColor\", ‏\"ios\" ו-\"android\".",
     "invalidLocalizedNames": "‏\"swiplet.localizedNames\" ב-package.json חייב למפות שפות לשמות.",
     "invalidMinimumAPILevel": "‏\"swiplet.minimumAPILevel\" ב-package.json חייב להיות מספר שלם מ-{{oldest}} עד {{level}}, רמת ה-API של @swipt/api.",
-    "invalidMinimumIOSVersion": "‏\"swiplet.minimumIOSVersion\" ב-package.json חייב להיות מספר גרסה החל מ-{{version}}, גרסת ה-iOS המינימלית של @swipt/api.",
+    "invalidMinimumAndroidSDK": "‏\"swiplet.platforms.android.minimumSDK\" ב-package.json חייב להיות רמת Android SDK החל מ-{{sdk}}, רמת ה-Android SDK המינימלית של @swipt/api.",
+    "invalidMinimumIOSVersion": "‏\"swiplet.platforms.ios.minimumVersion\" ב-package.json חייב להיות מספר גרסה החל מ-{{version}}, גרסת ה-iOS המינימלית של @swipt/api.",
     "invalidName": "‏\"swiplet.name\" ב-package.json חייב להיות מחרוזת לא ריקה.",
+    "invalidPlatforms": "‏\"swiplet.platforms\" ב-package.json חייב לציין כל מערכת שה-Swiplet תומך בה: \"ios\" עם \"minimumVersion\" משלה, \"android\" עם \"minimumSDK\" משלה.",
     "invalidSchema": "סכמת {{side}} של הפעולה {{action}} לא מיישמת את Standard JSON Schema; יש להשתמש בספרייה שמיישמת אותו, כגון Zod 4.",
     "invalidString": "‏\"{{field}}\" ב-package.json חייב להיות מחרוזת.",
     "invalidVersionCode": "‏\"swiplet.versionCode\" ב-package.json חייב להיות מספר שלם חיובי.",
     "missingTitle": "לפעולה {{action}} נדרשת כותרת.",
+    "outdatedAPI": "‏@swipt/api נמצא ברמת API {{level}}, וכלי שורת הפקודה הזה של Swipt בונה Swiplet לרמת API {{oldest}} ומעלה; יש לעדכן את @swipt/api.",
     "storageAtLoad": "האחסון נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה.",
+    "undeclaredModule": "המודול {{module}} מיועד רק למערכת {{system}}, שאינה מצוינת ב-\"swiplet.platforms\" ב-package.json.",
     "unprovidedModule": "‏Swipt לא מספק את \"{{module}}\" להרחבות; יש לארוז אותו בתוך extension.js.",
     "usedAtLoad": "‏{{name}} נמצא בשימוש בזמן הטעינה של extension.js; יש להשתמש בו בתוך run או בתוך פעולה."
   },
@@ -333,7 +346,7 @@
     "conflictingTokens": "לא ניתן להשתמש יחד באפשרות --token ובאפשרות --random-token.",
     "invalidToken": "אסימון מורכב מתו ASCII אחד או יותר שניתן להדפסה, ללא רווחים.",
     "localNetwork": "רשת מקומית",
-    "noAutoUnlock": "הנעילה של {{device}} לא מבוטלת באופן אוטומטי; יש להגדיר את קוד הגישה שלו באמצעות --passcode. כדי לעצור את מנהל ההתקן, יש להקיש Ctrl-C.",
+    "noPasscode": "כש-{{device}} מבקש את קוד הגישה שלו, Swipt לא יכול לבטל את נעילתו; כדי להגדיר את קוד הגישה, יש לעצור את מנהל ההתקן באמצעות Ctrl-C ולהריץ \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "יציאה מ-Swipt",
     "quittingSwipt": "יוצא מ-Swipt ב-{{device}}",
     "served": "מנהל ההתקן ב-{{computer}} כבר משרת את {{device}}; יש לעצור קודם את מנהל ההתקן הזה.",

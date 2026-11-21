@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Tarkista ne available()-funktiolla, merkitse niitä käyttävä koodi @available-tunnisteella tai nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
     "apiLevel": "API-taso {{level}}",
-    "entryNeeds": "{{location}}: {{name}} on Swipletin aloituskohta ja edellyttää seuraavaa: {{requirement}}; nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
-    "importNeeds": "{{location}}: moduulin {{name}} tuominen edellyttää seuraavaa: {{requirement}}; nosta package.json-tiedoston kentän \"swiplet.minimumAPILevel\" tai \"swiplet.minimumIOSVersion\" arvoa.",
-    "invalidEntry": "{{location}}: @available-tunnisteessa on \"{{entry}}\"; tunniste hyväksyy pilkuilla erotetut arvot \"apiLevel <level>\" ja \"iOS <version>\".",
-    "needs": "{{location}}: {{name}} edellyttää seuraavaa: {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} on Swipletin aloituskohta ja edellyttää seuraavaa: {{requirement}}; nosta {{fields}} package.json-tiedostossa.",
+    "foreign": "{{location}}: {{name}} on tarkoitettu vain järjestelmälle {{systems}}, mutta {{build}}-koontiin sisältyy tämä tiedosto; siirrä se tiedostoon, jonka nimi on *.{{os}}.ts tai *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} on tarkoitettu vain järjestelmälle {{systems}}, mutta {{build}}-koonti käyttää sitä tässä kohdassa; tarkista ensin available(), tai siirrä se tiedostoon, jonka nimi on *.{{os}}.ts tai *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: moduulin {{name}} tuominen edellyttää seuraavaa: {{requirement}}; nosta {{fields}} package.json-tiedostossa.",
+    "invalidEntry": "{{location}}: @available-tunnisteessa on \"{{entry}}\"; tunniste hyväksyy pilkuilla erotetut arvot \"apiLevel <level>\", \"iOS [<version>]\" ja \"android [<SDK level>]\".",
+    "needs": "{{location}}: {{name}} edellyttää seuraavaa: {{requirement}}; tarkista se available()-funktiolla, merkitse sitä käyttävä koodi @available-tunnisteella tai nosta {{fields}} package.json-tiedostossa.",
     "repeatedEntry": "{{location}}: @available-tunnisteessa on {{kind}} kahdesti."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "Tarjoa laitteen Swipt-API ja MCP tältä tietokoneelta",
       "details": "Vain yksi taho kerrallaan voi ohjata laitetta: laitteen Swipt tai yhden tietokoneen ajuri.",
-      "passcode": "pääsykoodi laitteen lukituksen automaattiseen avaamiseen; jätä tyhjäksi, niin toiminto poistetaan käytöstä",
+      "passcode": "laitteen pääsykoodi, jonka Swipt syöttää avatakseen lukituksen; koodi muistetaan laitekohtaisesti, ja jos jätät sen tyhjäksi, se unohdetaan",
       "randomToken": "vaadi API-asiakkailta satunnainen tunnus",
       "token": "vaadi API-asiakkailta tämä tunnus"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Luo Swiplet-projekti uuteen tai tyhjään hakemistoon",
-        "notEmpty": "{{directory}} ei ole tyhjä."
+        "invalidPlatforms": "Nimeä Swipletin tukemat järjestelmät valinnalla --platforms: ios, android tai ios,android.",
+        "notEmpty": "{{directory}} ei ole tyhjä.",
+        "platforms": "Swipletin tukemat järjestelmät: ios, android tai molemmat pilkulla erotettuina"
       },
       "deploy": {
         "description": "Koosta projekti ja asenna se laitteeseen"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Kokoa koostetut Swipletit dist/-kansioon swiplets.json-tiedoston kanssa",
         "duplicateID": "{{id}} on sekä {{first}} että {{second}}",
-        "invalidIcon": "package.json-tiedoston kentässä \"source.icon\" on oltava symbol, ja siinä voi olla color.",
+        "invalidAndroidSymbol": "package.json-tiedoston kentän \"source.icon.android\" on oltava Swiptin Android-kuvakikirjaston Material-kuvakkeen nimi, ei {{symbol}}.",
+        "invalidIcon": "package.json-tiedoston kentässä \"source.icon\" saa olla vain merkkijonot \"color\", \"symbolColor\", \"ios\" ja \"android\".",
         "invalidLocalizedNames": "package.json-tiedoston kentän \"source.localizedNames\" on yhdistettävä kielet nimiin.",
         "invalidURL": "package.json-tiedoston kenttä \"source.url\" ei ole absoluuttinen URL-osoite.",
         "noWorkspaces": "package.json ei sisällä työtiloja, joissa on Swipletejä; nimeä listattavat Swipletit.",
@@ -300,26 +304,35 @@
     "pin": "4- tai 6-numeroinen pääsykoodi",
     "pinDetail": "4 tai 6 numeroa",
     "prompt": "Laitteen pääsykoodi",
-    "setUp": "Määritetäänkö automaattinen lukituksen avaus? Swipt voi sen jälkeen avata tämän laitteen lukituksen itse."
+    "setUp": "Tallennetaanko tämän laitteen pääsykoodi? Swipt voi sen jälkeen avata laitteen lukituksen."
   },
   "project": {
     "assetConflict": "{{source}} ja {{asset}} vastaavat Swipletissä molemmat polkua assets/{{name}}.",
+    "buildFailed": "{{system}}-koonti epäonnistui:",
     "conditionalActions": "Laajennus määrittää eri toiminnot available()-funktion tuloksen mukaan; määritä samat toiminnot kaikissa järjestelmissä ja tarkista available() run-funktiossa tai toiminnossa.",
     "databaseAtLoad": "Tietokanta on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa.",
+    "foreignModule": "Moduuli {{module}} on tarkoitettu vain järjestelmälle {{system}}, mutta {{build}}-koontiin sisältyy tämä tiedosto; tuo se tiedostoissa, joiden nimi on *.{{os}}.ts tai *.{{os}}.tsx.",
+    "inconsistentExtension": "Laajennuksen on määritettävä sama palvelu ja samat toiminnot jokaisessa järjestelmässä; tarkista järjestelmä run-funktiossa tai toiminnossa.",
     "interfaceImport": "Käyttöliittymä tuo tiedoston {{file}} suorituksen aikana; tuo sen tyyppi lausekkeella `import type`.",
     "interfaceOnly": "{{name}} toimii vain Swipletin käyttöliittymässä.",
+    "invalidAndroidSymbol": "package.json-tiedoston kentän \"swiplet.icon.android\" on oltava Swiptin Android-kuvakikirjaston Material-kuvakkeen nimi, ei {{symbol}}.",
     "invalidExposure": "Toiminto {{action}} voidaan tuoda saataville vain kohteelle \"shortcuts\".",
     "invalidExtension": "Laajennuksen oletusvienti ei ole defineExtension-kutsun tulos.",
     "invalidID": "package.json-tiedoston kentän \"swiplet.id\" on oltava 1–128 merkkiä pitkä, sisällettävä vain pieniä kirjaimia, numeroita, pisteitä, alaviivoja ja yhdysviivoja sekä alettava kirjaimella tai numerolla.",
+    "invalidIcon": "package.json-tiedoston kentässä \"swiplet.icon\" saa olla vain merkkijonot \"color\", \"symbolColor\", \"ios\" ja \"android\".",
     "invalidLocalizedNames": "package.json-tiedoston kentän \"swiplet.localizedNames\" on yhdistettävä kielet nimiin.",
     "invalidMinimumAPILevel": "package.json-tiedoston kentän \"swiplet.minimumAPILevel\" on oltava kokonaisluku {{oldest}}:stä @swipt/api-paketin API-tasoon ({{level}}).",
-    "invalidMinimumIOSVersion": "package.json-tiedoston kentän \"swiplet.minimumIOSVersion\" on oltava versionumero, joka on vähintään @swipt/api-paketin iOS-vähimmäisversio ({{version}}).",
+    "invalidMinimumAndroidSDK": "package.json-tiedoston kentän \"swiplet.platforms.android.minimumSDK\" on oltava Android SDK -taso, joka on vähintään @swipt/api-paketin Android SDK -vähimmäistaso ({{sdk}}).",
+    "invalidMinimumIOSVersion": "package.json-tiedoston kentän \"swiplet.platforms.ios.minimumVersion\" on oltava versionumero, joka on vähintään @swipt/api-paketin iOS-vähimmäisversio ({{version}}).",
     "invalidName": "package.json-tiedoston kentän \"swiplet.name\" on oltava ei-tyhjä merkkijono.",
+    "invalidPlatforms": "package.json-tiedoston kentässä \"swiplet.platforms\" on nimettävä jokainen järjestelmä, jota Swiplet tukee: \"ios\" ja sen \"minimumVersion\" sekä \"android\" ja sen \"minimumSDK\".",
     "invalidSchema": "Toiminnon {{action}} {{side}}-skeema ei toteuta Standard JSON Schema -määritystä; käytä sen toteuttavaa kirjastoa, kuten Zod 4:ää.",
     "invalidString": "package.json-tiedoston kentän \"{{field}}\" on oltava merkkijono.",
     "invalidVersionCode": "package.json-tiedoston kentän \"swiplet.versionCode\" on oltava positiivinen kokonaisluku.",
     "missingTitle": "Toiminto {{action}} tarvitsee nimen.",
+    "outdatedAPI": "@swipt/api-paketin API-taso on {{level}}, ja tämä Swipt-komentorivityökalu koostaa Swipletit API-tasolle {{oldest}} tai uudemmalle; päivitä @swipt/api.",
     "storageAtLoad": "Tallennustila on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa.",
+    "undeclaredModule": "Moduuli {{module}} on tarkoitettu vain järjestelmälle {{system}}, mutta package.json-tiedoston kenttä \"swiplet.platforms\" ei mainitse sitä.",
     "unprovidedModule": "Swipt ei tarjoa moduulia \"{{module}}\" laajennuksille; paketoi se tiedostoon extension.js.",
     "usedAtLoad": "{{name}} on käytössä jo silloin, kun extension.js latautuu; käytä sitä run-funktiossa tai toiminnossa."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "Valintoja --token ja --random-token ei voi käyttää yhdessä.",
     "invalidToken": "Tunnus koostuu yhdestä tai useammasta tulostettavasta ASCII-merkistä ilman välilyöntejä.",
     "localNetwork": "Lähiverkko",
-    "noAutoUnlock": "Laitteen {{device}} lukitusta ei avata automaattisesti; aseta sen pääsykoodi valinnalla --passcode. Pysäytä ajuri painamalla Ctrl-C.",
+    "noPasscode": "Swipt ei voi avata laitteen {{device}} lukitusta, kun laite pyytää pääsykoodiaan; jos haluat asettaa pääsykoodin, pysäytä ajuri painamalla Ctrl-C ja suorita komento \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Lopeta Swipt",
     "quittingSwipt": "lopetetaan Swipt laitteessa {{device}}",
     "served": "Tietokoneen {{computer}} ajuri palvelee jo laitetta {{device}}; pysäytä kyseinen ajuri ensin.",

@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "ตรวจสอบสิ่งเหล่านี้ด้วย available() ทำเครื่องหมายโค้ดที่ใช้สิ่งเหล่านี้ด้วย @available หรือเพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
     "apiLevel": "ระดับ API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} เป็นจุดเริ่มต้นของ Swiplet และต้องใช้ {{requirement}} เพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
-    "importNeeds": "{{location}}: การนำเข้า {{name}} ต้องใช้ {{requirement}} เพิ่มค่า \"swiplet.minimumAPILevel\" หรือ \"swiplet.minimumIOSVersion\" ใน package.json",
-    "invalidEntry": "{{location}}: @available มี \"{{entry}}\" ซึ่ง @available รองรับเฉพาะ \"apiLevel <level>\" และ \"iOS <version>\" โดยคั่นด้วยจุลภาค",
-    "needs": "{{location}}: {{name}} ต้องใช้ {{requirement}}",
+    "entryNeeds": "{{location}}: {{name}} เป็นจุดเริ่มต้นของ Swiplet และต้องใช้ {{requirement}} เพิ่มค่า {{fields}} ใน package.json",
+    "foreign": "{{location}}: {{name}} ใช้ได้เฉพาะกับ {{systems}} แต่บิลด์ {{build}} รวมไฟล์นี้ไว้ด้วย ย้ายไปไว้ในไฟล์ชื่อ *.{{os}}.ts หรือ *.{{os}}.tsx",
+    "foreignUse": "{{location}}: {{name}} ใช้ได้เฉพาะกับ {{systems}} แต่บิลด์ {{build}} ทำงานมาถึงตรงนี้ ตรวจสอบ available() ก่อน หรือย้ายไปไว้ในไฟล์ชื่อ *.{{os}}.ts หรือ *.{{os}}.tsx",
+    "importNeeds": "{{location}}: การนำเข้า {{name}} ต้องใช้ {{requirement}} เพิ่มค่า {{fields}} ใน package.json",
+    "invalidEntry": "{{location}}: @available มี \"{{entry}}\" ซึ่ง @available รองรับเฉพาะ \"apiLevel <level>\" \"iOS [<version>]\" และ \"android [<SDK level>]\" โดยคั่นด้วยจุลภาค",
+    "needs": "{{location}}: {{name}} ต้องใช้ {{requirement}} ตรวจสอบด้วย available() ทำเครื่องหมายโค้ดที่ใช้ด้วย @available หรือเพิ่มค่า {{fields}} ใน package.json",
     "repeatedEntry": "{{location}}: @available ระบุ {{kind}} ซ้ำสองครั้ง"
   },
   "cli": {
@@ -79,7 +80,7 @@
     "driver": {
       "description": "ให้บริการ API ของ Swipt และ MCP สำหรับอุปกรณ์จากคอมพิวเตอร์เครื่องนี้",
       "details": "ควบคุมอุปกรณ์ได้ครั้งละหนึ่งฝ่ายเท่านั้น คือ Swipt บนอุปกรณ์ หรือไดรเวอร์บนคอมพิวเตอร์เครื่องหนึ่ง",
-      "passcode": "รหัสสำหรับปลดล็อคอุปกรณ์อัตโนมัติ เว้นว่างไว้เพื่อปิดการปลดล็อคอัตโนมัติ",
+      "passcode": "รหัสของอุปกรณ์ที่ Swipt ป้อนเพื่อปลดล็อค ระบบจะจำรหัสไว้สำหรับอุปกรณ์นั้น เว้นว่างไว้เพื่อลบรหัส",
       "randomToken": "กำหนดให้ไคลเอ็นต์ API ใช้โทเค็นแบบสุ่ม",
       "token": "กำหนดให้ไคลเอ็นต์ API ใช้โทเค็นนี้"
     },
@@ -89,7 +90,9 @@
       },
       "create": {
         "description": "สร้างโปรเจ็กต์ Swiplet ในไดเรกทอรีใหม่หรือไดเรกทอรีว่าง",
-        "notEmpty": "{{directory}} ไม่ว่าง"
+        "invalidPlatforms": "ระบุระบบที่ Swiplet รองรับด้วย --platforms: ios, android หรือ ios,android",
+        "notEmpty": "{{directory}} ไม่ว่าง",
+        "platforms": "ระบบที่ Swiplet รองรับ: ios, android หรือทั้งสองระบบโดยคั่นด้วยจุลภาค"
       },
       "deploy": {
         "description": "ทำการบิลด์โปรเจ็กต์แล้วติดตั้งลงบนอุปกรณ์"
@@ -104,7 +107,8 @@
       "source": {
         "description": "รวบรวม Swiplet ที่บิลด์แล้วไว้ใน dist/ พร้อม swiplets.json",
         "duplicateID": "{{id}} เป็นทั้ง {{first}} และ {{second}}",
-        "invalidIcon": "\"source.icon\" ใน package.json ต้องมี symbol และสามารถมี color ได้",
+        "invalidAndroidSymbol": "\"source.icon.android\" ใน package.json ต้องเป็นชื่อไอคอน Material จากไลบรารีไอคอน Android ของ Swipt ไม่ใช่ {{symbol}}",
+        "invalidIcon": "\"source.icon\" ใน package.json มีได้เฉพาะสตริง \"color\", \"symbolColor\", \"ios\" และ \"android\"",
         "invalidLocalizedNames": "\"source.localizedNames\" ใน package.json ต้องเป็นการแมปจากภาษาไปยังชื่อ",
         "invalidURL": "\"source.url\" ใน package.json ไม่ใช่ URL แบบสัมบูรณ์",
         "noWorkspaces": "package.json ไม่ได้ระบุเวิร์กสเปซที่มี Swiplet ระบุชื่อ Swiplet ที่จะรวมไว้ในรายการ",
@@ -296,26 +300,35 @@
     "pin": "รหัส 4 หรือ 6 หลัก",
     "pinDetail": "4 หรือ 6 หลัก",
     "prompt": "รหัสอุปกรณ์",
-    "setUp": "ตั้งค่าการปลดล็อคอัตโนมัติหรือไม่ จากนั้น Swipt จะปลดล็อคอุปกรณ์นี้ได้ด้วยตัวเอง"
+    "setUp": "บันทึกรหัสของอุปกรณ์นี้หรือไม่ จากนั้น Swipt จะปลดล็อคอุปกรณ์ได้"
   },
   "project": {
     "assetConflict": "{{source}} และ {{asset}} จะเป็น assets/{{name}} ทั้งคู่ใน Swiplet",
+    "buildFailed": "บิลด์ {{system}} ล้มเหลว:",
     "conditionalActions": "ส่วนขยายกำหนดการทำงานที่แตกต่างกันตาม available() ให้กำหนดการทำงานเดียวกันในทุกระบบ และตรวจสอบ available() ภายใน run หรือการทำงาน",
     "databaseAtLoad": "ฐานข้อมูลถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน",
+    "foreignModule": "{{module}} ใช้ได้เฉพาะกับ {{system}} แต่บิลด์ {{build}} รวมไฟล์นี้ไว้ด้วย นำเข้าจากไฟล์ชื่อ *.{{os}}.ts หรือ *.{{os}}.tsx",
+    "inconsistentExtension": "ส่วนขยายต้องกำหนดบริการและการทำงานเดียวกันในทุกระบบ ให้ตรวจสอบระบบภายใน run หรือการทำงานแทน",
     "interfaceImport": "อินเทอร์เฟซนำเข้า {{file}} ขณะทำงาน นำเข้าประเภทของไฟล์ด้วย `import type`",
     "interfaceOnly": "{{name}} ใช้งานได้เฉพาะในอินเทอร์เฟซของ Swiplet",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" ใน package.json ต้องเป็นชื่อไอคอน Material จากไลบรารีไอคอน Android ของ Swipt ไม่ใช่ {{symbol}}",
     "invalidExposure": "การทำงาน {{action}} เปิดให้ใช้ได้เฉพาะกับ \"shortcuts\" เท่านั้น",
     "invalidExtension": "การส่งออกเริ่มต้นของส่วนขยายไม่ใช่ผลลัพธ์ของ defineExtension",
     "invalidID": "\"swiplet.id\" ใน package.json ต้องประกอบด้วยตัวอักษรพิมพ์เล็ก ตัวเลข จุด ขีดล่าง และขีดกลาง 1 ถึง 128 อักขระ และขึ้นต้นด้วยตัวอักษรหรือตัวเลข",
+    "invalidIcon": "\"swiplet.icon\" ใน package.json มีได้เฉพาะสตริง \"color\", \"symbolColor\", \"ios\" และ \"android\"",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" ใน package.json ต้องเป็นการแมปจากภาษาไปยังชื่อ",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" ใน package.json ต้องเป็นจำนวนเต็มตั้งแต่ {{oldest}} ถึง {{level}} ซึ่งเป็นระดับ API ของ @swipt/api",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" ใน package.json ต้องเป็นหมายเลขเวอร์ชั่นตั้งแต่ {{version}} ขึ้นไป ซึ่งเป็นเวอร์ชั่น iOS ขั้นต่ำของ @swipt/api",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" ใน package.json ต้องเป็นระดับ Android SDK ตั้งแต่ {{sdk}} ขึ้นไป ซึ่งเป็นระดับ Android SDK ขั้นต่ำของ @swipt/api",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" ใน package.json ต้องเป็นหมายเลขเวอร์ชั่นตั้งแต่ {{version}} ขึ้นไป ซึ่งเป็นเวอร์ชั่น iOS ขั้นต่ำของ @swipt/api",
     "invalidName": "\"swiplet.name\" ใน package.json ต้องเป็นสตริงที่ไม่ว่าง",
+    "invalidPlatforms": "\"swiplet.platforms\" ใน package.json ต้องระบุทุกระบบที่ Swiplet รองรับ โดย \"ios\" ต้องมี \"minimumVersion\" และ \"android\" ต้องมี \"minimumSDK\"",
     "invalidSchema": "สคีมา {{side}} ของการทำงาน {{action}} ไม่รองรับ Standard JSON Schema ใช้ไลบรารีที่รองรับ เช่น Zod 4",
     "invalidString": "\"{{field}}\" ใน package.json ต้องเป็นสตริง",
     "invalidVersionCode": "\"swiplet.versionCode\" ใน package.json ต้องเป็นจำนวนเต็มบวก",
     "missingTitle": "การทำงาน {{action}} ต้องมีชื่อ",
+    "outdatedAPI": "@swipt/api อยู่ที่ระดับ API {{level}} แต่ Swipt CLI นี้บิลด์ Swiplet สำหรับระดับ API {{oldest}} ขึ้นไปเท่านั้น อัปเดต @swipt/api",
     "storageAtLoad": "พื้นที่จัดเก็บถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน",
+    "undeclaredModule": "{{module}} ใช้ได้เฉพาะกับ {{system}} ซึ่ง \"swiplet.platforms\" ใน package.json ไม่ได้ระบุไว้",
     "unprovidedModule": "Swipt ไม่มี \"{{module}}\" ให้ส่วนขยาย รวมโมดูลนี้ไว้ใน extension.js",
     "usedAtLoad": "{{name}} ถูกใช้ขณะที่ extension.js กำลังโหลด ใช้ภายใน run หรือการทำงานแทน"
   },
@@ -325,7 +338,7 @@
     "conflictingTokens": "ใช้ --token และ --random-token พร้อมกันไม่ได้",
     "invalidToken": "โทเค็นต้องเป็นอักขระ ASCII ที่พิมพ์ได้อย่างน้อยหนึ่งอักขระและไม่มีช่องว่าง",
     "localNetwork": "เครือข่ายในพื้นที่",
-    "noAutoUnlock": "{{device}} จะไม่ปลดล็อคอัตโนมัติ ตั้งรหัสโดยใช้ --passcode กด Ctrl-C เพื่อหยุดไดรเวอร์",
+    "noPasscode": "Swipt ปลดล็อค {{device}} ไม่ได้เมื่ออุปกรณ์ขอรหัส หากต้องการตั้งรหัส ให้กด Ctrl-C เพื่อหยุดไดรเวอร์ แล้วเรียกใช้ \"swipt driver -d {{udid}} --passcode CODE\"",
     "quitSwipt": "ออกจาก Swipt",
     "quittingSwipt": "กำลังออกจาก Swipt บน {{device}}",
     "served": "ไดรเวอร์บน {{computer}} ให้บริการ {{device}} อยู่แล้ว หยุดไดรเวอร์นั้นก่อน",

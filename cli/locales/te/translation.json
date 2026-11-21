@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "available()తో వీటిని చెక్ చేయండి, వీటిని ఉపయోగించే కోడ్‌ను @availableతో మార్క్ చేయండి, లేదా package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
     "apiLevel": "API స్థాయి {{level}}",
-    "entryNeeds": "{{location}}: {{name}} Swiplet ఎంట్రీ పాయింట్, దానికి {{requirement}} అవసరం; package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
-    "importNeeds": "{{location}}: {{name}}ను ఇంపోర్ట్ చేయడానికి {{requirement}} అవసరం; package.jsonలోని \"swiplet.minimumAPILevel\" లేదా \"swiplet.minimumIOSVersion\"ను పెంచండి.",
-    "invalidEntry": "{{location}}: @availableలో \"{{entry}}\" ఉంది; ఇది కామాలతో వేరు చేసిన \"apiLevel <level>\", \"iOS <version>\"లను స్వీకరిస్తుంది.",
-    "needs": "{{location}}: {{name}}కు {{requirement}} అవసరం.",
+    "entryNeeds": "{{location}}: {{name}} Swiplet ఎంట్రీ పాయింట్, దానికి {{requirement}} అవసరం; package.jsonలోని {{fields}}ను పెంచండి.",
+    "foreign": "{{location}}: {{name}} {{systems}}కు మాత్రమే, కానీ {{build}} బిల్డ్‌లో ఈ ఫైల్ చేర్చబడింది; దాన్ని *.{{os}}.ts లేదా *.{{os}}.tsx అనే పేరు గల ఫైల్‌కు తరలించండి.",
+    "foreignUse": "{{location}}: {{name}} {{systems}}కు మాత్రమే, కానీ {{build}} బిల్డ్ ఇక్కడ దాన్ని చేరుకుంటుంది; ముందుగా available()ను చెక్ చేయండి, లేదా దాన్ని *.{{os}}.ts లేదా *.{{os}}.tsx అనే పేరు గల ఫైల్‌కు తరలించండి.",
+    "importNeeds": "{{location}}: {{name}}ను ఇంపోర్ట్ చేయడానికి {{requirement}} అవసరం; package.jsonలోని {{fields}}ను పెంచండి.",
+    "invalidEntry": "{{location}}: @availableలో \"{{entry}}\" ఉంది; ఇది కామాలతో వేరు చేసిన \"apiLevel <level>\", \"iOS [<version>]\", \"android [<SDK level>]\"లను స్వీకరిస్తుంది.",
+    "needs": "{{location}}: {{name}}కు {{requirement}} అవసరం; available()తో దాన్ని చెక్ చేయండి, దాన్ని ఉపయోగించే కోడ్‌ను @availableతో మార్క్ చేయండి, లేదా package.jsonలోని {{fields}}ను పెంచండి.",
     "repeatedEntry": "{{location}}: @availableలో {{kind}} రెండుసార్లు ఉంది."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "ఈ కంప్యూటర్ నుండి డివైజ్ కోసం Swipt API మరియు MCPని అందించండి",
       "details": "ఒకసారి ఒక్క పక్షం మాత్రమే డివైజ్‌ను నియంత్రించగలదు: డివైజ్‌లోని Swipt, లేదా ఒక కంప్యూటర్‌లోని డ్రైవర్.",
-      "passcode": "డివైజ్‌ను ఆటోమేటిక్‌గా అన్‌లాక్ చేయడానికి పాస్‌కోడ్; ఖాళీగా ఉంచితే అది ఆఫ్ అవుతుంది",
+      "passcode": "డివైజ్ పాస్‌కోడ్, దీన్ని అన్‌లాక్ చేయడానికి Swipt ఎంటర్ చేస్తుంది; ఇది ఆ డివైజ్ కోసం గుర్తుంచుకోబడుతుంది, ఖాళీగా ఉంచితే Swipt దాన్ని మర్చిపోతుంది",
       "randomToken": "API క్లయింట్‌ల నుండి ర్యాండమ్ టోకెన్‌ను కోరండి",
       "token": "API క్లయింట్‌ల నుండి ఈ టోకెన్‌ను కోరండి"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "కొత్త లేదా ఖాళీ డైరెక్టరీలో Swiplet ప్రాజెక్ట్‌ను క్రియేట్ చేయండి",
-        "notEmpty": "{{directory}} ఖాళీగా లేదు."
+        "invalidPlatforms": "Swiplet సపోర్ట్ చేసే సిస్టమ్‌లను --platformsతో పేర్కొనండి: ios, android లేదా ios,android.",
+        "notEmpty": "{{directory}} ఖాళీగా లేదు.",
+        "platforms": "Swiplet సపోర్ట్ చేసే సిస్టమ్‌లు: ios, android లేదా కామాతో వేరు చేసిన రెండూ"
       },
       "deploy": {
         "description": "ప్రాజెక్ట్‌ను బిల్డ్ చేసి డివైజ్‌లో ఇన్‌స్టాల్ చేయండి"
@@ -108,7 +111,8 @@
       "source": {
         "description": "బిల్డ్ చేసిన Swipletలను swiplets.jsonతో పాటు dist/లో సేకరించండి",
         "duplicateID": "{{id}} అనేది {{first}}, {{second}} రెండూ అవుతుంది",
-        "invalidIcon": "package.jsonలోని \"source.icon\"లో symbol తప్పనిసరిగా ఉండాలి, color ఉండవచ్చు.",
+        "invalidAndroidSymbol": "package.jsonలోని \"source.icon.android\" {{symbol}} కాకుండా, Swipt Android ఐకాన్ లైబ్రరీ నుండి Material ఐకాన్ పేరు అయి ఉండాలి.",
+        "invalidIcon": "package.jsonలోని \"source.icon\"లో \"color\", \"symbolColor\", \"ios\", \"android\" స్ట్రింగ్‌లు మాత్రమే ఉండవచ్చు.",
         "invalidLocalizedNames": "package.jsonలోని \"source.localizedNames\" భాషలను పేర్లకు మ్యాప్ చేయాలి.",
         "invalidURL": "package.jsonలోని \"source.url\" అబ్సల్యూట్ URL కాదు.",
         "noWorkspaces": "package.jsonలో Swipletలు ఉన్న వర్క్‌స్పేస్‌లు ఏవీ లిస్ట్ చేయలేదు; లిస్ట్ చేయాల్సిన Swipletల పేర్లను ఇవ్వండి.",
@@ -300,26 +304,35 @@
     "pin": "4 లేదా 6 అంకెల పాస్‌కోడ్",
     "pinDetail": "4 లేదా 6 అంకెలు",
     "prompt": "డివైజ్ పాస్‌కోడ్",
-    "setUp": "ఆటోమేటిక్ అన్‌లాక్‌ను సెటప్ చేయాలా? అప్పుడు Swipt ఈ డివైజ్‌ను తనంతట తానుగా అన్‌లాక్ చేయగలదు."
+    "setUp": "ఈ డివైజ్ పాస్‌కోడ్‌ను సేవ్ చేయాలా? అప్పుడు Swipt డివైజ్‌ను అన్‌లాక్ చేయగలదు."
   },
   "project": {
     "assetConflict": "{{source}}, {{asset}} రెండూ Swipletలో assets/{{name}} అవుతాయి.",
+    "buildFailed": "{{system}} బిల్డ్ విఫలమైంది:",
     "conditionalActions": "ఎక్స్‌టెన్షన్ available()పై ఆధారపడి వేర్వేరు యాక్షన్‌లను నిర్వచిస్తుంది; ప్రతి సిస్టమ్‌లో ఒకే యాక్షన్‌లను నిర్వచించి, run లేదా యాక్షన్ లోపల available()ను చెక్ చేయండి.",
     "databaseAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు డేటాబేస్ ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి.",
+    "foreignModule": "{{module}} {{system}}కు మాత్రమే, కానీ {{build}} బిల్డ్‌లో ఈ ఫైల్ చేర్చబడింది; దాన్ని *.{{os}}.ts లేదా *.{{os}}.tsx అనే పేర్లు గల ఫైల్‌ల నుండి ఇంపోర్ట్ చేయండి.",
+    "inconsistentExtension": "ఎక్స్‌టెన్షన్ ప్రతి సిస్టమ్‌లో ఒకే సర్వీస్ మరియు యాక్షన్‌లను నిర్వచించాలి; దానికి బదులుగా run లేదా యాక్షన్ లోపల సిస్టమ్‌ను చెక్ చేయండి.",
     "interfaceImport": "ఇంటర్‌ఫేస్ రన్ టైమ్‌లో {{file}}ను ఇంపోర్ట్ చేస్తుంది; `import type`తో దాని టైప్‌ను ఇంపోర్ట్ చేయండి.",
     "interfaceOnly": "{{name}} Swiplet ఇంటర్‌ఫేస్‌లో మాత్రమే పని చేస్తుంది.",
+    "invalidAndroidSymbol": "package.jsonలోని \"swiplet.icon.android\" {{symbol}} కాకుండా, Swipt Android ఐకాన్ లైబ్రరీ నుండి Material ఐకాన్ పేరు అయి ఉండాలి.",
     "invalidExposure": "{{action}} యాక్షన్ తనను తాను \"shortcuts\"కు మాత్రమే అందుబాటులో ఉంచగలదు.",
     "invalidExtension": "ఎక్స్‌టెన్షన్ డిఫాల్ట్ ఎక్స్‌పోర్ట్ defineExtension ఫలితం కాదు.",
     "invalidID": "package.jsonలోని \"swiplet.id\" 1 నుండి 128 వరకు లోయర్‌కేస్ అక్షరాలు, అంకెలు, చుక్కలు, అండర్‌స్కోర్‌లు, హైఫన్‌లతో ఉండాలి, అక్షరం లేదా అంకెతో మొదలవ్వాలి.",
+    "invalidIcon": "package.jsonలోని \"swiplet.icon\"లో \"color\", \"symbolColor\", \"ios\", \"android\" స్ట్రింగ్‌లు మాత్రమే ఉండవచ్చు.",
     "invalidLocalizedNames": "package.jsonలోని \"swiplet.localizedNames\" భాషలను పేర్లకు మ్యాప్ చేయాలి.",
     "invalidMinimumAPILevel": "package.jsonలోని \"swiplet.minimumAPILevel\" {{oldest}} నుండి @swipt/api API స్థాయి అయిన {{level}} వరకు ఉన్న పూర్ణాంకం అయి ఉండాలి.",
-    "invalidMinimumIOSVersion": "package.jsonలోని \"swiplet.minimumIOSVersion\" @swipt/api కనీస iOS వెర్షన్ అయిన {{version}} లేదా అంతకంటే ఎక్కువ వెర్షన్ నంబర్ అయి ఉండాలి.",
+    "invalidMinimumAndroidSDK": "package.jsonలోని \"swiplet.platforms.android.minimumSDK\" @swipt/api కనీస Android SDK స్థాయి అయిన {{sdk}} లేదా అంతకంటే ఎక్కువ Android SDK స్థాయి అయి ఉండాలి.",
+    "invalidMinimumIOSVersion": "package.jsonలోని \"swiplet.platforms.ios.minimumVersion\" @swipt/api కనీస iOS వెర్షన్ అయిన {{version}} లేదా అంతకంటే ఎక్కువ వెర్షన్ నంబర్ అయి ఉండాలి.",
     "invalidName": "package.jsonలోని \"swiplet.name\" ఖాళీ కాని స్ట్రింగ్ అయి ఉండాలి.",
+    "invalidPlatforms": "package.jsonలోని \"swiplet.platforms\" Swiplet సపోర్ట్ చేసే ప్రతి సిస్టమ్‌ను పేర్కొనాలి: \"ios\"ను దాని \"minimumVersion\"తో, \"android\"ను దాని \"minimumSDK\"తో.",
     "invalidSchema": "{{action}} యాక్షన్ {{side}} స్కీమా Standard JSON Schemaను అమలు చేయడం లేదు; దాన్ని అమలు చేసే లైబ్రరీని ఉపయోగించండి, ఉదాహరణకు Zod 4.",
     "invalidString": "package.jsonలోని \"{{field}}\" స్ట్రింగ్ అయి ఉండాలి.",
     "invalidVersionCode": "package.jsonలోని \"swiplet.versionCode\" ధన పూర్ణాంకం అయి ఉండాలి.",
     "missingTitle": "{{action}} యాక్షన్‌కు టైటిల్ అవసరం.",
+    "outdatedAPI": "@swipt/api API స్థాయి {{level}}లో ఉంది, కానీ ఈ Swipt CLI API స్థాయి {{oldest}} లేదా ఆ తర్వాతి వాటి కోసం మాత్రమే Swipletలను బిల్డ్ చేస్తుంది; @swipt/apiను అప్‌డేట్ చేయండి.",
     "storageAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు స్టోరేజ్ ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి.",
+    "undeclaredModule": "{{module}} {{system}}కు మాత్రమే, కానీ package.jsonలోని \"swiplet.platforms\" ఆ సిస్టమ్‌ను పేర్కొనలేదు.",
     "unprovidedModule": "Swipt ఎక్స్‌టెన్షన్‌లకు \"{{module}}\"ను అందించదు; దాన్ని extension.jsలోకి బండిల్ చేయండి.",
     "usedAtLoad": "extension.js లోడ్ అవుతున్నప్పుడు {{name}} ఉపయోగించబడింది; దాన్ని run లేదా యాక్షన్ లోపల ఉపయోగించండి."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "--token, --random-token లను కలిపి ఉపయోగించలేరు.",
     "invalidToken": "టోకెన్‌లో స్పేస్‌లు లేని, ప్రింట్ చేయగల ఒకటి లేదా అంతకంటే ఎక్కువ ASCII అక్షరాలు ఉంటాయి.",
     "localNetwork": "లోకల్ నెట్‌వర్క్",
-    "noAutoUnlock": "{{device}} ఆటోమేటిక్‌గా అన్‌లాక్ కాదు; --passcodeతో దాని పాస్‌కోడ్‌ను సెట్ చేయండి. డ్రైవర్‌ను ఆపడానికి Ctrl-C నొక్కండి.",
+    "noPasscode": "{{device}} తన పాస్‌కోడ్ అడిగినప్పుడు Swipt దాన్ని అన్‌లాక్ చేయలేదు; పాస్‌కోడ్‌ను సెట్ చేయడానికి, Ctrl-C నొక్కి డ్రైవర్‌ను ఆపి, \"swipt driver -d {{udid}} --passcode CODE\"ను రన్ చేయండి.",
     "quitSwipt": "Swipt నుండి నిష్క్రమించండి",
     "quittingSwipt": "{{device}}లో Swipt నుండి నిష్క్రమిస్తోంది",
     "served": "{{computer}}లోని డ్రైవర్ ఇప్పటికే {{device}}కు సేవలు అందిస్తోంది; ముందుగా ఆ డ్రైవర్‌ను ఆపండి.",

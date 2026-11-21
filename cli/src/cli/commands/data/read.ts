@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { UsageError } from "../../../client";
 import { t } from "../../../i18n";
+import { printData } from "../../../output";
 import type { FileInfo } from "../../../proto/common_pb";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
@@ -140,7 +141,7 @@ const readFile =
       }
       const data = Buffer.concat(contents);
       if (printing) {
-        process.stdout.write(data);
+        printData(data);
         return;
       }
       let destination = output;

@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Verificați-le cu available(), marcați cu @available codul care le utilizează sau măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
     "apiLevel": "nivelul API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} este un punct de intrare al Swiplet-ului și necesită {{requirement}}; măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
-    "importNeeds": "{{location}}: importarea modulului {{name}} necesită {{requirement}}; măriți \"swiplet.minimumAPILevel\" ori \"swiplet.minimumIOSVersion\" din package.json.",
-    "invalidEntry": "{{location}}: @available conține \"{{entry}}\"; acceptă \"apiLevel <level>\" și \"iOS <version>\", separate prin virgule.",
-    "needs": "{{location}}: {{name}} necesită {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} este un punct de intrare al Swiplet-ului și necesită {{requirement}}; măriți {{fields}} din package.json.",
+    "foreign": "{{location}}: {{name}} este doar pentru {{systems}}, dar compilarea pentru {{build}} include acest fișier; mutați-l într-un fișier numit *.{{os}}.ts sau *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} este doar pentru {{systems}}, dar compilarea pentru {{build}} ajunge la el aici; verificați mai întâi available() ori mutați-l într-un fișier numit *.{{os}}.ts sau *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: importarea modulului {{name}} necesită {{requirement}}; măriți {{fields}} din package.json.",
+    "invalidEntry": "{{location}}: @available conține \"{{entry}}\"; acceptă \"apiLevel <level>\", \"iOS [<version>]\" și \"android [<SDK level>]\", separate prin virgule.",
+    "needs": "{{location}}: {{name}} necesită {{requirement}}; verificați-l cu available(), marcați cu @available codul care îl utilizează sau măriți {{fields}} din package.json.",
     "repeatedEntry": "{{location}}: @available indică {{kind}} de două ori."
   },
   "cli": {
@@ -87,7 +88,7 @@
     "driver": {
       "description": "Furnizează API-ul Swipt și MCP pentru un dispozitiv de pe acest computer",
       "details": "O singură parte poate controla dispozitivul la un moment dat: Swipt de pe acesta sau driverul de pe un computer.",
-      "passcode": "cod de acces pentru deblocarea automată a dispozitivului; lăsați-l gol pentru a dezactiva deblocarea automată",
+      "passcode": "codul de acces al dispozitivului, pe care Swipt îl introduce pentru a-l debloca; este reținut pentru dispozitiv, iar dacă îl lăsați gol, Swipt îl uită",
       "randomToken": "solicită un token aleatoriu de la clienții API",
       "token": "solicită acest token de la clienții API"
     },
@@ -97,7 +98,9 @@
       },
       "create": {
         "description": "Creează un proiect Swiplet într-un dosar nou sau gol",
-        "notEmpty": "{{directory}} nu este gol."
+        "invalidPlatforms": "Indicați sistemele acceptate de Swiplet cu --platforms: ios, android sau ios,android.",
+        "notEmpty": "{{directory}} nu este gol.",
+        "platforms": "sistemele acceptate de Swiplet: ios, android sau ambele, separate prin virgulă"
       },
       "deploy": {
         "description": "Compilează proiectul și instalează-l pe dispozitiv"
@@ -112,7 +115,8 @@
       "source": {
         "description": "Colectează Swiplet-urile compilate în dist/ cu un swiplets.json",
         "duplicateID": "{{id}} este atât {{first}}, cât și {{second}}",
-        "invalidIcon": "\"source.icon\" din package.json trebuie să conțină symbol și poate conține color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" din package.json trebuie să fie numele unei pictograme Material din biblioteca de pictograme Android a Swipt, nu {{symbol}}.",
+        "invalidIcon": "\"source.icon\" din package.json poate conține doar șirurile de caractere \"color\", \"symbolColor\", \"ios\" și \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" din package.json trebuie să asocieze limbile cu numele.",
         "invalidURL": "\"source.url\" din package.json nu este un URL absolut.",
         "noWorkspaces": "package.json nu listează niciun spațiu de lucru cu Swiplet-uri; indicați Swiplet-urile care trebuie incluse în listă.",
@@ -304,26 +308,35 @@
     "pin": "Cod de acces din 4 sau 6 cifre",
     "pinDetail": "4 sau 6 cifre",
     "prompt": "Cod de acces al dispozitivului",
-    "setUp": "Doriți să configurați deblocarea automată? Aplicația Swipt va putea astfel să deblocheze singură acest dispozitiv."
+    "setUp": "Doriți să salvați codul de acces al acestui dispozitiv? Aplicația Swipt va putea astfel să deblocheze dispozitivul."
   },
   "project": {
     "assetConflict": "{{source}} și {{asset}} ar deveni ambele assets/{{name}} în Swiplet.",
+    "buildFailed": "Compilarea pentru {{system}} a eșuat:",
     "conditionalActions": "Extensia definește acțiuni diferite în funcție de available(); definiți aceleași acțiuni pe toate sistemele și verificați available() în run sau într-o acțiune.",
     "databaseAtLoad": "S-a utilizat baza de date în timpul încărcării extension.js; utilizați-o în run sau într-o acțiune.",
+    "foreignModule": "{{module}} este doar pentru {{system}}, dar compilarea pentru {{build}} include acest fișier; importați-l din fișiere numite *.{{os}}.ts sau *.{{os}}.tsx.",
+    "inconsistentExtension": "Extensia trebuie să definească același serviciu și aceleași acțiuni pe fiecare sistem; verificați sistemul în run sau într-o acțiune.",
     "interfaceImport": "Interfața importă {{file}} la rulare; importați tipul acestuia cu `import type`.",
     "interfaceOnly": "{{name}} funcționează doar în interfața Swiplet.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" din package.json trebuie să fie numele unei pictograme Material din biblioteca de pictograme Android a Swipt, nu {{symbol}}.",
     "invalidExposure": "Acțiunea {{action}} se poate expune doar către \"shortcuts\".",
     "invalidExtension": "Exportul implicit al extensiei nu este rezultatul funcției defineExtension.",
     "invalidID": "\"swiplet.id\" din package.json trebuie să conțină între 1 și 128 de litere mici, cifre, puncte, caractere de subliniere și cratime și să înceapă cu o literă sau o cifră.",
+    "invalidIcon": "\"swiplet.icon\" din package.json poate conține doar șirurile de caractere \"color\", \"symbolColor\", \"ios\" și \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" din package.json trebuie să asocieze limbile cu numele.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" din package.json trebuie să fie un număr întreg între {{oldest}} și {{level}}, nivelul API al pachetului @swipt/api.",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" din package.json trebuie să fie un număr de versiune începând cu {{version}}, versiunea iOS minimă a pachetului @swipt/api.",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" din package.json trebuie să fie un nivel Android SDK începând cu {{sdk}}, nivelul Android SDK minim al pachetului @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" din package.json trebuie să fie un număr de versiune începând cu {{version}}, versiunea iOS minimă a pachetului @swipt/api.",
     "invalidName": "\"swiplet.name\" din package.json trebuie să fie un șir de caractere care nu este gol.",
+    "invalidPlatforms": "\"swiplet.platforms\" din package.json trebuie să indice fiecare sistem acceptat de Swiplet: \"ios\" cu \"minimumVersion\", \"android\" cu \"minimumSDK\".",
     "invalidSchema": "Schema {{side}} a acțiunii {{action}} nu implementează Standard JSON Schema; utilizați o bibliotecă ce o implementează, de exemplu Zod 4.",
     "invalidString": "\"{{field}}\" din package.json trebuie să fie un șir de caractere.",
     "invalidVersionCode": "\"swiplet.versionCode\" din package.json trebuie să fie un număr întreg pozitiv.",
     "missingTitle": "Acțiunea {{action}} necesită un titlu.",
+    "outdatedAPI": "Pachetul @swipt/api are nivelul API {{level}}, iar acest instrument Swipt pentru linia de comandă compilează Swiplet-uri pentru nivelul API {{oldest}} sau ulterior; actualizați @swipt/api.",
     "storageAtLoad": "S-a utilizat stocarea în timpul încărcării extension.js; utilizați-o în run sau într-o acțiune.",
+    "undeclaredModule": "{{module}} este doar pentru {{system}}, pe care \"swiplet.platforms\" din package.json nu îl indică.",
     "unprovidedModule": "Aplicația Swipt nu oferă \"{{module}}\" extensiilor; includeți acest modul în extension.js.",
     "usedAtLoad": "S-a utilizat {{name}} în timpul încărcării extension.js; utilizați acest element în run sau într-o acțiune."
   },
@@ -333,7 +346,7 @@
     "conflictingTokens": "--token și --random-token nu pot fi folosite împreună.",
     "invalidToken": "Un token conține unul sau mai multe caractere ASCII imprimabile, fără spații.",
     "localNetwork": "Rețea locală",
-    "noAutoUnlock": "{{device}} nu se deblochează automat; setați codul de acces cu --passcode. Apăsați Ctrl-C pentru a opri driverul.",
+    "noPasscode": "Swipt nu poate debloca {{device}} când acesta cere codul de acces; pentru a seta codul de acces, opriți driverul cu Ctrl-C și rulați \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Închide Swipt",
     "quittingSwipt": "se închide Swipt pe {{device}}",
     "served": "Driverul de pe {{computer}} deservește deja {{device}}; mai întâi opriți acel driver.",

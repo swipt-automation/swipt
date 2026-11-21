@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "available()でこれらを確認するか、これらを使用するコードを@availableでマークするか、package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
     "apiLevel": "APIレベル{{level}}",
-    "entryNeeds": "{{location}}: {{name}}はSwipletのエントリポイントであり、{{requirement}}が必要です。package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
-    "importNeeds": "{{location}}: {{name}}をインポートするには{{requirement}}が必要です。package.jsonの\"swiplet.minimumAPILevel\"または\"swiplet.minimumIOSVersion\"を引き上げてください。",
-    "invalidEntry": "{{location}}: @availableに\"{{entry}}\"が含まれています。@availableには\"apiLevel <level>\"と\"iOS <version>\"をコンマ区切りで指定します。",
-    "needs": "{{location}}: {{name}}には{{requirement}}が必要です。",
+    "entryNeeds": "{{location}}: {{name}}はSwipletのエントリポイントであり、{{requirement}}が必要です。package.jsonの{{fields}}を引き上げてください。",
+    "foreign": "{{location}}: {{name}}は{{systems}}専用ですが、{{build}}向けビルドにこのファイルが含まれています。*.{{os}}.tsまたは*.{{os}}.tsxという名前のファイルに移動してください。",
+    "foreignUse": "{{location}}: {{name}}は{{systems}}専用ですが、{{build}}向けビルドでもここに到達します。先にavailable()で確認するか、*.{{os}}.tsまたは*.{{os}}.tsxという名前のファイルに移動してください。",
+    "importNeeds": "{{location}}: {{name}}をインポートするには{{requirement}}が必要です。package.jsonの{{fields}}を引き上げてください。",
+    "invalidEntry": "{{location}}: @availableに\"{{entry}}\"が含まれています。@availableには\"apiLevel <level>\"、\"iOS [<version>]\"、および\"android [<SDK level>]\"をコンマ区切りで指定します。",
+    "needs": "{{location}}: {{name}}には{{requirement}}が必要です。available()で確認するか、これを使用するコードを@availableでマークするか、package.jsonの{{fields}}を引き上げてください。",
     "repeatedEntry": "{{location}}: @availableで{{kind}}が2回指定されています。"
   },
   "cli": {
@@ -79,7 +80,7 @@
     "driver": {
       "description": "このコンピュータからデバイスのSwipt APIとMCPを提供",
       "details": "デバイスを同時に制御できるのは、デバイス上のSwiptか、1台のコンピュータ上のドライバのどちらか1つだけです。",
-      "passcode": "デバイスのロックを自動的に解除するパスコード。空にすると自動ロック解除をオフにします",
+      "passcode": "デバイスのパスコード。Swiptがロックを解除するときに入力します。デバイスごとに記憶され、空にするとパスコードを消去します",
       "randomToken": "APIクライアントにランダムなトークンを要求",
       "token": "APIクライアントにこのトークンを要求"
     },
@@ -89,7 +90,9 @@
       },
       "create": {
         "description": "新規または空のディレクトリにSwipletプロジェクトを作成",
-        "notEmpty": "{{directory}}は空ではありません。"
+        "invalidPlatforms": "--platformsでSwipletがサポートするシステムを指定してください: ios、android、またはios,android。",
+        "notEmpty": "{{directory}}は空ではありません。",
+        "platforms": "Swipletがサポートするシステム: ios、android、またはコンマで区切った両方"
       },
       "deploy": {
         "description": "プロジェクトをビルドしてデバイスにインストール"
@@ -104,7 +107,8 @@
       "source": {
         "description": "ビルド済みのSwipletをswiplets.jsonとともにdist/に収集",
         "duplicateID": "{{id}}は{{first}}と{{second}}の両方に該当します",
-        "invalidIcon": "package.jsonの\"source.icon\"にはsymbolが必須で、colorは任意です。",
+        "invalidAndroidSymbol": "package.jsonの\"source.icon.android\"は、SwiptのAndroidアイコンライブラリのMaterialアイコン名である必要があります（{{symbol}}は無効です）。",
+        "invalidIcon": "package.jsonの\"source.icon\"に指定できるのは文字列の\"color\"、\"symbolColor\"、\"ios\"、\"android\"のみです。",
         "invalidLocalizedNames": "package.jsonの\"source.localizedNames\"は言語と名前の対応付けである必要があります。",
         "invalidURL": "package.jsonの\"source.url\"は絶対URLではありません。",
         "noWorkspaces": "package.jsonにSwipletを含むワークスペースが記載されていません。一覧に含めるSwipletを指定してください。",
@@ -296,26 +300,35 @@
     "pin": "4桁または6桁のパスコード",
     "pinDetail": "4桁または6桁",
     "prompt": "デバイスのパスコード",
-    "setUp": "自動ロック解除を設定しますか? 設定すると、Swiptがこのデバイスのロックを自動的に解除できるようになります。"
+    "setUp": "このデバイスのパスコードを保存しますか? 保存すると、Swiptがデバイスのロックを解除できるようになります。"
   },
   "project": {
     "assetConflict": "{{source}}と{{asset}}はどちらもSwiplet内のassets/{{name}}になります。",
+    "buildFailed": "{{system}}向けビルドに失敗しました:",
     "conditionalActions": "拡張機能がavailable()に応じて異なるアクションを定義しています。すべてのシステムで同じアクションを定義し、runまたはアクションの中でavailable()を確認してください。",
     "databaseAtLoad": "extension.jsの読み込み中にデータベースが使用されています。runまたはアクションの中で使用してください。",
+    "foreignModule": "{{module}}は{{system}}専用ですが、{{build}}向けビルドにこのファイルが含まれています。*.{{os}}.tsまたは*.{{os}}.tsxという名前のファイルからインポートしてください。",
+    "inconsistentExtension": "拡張機能はすべてのシステムで同じサービスとアクションを定義する必要があります。システムはrunまたはアクションの中で確認してください。",
     "interfaceImport": "インターフェイスで実行時に{{file}}をインポートしています。`import type`で型をインポートしてください。",
     "interfaceOnly": "{{name}}はSwipletのインターフェイスでのみ動作します。",
+    "invalidAndroidSymbol": "package.jsonの\"swiplet.icon.android\"は、SwiptのAndroidアイコンライブラリのMaterialアイコン名である必要があります（{{symbol}}は無効です）。",
     "invalidExposure": "アクション{{action}}を公開できるのは\"shortcuts\"のみです。",
     "invalidExtension": "拡張機能のデフォルトエクスポートがdefineExtensionの結果ではありません。",
     "invalidID": "package.jsonの\"swiplet.id\"は、英小文字、数字、ピリオド、アンダースコア、およびハイフンからなる1〜128文字で、英小文字または数字で始まる必要があります。",
+    "invalidIcon": "package.jsonの\"swiplet.icon\"に指定できるのは文字列の\"color\"、\"symbolColor\"、\"ios\"、\"android\"のみです。",
     "invalidLocalizedNames": "package.jsonの\"swiplet.localizedNames\"は言語と名前の対応付けである必要があります。",
     "invalidMinimumAPILevel": "package.jsonの\"swiplet.minimumAPILevel\"は、{{oldest}}から@swipt/apiのAPIレベルである{{level}}までの整数である必要があります。",
-    "invalidMinimumIOSVersion": "package.jsonの\"swiplet.minimumIOSVersion\"は、@swipt/apiの最小iOSバージョンである{{version}}以上のバージョン番号である必要があります。",
+    "invalidMinimumAndroidSDK": "package.jsonの\"swiplet.platforms.android.minimumSDK\"は、@swipt/apiの最小Android SDKレベルである{{sdk}}以上のAndroid SDKレベルである必要があります。",
+    "invalidMinimumIOSVersion": "package.jsonの\"swiplet.platforms.ios.minimumVersion\"は、@swipt/apiの最小iOSバージョンである{{version}}以上のバージョン番号である必要があります。",
     "invalidName": "package.jsonの\"swiplet.name\"は空でない文字列である必要があります。",
+    "invalidPlatforms": "package.jsonの\"swiplet.platforms\"には、Swipletがサポートする各システムを指定する必要があります。\"ios\"には\"minimumVersion\"を、\"android\"には\"minimumSDK\"を指定します。",
     "invalidSchema": "アクション{{action}}の{{side}}スキーマはStandard JSON Schemaを実装していません。Zod 4など、実装しているライブラリを使用してください。",
     "invalidString": "package.jsonの\"{{field}}\"は文字列である必要があります。",
     "invalidVersionCode": "package.jsonの\"swiplet.versionCode\"は正の整数である必要があります。",
     "missingTitle": "アクション{{action}}にはタイトルが必要です。",
+    "outdatedAPI": "@swipt/apiのAPIレベルは{{level}}ですが、このSwipt CLIがビルドするのはAPIレベル{{oldest}}以降向けのSwipletです。@swipt/apiをアップデートしてください。",
     "storageAtLoad": "extension.jsの読み込み中にストレージが使用されています。runまたはアクションの中で使用してください。",
+    "undeclaredModule": "{{module}}は{{system}}専用ですが、package.jsonの\"swiplet.platforms\"に{{system}}が指定されていません。",
     "unprovidedModule": "Swiptは\"{{module}}\"を拡張機能に提供していません。extension.jsにバンドルしてください。",
     "usedAtLoad": "extension.jsの読み込み中に{{name}}が使用されています。runまたはアクションの中で使用してください。"
   },
@@ -325,7 +338,7 @@
     "conflictingTokens": "--tokenと--random-tokenは同時に使用できません。",
     "invalidToken": "トークンは、スペースを含まない1文字以上の印刷可能なASCII文字です。",
     "localNetwork": "ローカルネットワーク",
-    "noAutoUnlock": "{{device}}のロックは自動的に解除されません。--passcodeでパスコードを設定してください。Ctrl-Cでドライバを停止します。",
+    "noPasscode": "{{device}}がパスコードを要求すると、Swiptはロックを解除できません。パスコードを設定するには、Ctrl-Cでドライバを停止して\"swipt driver -d {{udid}} --passcode CODE\"を実行してください。",
     "quitSwipt": "Swiptを終了",
     "quittingSwipt": "{{device}}のSwiptを終了中",
     "served": "{{computer}}のドライバがすでに{{device}}を制御しています。先にそのドライバを停止してください。",

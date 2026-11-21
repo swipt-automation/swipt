@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Ellenőrizze őket az available() segítségével, jelölje meg @available címkével az őket használó kódot, vagy emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
     "apiLevel": "API-szint {{level}}",
-    "entryNeeds": "{{location}}: a(z) {{name}} a Swiplet belépési pontja, és {{requirement}} szükséges hozzá; emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
-    "importNeeds": "{{location}}: a(z) {{name}} importálásához {{requirement}} szükséges; emelje meg a package.json \"swiplet.minimumAPILevel\" vagy \"swiplet.minimumIOSVersion\" mezőjét.",
-    "invalidEntry": "{{location}}: az @available címke a következőt tartalmazza: \"{{entry}}\"; a címke vesszővel elválasztott \"apiLevel <level>\" és \"iOS <version>\" bejegyzéseket fogad el.",
-    "needs": "{{location}}: a(z) {{name}} használatához {{requirement}} szükséges.",
+    "entryNeeds": "{{location}}: a(z) {{name}} a Swiplet belépési pontja, és {{requirement}} szükséges hozzá; emelje meg a package.json {{fields}} mezőjét.",
+    "foreign": "{{location}}: a(z) {{name}} csak {{systems}} rendszeren használható, de az {{build}}-build tartalmazza ezt a fájlt; helyezze át egy *.{{os}}.ts vagy *.{{os}}.tsx nevű fájlba.",
+    "foreignUse": "{{location}}: a(z) {{name}} csak {{systems}} rendszeren használható, de az {{build}}-build itt használja; előbb ellenőrizze az available() értékét, vagy helyezze át egy *.{{os}}.ts vagy *.{{os}}.tsx nevű fájlba.",
+    "importNeeds": "{{location}}: a(z) {{name}} importálásához {{requirement}} szükséges; emelje meg a package.json {{fields}} mezőjét.",
+    "invalidEntry": "{{location}}: az @available címke a következőt tartalmazza: \"{{entry}}\"; a címke vesszővel elválasztott \"apiLevel <level>\", \"iOS [<version>]\" és \"android [<SDK level>]\" bejegyzéseket fogad el.",
+    "needs": "{{location}}: a(z) {{name}} használatához {{requirement}} szükséges; ellenőrizze az available() segítségével, jelölje meg @available címkével az azt használó kódot, vagy emelje meg a package.json {{fields}} mezőjét.",
     "repeatedEntry": "{{location}}: az @available címke kétszer adja meg a következőt: {{kind}}."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "A Swipt API és az MCP biztosítása egy eszközhöz erről a számítógépről",
       "details": "Egyszerre csak egy fél vezérelheti az eszközt: a rajta futó Swipt vagy egy számítógépen futó illesztőprogram.",
-      "passcode": "jelkód az eszköz automatikus feloldásához; ha üresen hagyja, az automatikus feloldás kikapcsol",
+      "passcode": "az eszköz jelkódja, amelyet a Swipt a feloldáshoz megad; a Swipt megjegyzi az eszközhöz, ha pedig üresen hagyja, elfelejti",
       "randomToken": "véletlenszerű token megkövetelése az API-kliensektől",
       "token": "ennek a tokennek a megkövetelése az API-kliensektől"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Swiplet-projekt létrehozása új vagy üres könyvtárban",
-        "notEmpty": "A(z) {{directory}} könyvtár nem üres."
+        "invalidPlatforms": "Adja meg a --platforms kapcsolóval a Swiplet által támogatott rendszereket: ios, android vagy ios,android.",
+        "notEmpty": "A(z) {{directory}} könyvtár nem üres.",
+        "platforms": "a Swiplet által támogatott rendszerek: ios, android vagy mindkettő vesszővel elválasztva"
       },
       "deploy": {
         "description": "A projekt összeállítása és telepítése az eszközre"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Az összeállított Swipletek összegyűjtése a dist/ mappába egy swiplets.json fájllal",
         "duplicateID": "A(z) {{id}} azonosítóhoz a(z) {{first}} és a(z) {{second}} is tartozik",
-        "invalidIcon": "A package.json \"source.icon\" mezőjében kötelező a symbol, a color pedig megadható.",
+        "invalidAndroidSymbol": "A package.json \"source.icon.android\" mezőjének a Swipt Android-ikonkönyvtárából származó Material-ikonnévnek kell lennie, nem {{symbol}}.",
+        "invalidIcon": "A package.json \"source.icon\" mezője csak a \"color\", \"symbolColor\", \"ios\" és \"android\" karakterláncot tartalmazhatja.",
         "invalidLocalizedNames": "A package.json \"source.localizedNames\" mezőjének a nyelveket kell a nevekhez rendelnie.",
         "invalidURL": "A package.json \"source.url\" mezője nem abszolút URL.",
         "noWorkspaces": "A package.json nem sorol fel Swipleteket tartalmazó munkaterületeket; nevezze meg a listázandó Swipleteket.",
@@ -300,26 +304,35 @@
     "pin": "4 vagy 6 számjegyű jelkód",
     "pinDetail": "4 vagy 6 számjegy",
     "prompt": "Eszköz jelkódja",
-    "setUp": "Beállítja az automatikus feloldást? Így a Swipt önállóan fel tudja oldani ezt az eszközt."
+    "setUp": "Menti az eszköz jelkódját? Így a Swipt fel tudja oldani az eszközt."
   },
   "project": {
     "assetConflict": "A(z) {{source}} és a(z) {{asset}} egyaránt az assets/{{name}} helyre kerülne a Swipletben.",
+    "buildFailed": "Az {{system}}-build nem sikerült:",
     "conditionalActions": "A bővítmény az available() eredményétől függően eltérő műveleteket definiál; minden rendszeren ugyanazokat a műveleteket definiálja, és az available() értékét a run vagy egy művelet belsejében ellenőrizze.",
     "databaseAtLoad": "Az adatbázis nem használható az extension.js betöltése közben; használja a run vagy egy művelet belsejében.",
+    "foreignModule": "A(z) {{module}} modul csak {{system}} rendszeren használható, de az {{build}}-build tartalmazza ezt a fájlt; *.{{os}}.ts vagy *.{{os}}.tsx nevű fájlokban importálja.",
+    "inconsistentExtension": "A bővítménynek minden rendszeren ugyanazt a szolgáltatást és műveleteket kell definiálnia; a rendszert a run vagy egy művelet belsejében ellenőrizze.",
     "interfaceImport": "A felület futásidőben importálja a(z) {{file}} fájlt; a típusát az `import type` használatával importálja.",
     "interfaceOnly": "A(z) {{name}} csak a Swiplet felületén működik.",
+    "invalidAndroidSymbol": "A package.json \"swiplet.icon.android\" mezőjének a Swipt Android-ikonkönyvtárából származó Material-ikonnévnek kell lennie, nem {{symbol}}.",
     "invalidExposure": "A(z) {{action}} művelet csak a \"shortcuts\" számára teheti magát elérhetővé.",
     "invalidExtension": "A bővítmény alapértelmezett exportja nem a defineExtension eredménye.",
     "invalidID": "A package.json \"swiplet.id\" mezője 1–128 kisbetűből, számjegyből, pontból, aláhúzásjelből és kötőjelből állhat, és betűvel vagy számjeggyel kell kezdődnie.",
+    "invalidIcon": "A package.json \"swiplet.icon\" mezője csak a \"color\", \"symbolColor\", \"ios\" és \"android\" karakterláncot tartalmazhatja.",
     "invalidLocalizedNames": "A package.json \"swiplet.localizedNames\" mezőjének a nyelveket kell a nevekhez rendelnie.",
     "invalidMinimumAPILevel": "A package.json \"swiplet.minimumAPILevel\" mezőjének {{oldest}} és {{level}} (a(z) @swipt/api csomag API-szintje) közötti egész számnak kell lennie.",
-    "invalidMinimumIOSVersion": "A package.json \"swiplet.minimumIOSVersion\" mezőjének {{version}} (a(z) @swipt/api csomag minimális iOS-verziója) vagy annál nagyobb verziószámnak kell lennie.",
+    "invalidMinimumAndroidSDK": "A package.json \"swiplet.platforms.android.minimumSDK\" mezőjének {{sdk}} (a(z) @swipt/api csomag minimális Android SDK-szintje) vagy annál nagyobb Android SDK-szintnek kell lennie.",
+    "invalidMinimumIOSVersion": "A package.json \"swiplet.platforms.ios.minimumVersion\" mezőjének {{version}} (a(z) @swipt/api csomag minimális iOS-verziója) vagy annál nagyobb verziószámnak kell lennie.",
     "invalidName": "A package.json \"swiplet.name\" mezőjének nem üres karakterláncnak kell lennie.",
+    "invalidPlatforms": "A package.json \"swiplet.platforms\" mezőjének meg kell neveznie minden rendszert, amelyet a Swiplet támogat: az \"ios\" bejegyzést a saját \"minimumVersion\" mezőjével, az \"android\" bejegyzést a saját \"minimumSDK\" mezőjével.",
     "invalidSchema": "A(z) {{action}} művelet {{side}} sémája nem valósítja meg a Standard JSON Schema szabványt; használjon ezt megvalósító könyvtárat, például a Zod 4-et.",
     "invalidString": "A package.json \"{{field}}\" mezőjének karakterláncnak kell lennie.",
     "invalidVersionCode": "A package.json \"swiplet.versionCode\" mezőjének pozitív egész számnak kell lennie.",
     "missingTitle": "A(z) {{action}} műveletnek címre van szüksége.",
+    "outdatedAPI": "A(z) @swipt/api API-szintje {{level}}, ez a Swipt parancssori eszköz pedig {{oldest}} vagy újabb API-szintre állít össze Swipleteket; frissítse a(z) @swipt/api csomagot.",
     "storageAtLoad": "A tárhely nem használható az extension.js betöltése közben; használja a run vagy egy művelet belsejében.",
+    "undeclaredModule": "A(z) {{module}} modul csak {{system}} rendszeren használható, de a package.json \"swiplet.platforms\" mezője nem nevezi meg ezt a rendszert.",
     "unprovidedModule": "A Swipt nem biztosítja a(z) \"{{module}}\" modult a bővítményeknek; csomagolja be az extension.js fájlba.",
     "usedAtLoad": "Az extension.js betöltése közben nem használható a következő: {{name}}; használja a run vagy egy művelet belsejében."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "A --token és a --random-token nem használható együtt.",
     "invalidToken": "A token egy vagy több nyomtatható ASCII-karakterből áll, szóközök nélkül.",
     "localNetwork": "Helyi hálózat",
-    "noAutoUnlock": "A(z) {{device}} nem oldódik fel automatikusan; állítsa be a jelkódját a --passcode kapcsolóval. Az illesztőprogram leállításához nyomja le a Ctrl-C billentyűkombinációt.",
+    "noPasscode": "A Swipt nem tudja feloldani a(z) {{device}} eszközt, amikor az a jelkódját kéri; a jelkód beállításához állítsa le az illesztőprogramot a Ctrl-C billentyűkombinációval, majd futtassa a \"swipt driver -d {{udid}} --passcode CODE\" parancsot.",
     "quitSwipt": "Kilépés a Swipt appból",
     "quittingSwipt": "kilépés a Swipt appból a(z) {{device}} eszközön",
     "served": "A(z) {{computer}} számítógépen futó illesztőprogram már kiszolgálja a(z) {{device}} eszközt; előbb állítsa le azt az illesztőprogramot.",

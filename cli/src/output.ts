@@ -35,6 +35,13 @@ export class FalseResult extends Error {}
 export const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
+export function printData(data: Uint8Array) {
+  process.stdout.write(data);
+  if (process.stdout.isTTY && data.length > 0 && data.at(-1) !== 0x0a) {
+    process.stdout.write("\n");
+  }
+}
+
 export const selectTheme = {
   style: {
     keysHelpTip: () =>

@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "available()로 이를 확인하거나, 이를 사용하는 코드를 @available로 표시하거나, package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
     "apiLevel": "API 레벨 {{level}}",
-    "entryNeeds": "{{location}}: {{name}}은(는) Swiplet의 진입점이며 {{requirement}}이(가) 필요합니다. package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
-    "importNeeds": "{{location}}: {{name}}을(를) 가져오려면 {{requirement}}이(가) 필요합니다. package.json의 \"swiplet.minimumAPILevel\" 또는 \"swiplet.minimumIOSVersion\"을 높이십시오.",
-    "invalidEntry": "{{location}}: @available에 \"{{entry}}\"이(가) 있습니다. @available에는 \"apiLevel <level>\" 및 \"iOS <version>\"을(를) 쉼표로 구분하여 지정해야 합니다.",
-    "needs": "{{location}}: {{name}}에는 {{requirement}}이(가) 필요합니다.",
+    "entryNeeds": "{{location}}: {{name}}은(는) Swiplet의 진입점이며 {{requirement}}이(가) 필요합니다. package.json의 {{fields}}을(를) 높이십시오.",
+    "foreign": "{{location}}: {{name}}은(는) {{systems}} 전용이지만 {{build}} 빌드에 이 파일이 포함되어 있습니다. *.{{os}}.ts 또는 *.{{os}}.tsx라는 이름의 파일로 옮기십시오.",
+    "foreignUse": "{{location}}: {{name}}은(는) {{systems}} 전용이지만 {{build}} 빌드에서 여기에 도달합니다. 먼저 available()로 확인하거나 *.{{os}}.ts 또는 *.{{os}}.tsx라는 이름의 파일로 옮기십시오.",
+    "importNeeds": "{{location}}: {{name}}을(를) 가져오려면 {{requirement}}이(가) 필요합니다. package.json의 {{fields}}을(를) 높이십시오.",
+    "invalidEntry": "{{location}}: @available에 \"{{entry}}\"이(가) 있습니다. @available에는 \"apiLevel <level>\", \"iOS [<version>]\" 및 \"android [<SDK level>]\"을(를) 쉼표로 구분하여 지정해야 합니다.",
+    "needs": "{{location}}: {{name}}에는 {{requirement}}이(가) 필요합니다. available()로 확인하거나, 이를 사용하는 코드를 @available로 표시하거나, package.json의 {{fields}}을(를) 높이십시오.",
     "repeatedEntry": "{{location}}: @available에 {{kind}}이(가) 두 번 지정되어 있습니다."
   },
   "cli": {
@@ -79,7 +80,7 @@
     "driver": {
       "description": "이 컴퓨터에서 기기의 Swipt API 및 MCP 제공",
       "details": "기기를 제어할 수 있는 것은 한 번에 하나뿐입니다. 기기의 Swipt 또는 컴퓨터 한 대의 드라이버 중 하나입니다.",
-      "passcode": "기기의 잠금을 자동으로 해제하는 데 사용할 암호. 비워 두면 자동 잠금 해제가 꺼짐",
+      "passcode": "Swipt가 기기의 잠금을 해제할 때 입력하는 기기 암호. 기기별로 기억되며, 비워 두면 암호를 삭제함",
       "randomToken": "API 클라이언트에 임의의 토큰 요구",
       "token": "API 클라이언트에 이 토큰 요구"
     },
@@ -89,7 +90,9 @@
       },
       "create": {
         "description": "새 디렉토리 또는 빈 디렉토리에 Swiplet 프로젝트 생성",
-        "notEmpty": "{{directory}}이(가) 비어 있지 않습니다."
+        "invalidPlatforms": "--platforms로 Swiplet이 지원하는 시스템(ios, android 또는 ios,android)을 지정하십시오.",
+        "notEmpty": "{{directory}}이(가) 비어 있지 않습니다.",
+        "platforms": "Swiplet이 지원하는 시스템: ios, android 또는 쉼표로 구분한 두 시스템 모두"
       },
       "deploy": {
         "description": "프로젝트를 빌드하여 기기에 설치"
@@ -104,7 +107,8 @@
       "source": {
         "description": "빌드된 Swiplet을 swiplets.json과 함께 dist/에 수집",
         "duplicateID": "{{id}}이(가) {{first}}와(과) {{second}} 모두에 해당합니다.",
-        "invalidIcon": "package.json의 \"source.icon\"에는 symbol이 있어야 하며 color는 선택 사항입니다.",
+        "invalidAndroidSymbol": "package.json의 \"source.icon.android\"은 {{symbol}}이(가) 아니라 Swipt Android 아이콘 라이브러리의 Material 아이콘 이름이어야 합니다.",
+        "invalidIcon": "package.json의 \"source.icon\"에는 문자열 \"color\", \"symbolColor\", \"ios\", \"android\"만 있을 수 있습니다.",
         "invalidLocalizedNames": "package.json의 \"source.localizedNames\"는 언어와 이름의 매핑이어야 합니다.",
         "invalidURL": "package.json의 \"source.url\"이 절대 URL이 아닙니다.",
         "noWorkspaces": "package.json에 Swiplet이 포함된 워크스페이스가 없습니다. 나열할 Swiplet을 지정하십시오.",
@@ -296,26 +300,35 @@
     "pin": "4자리 또는 6자리 암호",
     "pinDetail": "4자리 또는 6자리 숫자",
     "prompt": "기기 암호",
-    "setUp": "자동 잠금 해제를 설정하겠습니까? 설정하면 Swipt가 자동으로 이 기기의 잠금을 해제할 수 있습니다."
+    "setUp": "이 기기의 암호를 저장하겠습니까? 저장하면 Swipt가 기기의 잠금을 해제할 수 있습니다."
   },
   "project": {
     "assetConflict": "{{source}}와(과) {{asset}}이(가) Swiplet에서 모두 assets/{{name}}이(가) 됩니다.",
+    "buildFailed": "{{system}} 빌드에 실패했습니다:",
     "conditionalActions": "확장 프로그램이 available()에 따라 서로 다른 동작을 정의합니다. 모든 시스템에서 동일한 동작을 정의하고 run 또는 동작 내에서 available()을 확인하십시오.",
     "databaseAtLoad": "extension.js가 로드되는 동안 데이터베이스가 사용되었습니다. run 또는 동작 내에서 사용하십시오.",
+    "foreignModule": "{{module}}은(는) {{system}} 전용이지만 {{build}} 빌드에 이 파일이 포함되어 있습니다. *.{{os}}.ts 또는 *.{{os}}.tsx라는 이름의 파일에서 가져오십시오.",
+    "inconsistentExtension": "확장 프로그램은 모든 시스템에서 동일한 서비스와 동작을 정의해야 합니다. 대신 run 또는 동작 내에서 시스템을 확인하십시오.",
     "interfaceImport": "인터페이스가 런타임에 {{file}}을(를) 가져옵니다. `import type`으로 해당 타입을 가져오십시오.",
     "interfaceOnly": "{{name}}은(는) Swiplet 인터페이스에서만 작동합니다.",
+    "invalidAndroidSymbol": "package.json의 \"swiplet.icon.android\"은 {{symbol}}이(가) 아니라 Swipt Android 아이콘 라이브러리의 Material 아이콘 이름이어야 합니다.",
     "invalidExposure": "동작 {{action}}은(는) \"shortcuts\"에만 노출할 수 있습니다.",
     "invalidExtension": "확장 프로그램의 기본 내보내기가 defineExtension의 결과가 아닙니다.",
     "invalidID": "package.json의 \"swiplet.id\"는 1~128자의 영문 소문자, 숫자, 점, 밑줄 및 하이픈으로 구성되어야 하며 영문자 또는 숫자로 시작해야 합니다.",
+    "invalidIcon": "package.json의 \"swiplet.icon\"에는 문자열 \"color\", \"symbolColor\", \"ios\", \"android\"만 있을 수 있습니다.",
     "invalidLocalizedNames": "package.json의 \"swiplet.localizedNames\"는 언어와 이름의 매핑이어야 합니다.",
     "invalidMinimumAPILevel": "package.json의 \"swiplet.minimumAPILevel\"은 {{oldest}}부터 @swipt/api의 API 레벨인 {{level}}까지의 정수여야 합니다.",
-    "invalidMinimumIOSVersion": "package.json의 \"swiplet.minimumIOSVersion\"은 @swipt/api의 최소 iOS 버전인 {{version}} 이상의 버전 번호여야 합니다.",
+    "invalidMinimumAndroidSDK": "package.json의 \"swiplet.platforms.android.minimumSDK\"는 @swipt/api의 최소 Android SDK 레벨인 {{sdk}} 이상의 Android SDK 레벨이어야 합니다.",
+    "invalidMinimumIOSVersion": "package.json의 \"swiplet.platforms.ios.minimumVersion\"은 @swipt/api의 최소 iOS 버전인 {{version}} 이상의 버전 번호여야 합니다.",
     "invalidName": "package.json의 \"swiplet.name\"은 비어 있지 않은 문자열이어야 합니다.",
+    "invalidPlatforms": "package.json의 \"swiplet.platforms\"에는 Swiplet이 지원하는 각 시스템을 지정해야 합니다. \"ios\"에는 \"minimumVersion\"을, \"android\"에는 \"minimumSDK\"를 지정하십시오.",
     "invalidSchema": "동작 {{action}}의 {{side}} 스키마가 Standard JSON Schema를 구현하지 않습니다. 이를 구현하는 라이브러리(예: Zod 4)를 사용하십시오.",
     "invalidString": "package.json의 \"{{field}}\"은(는) 문자열이어야 합니다.",
     "invalidVersionCode": "package.json의 \"swiplet.versionCode\"는 양의 정수여야 합니다.",
     "missingTitle": "동작 {{action}}에 제목이 필요합니다.",
+    "outdatedAPI": "@swipt/api는 API 레벨 {{level}}이지만 이 Swipt CLI는 API 레벨 {{oldest}} 이상용 Swiplet을 빌드합니다. @swipt/api를 업데이트하십시오.",
     "storageAtLoad": "extension.js가 로드되는 동안 스토리지가 사용되었습니다. run 또는 동작 내에서 사용하십시오.",
+    "undeclaredModule": "{{module}}은(는) {{system}} 전용이지만 package.json의 \"swiplet.platforms\"에 {{system}}이(가) 지정되어 있지 않습니다.",
     "unprovidedModule": "Swipt는 확장 프로그램에 \"{{module}}\"을(를) 제공하지 않습니다. extension.js에 번들링하십시오.",
     "usedAtLoad": "extension.js가 로드되는 동안 {{name}}이(가) 사용되었습니다. run 또는 동작 내에서 사용하십시오."
   },
@@ -325,7 +338,7 @@
     "conflictingTokens": "--token과 --random-token은 함께 사용할 수 없습니다.",
     "invalidToken": "토큰은 공백 없이 출력 가능한 ASCII 문자 하나 이상으로 구성됩니다.",
     "localNetwork": "로컬 네트워크",
-    "noAutoUnlock": "{{device}}의 잠금은 자동으로 해제되지 않습니다. --passcode로 암호를 설정하십시오. Ctrl-C를 누르면 드라이버가 중단됩니다.",
+    "noPasscode": "{{device}}에서 암호를 요구하면 Swipt가 잠금을 해제할 수 없습니다. 암호를 설정하려면 Ctrl-C로 드라이버를 중단하고 \"swipt driver -d {{udid}} --passcode CODE\"를 실행하십시오.",
     "quitSwipt": "Swipt 종료",
     "quittingSwipt": "{{device}}에서 Swipt 종료 중",
     "served": "{{computer}}의 드라이버가 이미 {{device}}을(를) 제어하고 있습니다. 먼저 해당 드라이버를 중단하십시오.",

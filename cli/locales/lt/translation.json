@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Patikrinkite juos naudodami available(), juos naudojantį kodą pažymėkite @available arba padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
     "apiLevel": "API lygis {{level}}",
-    "entryNeeds": "{{location}}: {{name}} yra „Swiplet” įėjimo taškas ir reikalauja: {{requirement}}; padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
-    "importNeeds": "{{location}}: modulio {{name}} importavimas reikalauja: {{requirement}}; padidinkite \"swiplet.minimumAPILevel\" ar \"swiplet.minimumIOSVersion\" faile package.json.",
-    "invalidEntry": "{{location}}: @available turi \"{{entry}}\"; jis priima kableliais atskirtus įrašus \"apiLevel <level>\" ir \"iOS <version>\".",
-    "needs": "{{location}}: {{name}} reikalauja: {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} yra „Swiplet” įėjimo taškas ir reikalauja: {{requirement}}; padidinkite {{fields}} faile package.json.",
+    "foreign": "{{location}}: {{name}} veikia tik šiose sistemose: {{systems}}, bet kompiliuojant sistemai {{build}} įtraukiamas šis failas; perkelkite tai į failą, pavadintą *.{{os}}.ts arba *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} veikia tik šiose sistemose: {{systems}}, bet kompiliuojant sistemai {{build}} tai pasiekiama čia; pirmiausia patikrinkite available(), arba perkelkite tai į failą, pavadintą *.{{os}}.ts arba *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: modulio {{name}} importavimas reikalauja: {{requirement}}; padidinkite {{fields}} faile package.json.",
+    "invalidEntry": "{{location}}: @available turi \"{{entry}}\"; jis priima kableliais atskirtus įrašus \"apiLevel <level>\", \"iOS [<version>]\" ir \"android [<SDK level>]\".",
+    "needs": "{{location}}: {{name}} reikalauja: {{requirement}}; patikrinkite tai naudodami available(), pažymėkite tai naudojantį kodą su @available arba padidinkite {{fields}} faile package.json.",
     "repeatedEntry": "{{location}}: @available du kartus nurodo {{kind}}."
   },
   "cli": {
@@ -91,7 +92,7 @@
     "driver": {
       "description": "Teikti „Swipt” API ir MCP įrenginiui iš šio kompiuterio",
       "details": "Vienu metu įrenginį gali valdyti tik viena pusė: „Swipt” įrenginyje arba tvarkyklė viename kompiuteryje.",
-      "passcode": "prieigos kodas įrenginiui atrakinti automatiškai; palikite tuščią, kad tai išjungtumėte",
+      "passcode": "įrenginio prieigos kodas, kurį „Swipt” įveda įrenginiui atrakinti; jis įsimenamas tam įrenginiui, o palikus tuščią „Swipt” jį pamiršta",
       "randomToken": "reikalauti atsitiktinio žetono iš API klientų",
       "token": "reikalauti šio žetono iš API klientų"
     },
@@ -101,7 +102,9 @@
       },
       "create": {
         "description": "Sukurti „Swiplet” projektą naujame arba tuščiame kataloge",
-        "notEmpty": "Katalogas {{directory}} nėra tuščias."
+        "invalidPlatforms": "Naudodami --platforms nurodykite sistemas, kurias palaiko „Swiplet”: ios, android arba ios,android.",
+        "notEmpty": "Katalogas {{directory}} nėra tuščias.",
+        "platforms": "sistemos, kurias palaiko „Swiplet”: ios, android arba abi, atskirtos kableliu"
       },
       "deploy": {
         "description": "Sukompiliuoti projektą ir įdiegti jį įrenginyje"
@@ -116,7 +119,8 @@
       "source": {
         "description": "Surinkti sukompiliuotus „Swiplet” į dist/ su swiplets.json",
         "duplicateID": "{{id}} yra ir {{first}}, ir {{second}}",
-        "invalidIcon": "\"source.icon\" faile package.json turi būti nurodyta symbol ir gali būti nurodyta color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" faile package.json turi būti „Material“ piktogramos pavadinimas iš „Swipt“ „Android“ piktogramų bibliotekos, o ne {{symbol}}.",
+        "invalidIcon": "\"source.icon\" faile package.json gali būti tik eilutės \"color\", \"symbolColor\", \"ios\" ir \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" faile package.json turi susieti kalbas su pavadinimais.",
         "invalidURL": "\"source.url\" faile package.json nėra absoliutus URL adresas.",
         "noWorkspaces": "package.json nenurodo darbo sričių su „Swiplet”; nurodykite „Swiplet”, kuriuos reikia įtraukti į sąrašą.",
@@ -308,26 +312,35 @@
     "pin": "4 arba 6 skaitmenų prieigos kodas",
     "pinDetail": "4 arba 6 skaitmenys",
     "prompt": "Įrenginio prieigos kodas",
-    "setUp": "Nustatyti automatinį atrakinimą? Tada „Swipt” galės pati atrakinti šį įrenginį."
+    "setUp": "Išsaugoti šio įrenginio prieigos kodą? Tada „Swipt” galės atrakinti įrenginį."
   },
   "project": {
     "assetConflict": "„Swiplet” viduje tiek {{source}}, tiek {{asset}} taptų assets/{{name}}.",
+    "buildFailed": "Kompiliuoti sistemai {{system}} nepavyko:",
     "conditionalActions": "Plėtinys apibrėžia skirtingus veiksmus priklausomai nuo available(); visose sistemose apibrėžkite tuos pačius veiksmus, o available() tikrinkite run arba veiksmo viduje.",
     "databaseAtLoad": "Kol įkeliamas extension.js, naudojama duomenų bazė; ją naudokite run arba veiksmo viduje.",
+    "foreignModule": "Modulis {{module}} skirtas tik sistemai {{system}}, bet kompiliuojant sistemai {{build}} įtraukiamas šis failas; importuokite jį iš failų, pavadintų *.{{os}}.ts arba *.{{os}}.tsx.",
+    "inconsistentExtension": "Plėtinys kiekvienoje sistemoje turi apibrėžti tą pačią paslaugą ir veiksmus; sistemą tikrinkite run arba veiksmo viduje.",
     "interfaceImport": "Sąsaja vykdymo metu importuoja {{file}}; importuokite jo tipą naudodami `import type`.",
     "interfaceOnly": "{{name}} veikia tik „Swiplet” sąsajoje.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" faile package.json turi būti „Material“ piktogramos pavadinimas iš „Swipt“ „Android“ piktogramų bibliotekos, o ne {{symbol}}.",
     "invalidExposure": "Veiksmas {{action}} gali būti pasiekiamas tik per \"shortcuts\".",
     "invalidExtension": "Plėtinio numatytasis eksportas nėra defineExtension rezultatas.",
     "invalidID": "\"swiplet.id\" faile package.json turi būti sudarytas iš 1–128 mažųjų raidžių, skaitmenų, taškų, pabraukimo ženklų ir brūkšnelių ir prasidėti raide arba skaitmeniu.",
+    "invalidIcon": "\"swiplet.icon\" faile package.json gali būti tik eilutės \"color\", \"symbolColor\", \"ios\" ir \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" faile package.json turi susieti kalbas su pavadinimais.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" faile package.json turi būti sveikasis skaičius nuo {{oldest}} iki {{level}} (@swipt/api API lygis).",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" faile package.json turi būti versijos numeris nuo {{version}} (minimali @swipt/api „iOS” versija).",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" faile package.json turi būti „Android SDK” lygis nuo {{sdk}} (minimalus @swipt/api „Android SDK” lygis).",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" faile package.json turi būti versijos numeris nuo {{version}} (minimali @swipt/api „iOS” versija).",
     "invalidName": "\"swiplet.name\" faile package.json turi būti netuščia eilutė.",
+    "invalidPlatforms": "\"swiplet.platforms\" faile package.json turi nurodyti kiekvieną sistemą, kurią palaiko „Swiplet”: \"ios\" su jos \"minimumVersion\", \"android\" su jos \"minimumSDK\".",
     "invalidSchema": "Veiksmo {{action}} {{side}} schema neįgyvendina „Standard JSON Schema”; naudokite ją įgyvendinančią biblioteką, pvz., „Zod 4”.",
     "invalidString": "\"{{field}}\" faile package.json turi būti eilutė.",
     "invalidVersionCode": "\"swiplet.versionCode\" faile package.json turi būti teigiamas sveikasis skaičius.",
     "missingTitle": "Veiksmui {{action}} reikia pavadinimo.",
+    "outdatedAPI": "@swipt/api API lygis yra {{level}}, o ši „Swipt CLI” kompiliuoja „Swiplet” API lygiui {{oldest}} arba naujesniam; atnaujinkite @swipt/api.",
     "storageAtLoad": "Kol įkeliamas extension.js, naudojama saugojimo vieta; ją naudokite run arba veiksmo viduje.",
+    "undeclaredModule": "Modulis {{module}} skirtas tik sistemai {{system}}, kurios \"swiplet.platforms\" faile package.json nenurodo.",
     "unprovidedModule": "„Swipt” neteikia \"{{module}}\" plėtiniams; supakuokite jį į extension.js.",
     "usedAtLoad": "Kol įkeliamas extension.js, naudojama: {{name}}; tai naudokite run arba veiksmo viduje."
   },
@@ -337,7 +350,7 @@
     "conflictingTokens": "--token ir --random-token negalima naudoti kartu.",
     "invalidToken": "Žetoną sudaro vienas ar daugiau spausdinamų ASCII simbolių be tarpų.",
     "localNetwork": "Vietinis tinklas",
-    "noAutoUnlock": "Įrenginys {{device}} neatrakinamas automatiškai; nustatykite jo prieigos kodą naudodami --passcode. Norėdami sustabdyti tvarkyklę, paspauskite Ctrl-C.",
+    "noPasscode": "„Swipt” negali atrakinti įrenginio {{device}}, kai jis prašo savo prieigos kodo; norėdami nustatyti prieigos kodą, sustabdykite tvarkyklę paspausdami Ctrl-C ir paleiskite \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Išeiti iš „Swipt”",
     "quittingSwipt": "išeinama iš „Swipt” įrenginyje {{device}}",
     "served": "Tvarkyklė kompiuteryje {{computer}} jau aptarnauja įrenginį {{device}}; pirmiausia sustabdykite tą tvarkyklę.",

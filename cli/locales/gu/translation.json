@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "available() વડે તેમને તપાસો, તેમનો ઉપયોગ કરતા કોડને @available વડે માર્ક કરો, અથવા package.jsonમાં \"swiplet.minimumAPILevel\" અથવા \"swiplet.minimumIOSVersion\" વધારો.",
     "apiLevel": "API લેવલ {{level}}",
-    "entryNeeds": "{{location}}: {{name}} Swipletનો એન્ટ્રી પૉઇન્ટ છે અને તેને {{requirement}} જરૂરી છે; package.jsonમાં \"swiplet.minimumAPILevel\" અથવા \"swiplet.minimumIOSVersion\" વધારો.",
-    "importNeeds": "{{location}}: {{name}} ઇંપોર્ટ કરવા માટે {{requirement}} જરૂરી છે; package.jsonમાં \"swiplet.minimumAPILevel\" અથવા \"swiplet.minimumIOSVersion\" વધારો.",
-    "invalidEntry": "{{location}}: @availableમાં \"{{entry}}\" છે; તે અલ્પવિરામથી અલગ કરેલા \"apiLevel <level>\" અને \"iOS <version>\" સ્વીકારે છે.",
-    "needs": "{{location}}: {{name}}ને {{requirement}} જરૂરી છે.",
+    "entryNeeds": "{{location}}: {{name}} Swipletનો એન્ટ્રી પૉઇન્ટ છે અને તેને {{requirement}} જરૂરી છે; package.jsonમાં {{fields}} વધારો.",
+    "foreign": "{{location}}: {{name}} ફક્ત {{systems}} માટે છે, પરંતુ {{build}} બિલ્ડમાં આ ફાઇલ શામેલ છે; {{name}}ને *.{{os}}.ts અથવા *.{{os}}.tsx નામની ફાઇલમાં ખસેડો.",
+    "foreignUse": "{{location}}: {{name}} ફક્ત {{systems}} માટે છે, પરંતુ {{build}} બિલ્ડ અહીં તેનો ઉપયોગ કરે છે; પહેલાં available() તપાસો, અથવા {{name}}ને *.{{os}}.ts અથવા *.{{os}}.tsx નામની ફાઇલમાં ખસેડો.",
+    "importNeeds": "{{location}}: {{name}} ઇંપોર્ટ કરવા માટે {{requirement}} જરૂરી છે; package.jsonમાં {{fields}} વધારો.",
+    "invalidEntry": "{{location}}: @availableમાં \"{{entry}}\" છે; તે અલ્પવિરામથી અલગ કરેલા \"apiLevel <level>\", \"iOS [<version>]\" અને \"android [<SDK level>]\" સ્વીકારે છે.",
+    "needs": "{{location}}: {{name}}ને {{requirement}} જરૂરી છે; available() વડે તેને તપાસો, તેનો ઉપયોગ કરતા કોડને @available વડે માર્ક કરો, અથવા package.jsonમાં {{fields}} વધારો.",
     "repeatedEntry": "{{location}}: @availableમાં {{kind}} બે વાર છે."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "આ કંપ્યૂટર પરથી કોઈ ડિવાઇસ માટે Swipt API અને MCP પ્રદાન કરો",
       "details": "એક સમયે ફક્ત એક જ પક્ષ ડિવાઇસને નિયંત્રિત કરી શકે છે : ડિવાઇસ પરનું Swipt, અથવા કોઈ એક કંપ્યૂટર પરનો ડ્રાઇવર.",
-      "passcode": "ડિવાઇસને આપમેળે અનલૉક કરવા માટેનો પાસકોડ; ખાલી રાખવાથી તે બંધ થાય છે",
+      "passcode": "ડિવાઇસનો પાસકોડ, જે Swipt તેને અનલૉક કરવા માટે દાખલ કરે છે; તે ડિવાઇસ માટે યાદ રાખવામાં આવે છે, અને ખાલી રાખવાથી Swipt તેને ભૂલી જાય છે",
       "randomToken": "API ક્લાયંટ પાસેથી રેન્ડમ ટોકન માગો",
       "token": "API ક્લાયંટ પાસેથી આ ટોકન માગો"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "નવી અથવા ખાલી ડિરેક્ટરીમાં Swiplet પ્રોજેક્ટ બનાવો",
-        "notEmpty": "{{directory}} ખાલી નથી."
+        "invalidPlatforms": "--platforms વડે Swipletની સપોર્ટેડ સિસ્ટમનાં નામ આપો : ios, android અથવા ios,android.",
+        "notEmpty": "{{directory}} ખાલી નથી.",
+        "platforms": "Swipletની સપોર્ટેડ સિસ્ટમ : ios, android અથવા અલ્પવિરામથી અલગ કરેલી બંને"
       },
       "deploy": {
         "description": "પ્રોજેક્ટ બિલ્ડ કરો અને તેને ડિવાઇસ પર ઇન્સ્ટૉલ કરો"
@@ -108,7 +111,8 @@
       "source": {
         "description": "બિલ્ડ કરેલા Swipletને dist/ માં swiplets.json સાથે એકત્ર કરો",
         "duplicateID": "{{id}} {{first}} અને {{second}} બંને છે",
-        "invalidIcon": "package.jsonના \"source.icon\"માં symbol હોવું જરૂરી છે, અને color હોઈ શકે છે.",
+        "invalidAndroidSymbol": "package.jsonમાં \"source.icon.android\" Swiptની Android આઇકન લાઇબ્રેરીમાંથી Material આઇકનનું નામ હોવું જોઈએ, {{symbol}} નહીં.",
+        "invalidIcon": "package.jsonના \"source.icon\"માં ફક્ત \"color\", \"symbolColor\", \"ios\" અને \"android\" સ્ટ્રિંગ હોઈ શકે છે.",
         "invalidLocalizedNames": "package.jsonમાં \"source.localizedNames\" ભાષાઓને નામો સાથે મૅપ કરતું હોવું જોઈએ.",
         "invalidURL": "package.jsonમાં \"source.url\" ઍબ્સોલ્યૂટ URL નથી.",
         "noWorkspaces": "package.jsonમાં Swiplet ધરાવતા કોઈ વર્કસ્પેસની સૂચિ નથી; સૂચિમાં બતાવવાના Swipletનાં નામ આપો.",
@@ -300,26 +304,35 @@
     "pin": "4 અથવા 6 અંકનો પાસકોડ",
     "pinDetail": "4 અથવા 6 અંક",
     "prompt": "ડિવાઇસનો પાસકોડ",
-    "setUp": "ઑટોમેટિક અનલૉક સેટ અપ કરવું છે? પછી Swipt આ ડિવાઇસને આપમેળે અનલૉક કરી શકશે."
+    "setUp": "આ ડિવાઇસનો પાસકોડ સેવ કરવો છે? પછી Swipt ડિવાઇસને અનલૉક કરી શકશે."
   },
   "project": {
     "assetConflict": "{{source}} અને {{asset}} બંને Swipletમાં assets/{{name}} બની જશે.",
+    "buildFailed": "{{system}} બિલ્ડ નિષ્ફળ થયું :",
     "conditionalActions": "એક્સટેન્શન available() મુજબ અલગ-અલગ ઍક્શન વ્યાખ્યાયિત કરે છે; દરેક સિસ્ટમ પર સમાન ઍક્શન વ્યાખ્યાયિત કરો અને run અથવા ઍક્શનની અંદર available() તપાસો.",
     "databaseAtLoad": "extension.js લોડ થતી વખતે ડેટાબેઝનો ઉપયોગ થાય છે; તેનો ઉપયોગ run અથવા ઍક્શનની અંદર કરો.",
+    "foreignModule": "{{module}} ફક્ત {{system}} માટે છે, પરંતુ {{build}} બિલ્ડમાં આ ફાઇલ શામેલ છે; {{module}}ને *.{{os}}.ts અથવા *.{{os}}.tsx નામની ફાઇલમાં ઇંપોર્ટ કરો.",
+    "inconsistentExtension": "એક્સટેન્શને દરેક સિસ્ટમ પર સમાન સર્વિસ અને ઍક્શન વ્યાખ્યાયિત કરવાં જોઈએ; તેના બદલે run અથવા ઍક્શનની અંદર સિસ્ટમ તપાસો.",
     "interfaceImport": "ઇન્ટરફેસ રન ટાઇમ પર {{file}} ઇંપોર્ટ કરે છે; તેનો ટાઇપ `import type` દ્વારા ઇંપોર્ટ કરો.",
     "interfaceOnly": "{{name}} ફક્ત Swiplet ઇન્ટરફેસમાં કામ કરે છે.",
+    "invalidAndroidSymbol": "package.jsonમાં \"swiplet.icon.android\" Swiptની Android આઇકન લાઇબ્રેરીમાંથી Material આઇકનનું નામ હોવું જોઈએ, {{symbol}} નહીં.",
     "invalidExposure": "ઍક્શન {{action}} પોતાને ફક્ત \"shortcuts\" સમક્ષ જ ખુલ્લું કરી શકે છે.",
     "invalidExtension": "એક્સટેન્શનનો ડિફૉલ્ટ એક્સપોર્ટ defineExtensionનું પરિણામ નથી.",
     "invalidID": "package.jsonમાં \"swiplet.id\" 1 થી 128 નાના અક્ષરો, અંકો, ટપકાં, અંડરસ્કોર અને હાઇફનનું બનેલું હોવું જોઈએ, અને તે અક્ષર અથવા અંકથી શરૂ થવું જોઈએ.",
+    "invalidIcon": "package.jsonના \"swiplet.icon\"માં ફક્ત \"color\", \"symbolColor\", \"ios\" અને \"android\" સ્ટ્રિંગ હોઈ શકે છે.",
     "invalidLocalizedNames": "package.jsonમાં \"swiplet.localizedNames\" ભાષાઓને નામો સાથે મૅપ કરતું હોવું જોઈએ.",
     "invalidMinimumAPILevel": "package.jsonમાં \"swiplet.minimumAPILevel\" {{oldest}} થી @swipt/apiના API લેવલ {{level}} સુધીનો પૂર્ણાંક હોવો જોઈએ.",
-    "invalidMinimumIOSVersion": "package.jsonમાં \"swiplet.minimumIOSVersion\" @swipt/apiના ન્યૂનતમ iOS વર્ઝન {{version}} કે તેથી મોટો વર્ઝન નંબર હોવો જોઈએ.",
+    "invalidMinimumAndroidSDK": "package.jsonમાં \"swiplet.platforms.android.minimumSDK\" @swipt/apiના ન્યૂનતમ Android SDK લેવલ {{sdk}} કે તેથી મોટું Android SDK લેવલ હોવું જોઈએ.",
+    "invalidMinimumIOSVersion": "package.jsonમાં \"swiplet.platforms.ios.minimumVersion\" @swipt/apiના ન્યૂનતમ iOS વર્ઝન {{version}} કે તેથી મોટો વર્ઝન નંબર હોવો જોઈએ.",
     "invalidName": "package.jsonમાં \"swiplet.name\" ખાલી ન હોય તેવી સ્ટ્રિંગ હોવી જોઈએ.",
+    "invalidPlatforms": "package.jsonમાંના \"swiplet.platforms\"માં Swipletની દરેક સપોર્ટેડ સિસ્ટમનું નામ હોવું જોઈએ : \"ios\" તેના \"minimumVersion\" સાથે, \"android\" તેના \"minimumSDK\" સાથે.",
     "invalidSchema": "ઍક્શન {{action}}નો {{side}} સ્કીમા Standard JSON Schema અમલમાં મૂકતો નથી; તેને અમલમાં મૂકતી લાઇબ્રેરીનો ઉપયોગ કરો, જેમ કે Zod 4.",
     "invalidString": "package.jsonમાં \"{{field}}\" સ્ટ્રિંગ હોવી જોઈએ.",
     "invalidVersionCode": "package.jsonમાં \"swiplet.versionCode\" ધન પૂર્ણાંક હોવો જોઈએ.",
     "missingTitle": "ઍક્શન {{action}}ને શીર્ષક જરૂરી છે.",
+    "outdatedAPI": "@swipt/api API લેવલ {{level}} પર છે, અને આ Swipt CLI API લેવલ {{oldest}} કે પછીના લેવલ માટે Swiplet બિલ્ડ કરે છે; @swipt/api અપડેટ કરો.",
     "storageAtLoad": "extension.js લોડ થતી વખતે સ્ટોરેજનો ઉપયોગ થાય છે; તેનો ઉપયોગ run અથવા ઍક્શનની અંદર કરો.",
+    "undeclaredModule": "{{module}} ફક્ત {{system}} માટે છે, પરંતુ package.jsonમાંના \"swiplet.platforms\"માં આ સિસ્ટમ શામેલ નથી.",
     "unprovidedModule": "Swipt એક્સટેન્શનને \"{{module}}\" પૂરું પાડતું નથી; તેને extension.js માં બંડલ કરો.",
     "usedAtLoad": "extension.js લોડ થતી વખતે {{name}}નો ઉપયોગ થાય છે; તેનો ઉપયોગ run અથવા ઍક્શનની અંદર કરો."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "--token અને --random-token એકસાથે વાપરી શકાતા નથી.",
     "invalidToken": "ટોકનમાં સ્પેસ વગરના એક અથવા વધુ પ્રિંટ કરી શકાય તેવા ASCII અક્ષરો હોય છે.",
     "localNetwork": "સ્થાનિક નેટવર્ક",
-    "noAutoUnlock": "{{device}} આપમેળે અનલૉક થતું નથી; --passcode દ્વારા તેનો પાસકોડ સેટ કરો. ડ્રાઇવર બંધ કરવા માટે Ctrl-C દબાવો.",
+    "noPasscode": "{{device}} પાસકોડ માંગે ત્યારે Swipt તેને અનલૉક કરી શકતું નથી; પાસકોડ સેટ કરવા માટે Ctrl-C દબાવીને ડ્રાઇવર બંધ કરો અને \"swipt driver -d {{udid}} --passcode CODE\" ચલાવો.",
     "quitSwipt": "Swipt બંધ કરો",
     "quittingSwipt": "{{device}} પર Swipt બંધ કરવામાં આવી રહ્યું છે",
     "served": "{{computer}} પરનો ડ્રાઇવર પહેલેથી {{device}}ને સેવા આપી રહ્યો છે; પહેલાં તે ડ્રાઇવર બંધ કરો.",

@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Оларды available() арқылы тексеріңіз, оларды пайдаланатын кодты @available арқылы белгілеңіз немесе package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
     "apiLevel": "API деңгейі {{level}}",
-    "entryNeeds": "{{location}}: {{name}} – Swiplet кіру нүктесі, оған {{requirement}} қажет; package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
-    "importNeeds": "{{location}}: {{name}} импорттау үшін {{requirement}} қажет; package.json файлындағы \"swiplet.minimumAPILevel\" не \"swiplet.minimumIOSVersion\" мәнін арттырыңыз.",
-    "invalidEntry": "{{location}}: @available ішінде \"{{entry}}\" бар; ол үтірмен бөлінген \"apiLevel <level>\" және \"iOS <version>\" жазбаларын қабылдайды.",
-    "needs": "{{location}}: {{name}} үшін {{requirement}} қажет.",
+    "entryNeeds": "{{location}}: {{name}} – Swiplet кіру нүктесі, оған {{requirement}} қажет; package.json файлындағы {{fields}} мәнін арттырыңыз.",
+    "foreign": "{{location}}: {{name}} тек {{systems}} жүйесіне арналған, бірақ {{build}} үшін құрастыруға бұл файл кіреді; оны *.{{os}}.ts не *.{{os}}.tsx деп аталатын файлға жылжытыңыз.",
+    "foreignUse": "{{location}}: {{name}} тек {{systems}} жүйесіне арналған, бірақ {{build}} үшін құрастыру оған осы жерде жетеді; алдымен available() арқылы тексеріңіз немесе оны *.{{os}}.ts не *.{{os}}.tsx деп аталатын файлға жылжытыңыз.",
+    "importNeeds": "{{location}}: {{name}} импорттау үшін {{requirement}} қажет; package.json файлындағы {{fields}} мәнін арттырыңыз.",
+    "invalidEntry": "{{location}}: @available ішінде \"{{entry}}\" бар; ол үтірмен бөлінген \"apiLevel <level>\", \"iOS [<version>]\" және \"android [<SDK level>]\" жазбаларын қабылдайды.",
+    "needs": "{{location}}: {{name}} үшін {{requirement}} қажет; оны available() арқылы тексеріңіз, оны пайдаланатын кодты @available арқылы белгілеңіз немесе package.json файлындағы {{fields}} мәнін арттырыңыз.",
     "repeatedEntry": "{{location}}: @available ішінде {{kind}} екі рет көрсетілген."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "Осы компьютерден құрылғы үшін Swipt API және MCP ұсыну",
       "details": "Құрылғыны бір уақытта тек бір тарап басқара алады: құрылғыдағы Swipt немесе бір компьютердегі драйвер.",
-      "passcode": "құрылғының құлпын автоматты түрде ашуға арналған құпия код; мұны өшіру үшін бос қалдырыңыз",
+      "passcode": "құрылғының құпия коды, оны Swipt құлыпты ашу үшін енгізеді; ол құрылғы үшін есте сақталады, ал бос қалдырсаңыз, Swipt оны ұмытады",
       "randomToken": "API клиенттерінен кездейсоқ токенді талап ету",
       "token": "API клиенттерінен осы токенді талап ету"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Жаңа немесе бос каталогта Swiplet жобасын жасау",
-        "notEmpty": "{{directory}} каталогы бос емес."
+        "invalidPlatforms": "Swiplet қолдайтын жүйелерді --platforms арқылы көрсетіңіз: ios, android немесе ios,android.",
+        "notEmpty": "{{directory}} каталогы бос емес.",
+        "platforms": "Swiplet қолдайтын жүйелер: ios, android немесе үтірмен бөлінген екеуі де"
       },
       "deploy": {
         "description": "Жобаны құрастырып, құрылғыға орнату"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Құрастырылған Swiplet файлдарын swiplets.json файлымен бірге dist/ ішіне жинау",
         "duplicateID": "{{id}} бір мезгілде әрі {{first}}, әрі {{second}}",
-        "invalidIcon": "package.json файлындағы \"source.icon\" өрісінде symbol болуы керек, color болуы мүмкін.",
+        "invalidAndroidSymbol": "package.json файлындағы \"source.icon.android\" мәні {{symbol}} емес, Swipt Android белгішелер кітапханасындағы Material белгішесінің атауы болуы керек.",
+        "invalidIcon": "package.json файлындағы \"source.icon\" өрісінде тек \"color\", \"symbolColor\", \"ios\" және \"android\" мәтін жолдары болуы мүмкін.",
         "invalidLocalizedNames": "package.json файлындағы \"source.localizedNames\" өрісі тілдерді атауларға сәйкестендіруі керек.",
         "invalidURL": "package.json файлындағы \"source.url\" мәні абсолютті URL мекенжайы емес.",
         "noWorkspaces": "package.json файлында Swiplet бар жұмыс кеңістіктері көрсетілмеген; тізімге қосылатын Swiplet атауларын көрсетіңіз.",
@@ -300,26 +304,35 @@
     "pin": "4 немесе 6 таңбалы құпия код",
     "pinDetail": "4 немесе 6 цифр",
     "prompt": "Құрылғының құпия коды",
-    "setUp": "Құлыпты автоматты түрде ашуды баптау керек пе? Сонда Swipt осы құрылғының құлпын өзі аша алады."
+    "setUp": "Осы құрылғының құпия кодын сақтау керек пе? Сонда Swipt құрылғының құлпын аша алады."
   },
   "project": {
     "assetConflict": "{{source}} және {{asset}} екеуі де Swiplet ішінде assets/{{name}} болады.",
+    "buildFailed": "{{system}} үшін құрастыру сәтсіз аяқталды:",
     "conditionalActions": "Кеңейтім available() нәтижесіне қарай әртүрлі әрекеттерді анықтайды; барлық жүйеде бірдей әрекеттерді анықтап, available() мәнін run ішінде немесе әрекет ішінде тексеріңіз.",
     "databaseAtLoad": "extension.js жүктеліп жатқанда дерекқор пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз.",
+    "foreignModule": "{{module}} модулі тек {{system}} жүйесіне арналған, бірақ {{build}} үшін құрастыруға бұл файл кіреді; оны *.{{os}}.ts не *.{{os}}.tsx деп аталатын файлдардан импорттаңыз.",
+    "inconsistentExtension": "Кеңейтім әр жүйеде бірдей қызмет пен әрекеттерді анықтауы керек; жүйені run ішінде немесе әрекет ішінде тексеріңіз.",
     "interfaceImport": "Интерфейс орындалу кезінде {{file}} файлын импорттайды; оның түрін `import type` арқылы импорттаңыз.",
     "interfaceOnly": "{{name}} тек Swiplet интерфейсінде жұмыс істейді.",
+    "invalidAndroidSymbol": "package.json файлындағы \"swiplet.icon.android\" мәні {{symbol}} емес, Swipt Android белгішелер кітапханасындағы Material белгішесінің атауы болуы керек.",
     "invalidExposure": "{{action}} әрекеті тек \"shortcuts\" үшін ашық бола алады.",
     "invalidExtension": "Кеңейтімнің әдепкі экспорты defineExtension нәтижесі емес.",
     "invalidID": "package.json файлындағы \"swiplet.id\" мәні кіші әріптерден, цифрлардан, нүктелерден, астын сызу белгілерінен және дефистерден тұратын 1–128 таңба болуы және әріппен не цифрмен басталуы керек.",
+    "invalidIcon": "package.json файлындағы \"swiplet.icon\" өрісінде тек \"color\", \"symbolColor\", \"ios\" және \"android\" мәтін жолдары болуы мүмкін.",
     "invalidLocalizedNames": "package.json файлындағы \"swiplet.localizedNames\" өрісі тілдерді атауларға сәйкестендіруі керек.",
     "invalidMinimumAPILevel": "package.json файлындағы \"swiplet.minimumAPILevel\" мәні {{oldest}}-ден @swipt/api пакетінің API деңгейіне ({{level}}) дейінгі бүтін сан болуы керек.",
-    "invalidMinimumIOSVersion": "package.json файлындағы \"swiplet.minimumIOSVersion\" мәні @swipt/api пакетінің ең төменгі iOS нұсқасынан ({{version}}) кем емес нұсқа нөмірі болуы керек.",
+    "invalidMinimumAndroidSDK": "package.json файлындағы \"swiplet.platforms.android.minimumSDK\" мәні @swipt/api пакетінің ең төменгі Android SDK деңгейінен ({{sdk}}) кем емес Android SDK деңгейі болуы керек.",
+    "invalidMinimumIOSVersion": "package.json файлындағы \"swiplet.platforms.ios.minimumVersion\" мәні @swipt/api пакетінің ең төменгі iOS нұсқасынан ({{version}}) кем емес нұсқа нөмірі болуы керек.",
     "invalidName": "package.json файлындағы \"swiplet.name\" мәні бос емес мәтін жолы болуы керек.",
+    "invalidPlatforms": "package.json файлындағы \"swiplet.platforms\" өрісі Swiplet қолдайтын әр жүйені көрсетуі керек: \"ios\" жүйесін \"minimumVersion\" мәнімен, \"android\" жүйесін \"minimumSDK\" мәнімен.",
     "invalidSchema": "{{action}} әрекетінің {{side}} схемасы Standard JSON Schema стандартын іске асырмайды; оны іске асыратын кітапхананы пайдаланыңыз, мысалы Zod 4.",
     "invalidString": "package.json файлындағы \"{{field}}\" мәні мәтін жолы болуы керек.",
     "invalidVersionCode": "package.json файлындағы \"swiplet.versionCode\" мәні оң бүтін сан болуы керек.",
     "missingTitle": "{{action}} әрекетіне атау қажет.",
+    "outdatedAPI": "@swipt/api пакетінің API деңгейі – {{level}}, ал бұл Swipt CLI API деңгейі {{oldest}} немесе одан жоғары Swiplet құрастырады; @swipt/api пакетін жаңартыңыз.",
     "storageAtLoad": "extension.js жүктеліп жатқанда сақтау орны пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз.",
+    "undeclaredModule": "{{module}} модулі тек {{system}} жүйесіне арналған, ал package.json файлындағы \"swiplet.platforms\" өрісінде бұл жүйе көрсетілмеген.",
     "unprovidedModule": "Swipt кеңейтімдерге \"{{module}}\" модулін бермейді; оны extension.js файлына жинақтаңыз.",
     "usedAtLoad": "extension.js жүктеліп жатқанда {{name}} пайдаланылды; оны run ішінде немесе әрекет ішінде пайдаланыңыз."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "--token және --random-token бірге қолданылмайды.",
     "invalidToken": "Токен бос орынсыз бір немесе бірнеше басып шығарылатын ASCII таңбасынан тұрады.",
     "localNetwork": "Жергілікті желі",
-    "noAutoUnlock": "{{device}} құрылғысының құлпы автоматты түрде ашылмайды; оның құпия кодын --passcode арқылы орнатыңыз. Драйверді тоқтату үшін Ctrl-C пернелерін басыңыз.",
+    "noPasscode": "{{device}} құрылғысы құпия кодын сұрағанда, Swipt оның құлпын аша алмайды; құпия кодты орнату үшін Ctrl-C пернелерін басып драйверді тоқтатыңыз да, \"swipt driver -d {{udid}} --passcode CODE\" пәрменін орындаңыз.",
     "quitSwipt": "Swipt қолданбасынан шығу",
     "quittingSwipt": "{{device}} құрылғысында Swipt қолданбасынан шығуда",
     "served": "{{computer}} компьютеріндегі драйвер {{device}} құрылғысына әлдеқашан қызмет көрсетіп тұр; алдымен сол драйверді тоқтатыңыз.",

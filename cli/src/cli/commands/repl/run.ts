@@ -27,7 +27,7 @@ function readScript([first, ...args]: string[]) {
       code: readStdin().toString(),
       args,
       program: true,
-      file: "input.js",
+      file: "[stdin]",
     };
   }
   if (isFile(first)) {
@@ -45,7 +45,7 @@ function readScript([first, ...args]: string[]) {
       }),
     );
   }
-  return { code: first, args, program: false, file: "input.js" };
+  return { code: first, args, program: false, file: "[eval]" };
 }
 
 class ImageSink {

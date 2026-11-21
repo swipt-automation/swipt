@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "請使用 available() 檢查這些項目、使用 @available 標記使用它們的程式碼，或提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
     "apiLevel": "API 等級 {{level}}",
-    "entryNeeds": "{{location}}：{{name}} 是 Swiplet 的進入點，需要 {{requirement}}；請提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
-    "importNeeds": "{{location}}：匯入 {{name}} 需要 {{requirement}}；請提高 package.json 中的 \"swiplet.minimumAPILevel\" 或 \"swiplet.minimumIOSVersion\"。",
-    "invalidEntry": "{{location}}：@available 包含 \"{{entry}}\"；@available 接受以逗號分隔的 \"apiLevel <level>\" 和 \"iOS <version>\"。",
-    "needs": "{{location}}：{{name}} 需要 {{requirement}}。",
+    "entryNeeds": "{{location}}：{{name}} 是 Swiplet 的進入點，需要 {{requirement}}；請提高 package.json 中的 {{fields}}。",
+    "foreign": "{{location}}：{{name}} 僅適用於 {{systems}}，但 {{build}} 建置包含此檔案；請將其移至名為 *.{{os}}.ts 或 *.{{os}}.tsx 的檔案。",
+    "foreignUse": "{{location}}：{{name}} 僅適用於 {{systems}}，但 {{build}} 建置會在此處用到它；請先檢查 available()，或將其移至名為 *.{{os}}.ts 或 *.{{os}}.tsx 的檔案。",
+    "importNeeds": "{{location}}：匯入 {{name}} 需要 {{requirement}}；請提高 package.json 中的 {{fields}}。",
+    "invalidEntry": "{{location}}：@available 包含 \"{{entry}}\"；@available 接受以逗號分隔的 \"apiLevel <level>\"、\"iOS [<version>]\" 和 \"android [<SDK level>]\"。",
+    "needs": "{{location}}：{{name}} 需要 {{requirement}}；請使用 available() 檢查它、使用 @available 標記使用它的程式碼，或提高 package.json 中的 {{fields}}。",
     "repeatedEntry": "{{location}}：@available 兩次指定了 {{kind}}。"
   },
   "cli": {
@@ -79,7 +80,7 @@
     "driver": {
       "description": "從此電腦為裝置提供 Swipt API 和 MCP",
       "details": "同一時間只能有一方控制裝置：裝置上的 Swipt，或一台電腦上的驅動程式。",
-      "passcode": "用於自動解鎖裝置的密碼；留空則關閉自動解鎖",
+      "passcode": "裝置的密碼，Swipt 會輸入它來解鎖裝置；密碼依裝置記住，留空則刪除密碼",
       "randomToken": "要求 API 用戶端提供隨機權杖",
       "token": "要求 API 用戶端提供此權杖"
     },
@@ -89,7 +90,9 @@
       },
       "create": {
         "description": "在新目錄或空目錄中建立 Swiplet 專案",
-        "notEmpty": "{{directory}} 不是空目錄。"
+        "invalidPlatforms": "請使用 --platforms 指定 Swiplet 支援的系統：ios、android 或 ios,android。",
+        "notEmpty": "{{directory}} 不是空目錄。",
+        "platforms": "Swiplet 支援的系統：ios、android，或以逗號分隔的兩者"
       },
       "deploy": {
         "description": "建置專案並安裝到裝置上"
@@ -104,7 +107,8 @@
       "source": {
         "description": "將已建置的 Swiplet 收集到 dist/，並產生 swiplets.json",
         "duplicateID": "{{id}} 同時對應 {{first}} 和 {{second}}",
-        "invalidIcon": "package.json 中的 \"source.icon\" 必須有 symbol，可以有 color。",
+        "invalidAndroidSymbol": "package.json 中的 \"source.icon.android\" 必須是 Swipt Android 圖示庫中的 Material 圖示名稱，而非 {{symbol}}。",
+        "invalidIcon": "package.json 中的 \"source.icon\" 只能有字串 \"color\"、\"symbolColor\"、\"ios\" 和 \"android\"。",
         "invalidLocalizedNames": "package.json 中的 \"source.localizedNames\" 必須是語言到名稱的對應。",
         "invalidURL": "package.json 中的 \"source.url\" 不是絕對 URL。",
         "noWorkspaces": "package.json 未列出包含 Swiplet 的工作區；請指定要列出的 Swiplet。",
@@ -296,26 +300,35 @@
     "pin": "4 或 6 位數字密碼",
     "pinDetail": "4 或 6 位數",
     "prompt": "裝置密碼",
-    "setUp": "要設定自動解鎖嗎？設定後 Swipt 可以自行解鎖此裝置。"
+    "setUp": "要儲存此裝置的密碼嗎？儲存後 Swipt 可以解鎖此裝置。"
   },
   "project": {
     "assetConflict": "{{source}} 和 {{asset}} 在 Swiplet 中都會成為 assets/{{name}}。",
+    "buildFailed": "{{system}} 建置失敗：",
     "conditionalActions": "延伸功能會依 available() 定義不同的動作；請在所有系統上定義相同的動作，並在 run 或動作內檢查 available()。",
     "databaseAtLoad": "extension.js 載入期間使用了資料庫；請在 run 或動作內使用。",
+    "foreignModule": "{{module}} 僅適用於 {{system}}，但 {{build}} 建置包含此檔案；請在名為 *.{{os}}.ts 或 *.{{os}}.tsx 的檔案中匯入它。",
+    "inconsistentExtension": "延伸功能必須在每個系統上定義相同的服務和動作；請改在 run 或動作內檢查系統。",
     "interfaceImport": "介面在執行階段匯入了 {{file}}；請使用 `import type` 匯入其類型。",
     "interfaceOnly": "{{name}} 只能在 Swiplet 介面中使用。",
+    "invalidAndroidSymbol": "package.json 中的 \"swiplet.icon.android\" 必須是 Swipt Android 圖示庫中的 Material 圖示名稱，而非 {{symbol}}。",
     "invalidExposure": "動作 {{action}} 只能向 \"shortcuts\" 公開。",
     "invalidExtension": "延伸功能的預設匯出不是 defineExtension 的結果。",
     "invalidID": "package.json 中的 \"swiplet.id\" 必須由 1 到 128 個小寫字母、數字、句點、底線和連字號組成，並以字母或數字開頭。",
+    "invalidIcon": "package.json 中的 \"swiplet.icon\" 只能有字串 \"color\"、\"symbolColor\"、\"ios\" 和 \"android\"。",
     "invalidLocalizedNames": "package.json 中的 \"swiplet.localizedNames\" 必須是語言到名稱的對應。",
     "invalidMinimumAPILevel": "package.json 中的 \"swiplet.minimumAPILevel\" 必須是 {{oldest}} 到 {{level}}（@swipt/api 的 API 等級）之間的整數。",
-    "invalidMinimumIOSVersion": "package.json 中的 \"swiplet.minimumIOSVersion\" 必須是不低於 {{version}}（@swipt/api 的最低 iOS 版本）的版本號碼。",
+    "invalidMinimumAndroidSDK": "package.json 中的 \"swiplet.platforms.android.minimumSDK\" 必須是不低於 {{sdk}}（@swipt/api 的最低 Android SDK 等級）的 Android SDK 等級。",
+    "invalidMinimumIOSVersion": "package.json 中的 \"swiplet.platforms.ios.minimumVersion\" 必須是不低於 {{version}}（@swipt/api 的最低 iOS 版本）的版本號碼。",
     "invalidName": "package.json 中的 \"swiplet.name\" 必須是非空字串。",
+    "invalidPlatforms": "package.json 中的 \"swiplet.platforms\" 必須列出 Swiplet 支援的每個系統：\"ios\" 及其 \"minimumVersion\"，\"android\" 及其 \"minimumSDK\"。",
     "invalidSchema": "動作 {{action}} 的 {{side}} 結構描述未實作 Standard JSON Schema；請使用已實作它的程式庫，例如 Zod 4。",
     "invalidString": "package.json 中的 \"{{field}}\" 必須是字串。",
     "invalidVersionCode": "package.json 中的 \"swiplet.versionCode\" 必須是正整數。",
     "missingTitle": "動作 {{action}} 需要標題。",
+    "outdatedAPI": "@swipt/api 的 API 等級為 {{level}}，而此 Swipt 命令列工具只為 API 等級 {{oldest}} 或更高建置 Swiplet；請更新 @swipt/api。",
     "storageAtLoad": "extension.js 載入期間使用了儲存空間；請在 run 或動作內使用。",
+    "undeclaredModule": "{{module}} 僅適用於 {{system}}，但 package.json 中的 \"swiplet.platforms\" 未列出此系統。",
     "unprovidedModule": "Swipt 未向延伸功能提供 \"{{module}}\"；請將其打包至 extension.js。",
     "usedAtLoad": "extension.js 載入期間使用了 {{name}}；請在 run 或動作內使用。"
   },
@@ -325,7 +338,7 @@
     "conflictingTokens": "--token 和 --random-token 不能同時使用。",
     "invalidToken": "權杖由一個或多個可列印的 ASCII 字元組成，不含空格。",
     "localNetwork": "區域網路",
-    "noAutoUnlock": "{{device}} 不會自動解鎖；請使用 --passcode 設定其密碼。按下 Ctrl-C 可停止驅動程式。",
+    "noPasscode": "{{device}} 要求輸入密碼時，Swipt 無法將其解鎖；要設定密碼，請按下 Ctrl-C 停止驅動程式，然後執行 \"swipt driver -d {{udid}} --passcode CODE\"。",
     "quitSwipt": "結束 Swipt",
     "quittingSwipt": "正在結束 {{device}} 上的 Swipt",
     "served": "{{computer}} 上的驅動程式已在為 {{device}} 提供服務；請先停止該驅動程式。",

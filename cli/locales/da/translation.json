@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Tjek dem med available(), markér koden, der bruger dem, med @available, eller hæv \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
     "apiLevel": "API-niveau {{level}}",
-    "entryNeeds": "{{location}}: {{name}} er et Swiplet-indgangspunkt og kræver {{requirement}}; hæv \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
-    "importNeeds": "{{location}}: import af {{name}} kræver {{requirement}}; hæv \"swiplet.minimumAPILevel\" eller \"swiplet.minimumIOSVersion\" i package.json.",
-    "invalidEntry": "{{location}}: @available har \"{{entry}}\"; den accepterer \"apiLevel <level>\" og \"iOS <version>\" adskilt af kommaer.",
-    "needs": "{{location}}: {{name}} kræver {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} er et Swiplet-indgangspunkt og kræver {{requirement}}; hæv {{fields}} i package.json.",
+    "foreign": "{{location}}: {{name}} er kun til {{systems}}, men {{build}}-buildet inkluderer denne fil; flyt det til en fil med navnet *.{{os}}.ts eller *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} er kun til {{systems}}, men {{build}}-buildet når det her; tjek først available(), eller flyt det til en fil med navnet *.{{os}}.ts eller *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: import af {{name}} kræver {{requirement}}; hæv {{fields}} i package.json.",
+    "invalidEntry": "{{location}}: @available har \"{{entry}}\"; den accepterer \"apiLevel <level>\", \"iOS [<version>]\" og \"android [<SDK level>]\" adskilt af kommaer.",
+    "needs": "{{location}}: {{name}} kræver {{requirement}}; tjek det med available(), markér koden, der bruger det, med @available, eller hæv {{fields}} i package.json.",
     "repeatedEntry": "{{location}}: @available angiver {{kind}} to gange."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "Lever Swipt-API’et og MCP for en enhed fra denne computer",
       "details": "Kun én part ad gangen kan styre enheden: Swipt på enheden eller driveren på én computer.",
-      "passcode": "adgangskode til automatisk oplåsning af enheden; lad den være tom for at slå det fra",
+      "passcode": "enhedens adgangskode, som Swipt indtaster for at låse den op; den huskes for enheden, og hvis den er tom, glemmes den",
       "randomToken": "kræv et tilfældigt token fra API-klienter",
       "token": "kræv dette token fra API-klienter"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Opret et Swiplet-projekt i en ny eller tom mappe",
-        "notEmpty": "{{directory}} er ikke tom."
+        "invalidPlatforms": "Angiv de systemer, som denne Swiplet understøtter, med --platforms: ios, android eller ios,android.",
+        "notEmpty": "{{directory}} er ikke tom.",
+        "platforms": "de systemer, som denne Swiplet understøtter: ios, android eller begge adskilt af et komma"
       },
       "deploy": {
         "description": "Byg projektet, og installer det på enheden"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Saml de byggede Swiplets i dist/ med en swiplets.json",
         "duplicateID": "{{id}} er både {{first}} og {{second}}",
-        "invalidIcon": "\"source.icon\" i package.json skal have symbol og kan have color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" i package.json skal være et Material-ikonnavn fra Swipts Android-ikonbibliotek, ikke {{symbol}}.",
+        "invalidIcon": "\"source.icon\" i package.json må kun have strengene \"color\", \"symbolColor\", \"ios\" og \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" i package.json skal knytte sprog til navne.",
         "invalidURL": "\"source.url\" i package.json er ikke en absolut URL.",
         "noWorkspaces": "package.json viser ingen arbejdsområder med Swiplets; angiv de Swiplets, der skal vises på listen.",
@@ -300,26 +304,35 @@
     "pin": "4- eller 6-cifret adgangskode",
     "pinDetail": "4 eller 6 cifre",
     "prompt": "Enhedens adgangskode",
-    "setUp": "Vil du konfigurere automatisk oplåsning? Så kan Swipt selv låse denne enhed op."
+    "setUp": "Vil du gemme denne enheds adgangskode? Så kan Swipt låse enheden op."
   },
   "project": {
     "assetConflict": "{{source}} og {{asset}} ville begge blive til assets/{{name}} i denne Swiplet.",
+    "buildFailed": "{{system}}-buildet mislykkedes:",
     "conditionalActions": "Udvidelsen definerer forskellige handlinger afhængigt af available(); definer de samme handlinger på alle systemer, og tjek available() i run eller en handling.",
     "databaseAtLoad": "Databasen bruges, mens extension.js indlæses; flyt brugen til run eller en handling.",
+    "foreignModule": "{{module}} er kun til {{system}}, men {{build}}-buildet inkluderer denne fil; importer det fra filer med navnet *.{{os}}.ts eller *.{{os}}.tsx.",
+    "inconsistentExtension": "Udvidelsen skal definere den samme tjeneste og de samme handlinger på hvert system; tjek systemet i run eller en handling i stedet.",
     "interfaceImport": "Brugerfladen importerer {{file}} under kørsel; importer typen med `import type`.",
     "interfaceOnly": "{{name}} virker kun i Swiplet-brugerfladen.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" i package.json skal være et Material-ikonnavn fra Swipts Android-ikonbibliotek, ikke {{symbol}}.",
     "invalidExposure": "Handlingen {{action}} kan kun gøres tilgængelig for \"shortcuts\".",
     "invalidExtension": "Udvidelsens standardeksport er ikke resultatet af defineExtension.",
     "invalidID": "\"swiplet.id\" i package.json skal bestå af 1 til 128 små bogstaver, cifre, punktummer, understregningstegn og bindestreger og starte med et bogstav eller et ciffer.",
+    "invalidIcon": "\"swiplet.icon\" i package.json må kun have strengene \"color\", \"symbolColor\", \"ios\" og \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" i package.json skal knytte sprog til navne.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" i package.json skal være et heltal fra {{oldest}} til {{level}}, som er API-niveauet for @swipt/api.",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" i package.json skal være et versionsnummer fra og med {{version}}, som er minimumsversionen af iOS for @swipt/api.",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" i package.json skal være et Android SDK-niveau fra og med {{sdk}}, som er minimumsniveauet af Android SDK for @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" i package.json skal være et versionsnummer fra og med {{version}}, som er minimumsversionen af iOS for @swipt/api.",
     "invalidName": "\"swiplet.name\" i package.json skal være en streng, der ikke er tom.",
+    "invalidPlatforms": "\"swiplet.platforms\" i package.json skal angive hvert system, som denne Swiplet understøtter: \"ios\" med \"minimumVersion\" og \"android\" med \"minimumSDK\".",
     "invalidSchema": "{{side}}-skemaet for handlingen {{action}} implementerer ikke Standard JSON Schema; brug et bibliotek, der gør, f.eks. Zod 4.",
     "invalidString": "\"{{field}}\" i package.json skal være en streng.",
     "invalidVersionCode": "\"swiplet.versionCode\" i package.json skal være et positivt heltal.",
     "missingTitle": "Handlingen {{action}} skal have en titel.",
+    "outdatedAPI": "@swipt/api er på API-niveau {{level}}, og dette kommandolinjeværktøj til Swipt bygger Swiplets til API-niveau {{oldest}} eller nyere; opdater @swipt/api.",
     "storageAtLoad": "Lageret bruges, mens extension.js indlæses; flyt brugen til run eller en handling.",
+    "undeclaredModule": "{{module}} er kun til {{system}}, som \"swiplet.platforms\" i package.json ikke angiver.",
     "unprovidedModule": "Swipt leverer ikke \"{{module}}\" til udvidelser; pak det ind i extension.js.",
     "usedAtLoad": "{{name}} bruges, mens extension.js indlæses; flyt brugen til run eller en handling."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "--token og --random-token kan ikke bruges sammen.",
     "invalidToken": "Et token består af et eller flere skrivbare ASCII-tegn uden mellemrum.",
     "localNetwork": "Lokalt netværk",
-    "noAutoUnlock": "{{device}} låses ikke op automatisk; angiv dens adgangskode med --passcode. Tryk på Ctrl-C for at stoppe driveren.",
+    "noPasscode": "Swipt kan ikke låse {{device}} op, når den beder om sin adgangskode; for at angive adgangskoden skal du stoppe driveren med Ctrl-C og køre \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Afslut Swipt",
     "quittingSwipt": "afslutter Swipt på {{device}}",
     "served": "Driveren på {{computer}} betjener allerede {{device}}; stop den driver først.",

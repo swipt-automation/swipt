@@ -212,11 +212,24 @@ function printError(
   return exit;
 }
 
+const brokenPipe = 128 + 13;
+
 export async function main() {
   const interrupt = new AbortController();
   const interrupted = () => interrupt.abort();
   process.once("SIGINT", interrupted);
   process.once("SIGTERM", interrupted);
+  let closed = false;
+  for (const stream of [process.stdout, process.stderr]) {
+    stream.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code !== "EPIPE") {
+        throw error;
+      }
+      closed = true;
+      process.exitCode = brokenPipe;
+      interrupt.abort();
+    });
+  }
   const target = { url: "" };
   try {
     const { trail, invocation } = resolve(process.argv.slice(2));
@@ -232,16 +245,18 @@ export async function main() {
       printError: (error, operation) => printError(error, target, operation),
     });
   } catch (error) {
+    let status;
     if (error instanceof FalseResult) {
-      process.exitCode = 1;
+      status = 1;
     } else if (
       interrupt.signal.aborted ||
       (error instanceof Error && error.name === "ExitPromptError")
     ) {
-      process.exitCode = 130;
+      status = 130;
     } else {
-      process.exitCode = printError(error, target);
+      status = printError(error, target);
     }
+    process.exitCode = closed ? brokenPipe : status;
   } finally {
     process.off("SIGINT", interrupted);
     process.off("SIGTERM", interrupted);

@@ -53,6 +53,7 @@ import {
   isJsxAttributes,
   isJsxSpreadAttribute,
   isMethodDeclaration,
+  isMethodSignatureDeclaration,
   isModuleBlock,
   isNamedExports,
   isNumericLiteral,
@@ -83,11 +84,14 @@ import {
 } from "typescript/unstable/sync";
 
 import { language, t } from "./i18n";
-import type { Project } from "./project";
+import { type OS, type Platform, systems } from "./platform";
+import type { Build, Project } from "./project";
 import { parseVersion, versionAtLeast } from "./version";
+
 interface Requirements {
   apiLevel: number;
   iOS: readonly number[];
+  android: number;
 }
 
 type Kind = keyof Requirements;
@@ -107,11 +111,34 @@ const requirements: { readonly [K in Kind]: Rule<Requirements[K]> } = {
     describe: (level) => t("availability.apiLevel", { level }),
   },
   iOS: {
-    parse: parseVersion,
+    parse: (text) => (text === "" ? [] : parseVersion(text)),
     covers: versionAtLeast,
-    describe: (version) => `iOS ${version.join(".")}`,
+    describe: (version) =>
+      version.length === 0 ? "iOS" : `iOS ${version.join(".")}`,
+  },
+  android: {
+    parse: (text) =>
+      text === "" ? 0 : /^[1-9]\d*$/.test(text) ? Number(text) : undefined,
+    covers: (sdk, needed) => sdk >= needed,
+    describe: (sdk) => (sdk === 0 ? "Android" : `Android SDK ${sdk}`),
   },
 };
+
+const platformKinds: { readonly [Name in OS]: Kind } = {
+  ios: "iOS",
+  android: "android",
+};
+
+const fields: { readonly [K in Kind]: string } = {
+  apiLevel: "swiplet.minimumAPILevel",
+  iOS: "swiplet.platforms.ios.minimumVersion",
+  android: "swiplet.platforms.android.minimumSDK",
+};
+
+const minimumOf = (project: Project, platform: Platform): Requirement =>
+  platform.os === "ios"
+    ? { apiLevel: project.minimumAPILevel, iOS: platform.minimumVersion }
+    : { apiLevel: project.minimumAPILevel, android: platform.minimumSDK };
 
 const isKind = (name: string): name is Kind =>
   Object.hasOwn(requirements, name);
@@ -156,17 +183,71 @@ const merge = (into: Requirement, from: Requirement) => {
   return into;
 };
 
+const weakestKind = <K extends Kind>(
+  into: Requirement,
+  all: readonly Requirement[],
+  kind: K,
+) => {
+  let weakest: Requirements[K] | undefined;
+  for (const requirement of all) {
+    const value = requirement[kind];
+    if (value === undefined) {
+      return;
+    }
+    if (weakest === undefined || requirements[kind].covers(weakest, value)) {
+      weakest = value;
+    }
+  }
+  if (weakest !== undefined) {
+    into[kind] = weakest;
+  }
+};
+
+const common = (all: readonly Requirement[]) => {
+  const requirement: Requirement = {};
+  for (const kind of kindsOf(all[0] ?? {})) {
+    weakestKind(requirement, all, kind);
+  }
+  return requirement;
+};
+
+const unreachable = Symbol("unreachable");
+
+type Facts = Requirement | typeof unreachable;
+
+const both = (a: Facts, b: Facts): Facts =>
+  a === unreachable || b === unreachable ? unreachable : merge(merge({}, a), b);
+
+const either = (a: Facts, b: Facts): Facts =>
+  a === unreachable ? b : b === unreachable ? a : common([a, b]);
+
+interface Guard {
+  readonly requirement: Requirement;
+  readonly impossible: boolean;
+  readonly certain: boolean;
+}
+
+type Shortfall = {
+  readonly location: string;
+  readonly name: string;
+  readonly requirement: string;
+  readonly fields: string;
+};
+
 type Coverage = <K extends Kind>(kind: K, needed: Requirements[K]) => boolean;
 
-const unmet = (needed: Requirement, covered: Coverage) => {
-  const missing = kindsOf(needed).flatMap(<K extends Kind>(kind: K) => {
+const unmetKinds = (needed: Requirement, covered: Coverage) =>
+  kindsOf(needed).filter(<K extends Kind>(kind: K) => {
     const value = needed[kind];
-    return value === undefined || covered(kind, value)
-      ? []
-      : [requirements[kind].describe(value)];
+    return value !== undefined && !covered(kind, value);
   });
-  return missing.length > 0 ? lists.format(missing) : undefined;
-};
+
+const describe = (needed: Requirement, kinds: readonly Kind[]) =>
+  lists.format(
+    kinds.map(<K extends Kind>(kind: K) =>
+      requirements[kind].describe(needed[kind] as Requirements[K]),
+    ),
+  );
 
 interface Annotation {
   readonly requirement: Requirement;
@@ -313,55 +394,74 @@ function sourceFilesOf(root: string, metafiles: readonly Metafile[]) {
   return [...files];
 }
 
-interface Problems {
-  readonly lines: Set<string>;
-  guarding: boolean;
-}
+const configOf = (root: string, files: readonly string[], os: OS) => {
+  const base = path.join(root, "tsconfig.json");
+  const inherited = fs.existsSync(base);
+  return {
+    ...(inherited ? { extends: base } : {}),
+    compilerOptions: {
+      ...(inherited
+        ? {}
+        : {
+            allowJs: true,
+            jsx: "react-jsx",
+            module: "esnext",
+            moduleResolution: "bundler",
+            target: "esnext",
+            skipLibCheck: true,
+          }),
+      moduleSuffixes: [`.${os}`, ".native", ""],
+    },
+    files,
+    include: [],
+  };
+};
 
 export class AvailabilityChecker {
   #api: API | undefined;
-  #open = new Set<string>();
+  #open: string[] = [];
 
-  check(project: Project, metafiles: readonly Metafile[]) {
-    const files = sourceFilesOf(project.root, metafiles);
-    if (files.length === 0 && this.#open.size === 0) {
-      return;
-    }
+  check(project: Project, builds: readonly Build[]) {
+    const targets = builds.map((build) => ({
+      build,
+      files: sourceFilesOf(project.root, build.metafiles),
+      config: path.join(
+        project.root,
+        "dist",
+        `tsconfig.${build.platform.os}.json`,
+      ),
+    }));
+    const files = [...new Set(targets.flatMap((target) => target.files))];
     this.#api ??= new API({ cwd: project.root });
-    // updateSnapshot builds a program again only for a project the API opened or
-    // in a call that opens or closes a file, and drops the opening of a file that
-    // is already open (typescript-go 2bd066d8,
-    // internal/project/projectcollectionbuilder.go:208-213, 234-249;
-    // internal/api/session.go:871-881).
-    if (this.#open.size > 0) {
-      this.#api.updateSnapshot({ closeFiles: [...this.#open] });
+    if (this.#open.length > 0) {
+      this.#api.updateSnapshot({ closeProjects: this.#open });
     }
-    const snapshot = this.#api.updateSnapshot({
-      openFiles: files,
-      fileChanges: { invalidateAll: true },
-    });
-    this.#open = new Set(files);
+    this.#open = [];
     if (files.length === 0) {
       return;
     }
-    const problems: Problems = { lines: new Set(), guarding: false };
-    const groups = Map.groupBy(files, (file) => {
-      const typescript = snapshot.getDefaultProjectForFile(file);
-      if (typescript === undefined) {
-        throw new Error(`no TypeScript project contains ${file}`);
-      }
-      return typescript;
-    });
-    for (const [typescript, owned] of groups) {
-      new Checker(typescript, project, files, problems).check(owned);
-    }
-    if (problems.lines.size > 0) {
-      throw new Error(
-        [
-          ...problems.lines,
-          ...(problems.guarding ? [t("availability.advice")] : []),
-        ].join("\n"),
+    fs.mkdirSync(path.join(project.root, "dist"), { recursive: true });
+    for (const { build, files: included, config } of targets) {
+      fs.writeFileSync(
+        config,
+        `${JSON.stringify(configOf(project.root, included, build.platform.os), null, 2)}\n`,
       );
+    }
+    this.#open = targets.map((target) => target.config);
+    const snapshot = this.#api.updateSnapshot({
+      openProjects: this.#open,
+      fileChanges: { invalidateAll: true },
+    });
+    const problems = new Set<string>();
+    for (const { build, files: included, config } of targets) {
+      const typescript = snapshot.getProject(config);
+      if (typescript === undefined) {
+        throw new Error(`TypeScript opened no project for ${config}`);
+      }
+      new Checker(typescript, project, build, files, problems).check(included);
+    }
+    if (problems.size > 0) {
+      throw new Error([...problems].join("\n"));
     }
   }
 
@@ -375,42 +475,36 @@ class Checker {
   #checker: TypeScriptChecker;
   #root: string;
   #files: Set<string>;
-  #problems: Problems;
+  #problems: Set<string>;
   #minimum: Requirement;
+  #platform: OS;
   #entries: Set<string>;
   #available: number | undefined;
   #symbols = new Map<Node, TypeScriptSymbol | undefined>();
   #imports = new Set<Node>();
   #requirements = new Map<number, Requirement>();
+  #overloads = new Map<number, readonly Node[]>();
   #annotations = new Map<Node, Requirement>();
-  #facts: [Map<Node, Requirement>, Map<Node, Requirement>] = [
-    new Map(),
-    new Map(),
-  ];
+  #facts: [Map<Node, Facts>, Map<Node, Facts>] = [new Map(), new Map()];
   #types = new Map<Node, Type | undefined>();
   #annotated = new Map<number, TypeScriptSymbol[]>();
 
   constructor(
     typescript: TypeScriptProject,
     project: Project,
+    build: Build,
     files: readonly string[],
-    problems: Problems,
+    problems: Set<string>,
   ) {
     this.#project = typescript;
     this.#checker = typescript.checker;
     this.#root = project.root;
     this.#files = new Set(files);
     this.#problems = problems;
-    this.#minimum = {
-      apiLevel: project.config.minimumAPILevel ?? project.apiLevel,
-      iOS: parseVersion(
-        project.config.minimumIOSVersion ?? project.minimumIOSVersion,
-      ),
-    };
+    this.#minimum = minimumOf(project, build.platform);
+    this.#platform = build.platform.os;
     this.#entries = new Set(
-      [project.app, project.extension]
-        .filter((entry) => entry !== undefined)
-        .map((entry) => fs.realpathSync(entry)),
+      build.entries.map((entry) => fs.realpathSync(entry)),
     );
     this.#available = this.#availableSymbol(project.apiDirectory);
   }
@@ -591,9 +685,11 @@ class Checker {
       (isObjectLiteralExpression(node) ? node.properties : []).map(writtenName),
     );
     for (const property of annotated) {
+      const own = this.#checker.getPropertyOfType(type, property.name);
       if (
         !named.has(property.name) &&
-        this.#checker.getPropertyOfType(type, property.name) !== undefined
+        own !== undefined &&
+        this.#target(own).id !== this.#target(property).id
       ) {
         this.#use(node, property, property.name);
       }
@@ -605,17 +701,27 @@ class Checker {
       return;
     }
     this.#useImport(symbol);
-    const requirement = unmet(this.#requirementOf(symbol), (kind, needed) =>
-      this.#covered(kind, needed, node),
+    const needed =
+      this.#callRequirement(node, symbol) ?? this.#requirementOf(symbol);
+    const covered: Coverage = (kind, value) => this.#covered(kind, value, node);
+    const foreign = this.#foreignKinds(needed);
+    if (foreign.length > 0) {
+      if (
+        unmetKinds(needed, covered).filter((kind) => foreign.includes(kind))
+          .length === foreign.length
+      ) {
+        this.#problems.add(
+          t("availability.foreignUse", this.#foreign(needed, node, name)),
+        );
+      }
+      return;
+    }
+    const kinds = unmetKinds(needed, covered).filter((kind) =>
+      this.#relevant(kind),
     );
-    if (requirement !== undefined) {
-      this.#problems.guarding = true;
-      this.#problems.lines.add(
-        t("availability.needs", {
-          location: this.#location(node),
-          name,
-          requirement,
-        }),
+    if (kinds.length > 0) {
+      this.#problems.add(
+        t("availability.needs", this.#shortfall(needed, kinds, node, name)),
       );
     }
   }
@@ -654,18 +760,12 @@ class Checker {
     ) {
       return;
     }
-    const requirement = unmet(this.#moduleRequirement(module), (kind, needed) =>
-      this.#meetsMinimum(kind, needed),
+    this.#requireMinimum(
+      this.#moduleRequirement(module),
+      name,
+      name.text,
+      (options) => t("availability.importNeeds", options),
     );
-    if (requirement !== undefined) {
-      this.#problems.lines.add(
-        t("availability.importNeeds", {
-          location: this.#location(name),
-          name: name.text,
-          requirement,
-        }),
-      );
-    }
   }
 
   #moduleRequirement(source: SourceFile) {
@@ -681,19 +781,70 @@ class Checker {
 
   #useEntry(name: Identifier) {
     const symbol = this.#checker.getSymbolAtLocation(name);
-    const requirement = unmet(
+    this.#requireMinimum(
       symbol === undefined ? {} : this.#requirementOf(symbol),
-      (kind, needed) => this.#meetsMinimum(kind, needed),
+      name,
+      name.text,
+      (options) => t("availability.entryNeeds", options),
     );
-    if (requirement !== undefined) {
-      this.#problems.lines.add(
-        t("availability.entryNeeds", {
-          location: this.#location(name),
-          name: name.text,
-          requirement,
-        }),
+  }
+
+  #requireMinimum(
+    needed: Requirement,
+    node: Node,
+    name: string,
+    message: (options: Shortfall) => string,
+  ) {
+    if (this.#foreignKinds(needed).length > 0) {
+      this.#problems.add(
+        t("availability.foreign", this.#foreign(needed, node, name)),
       );
+      return;
     }
+    const kinds = unmetKinds(needed, (kind, value) =>
+      this.#meetsMinimum(kind, value),
+    ).filter((kind) => this.#relevant(kind));
+    if (kinds.length > 0) {
+      this.#problems.add(message(this.#shortfall(needed, kinds, node, name)));
+    }
+  }
+
+  #shortfall(
+    needed: Requirement,
+    kinds: readonly Kind[],
+    node: Node,
+    name: string,
+  ): Shortfall {
+    return {
+      location: this.#location(node),
+      name,
+      requirement: describe(needed, kinds),
+      fields: lists.format(kinds.map((kind) => `"${fields[kind]}"`)),
+    };
+  }
+
+  #foreignKinds(needed: Requirement) {
+    const named = Object.values(platformKinds).filter(
+      (kind) => needed[kind] !== undefined,
+    );
+    return named.includes(platformKinds[this.#platform]) ? [] : named;
+  }
+
+  #relevant(kind: Kind) {
+    return kind === "apiLevel" || kind === platformKinds[this.#platform];
+  }
+
+  #foreign(needed: Requirement, node: Node, name: string) {
+    const platforms = (Object.keys(platformKinds) as OS[]).filter(
+      (os) => needed[platformKinds[os]] !== undefined,
+    );
+    return {
+      location: this.#location(node),
+      name,
+      systems: lists.format(platforms.map((os) => systems[os])),
+      build: systems[this.#platform],
+      os: platforms[0],
+    };
   }
 
   #location(node: Node) {
@@ -707,14 +858,14 @@ class Checker {
   #parse(text: string, node: Node) {
     const { requirement, invalid, repeated } = parseAnnotation(text);
     if (invalid !== undefined) {
-      this.#problems.lines.add(
+      this.#problems.add(
         t("availability.invalidEntry", {
           location: this.#location(node),
           entry: invalid,
         }),
       );
     } else if (repeated !== undefined) {
-      this.#problems.lines.add(
+      this.#problems.add(
         t("availability.repeatedEntry", {
           location: this.#location(node),
           kind: repeated,
@@ -752,14 +903,22 @@ class Checker {
       const external =
         declaration !== undefined &&
         !this.#files.has(sourceFileOf(declaration).fileName);
-      for (const tag of this.#checker.getJsDocTagsOfSymbol(target)) {
-        if (tag.name === "available") {
-          merge(
-            requirement,
-            external
-              ? this.#parse(tag.text ?? "", declaration)
-              : parseAnnotation(tag.text ?? "").requirement,
-          );
+      const overloads = this.#overloadsOf(target);
+      if (overloads.length > 1) {
+        merge(
+          requirement,
+          common(overloads.map((overload) => this.#declared(overload))),
+        );
+      } else {
+        for (const tag of this.#checker.getJsDocTagsOfSymbol(target)) {
+          if (tag.name === "available") {
+            merge(
+              requirement,
+              external
+                ? this.#parse(tag.text ?? "", declaration)
+                : parseAnnotation(tag.text ?? "").requirement,
+            );
+          }
         }
       }
       if (external) {
@@ -768,6 +927,64 @@ class Checker {
       this.#requirements.set(target.id, requirement);
     }
     return requirement;
+  }
+
+  #overloadsOf(symbol: TypeScriptSymbol) {
+    let overloads = this.#overloads.get(symbol.id);
+    if (overloads === undefined) {
+      overloads =
+        symbol.declarations.length < 2
+          ? []
+          : symbol.declarations
+              .map((declaration) => declaration.resolve(this.#project))
+              .filter((declaration) => declaration !== undefined)
+              .filter(
+                (declaration) =>
+                  isFunctionDeclaration(declaration) ||
+                  isMethodSignatureDeclaration(declaration) ||
+                  isMethodDeclaration(declaration),
+              );
+      this.#overloads.set(symbol.id, overloads);
+    }
+    return overloads;
+  }
+
+  #declared(declaration: Node) {
+    const external = !this.#files.has(sourceFileOf(declaration).fileName);
+    const requirement: Requirement = {};
+    for (const tag of annotationTags(declaration)) {
+      merge(
+        requirement,
+        external
+          ? this.#parse(tagText(tag), tag)
+          : parseAnnotation(tagText(tag)).requirement,
+      );
+    }
+    return requirement;
+  }
+
+  #callRequirement(node: Node, symbol: TypeScriptSymbol) {
+    const callee =
+      isPropertyAccessExpression(node.parent) && node.parent.name === node
+        ? node.parent
+        : node;
+    const call = callee.parent;
+    if (
+      !isCallOrNewExpression(call) ||
+      call.expression !== callee ||
+      this.#overloadsOf(this.#target(symbol)).length < 2
+    ) {
+      return undefined;
+    }
+    const declaration = this.#checker
+      .getResolvedSignature(call)
+      ?.declaration?.resolve(this.#project);
+    return declaration === undefined
+      ? undefined
+      : merge(
+          merge({}, this.#requirementOf(symbol)),
+          this.#declared(declaration),
+        );
   }
 
   #annotationOf(node: Annotated) {
@@ -834,8 +1051,12 @@ class Checker {
     let crossed = false;
     for (let child = reference; !isSourceFile(child); child = child.parent) {
       const { parent } = child;
-      const proven = this.#provenBy(parent, child, crossed)[kind];
-      if (proven !== undefined && covers(proven, needed)) {
+      const proven = this.#provenBy(parent, child, crossed);
+      if (proven === unreachable) {
+        return true;
+      }
+      const value = proven[kind];
+      if (value !== undefined && covers(value, needed)) {
         return true;
       }
       crossed ||= isFunctionLikeDeclaration(parent);
@@ -844,25 +1065,25 @@ class Checker {
   }
 
   #provenBy(parent: Node, child: Node, crossed: boolean) {
-    const proven: Requirement = {};
+    let proven: Facts = {};
     if (isIfStatement(parent)) {
       if (child === parent.thenStatement) {
-        merge(proven, this.#factsOf(parent.expression, true));
+        proven = this.#factsOf(parent.expression, true);
       } else if (child === parent.elseStatement) {
-        merge(proven, this.#factsOf(parent.expression, false));
+        proven = this.#factsOf(parent.expression, false);
       }
     } else if (isConditionalExpression(parent)) {
       if (child === parent.whenTrue) {
-        merge(proven, this.#factsOf(parent.condition, true));
+        proven = this.#factsOf(parent.condition, true);
       } else if (child === parent.whenFalse) {
-        merge(proven, this.#factsOf(parent.condition, false));
+        proven = this.#factsOf(parent.condition, false);
       }
     } else if (isBinaryExpression(parent) && child === parent.right) {
       const operator = parent.operatorToken.kind;
       if (operator === SyntaxKind.AmpersandAmpersandToken) {
-        merge(proven, this.#factsOf(parent.left, true));
+        proven = this.#factsOf(parent.left, true);
       } else if (operator === SyntaxKind.BarBarToken) {
-        merge(proven, this.#factsOf(parent.left, false));
+        proven = this.#factsOf(parent.left, false);
       }
     }
     for (const statement of statementsOf(parent)) {
@@ -874,7 +1095,7 @@ class Checker {
         statement.elseStatement === undefined &&
         exits(statement.thenStatement)
       ) {
-        merge(proven, this.#factsOf(statement.expression, false));
+        proven = both(proven, this.#factsOf(statement.expression, false));
       }
     }
     if (
@@ -885,12 +1106,12 @@ class Checker {
             !hasModifier(child, SyntaxKind.StaticKeyword)))) ||
       (isValueHolder(parent) && crossed && child === parent.initializer)
     ) {
-      merge(proven, this.#annotationOf(parent));
+      proven = both(proven, this.#annotationOf(parent));
     }
     return proven;
   }
 
-  #factsOf(node: Expression, outcome: boolean) {
+  #factsOf(node: Expression, outcome: boolean): Facts {
     const cache = this.#facts[Number(outcome)];
     let facts = cache.get(node);
     if (facts === undefined) {
@@ -901,7 +1122,7 @@ class Checker {
     return facts;
   }
 
-  #computeFacts(node: Expression, outcome: boolean): Requirement {
+  #computeFacts(node: Expression, outcome: boolean): Facts {
     if (isIdentifier(node)) {
       const value = this.#constant(node);
       return value === node ? {} : this.#factsOf(value, outcome);
@@ -915,27 +1136,70 @@ class Checker {
         : {};
     }
     if (isCallExpression(node)) {
-      return outcome && this.#isAvailable(node.expression)
-        ? this.#requirementsOf(node.arguments.at(0))
+      if (!this.#isAvailable(node.expression)) {
+        return {};
+      }
+      const { requirement, impossible, certain } = this.#guardOf(
+        node.arguments.at(0),
+      );
+      if (outcome) {
+        return impossible ? unreachable : requirement;
+      }
+      return certain &&
+        !impossible &&
+        unmetKinds(requirement, (kind, value) =>
+          this.#meetsMinimum(kind, value),
+        ).length === 0
+        ? unreachable
         : {};
     }
     if (isBinaryExpression(node)) {
       const operator = node.operatorToken.kind;
       if (operator === SyntaxKind.AmpersandAmpersandToken) {
         return outcome
-          ? merge(
-              merge({}, this.#factsOf(node.left, true)),
+          ? both(
+              this.#factsOf(node.left, true),
               this.#factsOf(node.right, true),
             )
-          : {};
+          : either(
+              this.#factsOf(node.left, false),
+              both(
+                this.#factsOf(node.left, true),
+                this.#factsOf(node.right, false),
+              ),
+            );
       }
       if (operator === SyntaxKind.BarBarToken) {
         return outcome
-          ? {}
-          : merge(
-              merge({}, this.#factsOf(node.left, false)),
+          ? either(
+              this.#factsOf(node.left, true),
+              both(
+                this.#factsOf(node.left, false),
+                this.#factsOf(node.right, true),
+              ),
+            )
+          : both(
+              this.#factsOf(node.left, false),
               this.#factsOf(node.right, false),
             );
+      }
+      const negated =
+        operator === SyntaxKind.ExclamationEqualsEqualsToken ||
+        operator === SyntaxKind.ExclamationEqualsToken;
+      if (
+        negated ||
+        operator === SyntaxKind.EqualsEqualsEqualsToken ||
+        operator === SyntaxKind.EqualsEqualsToken
+      ) {
+        const left = this.#constant(node.left);
+        const right = this.#constant(node.right);
+        const [system, literal] = isSystemReference(left)
+          ? [left, right]
+          : [right, left];
+        if (isSystemReference(system) && isStringLiteralLikeNode(literal)) {
+          const actual = (literal.text === this.#platform) !== negated;
+          return actual === outcome ? {} : unreachable;
+        }
       }
     }
     return {};
@@ -970,8 +1234,12 @@ class Checker {
     );
   }
 
-  #requirementsOf(argument: Expression | undefined) {
-    const proven: Requirement = {};
+  #guardOf(argument: Expression | undefined): Guard {
+    const requirement: Requirement = {};
+    const own = platformKinds[this.#platform];
+    let certain = argument !== undefined && isObjectLiteralExpression(argument);
+    let named = false;
+    let ownUnknown = false;
     for (const property of argument !== undefined &&
     isObjectLiteralExpression(argument)
       ? argument.properties
@@ -980,21 +1248,38 @@ class Checker {
         !isPropertyAssignment(property) ||
         isComputedPropertyName(property.name)
       ) {
+        certain = false;
         continue;
       }
       const kind = property.name.text;
       if (!isKind(kind)) {
+        certain = false;
         continue;
       }
       const value = this.#constant(property.initializer);
       const parsed = isNumericLiteral(value)
         ? parseKind(kind, String(Number(value.text)))
-        : undefined;
-      if (parsed !== undefined) {
-        Object.assign(proven, parsed);
+        : value.kind === SyntaxKind.TrueKeyword
+          ? parseKind(kind, "")
+          : undefined;
+      if (parsed === undefined) {
+        certain = false;
+        ownUnknown ||= kind === own;
+        continue;
       }
+      if (kind !== "apiLevel") {
+        named = true;
+        if (kind !== own) {
+          continue;
+        }
+      }
+      Object.assign(requirement, parsed);
     }
-    return proven;
+    return {
+      requirement,
+      impossible: named && requirement[own] === undefined && !ownUnknown,
+      certain,
+    };
   }
 
   #availableSymbol(apiDirectory: string) {
@@ -1010,6 +1295,19 @@ class Checker {
       : this.#checker.getSymbolAtLocation(name)?.id;
   }
 }
+
+const isSystemReference = (node: Expression) =>
+  isPropertyAccessExpression(node) &&
+  isIdentifier(node.name) &&
+  ((node.name.text === "EXPO_OS" &&
+    isPropertyAccessExpression(node.expression) &&
+    isIdentifier(node.expression.name) &&
+    node.expression.name.text === "env" &&
+    isIdentifier(node.expression.expression) &&
+    node.expression.expression.text === "process") ||
+    (node.name.text === "OS" &&
+      isIdentifier(node.expression) &&
+      node.expression.text === "Platform"));
 
 function sourceFileOf(node: Node) {
   while (!isSourceFile(node)) {

@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Ověřte je pomocí available(), kód, který je používá, označte pomocí @available nebo zvyšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
     "apiLevel": "úroveň API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} je vstupní bod Swipletu a vyžaduje {{requirement}}; zvyšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
-    "importNeeds": "{{location}}: import {{name}} vyžaduje {{requirement}}; zvyšte \"swiplet.minimumAPILevel\" či \"swiplet.minimumIOSVersion\" v package.json.",
-    "invalidEntry": "{{location}}: @available obsahuje \"{{entry}}\"; přijímá \"apiLevel <level>\" a \"iOS <version>\" oddělené čárkami.",
-    "needs": "{{location}}: {{name}} vyžaduje {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} je vstupní bod Swipletu a vyžaduje {{requirement}}; zvyšte {{fields}} v package.json.",
+    "foreign": "{{location}}: {{name}} je pouze pro {{systems}}, ale sestavení pro {{build}} obsahuje tento soubor; přesuňte ho do souboru s názvem *.{{os}}.ts nebo *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} je pouze pro {{systems}}, ale sestavení pro {{build}} se k němu zde dostane; nejprve ověřte available(), nebo ho přesuňte do souboru s názvem *.{{os}}.ts nebo *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: import {{name}} vyžaduje {{requirement}}; zvyšte {{fields}} v package.json.",
+    "invalidEntry": "{{location}}: @available obsahuje \"{{entry}}\"; přijímá \"apiLevel <level>\", \"iOS [<version>]\" a \"android [<SDK level>]\" oddělené čárkami.",
+    "needs": "{{location}}: {{name}} vyžaduje {{requirement}}; ověřte ho pomocí available(), kód, který ho používá, označte pomocí @available nebo zvyšte {{fields}} v package.json.",
     "repeatedEntry": "{{location}}: @available uvádí {{kind}} dvakrát."
   },
   "cli": {
@@ -91,7 +92,7 @@
     "driver": {
       "description": "Poskytovat Swipt API a MCP pro zařízení z tohoto počítače",
       "details": "Zařízení může najednou ovládat jen jedna strana: aplikace Swipt na něm, nebo ovladač na jednom počítači.",
-      "passcode": "kód pro automatické odemykání zařízení; když ho necháte prázdný, automatické odemykání se vypne",
+      "passcode": "kód zařízení, který Swipt zadá k jeho odemknutí; Swipt si ho pro zařízení pamatuje, a když ho necháte prázdný, zapomene ho",
       "randomToken": "vyžadovat od klientů API náhodný token",
       "token": "vyžadovat od klientů API tento token"
     },
@@ -101,7 +102,9 @@
       },
       "create": {
         "description": "Vytvořit projekt Swipletu v novém nebo prázdném adresáři",
-        "notEmpty": "Adresář {{directory}} není prázdný."
+        "invalidPlatforms": "Pomocí --platforms uveďte systémy, které Swiplet podporuje: ios, android nebo ios,android.",
+        "notEmpty": "Adresář {{directory}} není prázdný.",
+        "platforms": "systémy, které Swiplet podporuje: ios, android nebo oba oddělené čárkou"
       },
       "deploy": {
         "description": "Sestavit projekt a nainstalovat ho na zařízení"
@@ -116,7 +119,8 @@
       "source": {
         "description": "Shromáždit sestavené Swiplety do dist/ se souborem swiplets.json",
         "duplicateID": "{{id}} je zároveň {{first}} i {{second}}",
-        "invalidIcon": "\"source.icon\" v package.json musí mít symbol a může mít color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" v package.json musí být název ikony Material z knihovny ikon pro Android aplikace Swipt, nikoli {{symbol}}.",
+        "invalidIcon": "\"source.icon\" v package.json smí mít pouze řetězce \"color\", \"symbolColor\", \"ios\" a \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" v package.json musí mapovat jazyky na názvy.",
         "invalidURL": "\"source.url\" v package.json není absolutní URL adresa.",
         "noWorkspaces": "package.json neuvádí žádné pracovní prostory se Swiplety; zadejte Swiplety, které se mají vypsat.",
@@ -308,26 +312,35 @@
     "pin": "4místný nebo 6místný kód",
     "pinDetail": "4 nebo 6 číslic",
     "prompt": "Kód zařízení",
-    "setUp": "Nastavit automatické odemykání? Aplikace Swipt pak bude moci toto zařízení odemykat sama."
+    "setUp": "Uložit kód tohoto zařízení? Aplikace Swipt pak bude moci zařízení odemknout."
   },
   "project": {
     "assetConflict": "{{source}} i {{asset}} by se ve Swipletu staly souborem assets/{{name}}.",
+    "buildFailed": "Sestavení pro {{system}} selhalo:",
     "conditionalActions": "Rozšíření definuje různé akce v závislosti na available(); definujte stejné akce na všech systémech a available() kontrolujte uvnitř run nebo akce.",
     "databaseAtLoad": "Databáze se používá během načítání extension.js; přesuňte její použití do run nebo do akce.",
+    "foreignModule": "{{module}} je pouze pro {{system}}, ale sestavení pro {{build}} obsahuje tento soubor; importujte ho ze souborů s názvem *.{{os}}.ts nebo *.{{os}}.tsx.",
+    "inconsistentExtension": "Rozšíření musí definovat stejnou službu a akce na každém systému; systém kontrolujte uvnitř run nebo akce.",
     "interfaceImport": "Rozhraní importuje {{file}} za běhu; importujte jeho typ pomocí `import type`.",
     "interfaceOnly": "{{name}} funguje pouze v rozhraní Swipletu.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" v package.json musí být název ikony Material z knihovny ikon pro Android aplikace Swipt, nikoli {{symbol}}.",
     "invalidExposure": "Akce {{action}} se může zpřístupnit pouze pro \"shortcuts\".",
     "invalidExtension": "Výchozí export rozšíření není výsledkem defineExtension.",
     "invalidID": "\"swiplet.id\" v package.json musí obsahovat 1 až 128 malých písmen, číslic, teček, podtržítek a spojovníků a začínat písmenem nebo číslicí.",
+    "invalidIcon": "\"swiplet.icon\" v package.json smí mít pouze řetězce \"color\", \"symbolColor\", \"ios\" a \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" v package.json musí mapovat jazyky na názvy.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" v package.json musí být celé číslo od {{oldest}} do {{level}}, což je úroveň API balíčku @swipt/api.",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" v package.json musí být číslo verze od {{version}}, což je minimální verze iOS balíčku @swipt/api.",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" v package.json musí být úroveň Android SDK od {{sdk}}, což je minimální úroveň Android SDK balíčku @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" v package.json musí být číslo verze od {{version}}, což je minimální verze iOS balíčku @swipt/api.",
     "invalidName": "\"swiplet.name\" v package.json musí být neprázdný řetězec.",
+    "invalidPlatforms": "\"swiplet.platforms\" v package.json musí uvádět každý systém, který Swiplet podporuje: \"ios\" s \"minimumVersion\" a \"android\" s \"minimumSDK\".",
     "invalidSchema": "Schéma {{side}} akce {{action}} neimplementuje Standard JSON Schema; použijte knihovnu, která ho implementuje, například Zod 4.",
     "invalidString": "\"{{field}}\" v package.json musí být řetězec.",
     "invalidVersionCode": "\"swiplet.versionCode\" v package.json musí být kladné celé číslo.",
     "missingTitle": "Akce {{action}} vyžaduje název.",
+    "outdatedAPI": "@swipt/api má úroveň API {{level}} a tento nástroj příkazového řádku Swipt sestavuje Swiplety pro úroveň API {{oldest}} nebo novější; aktualizujte @swipt/api.",
     "storageAtLoad": "Úložiště se používá během načítání extension.js; přesuňte jeho použití do run nebo do akce.",
+    "undeclaredModule": "{{module}} je pouze pro {{system}}, který \"swiplet.platforms\" v package.json neuvádí.",
     "unprovidedModule": "Aplikace Swipt neposkytuje rozšířením modul \"{{module}}\"; zabalte ho do extension.js.",
     "usedAtLoad": "{{name}} se používá během načítání extension.js; přesuňte použití do run nebo do akce."
   },
@@ -337,7 +350,7 @@
     "conflictingTokens": "--token a --random-token nelze použít současně.",
     "invalidToken": "Token tvoří jeden nebo více tisknutelných znaků ASCII bez mezer.",
     "localNetwork": "Místní síť",
-    "noAutoUnlock": "Zařízení {{device}} se neodemyká automaticky; nastavte jeho kód pomocí --passcode. Ovladač zastavíte stisknutím Ctrl-C.",
+    "noPasscode": "Když zařízení {{device}} požádá o svůj kód, Swipt ho nedokáže odemknout; chcete-li kód nastavit, zastavte ovladač stisknutím Ctrl-C a spusťte příkaz \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Ukončit Swipt",
     "quittingSwipt": "ukončování aplikace Swipt na zařízení {{device}}",
     "served": "Ovladač na počítači {{computer}} už obsluhuje zařízení {{device}}; nejprve tento ovladač zastavte.",

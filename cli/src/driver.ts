@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import readline from "node:readline";
 
+import { checkout } from "./checkout";
 import { label, sameName } from "./connection";
 import { t } from "./i18n";
 import {
@@ -20,8 +21,6 @@ const require = createRequire(import.meta.url);
 const target = `${process.platform}-${process.arch}`;
 const executable =
   process.platform === "win32" ? "swipt-driver.exe" : "swipt-driver";
-const checkout = path.resolve(import.meta.dirname, "../..");
-const fromSource = fs.existsSync(path.join(checkout, "go.mod"));
 const crashLogLimit = 64 * 1024;
 
 export const failures = {
@@ -31,7 +30,7 @@ export const failures = {
 };
 
 function driverPath() {
-  if (fromSource) {
+  if (checkout !== undefined) {
     return path.join(checkout, "build/driver", target, executable);
   }
   try {
@@ -89,7 +88,7 @@ function start(args: string[], { input, signal, onResult }: Invocation = {}) {
   const file = driverPath();
   if (file === undefined || !fs.existsSync(file)) {
     throw new Error(
-      fromSource
+      checkout !== undefined
         ? `${file} is missing; build it with "make driver".`
         : t("driver.missing"),
     );

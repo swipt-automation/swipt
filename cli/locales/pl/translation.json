@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Sprawdź je za pomocą available(), oznacz kod, który ich używa, za pomocą @available albo zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
     "apiLevel": "poziom API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} jest punktem wejścia Swipletu i wymaga: {{requirement}}; zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
-    "importNeeds": "{{location}}: import {{name}} wymaga: {{requirement}}; zwiększ \"swiplet.minimumAPILevel\" lub \"swiplet.minimumIOSVersion\" w package.json.",
-    "invalidEntry": "{{location}}: @available zawiera \"{{entry}}\"; dozwolone są wpisy \"apiLevel <level>\" i \"iOS <version>\" rozdzielone przecinkami.",
-    "needs": "{{location}}: {{name}} wymaga: {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} jest punktem wejścia Swipletu i wymaga: {{requirement}}; zwiększ {{fields}} w package.json.",
+    "foreign": "{{location}}: element {{name}} jest przeznaczony tylko dla {{systems}}, ale kompilacja dla {{build}} obejmuje ten plik; przenieś go do pliku o nazwie *.{{os}}.ts lub *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: element {{name}} jest przeznaczony tylko dla {{systems}}, ale kompilacja dla {{build}} dociera do niego w tym miejscu; najpierw sprawdź available() albo przenieś go do pliku o nazwie *.{{os}}.ts lub *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: import {{name}} wymaga: {{requirement}}; zwiększ {{fields}} w package.json.",
+    "invalidEntry": "{{location}}: @available zawiera \"{{entry}}\"; dozwolone są wpisy \"apiLevel <level>\", \"iOS [<version>]\" i \"android [<SDK level>]\" rozdzielone przecinkami.",
+    "needs": "{{location}}: {{name}} wymaga: {{requirement}}; sprawdź to za pomocą available(), oznacz kod, który tego używa, za pomocą @available albo zwiększ {{fields}} w package.json.",
     "repeatedEntry": "{{location}}: @available dwukrotnie podaje {{kind}}."
   },
   "cli": {
@@ -91,7 +92,7 @@
     "driver": {
       "description": "Udostępnij API Swipt i MCP dla urządzenia z tego komputera",
       "details": "Urządzeniem może naraz sterować tylko jedna strona: aplikacja Swipt na urządzeniu albo sterownik na jednym komputerze.",
-      "passcode": "kod do automatycznego odblokowywania urządzenia; pozostaw pusty, aby wyłączyć automatyczne odblokowywanie",
+      "passcode": "kod urządzenia, który Swipt wprowadza, aby je odblokować; jest zapamiętywany dla urządzenia, a jeśli pozostawisz go pustym, Swipt go zapomni",
       "randomToken": "wymagaj losowego tokenu od klientów API",
       "token": "wymagaj tego tokenu od klientów API"
     },
@@ -101,7 +102,9 @@
       },
       "create": {
         "description": "Utwórz projekt Swipletu w nowym lub pustym katalogu",
-        "notEmpty": "Katalog {{directory}} nie jest pusty."
+        "invalidPlatforms": "Podaj systemy obsługiwane przez Swiplet za pomocą --platforms: ios, android lub ios,android.",
+        "notEmpty": "Katalog {{directory}} nie jest pusty.",
+        "platforms": "systemy obsługiwane przez Swiplet: ios, android lub oba rozdzielone przecinkiem"
       },
       "deploy": {
         "description": "Zbuduj projekt i zainstaluj go na urządzeniu"
@@ -116,7 +119,8 @@
       "source": {
         "description": "Zbierz zbudowane Swiplety w dist/ wraz z plikiem swiplets.json",
         "duplicateID": "{{id}} to jednocześnie {{first}} i {{second}}",
-        "invalidIcon": "\"source.icon\" w package.json musi zawierać symbol i może zawierać color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" w package.json musi być nazwą ikony Material z biblioteki ikon Androida w aplikacji Swipt, a nie {{symbol}}.",
+        "invalidIcon": "\"source.icon\" w package.json może zawierać tylko ciągi znaków \"color\", \"symbolColor\", \"ios\" i \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" w package.json musi przypisywać nazwy do języków.",
         "invalidURL": "\"source.url\" w package.json nie jest bezwzględnym adresem URL.",
         "noWorkspaces": "package.json nie wymienia obszarów roboczych ze Swipletami; podaj Swiplety do umieszczenia na liście.",
@@ -308,26 +312,35 @@
     "pin": "Kod 4- lub 6-cyfrowy",
     "pinDetail": "4 lub 6 cyfr",
     "prompt": "Kod urządzenia",
-    "setUp": "Skonfigurować automatyczne odblokowywanie? Aplikacja Swipt będzie wtedy mogła samodzielnie odblokowywać to urządzenie."
+    "setUp": "Zapisać kod tego urządzenia? Aplikacja Swipt będzie wtedy mogła odblokować urządzenie."
   },
   "project": {
     "assetConflict": "{{source}} i {{asset}} byłyby w Swiplecie tym samym plikiem assets/{{name}}.",
+    "buildFailed": "Kompilacja dla {{system}} nie powiodła się:",
     "conditionalActions": "Rozszerzenie definiuje różne czynności w zależności od available(); zdefiniuj te same czynności w każdym systemie i sprawdzaj available() wewnątrz run lub czynności.",
     "databaseAtLoad": "Użyto bazy danych podczas wczytywania extension.js; użyj jej wewnątrz run lub czynności.",
+    "foreignModule": "Moduł {{module}} jest przeznaczony tylko dla {{system}}, ale kompilacja dla {{build}} obejmuje ten plik; importuj go z plików o nazwach *.{{os}}.ts lub *.{{os}}.tsx.",
+    "inconsistentExtension": "Rozszerzenie musi definiować tę samą usługę i te same czynności w każdym systemie; system sprawdzaj wewnątrz run lub czynności.",
     "interfaceImport": "Interfejs importuje {{file}} w czasie działania; zaimportuj jego typ za pomocą `import type`.",
     "interfaceOnly": "{{name}} działa tylko w interfejsie Swipletu.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" w package.json musi być nazwą ikony Material z biblioteki ikon Androida w aplikacji Swipt, a nie {{symbol}}.",
     "invalidExposure": "Czynność {{action}} może udostępniać się tylko w \"shortcuts\".",
     "invalidExtension": "Domyślny eksport rozszerzenia nie jest wynikiem defineExtension.",
     "invalidID": "\"swiplet.id\" w package.json musi składać się z od 1 do 128 małych liter, cyfr, kropek, podkreśleń i łączników oraz zaczynać się od litery lub cyfry.",
+    "invalidIcon": "\"swiplet.icon\" w package.json może zawierać tylko ciągi znaków \"color\", \"symbolColor\", \"ios\" i \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" w package.json musi przypisywać nazwy do języków.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" w package.json musi być liczbą całkowitą od {{oldest}} do {{level}}, czyli poziomu API pakietu @swipt/api.",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" w package.json musi być numerem wersji od {{version}}, czyli minimalnej wersji iOS pakietu @swipt/api.",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" w package.json musi być poziomem Android SDK od {{sdk}}, czyli minimalnego poziomu Android SDK pakietu @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" w package.json musi być numerem wersji od {{version}}, czyli minimalnej wersji iOS pakietu @swipt/api.",
     "invalidName": "\"swiplet.name\" w package.json musi być niepustym ciągiem znaków.",
+    "invalidPlatforms": "\"swiplet.platforms\" w package.json musi wymieniać każdy system obsługiwany przez Swiplet: \"ios\" z \"minimumVersion\", \"android\" z \"minimumSDK\".",
     "invalidSchema": "Schemat {{side}} czynności {{action}} nie implementuje Standard JSON Schema; użyj biblioteki, która go implementuje, np. Zod 4.",
     "invalidString": "\"{{field}}\" w package.json musi być ciągiem znaków.",
     "invalidVersionCode": "\"swiplet.versionCode\" w package.json musi być dodatnią liczbą całkowitą.",
     "missingTitle": "Czynność {{action}} wymaga tytułu.",
+    "outdatedAPI": "Pakiet @swipt/api ma poziom API {{level}}, a to narzędzie wiersza poleceń Swipt buduje Swiplety dla poziomu API {{oldest}} lub nowszego; uaktualnij @swipt/api.",
     "storageAtLoad": "Użyto magazynu danych podczas wczytywania extension.js; użyj go wewnątrz run lub czynności.",
+    "undeclaredModule": "Moduł {{module}} jest przeznaczony tylko dla {{system}}, a \"swiplet.platforms\" w package.json nie wymienia tego systemu.",
     "unprovidedModule": "Aplikacja Swipt nie udostępnia \"{{module}}\" rozszerzeniom; spakuj ten moduł do extension.js.",
     "usedAtLoad": "Użyto {{name}} podczas wczytywania extension.js; użyj tego wewnątrz run lub czynności."
   },
@@ -337,7 +350,7 @@
     "conflictingTokens": "Opcji --token i --random-token nie można używać razem.",
     "invalidToken": "Token składa się z co najmniej jednego drukowalnego znaku ASCII bez spacji.",
     "localNetwork": "Sieć lokalna",
-    "noAutoUnlock": "Urządzenie {{device}} nie jest odblokowywane automatycznie; ustaw jego kod za pomocą --passcode. Naciśnij Ctrl-C, aby zatrzymać sterownik.",
+    "noPasscode": "Swipt nie może odblokować urządzenia {{device}}, gdy prosi ono o swój kod; aby ustawić kod, zatrzymaj sterownik, naciskając Ctrl-C, i uruchom \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Zakończ Swipt",
     "quittingSwipt": "zamykanie aplikacji Swipt na urządzeniu {{device}}",
     "served": "Sterownik na komputerze {{computer}} już obsługuje urządzenie {{device}}; najpierw zatrzymaj ten sterownik.",

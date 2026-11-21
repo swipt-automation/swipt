@@ -222,7 +222,7 @@ export async function run(
   );
   console.error(
     passcode === undefined
-      ? t("serve.noAutoUnlock", { device: ready.device })
+      ? t("serve.noPasscode", { device: ready.device, udid: device.udid })
       : t("serve.stopHint"),
   );
   driven.stderr.pipe(process.stderr);

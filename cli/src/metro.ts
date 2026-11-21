@@ -17,6 +17,7 @@ import type { Plugin, ResolveResult } from "esbuild";
 import { imageSize } from "image-size";
 
 import { t } from "./i18n";
+import type { OS } from "./platform";
 
 declare module "@babel/core" {
   interface TransformCaller {
@@ -101,11 +102,6 @@ const babelConfigNames = [
 ];
 const contextModes = ["sync", "eager", "lazy", "lazy-once"];
 const scaleSuffixes = ["", "@1x", "@1.5x", "@2x", "@3x", "@4x"];
-const platformSuffixes = ["", ".ios", ".native"];
-const platformRank = new Map([
-  ["ios", 2],
-  ["native", 1],
-]);
 
 const posix = (file: string) => file.split(path.sep).join("/");
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -248,6 +244,171 @@ const requireContext: PluginObj = {
   },
 };
 
+function hoistedInBlock(node: types.Node | null | undefined) {
+  const declarators: types.VariableDeclarator[] = [];
+  const functions: types.FunctionDeclaration[] = [];
+  if (!node) {
+    return { declarators, functions };
+  }
+  const collectIds = (pattern: types.LVal | types.VoidPattern) => {
+    if (types.isIdentifier(pattern)) {
+      declarators.push(types.variableDeclarator(pattern));
+    } else if (types.isObjectPattern(pattern)) {
+      for (const prop of pattern.properties) {
+        if (types.isObjectProperty(prop)) {
+          collectIds(prop.value as types.LVal);
+        } else if (types.isRestElement(prop)) {
+          collectIds(prop.argument);
+        }
+      }
+    } else if (types.isArrayPattern(pattern)) {
+      for (const elem of pattern.elements) {
+        if (elem) {
+          collectIds(elem);
+        }
+      }
+    } else if (types.isAssignmentPattern(pattern)) {
+      collectIds(pattern.left);
+    } else if (types.isRestElement(pattern)) {
+      collectIds(pattern.argument);
+    }
+  };
+  const visit = (current: types.Node) => {
+    if (types.isFunctionDeclaration(current)) {
+      functions.push(current);
+      return;
+    }
+    if (
+      types.isFunctionExpression(current) ||
+      types.isArrowFunctionExpression(current)
+    ) {
+      return;
+    }
+    if (types.isVariableDeclaration(current) && current.kind === "var") {
+      for (const decl of current.declarations) {
+        collectIds(decl.id);
+      }
+    }
+    for (const key of types.VISITOR_KEYS[current.type] ?? []) {
+      const value = (current as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item && typeof (item as types.Node).type === "string") {
+            visit(item as types.Node);
+          }
+        }
+      } else if (value && typeof (value as types.Node).type === "string") {
+        visit(value as types.Node);
+      }
+    }
+  };
+  visit(node);
+  return { declarators, functions };
+}
+
+function dropsTrailingStatements(node: types.Node): boolean {
+  if (types.isReturnStatement(node) || types.isThrowStatement(node)) {
+    return true;
+  }
+  if (types.isBlockStatement(node)) {
+    return node.body.some(dropsTrailingStatements);
+  }
+  return false;
+}
+
+const pruneDeadBranches: PluginObj = {
+  name: "swipt-prune-dead-branches",
+  visitor: {
+    Program: {
+      exit(program, state) {
+        if (state.filename?.includes("node_modules")) {
+          return;
+        }
+        program.traverse({
+          IfStatement(branch) {
+            const evaluated = branch.get("test").evaluate();
+            if (!evaluated.confident) {
+              return;
+            }
+            const kept = evaluated.value
+              ? branch.node.consequent
+              : branch.node.alternate;
+            const dropped = evaluated.value
+              ? branch.node.alternate
+              : branch.node.consequent;
+            const hoisted = hoistedInBlock(dropped);
+            const replacement: types.Statement[] = [...hoisted.functions];
+            if (hoisted.declarators.length > 0) {
+              replacement.push(
+                types.variableDeclaration("var", hoisted.declarators),
+              );
+            }
+            if (kept) {
+              replacement.push(kept);
+            }
+            if (replacement.length === 0) {
+              branch.remove();
+            } else if (replacement.length === 1) {
+              branch.replaceWith(replacement[0]);
+            } else {
+              branch.replaceWithMultiple(replacement);
+            }
+          },
+          ConditionalExpression(branch) {
+            const evaluated = branch.get("test").evaluate();
+            if (!evaluated.confident) {
+              return;
+            }
+            branch.replaceWith(
+              evaluated.value ? branch.node.consequent : branch.node.alternate,
+            );
+          },
+          LogicalExpression(expr) {
+            if (expr.node.operator !== "&&" && expr.node.operator !== "||") {
+              return;
+            }
+            const evaluated = expr.get("left").evaluate();
+            if (!evaluated.confident) {
+              return;
+            }
+            if (
+              (expr.node.operator === "&&" && !evaluated.value) ||
+              (expr.node.operator === "||" && evaluated.value)
+            ) {
+              expr.replaceWith(expr.node.left);
+            }
+          },
+          BlockStatement: {
+            exit(block) {
+              const body = block.get("body");
+              const terminator = body.findIndex((stmt) =>
+                dropsTrailingStatements(stmt.node),
+              );
+              if (terminator < 0 || terminator === body.length - 1) {
+                return;
+              }
+              const replacement: types.Statement[] = [];
+              for (let i = terminator + 1; i < body.length; i++) {
+                const hoisted = hoistedInBlock(body[i].node);
+                replacement.push(...hoisted.functions);
+                if (hoisted.declarators.length > 0) {
+                  replacement.push(
+                    types.variableDeclaration("var", hoisted.declarators),
+                  );
+                }
+                body[i].remove();
+              }
+              if (replacement.length > 0) {
+                block.pushContainer("body", replacement);
+              }
+            },
+          },
+        });
+      },
+    },
+  },
+};
+
 const loaderOf = (file: string) => {
   const extension = path.extname(file);
   return extension === ".tsx"
@@ -272,15 +433,16 @@ interface AssetVariant {
   file: string;
 }
 
-function assetVariants(resolved: string): AssetVariant[] {
+function assetVariants(resolved: string, platform: OS): AssetVariant[] {
   const directory = path.dirname(resolved);
   const extension = path.extname(resolved);
+  const suffix = `(?:\\.(${platform}|native))`;
   const stem = path
     .basename(resolved, extension)
-    .replace(/(\.(ios|native))$/, "")
+    .replace(new RegExp(`${suffix}$`), "")
     .replace(/@[\d.]+x$/, "");
   const pattern = new RegExp(
-    `^${escape(stem)}(?:@([\\d.]+)x)?(?:\\.(ios|native))?${escape(extension)}$`,
+    `^${escape(stem)}(?:@([\\d.]+)x)?${suffix}?${escape(extension)}$`,
   );
   const scales = new Map<number, { rank: number; file: string }>();
   for (const name of fs.readdirSync(directory)) {
@@ -289,7 +451,7 @@ function assetVariants(resolved: string): AssetVariant[] {
       continue;
     }
     const scale = match[1] === undefined ? 1 : Number(match[1]);
-    const rank = platformRank.get(match[2]) ?? 0;
+    const rank = match[2] === platform ? 2 : match[2] === "native" ? 1 : 0;
     if (Number.isFinite(scale) && (scales.get(scale)?.rank ?? -1) < rank) {
       scales.set(scale, { rank, file: path.join(directory, name) });
     }
@@ -345,13 +507,14 @@ function checkWorklets(root: string) {
 }
 
 interface MetroOptions {
+  platform: OS;
   assets?: Map<string, string>;
   sourcemap?: boolean;
 }
 
 export function metro(
   root: string,
-  { assets, sourcemap }: MetroOptions,
+  { platform, assets, sourcemap }: MetroOptions,
 ): Plugin {
   checkWorklets(root);
   const configName = babelConfigNames.find((name) =>
@@ -370,12 +533,12 @@ export function metro(
     ...(configName
       ? { extends: path.join(root, configName) }
       : { presets: [defaultPreset(root)] }),
-    plugins: [requireContext],
+    plugins: [requireContext, pruneDeadBranches],
   };
   const caller: TransformCaller = {
     name: "metro",
     bundler: "metro",
-    platform: "ios",
+    platform,
     engine: "hermes",
     isDev: false,
     isServer: false,
@@ -419,9 +582,9 @@ export function metro(
             const stem = args.path.slice(0, -extension.length);
             let first: ResolveResult | undefined;
             for (const scale of scaleSuffixes) {
-              for (const platform of platformSuffixes) {
+              for (const suffix of ["", `.${platform}`, ".native"]) {
                 const found = await build.resolve(
-                  `${stem}${scale}${platform}${extension}`,
+                  `${stem}${scale}${suffix}${extension}`,
                   {
                     kind: args.kind,
                     importer: args.importer,
@@ -433,7 +596,7 @@ export function metro(
                   return {
                     path: found.path,
                     namespace: "swiplet-asset",
-                    pluginData: assetVariants(found.path),
+                    pluginData: assetVariants(found.path, platform),
                   };
                 }
                 first ??= found;

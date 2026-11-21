@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Hãy kiểm tra chúng bằng available(), đánh dấu mã sử dụng chúng bằng @available, hoặc tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
     "apiLevel": "mức API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} là điểm vào của Swiplet và cần {{requirement}}; hãy tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
-    "importNeeds": "{{location}}: việc nhập {{name}} cần {{requirement}}; hãy tăng \"swiplet.minimumAPILevel\" hay \"swiplet.minimumIOSVersion\" trong package.json.",
-    "invalidEntry": "{{location}}: @available có \"{{entry}}\"; @available chỉ nhận \"apiLevel <level>\" và \"iOS <version>\", phân tách bằng dấu phẩy.",
-    "needs": "{{location}}: {{name}} cần {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} là điểm vào của Swiplet và cần {{requirement}}; hãy tăng {{fields}} trong package.json.",
+    "foreign": "{{location}}: {{name}} chỉ dành cho {{systems}}, nhưng bản dựng {{build}} bao gồm tệp này; hãy chuyển nó sang tệp có tên *.{{os}}.ts hoặc *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} chỉ dành cho {{systems}}, nhưng bản dựng {{build}} chạy tới đây; hãy kiểm tra available() trước, hoặc chuyển nó sang tệp có tên *.{{os}}.ts hoặc *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: việc nhập {{name}} cần {{requirement}}; hãy tăng {{fields}} trong package.json.",
+    "invalidEntry": "{{location}}: @available có \"{{entry}}\"; @available chỉ nhận \"apiLevel <level>\", \"iOS [<version>]\" và \"android [<SDK level>]\", phân tách bằng dấu phẩy.",
+    "needs": "{{location}}: {{name}} cần {{requirement}}; hãy kiểm tra nó bằng available(), đánh dấu mã sử dụng nó bằng @available, hoặc tăng {{fields}} trong package.json.",
     "repeatedEntry": "{{location}}: @available chỉ định {{kind}} hai lần."
   },
   "cli": {
@@ -83,7 +84,7 @@
     "driver": {
       "description": "Cung cấp API Swipt và MCP cho thiết bị từ máy tính này",
       "details": "Mỗi lúc chỉ một bên có thể điều khiển thiết bị: Swipt trên thiết bị, hoặc trình điều khiển trên một máy tính.",
-      "passcode": "mật mã để tự động mở khóa thiết bị; để trống sẽ tắt tự động mở khóa",
+      "passcode": "mật mã của thiết bị, Swipt nhập mật mã này để mở khóa; mật mã được ghi nhớ cho thiết bị, để trống sẽ xóa mật mã",
       "randomToken": "yêu cầu mã thông báo ngẫu nhiên từ máy khách API",
       "token": "yêu cầu mã thông báo này từ máy khách API"
     },
@@ -93,7 +94,9 @@
       },
       "create": {
         "description": "Tạo dự án Swiplet trong thư mục mới hoặc thư mục trống",
-        "notEmpty": "{{directory}} không trống."
+        "invalidPlatforms": "Hãy nêu các hệ thống mà Swiplet hỗ trợ bằng --platforms: ios, android hoặc ios,android.",
+        "notEmpty": "{{directory}} không trống.",
+        "platforms": "các hệ thống mà Swiplet hỗ trợ: ios, android hoặc cả hai, phân tách bằng dấu phẩy"
       },
       "deploy": {
         "description": "Xây dựng dự án và cài đặt trên thiết bị"
@@ -108,7 +111,8 @@
       "source": {
         "description": "Thu thập các Swiplet đã xây dựng vào dist/ cùng với swiplets.json",
         "duplicateID": "{{id}} vừa là {{first}} vừa là {{second}}",
-        "invalidIcon": "\"source.icon\" trong package.json phải có symbol và có thể có color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" trong package.json phải là tên biểu tượng Material trong thư viện biểu tượng Android của Swipt, không phải {{symbol}}.",
+        "invalidIcon": "\"source.icon\" trong package.json chỉ được có các chuỗi \"color\", \"symbolColor\", \"ios\" và \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" trong package.json phải ánh xạ ngôn ngữ với tên.",
         "invalidURL": "\"source.url\" trong package.json không phải là URL tuyệt đối.",
         "noWorkspaces": "package.json không liệt kê không gian làm việc nào có Swiplet; hãy nêu tên các Swiplet cần liệt kê.",
@@ -300,26 +304,35 @@
     "pin": "Mật mã gồm 4 hoặc 6 chữ số",
     "pinDetail": "4 hoặc 6 chữ số",
     "prompt": "Mật mã thiết bị",
-    "setUp": "Thiết lập tự động mở khóa? Khi đó, Swipt có thể tự mở khóa thiết bị này."
+    "setUp": "Lưu mật mã của thiết bị này? Khi đó, Swipt có thể mở khóa thiết bị."
   },
   "project": {
     "assetConflict": "{{source}} và {{asset}} đều sẽ trở thành assets/{{name}} trong Swiplet.",
+    "buildFailed": "Bản dựng {{system}} không thành công:",
     "conditionalActions": "Phần mở rộng định nghĩa các tác vụ khác nhau tùy theo available(); hãy định nghĩa cùng các tác vụ trên mọi hệ thống và kiểm tra available() bên trong run hoặc một tác vụ.",
     "databaseAtLoad": "Cơ sở dữ liệu được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ.",
+    "foreignModule": "{{module}} chỉ dành cho {{system}}, nhưng bản dựng {{build}} bao gồm tệp này; hãy nhập nó từ các tệp có tên *.{{os}}.ts hoặc *.{{os}}.tsx.",
+    "inconsistentExtension": "Phần mở rộng phải định nghĩa cùng một dịch vụ và các tác vụ trên mọi hệ thống; hãy kiểm tra hệ thống bên trong run hoặc một tác vụ.",
     "interfaceImport": "Giao diện nhập {{file}} khi chạy; hãy nhập kiểu của tệp này bằng `import type`.",
     "interfaceOnly": "{{name}} chỉ hoạt động trong giao diện Swiplet.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" trong package.json phải là tên biểu tượng Material trong thư viện biểu tượng Android của Swipt, không phải {{symbol}}.",
     "invalidExposure": "Tác vụ {{action}} chỉ có thể công khai với \"shortcuts\".",
     "invalidExtension": "Nội dung xuất mặc định của phần mở rộng không phải là kết quả của defineExtension.",
     "invalidID": "\"swiplet.id\" trong package.json phải gồm từ 1 đến 128 chữ cái thường, chữ số, dấu chấm, dấu gạch dưới và dấu gạch nối, bắt đầu bằng chữ cái hoặc chữ số.",
+    "invalidIcon": "\"swiplet.icon\" trong package.json chỉ được có các chuỗi \"color\", \"symbolColor\", \"ios\" và \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" trong package.json phải ánh xạ ngôn ngữ với tên.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" trong package.json phải là số nguyên từ {{oldest}} đến {{level}} (mức API của @swipt/api).",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" trong package.json phải là số phiên bản từ {{version}} trở lên (phiên bản iOS tối thiểu của @swipt/api).",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" trong package.json phải là mức Android SDK từ {{sdk}} trở lên (mức Android SDK tối thiểu của @swipt/api).",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" trong package.json phải là số phiên bản từ {{version}} trở lên (phiên bản iOS tối thiểu của @swipt/api).",
     "invalidName": "\"swiplet.name\" trong package.json phải là chuỗi không trống.",
+    "invalidPlatforms": "\"swiplet.platforms\" trong package.json phải nêu từng hệ thống mà Swiplet hỗ trợ: \"ios\" kèm \"minimumVersion\", \"android\" kèm \"minimumSDK\".",
     "invalidSchema": "Lược đồ {{side}} của tác vụ {{action}} không triển khai Standard JSON Schema; hãy dùng một thư viện có triển khai, chẳng hạn như Zod 4.",
     "invalidString": "\"{{field}}\" trong package.json phải là chuỗi.",
     "invalidVersionCode": "\"swiplet.versionCode\" trong package.json phải là số nguyên dương.",
     "missingTitle": "Tác vụ {{action}} cần có tiêu đề.",
+    "outdatedAPI": "@swipt/api đang ở mức API {{level}}, còn công cụ dòng lệnh Swipt này chỉ xây dựng Swiplet cho mức API {{oldest}} trở lên; hãy cập nhật @swipt/api.",
     "storageAtLoad": "Bộ lưu trữ được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ.",
+    "undeclaredModule": "{{module}} chỉ dành cho {{system}}, nhưng \"swiplet.platforms\" trong package.json không nêu hệ thống này.",
     "unprovidedModule": "Swipt không cung cấp \"{{module}}\" cho các phần mở rộng; hãy đóng gói mô-đun này vào extension.js.",
     "usedAtLoad": "{{name}} được sử dụng trong khi extension.js đang tải; hãy sử dụng bên trong run hoặc một tác vụ."
   },
@@ -329,7 +342,7 @@
     "conflictingTokens": "Không thể dùng --token và --random-token cùng lúc.",
     "invalidToken": "Mã thông báo gồm một hoặc nhiều ký tự ASCII in được, không có dấu cách.",
     "localNetwork": "Mạng cục bộ",
-    "noAutoUnlock": "{{device}} không được tự động mở khóa; hãy đặt mật mã bằng --passcode. Nhấn Ctrl-C để dừng trình điều khiển.",
+    "noPasscode": "Swipt không thể mở khóa {{device}} khi thiết bị yêu cầu mật mã; để đặt mật mã, hãy nhấn Ctrl-C để dừng trình điều khiển rồi chạy \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Thoát Swipt",
     "quittingSwipt": "đang thoát Swipt trên {{device}}",
     "served": "Trình điều khiển trên {{computer}} đang phục vụ {{device}}; hãy dừng trình điều khiển đó trước.",

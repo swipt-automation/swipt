@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "يرجى التحقق منها باستخدام available()، أو وضع العلامة @available على التعليمات البرمجية التي تستخدمها، أو رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
     "apiLevel": "مستوى API {{level}}",
-    "entryNeeds": "{{location}}: يُعد {{name}} نقطة دخول في Swiplet ويحتاج إلى {{requirement}}؛ يرجى رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
-    "importNeeds": "{{location}}: يحتاج استيراد {{name}} إلى {{requirement}}؛ يرجى رفع قيمة \"swiplet.minimumAPILevel\" أو \"swiplet.minimumIOSVersion\" في package.json.",
-    "invalidEntry": "{{location}}: تتضمن العلامة @available القيمة \"{{entry}}\"؛ لكنها تقبل \"apiLevel <level>\" و\"iOS <version>\" مفصولة بفواصل.",
-    "needs": "{{location}}: يحتاج {{name}} إلى {{requirement}}.",
+    "entryNeeds": "{{location}}: يُعد {{name}} نقطة دخول في Swiplet ويحتاج إلى {{requirement}}؛ يرجى رفع قيمة {{fields}} في package.json.",
+    "foreign": "{{location}}: {{name}} مخصص لنظام {{systems}} فقط، لكن البناء لنظام {{build}} يتضمن هذا الملف؛ يرجى نقله إلى ملف باسم *.{{os}}.ts أو *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} مخصص لنظام {{systems}} فقط، لكن البناء لنظام {{build}} يصل إليه هنا؛ يرجى التحقق أولًا من available()، أو نقله إلى ملف باسم *.{{os}}.ts أو *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: يحتاج استيراد {{name}} إلى {{requirement}}؛ يرجى رفع قيمة {{fields}} في package.json.",
+    "invalidEntry": "{{location}}: تتضمن العلامة @available القيمة \"{{entry}}\"؛ لكنها تقبل \"apiLevel <level>\" و\"iOS [<version>]\" و\"android [<SDK level>]\" مفصولة بفواصل.",
+    "needs": "{{location}}: يحتاج {{name}} إلى {{requirement}}؛ يرجى التحقق منه باستخدام available()، أو وضع العلامة @available على التعليمات البرمجية التي تستخدمه، أو رفع قيمة {{fields}} في package.json.",
     "repeatedEntry": "{{location}}: يرد {{kind}} مرتين في العلامة @available."
   },
   "cli": {
@@ -99,7 +100,7 @@
     "driver": {
       "description": "توفير API الخاص بـ Swipt وMCP لجهاز من هذا الكمبيوتر",
       "details": "يمكن لطرف واحد فقط التحكم في الجهاز في كل مرة: Swipt على الجهاز، أو برنامج التشغيل على كمبيوتر واحد.",
-      "passcode": "رمز الدخول لفتح قفل الجهاز تلقائيًا؛ اتركه فارغًا لإيقاف فتح القفل التلقائي",
+      "passcode": "رمز دخول الجهاز، الذي يُدخله Swipt لفتح قفله؛ يُحفظ للجهاز، واتركه فارغًا ليحذفه Swipt",
       "randomToken": "طلب رمز مميز عشوائي من عملاء API",
       "token": "طلب هذا الرمز المميز من عملاء API"
     },
@@ -109,7 +110,9 @@
       },
       "create": {
         "description": "إنشاء مشروع Swiplet في دليل جديد أو فارغ",
-        "notEmpty": "{{directory}} ليس فارغًا."
+        "invalidPlatforms": "يرجى تحديد الأنظمة التي يدعمها Swiplet باستخدام --platforms: ios أو android أو ios,android.",
+        "notEmpty": "{{directory}} ليس فارغًا.",
+        "platforms": "الأنظمة التي يدعمها Swiplet: ios أو android أو كلاهما مفصولين بفاصلة"
       },
       "deploy": {
         "description": "بناء المشروع وتثبيته على الجهاز"
@@ -124,7 +127,8 @@
       "source": {
         "description": "جمع Swiplet المبنية في dist/ مع ملف swiplets.json",
         "duplicateID": "{{id}} يشير إلى كل من {{first}} و{{second}}",
-        "invalidIcon": "يجب أن يتضمن \"source.icon\" في package.json الحقل symbol ويمكن أن يتضمن الحقل color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" في package.json يجب أن يكون اسم أيقونة Material من مكتبة أيقونات Android في Swipt، وليس {{symbol}}.",
+        "invalidIcon": "يمكن أن يتضمن \"source.icon\" في package.json السلاسل النصية \"color\" و\"symbolColor\" و\"ios\" و\"android\" فقط.",
         "invalidLocalizedNames": "يجب أن يربط \"source.localizedNames\" في package.json اللغات بالأسماء.",
         "invalidURL": "\"source.url\" في package.json ليس عنوان URL مطلقًا.",
         "noWorkspaces": "لا يسرد package.json أي مساحات عمل تحتوي على Swiplet؛ يرجى تحديد كل Swiplet تريد إدراجه.",
@@ -316,26 +320,35 @@
     "pin": "رمز دخول من ٤ أو ٦ أرقام",
     "pinDetail": "٤ أو ٦ أرقام",
     "prompt": "رمز دخول الجهاز",
-    "setUp": "هل تريد إعداد فتح القفل التلقائي؟ سيتمكن Swipt بعد ذلك من فتح قفل هذا الجهاز بنفسه."
+    "setUp": "هل تريد حفظ رمز دخول هذا الجهاز؟ سيتمكن Swipt بعد ذلك من فتح قفل الجهاز."
   },
   "project": {
     "assetConflict": "سيصبح كل من {{source}} و{{asset}} بالمسار assets/{{name}} في Swiplet.",
+    "buildFailed": "فشل البناء لنظام {{system}}:",
     "conditionalActions": "يعرّف الملحق إجراءات مختلفة بحسب available()؛ يرجى تعريف الإجراءات نفسها على كل نظام والتحقق من available() داخل run أو داخل إجراء.",
     "databaseAtLoad": "يجري استخدام قاعدة البيانات أثناء تحميل extension.js؛ يرجى استخدامها داخل run أو داخل إجراء.",
+    "foreignModule": "{{module}} مخصص لنظام {{system}} فقط، لكن البناء لنظام {{build}} يتضمن هذا الملف؛ يرجى استيراده من ملفات باسم *.{{os}}.ts أو *.{{os}}.tsx.",
+    "inconsistentExtension": "يجب أن يعرّف الملحق نفس الخدمة والإجراءات على كل نظام؛ تحقق من النظام داخل run أو داخل إجراء بدلاً من ذلك.",
     "interfaceImport": "تستورد الواجهة {{file}} في وقت التشغيل؛ يرجى استيراد نوعه باستخدام `import type`.",
     "interfaceOnly": "لا يعمل {{name}} إلا في واجهة Swiplet.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" في package.json يجب أن يكون اسم أيقونة Material من مكتبة أيقونات Android في Swipt، وليس {{symbol}}.",
     "invalidExposure": "لا يمكن للإجراء {{action}} أن يُظهر نفسه إلا لـ \"shortcuts\".",
     "invalidExtension": "التصدير الافتراضي للملحق ليس ناتج defineExtension.",
     "invalidID": "يجب أن يتكون \"swiplet.id\" في package.json من ١ إلى ١٢٨ من الأحرف الصغيرة والأرقام والنقاط والشرطات السفلية والواصلات، وأن يبدأ بحرف أو رقم.",
+    "invalidIcon": "يمكن أن يتضمن \"swiplet.icon\" في package.json السلاسل النصية \"color\" و\"symbolColor\" و\"ios\" و\"android\" فقط.",
     "invalidLocalizedNames": "يجب أن يربط \"swiplet.localizedNames\" في package.json اللغات بالأسماء.",
     "invalidMinimumAPILevel": "يجب أن يكون \"swiplet.minimumAPILevel\" في package.json عددًا صحيحًا من {{oldest}} إلى {{level}}، وهو مستوى API للحزمة @swipt/api.",
-    "invalidMinimumIOSVersion": "يجب أن يكون \"swiplet.minimumIOSVersion\" في package.json رقم إصدار لا يقل عن {{version}}، وهو الحد الأدنى لإصدار iOS للحزمة @swipt/api.",
+    "invalidMinimumAndroidSDK": "يجب أن يكون \"swiplet.platforms.android.minimumSDK\" في package.json مستوى Android SDK لا يقل عن {{sdk}}، وهو الحد الأدنى لمستوى Android SDK للحزمة @swipt/api.",
+    "invalidMinimumIOSVersion": "يجب أن يكون \"swiplet.platforms.ios.minimumVersion\" في package.json رقم إصدار لا يقل عن {{version}}، وهو الحد الأدنى لإصدار iOS للحزمة @swipt/api.",
     "invalidName": "يجب أن يكون \"swiplet.name\" في package.json سلسلة نصية غير فارغة.",
+    "invalidPlatforms": "يجب أن يحدد \"swiplet.platforms\" في package.json كل نظام يدعمه Swiplet: \"ios\" مع \"minimumVersion\"، و\"android\" مع \"minimumSDK\".",
     "invalidSchema": "لا ينفذ مخطط {{side}} للإجراء {{action}} معيار Standard JSON Schema؛ يرجى استخدام مكتبة تنفذه، مثل Zod 4.",
     "invalidString": "يجب أن يكون \"{{field}}\" في package.json سلسلة نصية.",
     "invalidVersionCode": "يجب أن يكون \"swiplet.versionCode\" في package.json عددًا صحيحًا موجبًا.",
     "missingTitle": "يحتاج الإجراء {{action}} إلى عنوان.",
+    "outdatedAPI": "الحزمة @swipt/api على مستوى API {{level}}، وواجهة سطر أوامر Swipt هذه تبني Swiplet لمستوى API {{oldest}} أو أحدث؛ يرجى تحديث @swipt/api.",
     "storageAtLoad": "يجري استخدام وحدة التخزين أثناء تحميل extension.js؛ يرجى استخدامها داخل run أو داخل إجراء.",
+    "undeclaredModule": "{{module}} مخصص لنظام {{system}} فقط، وهو نظام لا يحدده \"swiplet.platforms\" في package.json.",
     "unprovidedModule": "لا يوفر Swipt \"{{module}}\" للملحقات؛ يرجى تضمينه في حزمة extension.js.",
     "usedAtLoad": "يجري استخدام {{name}} أثناء تحميل extension.js؛ يرجى الاستخدام داخل run أو داخل إجراء."
   },
@@ -345,7 +358,7 @@
     "conflictingTokens": "لا يمكن استخدام --token و--random-token معًا.",
     "invalidToken": "يتكون الرمز المميز من حرف ASCII واحد أو أكثر قابل للطباعة بدون مسافات.",
     "localNetwork": "الشبكة المحلية",
-    "noAutoUnlock": "لا يتم فتح قفل {{device}} تلقائيًا؛ يرجى تعيين رمز الدخول الخاص به باستخدام --passcode. يرجى الضغط على Ctrl-C لإيقاف برنامج التشغيل.",
+    "noPasscode": "لا يستطيع Swipt فتح قفل {{device}} عندما يطلب رمز الدخول الخاص به؛ لتعيين رمز الدخول، يرجى إيقاف برنامج التشغيل بالضغط على Ctrl-C ثم تنفيذ \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "إنهاء Swipt",
     "quittingSwipt": "يجري إنهاء Swipt على {{device}}",
     "served": "برنامج التشغيل على {{computer}} يخدم {{device}} بالفعل؛ يرجى إيقاف برنامج التشغيل ذلك أولاً.",

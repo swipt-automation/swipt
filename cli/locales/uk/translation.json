@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Перевірте їх за допомогою available(), позначте код, що їх використовує, тегом @available або підвищте \"swiplet.minimumAPILevel\" чи \"swiplet.minimumIOSVersion\" у package.json.",
     "apiLevel": "рівень API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} є точкою входу Swiplet, і для нього потрібно {{requirement}}; підвищте \"swiplet.minimumAPILevel\" чи \"swiplet.minimumIOSVersion\" у package.json.",
-    "importNeeds": "{{location}}: для імпорту {{name}} потрібно {{requirement}}; підвищте \"swiplet.minimumAPILevel\" чи \"swiplet.minimumIOSVersion\" у package.json.",
-    "invalidEntry": "{{location}}: @available містить \"{{entry}}\"; допускаються \"apiLevel <level>\" і \"iOS <version>\" через кому.",
-    "needs": "{{location}}: {{name}} потребує {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} є точкою входу Swiplet, і для нього потрібно {{requirement}}; підвищте {{fields}} у package.json.",
+    "foreign": "{{location}}: {{name}} призначено лише для {{systems}}, але збірка для {{build}} містить цей файл; перенесіть це у файл із назвою *.{{os}}.ts або *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} призначено лише для {{systems}}, але збірка для {{build}} доходить сюди; спершу перевірте available() чи перенесіть це у файл із назвою *.{{os}}.ts або *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: для імпорту {{name}} потрібно {{requirement}}; підвищте {{fields}} у package.json.",
+    "invalidEntry": "{{location}}: @available містить \"{{entry}}\"; допускаються \"apiLevel <level>\", \"iOS [<version>]\" і \"android [<SDK level>]\" через кому.",
+    "needs": "{{location}}: {{name}} потребує {{requirement}}; перевірте це за допомогою available(), позначте код, що це використовує, тегом @available або підвищте {{fields}} у package.json.",
     "repeatedEntry": "{{location}}: @available вказує {{kind}} двічі."
   },
   "cli": {
@@ -91,7 +92,7 @@
     "driver": {
       "description": "Надати API Swipt і MCP для пристрою з цього компʼютера",
       "details": "Пристроєм одночасно може керувати лише хтось один: Swipt на пристрої або драйвер на одному компʼютері.",
-      "passcode": "код допуску для автоматичного розмикання пристрою; порожнє значення вимикає автоматичне розмикання",
+      "passcode": "код допуску пристрою, який Swipt вводить, щоб розімкнути його; запам’ятовується для пристрою, а порожнє значення видаляє його",
       "randomToken": "вимагати від клієнтів API випадковий токен",
       "token": "вимагати від клієнтів API цей токен"
     },
@@ -101,7 +102,9 @@
       },
       "create": {
         "description": "Створити проєкт Swiplet у новому або порожньому каталозі",
-        "notEmpty": "Каталог {{directory}} не порожній."
+        "invalidPlatforms": "Укажіть системи, які підтримує Swiplet, за допомогою --platforms: ios, android або ios,android.",
+        "notEmpty": "Каталог {{directory}} не порожній.",
+        "platforms": "системи, які підтримує Swiplet: ios, android або обидві через кому"
       },
       "deploy": {
         "description": "Зібрати проєкт і встановити його на пристрій"
@@ -116,7 +119,8 @@
       "source": {
         "description": "Помістити зібрані Swiplet у dist/ разом із файлом swiplets.json",
         "duplicateID": "{{id}} відповідає і {{first}}, і {{second}}",
-        "invalidIcon": "\"source.icon\" у package.json має містити symbol і може містити color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" у package.json має бути назвою піктограми Material із бібліотеки піктограм Android для Swipt, а не {{symbol}}.",
+        "invalidIcon": "\"source.icon\" у package.json може містити лише рядки \"color\", \"symbolColor\", \"ios\" і \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" у package.json має зіставляти мови з назвами.",
         "invalidURL": "\"source.url\" у package.json не є абсолютною URL-адресою.",
         "noWorkspaces": "package.json не містить робочих просторів із Swiplet; вкажіть Swiplet, які слід включити до списку.",
@@ -308,26 +312,35 @@
     "pin": "Код допуску з 4 або 6 цифр",
     "pinDetail": "4 або 6 цифр",
     "prompt": "Код допуску пристрою",
-    "setUp": "Налаштувати автоматичне розмикання? Тоді програма Swipt зможе сама розмикати цей пристрій."
+    "setUp": "Зберегти код допуску цього пристрою? Тоді програма Swipt зможе розмикати пристрій."
   },
   "project": {
     "assetConflict": "{{source}} і {{asset}} обидва стали б assets/{{name}} у Swiplet.",
+    "buildFailed": "Збірка для {{system}} не вдалася:",
     "conditionalActions": "Розширення визначає різні дії залежно від available(); визначте однакові дії для всіх систем і перевіряйте available() всередині run або дії.",
     "databaseAtLoad": "База даних використовується під час завантаження extension.js; використовуйте її всередині run або дії.",
+    "foreignModule": "{{module}} призначено лише для {{system}}, але збірка для {{build}} містить цей файл; імпортуйте його з файлів із назвами *.{{os}}.ts або *.{{os}}.tsx.",
+    "inconsistentExtension": "Розширення має визначати однакову службу й дії в кожній системі; перевіряйте систему всередині run або дії.",
     "interfaceImport": "Інтерфейс імпортує {{file}} під час виконання; імпортуйте його тип за допомогою `import type`.",
     "interfaceOnly": "{{name}} працює лише в інтерфейсі Swiplet.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" у package.json має бути назвою піктограми Material із бібліотеки піктограм Android для Swipt, а не {{symbol}}.",
     "invalidExposure": "Дія {{action}} може бути доступна лише для \"shortcuts\".",
     "invalidExtension": "Стандартний експорт розширення не є результатом defineExtension.",
     "invalidID": "\"swiplet.id\" у package.json має містити від 1 до 128 малих літер, цифр, крапок, підкреслень і дефісів і починатися з літери або цифри.",
+    "invalidIcon": "\"swiplet.icon\" у package.json може містити лише рядки \"color\", \"symbolColor\", \"ios\" і \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" у package.json має зіставляти мови з назвами.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" у package.json має бути цілим числом від {{oldest}} до {{level}} (рівень API пакета @swipt/api).",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" у package.json має бути номером версії не нижче {{version}} (мінімальна версія iOS пакета @swipt/api).",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" у package.json має бути рівнем Android SDK не нижче {{sdk}} (мінімальний рівень Android SDK пакета @swipt/api).",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" у package.json має бути номером версії не нижче {{version}} (мінімальна версія iOS пакета @swipt/api).",
     "invalidName": "\"swiplet.name\" у package.json має бути непорожнім рядком.",
+    "invalidPlatforms": "\"swiplet.platforms\" у package.json має перелічувати кожну систему, яку підтримує Swiplet: \"ios\" із \"minimumVersion\", \"android\" із \"minimumSDK\".",
     "invalidSchema": "Схема {{side}} дії {{action}} не реалізує Standard JSON Schema; використовуйте бібліотеку, яка її реалізує, наприклад Zod 4.",
     "invalidString": "\"{{field}}\" у package.json має бути рядком.",
     "invalidVersionCode": "\"swiplet.versionCode\" у package.json має бути додатним цілим числом.",
     "missingTitle": "Дія {{action}} потребує назви.",
+    "outdatedAPI": "Пакет @swipt/api має рівень API {{level}}, а цей інструмент командного рядка Swipt збирає Swiplet для рівня API {{oldest}} або новішого; оновіть @swipt/api.",
     "storageAtLoad": "Сховище використовується під час завантаження extension.js; використовуйте його всередині run або дії.",
+    "undeclaredModule": "{{module}} призначено лише для {{system}}, але \"swiplet.platforms\" у package.json не містить цієї системи.",
     "unprovidedModule": "Swipt не надає розширенням \"{{module}}\"; вбудуйте цей модуль в extension.js.",
     "usedAtLoad": "{{name}} використовується під час завантаження extension.js; використовуйте це всередині run або дії."
   },
@@ -337,7 +350,7 @@
     "conflictingTokens": "--token і --random-token не можна використовувати разом.",
     "invalidToken": "Токен складається з одного або кількох друкованих символів ASCII без пробілів.",
     "localNetwork": "Локальна мережа",
-    "noAutoUnlock": "Пристрій {{device}} не розмикається автоматично; задайте його код допуску за допомогою --passcode. Щоб зупинити драйвер, натисніть Ctrl-C.",
+    "noPasscode": "Swipt не може розімкнути пристрій {{device}}, коли той запитує код допуску; щоб задати код допуску, зупиніть драйвер, натиснувши Ctrl-C, і виконайте \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Завершити Swipt",
     "quittingSwipt": "завершення Swipt на пристрої {{device}}",
     "served": "Драйвер на {{computer}} уже обслуговує пристрій {{device}}; спершу зупиніть цей драйвер.",

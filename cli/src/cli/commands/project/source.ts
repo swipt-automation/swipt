@@ -6,51 +6,15 @@ import { strFromU8, unzipSync } from "fflate";
 
 import { t } from "../../../i18n";
 import { errorMessage } from "../../../output";
-import { idPattern } from "../../../project";
+import { idPattern, parseIcon, stringField } from "../../../project";
 import { defineCommand } from "../../command";
 
-interface Icon {
-  symbol: string;
-  color?: string;
-  symbolColor?: string;
-}
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isStringRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) &&
   Object.values(value).every((name) => typeof name === "string");
-
-function stringField(
-  record: Record<string, unknown>,
-  name: string,
-  field: string,
-) {
-  const value = record[name];
-  if (value !== undefined && typeof value !== "string") {
-    throw new Error(t("project.invalidString", { field }));
-  }
-  return value;
-}
-
-function loadIcon(icon: unknown): Icon | undefined {
-  if (icon === undefined) {
-    return undefined;
-  }
-  if (
-    !isRecord(icon) ||
-    typeof icon.symbol !== "string" ||
-    (icon.color !== undefined && typeof icon.color !== "string")
-  ) {
-    throw new Error(t("commands.project.source.invalidIcon"));
-  }
-  return {
-    symbol: icon.symbol,
-    color: icon.color,
-    symbolColor: stringField(icon, "symbolColor", "source.icon.symbolColor"),
-  };
-}
 
 function workspacePatterns(workspaces: unknown) {
   const [field, patterns] = Array.isArray(workspaces)
@@ -81,7 +45,11 @@ function loadSource(root: string) {
   if (!isStringRecord(localizedNames)) {
     throw new Error(t("commands.project.source.invalidLocalizedNames"));
   }
-  const icon = loadIcon(config.icon);
+  const icon = parseIcon(config.icon, {
+    invalidIcon: t("commands.project.source.invalidIcon"),
+    invalidAndroidSymbol: (symbol) =>
+      t("commands.project.source.invalidAndroidSymbol", { symbol }),
+  });
   let prefix: URL | undefined;
   if (url !== undefined) {
     try {
@@ -91,7 +59,15 @@ function loadSource(root: string) {
     }
   }
   const workspaces = workspacePatterns(manifest.workspaces);
-  return { root, name, image, localizedNames, icon, prefix, workspaces };
+  return {
+    root,
+    name,
+    image,
+    localizedNames,
+    icon,
+    prefix,
+    workspaces,
+  };
 }
 
 function workspaceSwiplets(source: ReturnType<typeof loadSource>) {
@@ -202,17 +178,7 @@ function sourceCommand(root: string, given: string[]) {
     ...(Object.keys(source.localizedNames).length > 0
       ? { localizedNames: source.localizedNames }
       : {}),
-    ...(source.icon
-      ? {
-          icon: {
-            symbol: source.icon.symbol,
-            ...(source.icon.color ? { color: source.icon.color } : {}),
-            ...(source.icon.symbolColor
-              ? { symbolColor: source.icon.symbolColor }
-              : {}),
-          },
-        }
-      : {}),
+    ...(source.icon ? { icon: source.icon } : {}),
     ...(image ? { image: located(image.name) } : {}),
     swiplets: entries,
   };

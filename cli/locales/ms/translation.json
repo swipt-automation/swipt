@@ -1,11 +1,12 @@
 {
   "availability": {
-    "advice": "Semak ketersediaannya dengan available(), tandakan kod yang menggunakannya dengan @available, atau naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
     "apiLevel": "tahap API {{level}}",
-    "entryNeeds": "{{location}}: {{name}} ialah titik masuk Swiplet dan memerlukan {{requirement}}; naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
-    "importNeeds": "{{location}}: mengimport {{name}} memerlukan {{requirement}}; naikkan \"swiplet.minimumAPILevel\" atau \"swiplet.minimumIOSVersion\" dalam package.json.",
-    "invalidEntry": "{{location}}: @available mengandungi \"{{entry}}\"; @available menerima \"apiLevel <level>\" dan \"iOS <version>\" yang dipisahkan dengan koma.",
-    "needs": "{{location}}: {{name}} memerlukan {{requirement}}.",
+    "entryNeeds": "{{location}}: {{name}} ialah titik masuk Swiplet dan memerlukan {{requirement}}; naikkan {{fields}} dalam package.json.",
+    "foreign": "{{location}}: {{name}} hanya untuk {{systems}}, tetapi binaan {{build}} merangkumi fail ini; alihkannya ke fail bernama *.{{os}}.ts atau *.{{os}}.tsx.",
+    "foreignUse": "{{location}}: {{name}} hanya untuk {{systems}}, tetapi binaan {{build}} mencapainya di sini; semak available() dahulu, atau alihkannya ke fail bernama *.{{os}}.ts atau *.{{os}}.tsx.",
+    "importNeeds": "{{location}}: mengimport {{name}} memerlukan {{requirement}}; naikkan {{fields}} dalam package.json.",
+    "invalidEntry": "{{location}}: @available mengandungi \"{{entry}}\"; @available menerima \"apiLevel <level>\", \"iOS [<version>]\" dan \"android [<SDK level>]\" yang dipisahkan dengan koma.",
+    "needs": "{{location}}: {{name}} memerlukan {{requirement}}; semaknya dengan available(), tandakan kod yang menggunakannya dengan @available, atau naikkan {{fields}} dalam package.json.",
     "repeatedEntry": "{{location}}: @available menyatakan {{kind}} dua kali."
   },
   "cli": {
@@ -79,7 +80,7 @@
     "driver": {
       "description": "Sediakan API Swipt dan MCP untuk peranti daripada komputer ini",
       "details": "Hanya satu pihak boleh mengawal peranti pada satu masa: Swipt pada peranti itu, atau pemacu pada satu komputer.",
-      "passcode": "kod laluan untuk membuka kunci peranti secara automatik; kosongkan untuk mematikannya",
+      "passcode": "kod laluan peranti, yang dimasukkan oleh Swipt untuk membuka kuncinya; kod ini diingati untuk peranti tersebut, dan kosongkan supaya Swipt melupakannya",
       "randomToken": "wajibkan token rawak daripada klien API",
       "token": "wajibkan token ini daripada klien API"
     },
@@ -89,7 +90,9 @@
       },
       "create": {
         "description": "Cipta projek Swiplet dalam direktori baharu atau kosong",
-        "notEmpty": "{{directory}} tidak kosong."
+        "invalidPlatforms": "Nyatakan sistem yang disokong oleh Swiplet dengan --platforms: ios, android atau ios,android.",
+        "notEmpty": "{{directory}} tidak kosong.",
+        "platforms": "sistem yang disokong oleh Swiplet: ios, android atau kedua-duanya dipisahkan dengan koma"
       },
       "deploy": {
         "description": "Bina projek dan pasangkannya pada peranti"
@@ -104,7 +107,8 @@
       "source": {
         "description": "Kumpulkan Swiplet yang telah dibina ke dalam dist/ dengan swiplets.json",
         "duplicateID": "{{id}} ialah {{first}} dan juga {{second}}",
-        "invalidIcon": "\"source.icon\" dalam package.json mesti mempunyai symbol dan boleh mempunyai color.",
+        "invalidAndroidSymbol": "\"source.icon.android\" dalam package.json mestilah nama ikon Material daripada pustaka ikon Android Swipt, bukan {{symbol}}.",
+        "invalidIcon": "\"source.icon\" dalam package.json hanya boleh mempunyai rentetan \"color\", \"symbolColor\", \"ios\" dan \"android\".",
         "invalidLocalizedNames": "\"source.localizedNames\" dalam package.json mesti memetakan bahasa kepada nama.",
         "invalidURL": "\"source.url\" dalam package.json bukan URL mutlak.",
         "noWorkspaces": "package.json tidak menyenaraikan ruang kerja yang mengandungi Swiplet; namakan Swiplet yang hendak disenaraikan.",
@@ -296,26 +300,35 @@
     "pin": "Kod laluan 4 atau 6 digit",
     "pinDetail": "4 atau 6 digit",
     "prompt": "Kod laluan peranti",
-    "setUp": "Sediakan buka kunci automatik? Swipt kemudiannya boleh membuka kunci peranti ini dengan sendiri."
+    "setUp": "Simpan kod laluan peranti ini? Swipt kemudiannya boleh membuka kunci peranti."
   },
   "project": {
     "assetConflict": "{{source}} dan {{asset}} kedua-duanya akan menjadi assets/{{name}} dalam Swiplet.",
+    "buildFailed": "Binaan {{system}} gagal:",
     "conditionalActions": "Sambungan mentakrifkan tindakan yang berbeza bergantung pada available(); takrifkan tindakan yang sama pada setiap sistem dan semak available() di dalam run atau tindakan.",
     "databaseAtLoad": "Pangkalan data digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan.",
+    "foreignModule": "{{module}} hanya untuk {{system}}, tetapi binaan {{build}} merangkumi fail ini; importnya daripada fail bernama *.{{os}}.ts atau *.{{os}}.tsx.",
+    "inconsistentExtension": "Sambungan mesti mentakrifkan perkhidmatan dan tindakan yang sama pada setiap sistem; semak sistem di dalam run atau tindakan.",
     "interfaceImport": "Antara muka mengimport {{file}} pada masa jalan; import jenisnya dengan `import type`.",
     "interfaceOnly": "{{name}} hanya berfungsi dalam antara muka Swiplet.",
+    "invalidAndroidSymbol": "\"swiplet.icon.android\" dalam package.json mestilah nama ikon Material daripada pustaka ikon Android Swipt, bukan {{symbol}}.",
     "invalidExposure": "Tindakan {{action}} hanya boleh mendedahkan dirinya kepada \"shortcuts\".",
     "invalidExtension": "Eksport lalai sambungan bukan hasil defineExtension.",
     "invalidID": "\"swiplet.id\" dalam package.json mesti terdiri daripada 1 hingga 128 huruf kecil, digit, titik, garis bawah dan tanda sempang, serta bermula dengan huruf atau digit.",
+    "invalidIcon": "\"swiplet.icon\" dalam package.json hanya boleh mempunyai rentetan \"color\", \"symbolColor\", \"ios\" dan \"android\".",
     "invalidLocalizedNames": "\"swiplet.localizedNames\" dalam package.json mesti memetakan bahasa kepada nama.",
     "invalidMinimumAPILevel": "\"swiplet.minimumAPILevel\" dalam package.json mestilah integer dari {{oldest}} hingga {{level}}, iaitu tahap API @swipt/api.",
-    "invalidMinimumIOSVersion": "\"swiplet.minimumIOSVersion\" dalam package.json mestilah nombor versi daripada {{version}} ke atas, iaitu versi iOS minimum @swipt/api.",
+    "invalidMinimumAndroidSDK": "\"swiplet.platforms.android.minimumSDK\" dalam package.json mestilah tahap Android SDK daripada {{sdk}} ke atas, iaitu tahap Android SDK minimum @swipt/api.",
+    "invalidMinimumIOSVersion": "\"swiplet.platforms.ios.minimumVersion\" dalam package.json mestilah nombor versi daripada {{version}} ke atas, iaitu versi iOS minimum @swipt/api.",
     "invalidName": "\"swiplet.name\" dalam package.json mestilah rentetan yang tidak kosong.",
+    "invalidPlatforms": "\"swiplet.platforms\" dalam package.json mesti menyatakan setiap sistem yang disokong oleh Swiplet: \"ios\" bersama \"minimumVersion\", \"android\" bersama \"minimumSDK\".",
     "invalidSchema": "Skema {{side}} bagi tindakan {{action}} tidak melaksanakan Standard JSON Schema; gunakan pustaka yang melaksanakannya, seperti Zod 4.",
     "invalidString": "\"{{field}}\" dalam package.json mestilah rentetan.",
     "invalidVersionCode": "\"swiplet.versionCode\" dalam package.json mestilah integer positif.",
     "missingTitle": "Tindakan {{action}} memerlukan tajuk.",
+    "outdatedAPI": "@swipt/api berada pada tahap API {{level}}, dan Swipt CLI ini membina Swiplet untuk tahap API {{oldest}} atau lebih baharu; kemas kini @swipt/api.",
     "storageAtLoad": "Storan digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan.",
+    "undeclaredModule": "{{module}} hanya untuk {{system}}, yang tidak dinyatakan dalam \"swiplet.platforms\" dalam package.json.",
     "unprovidedModule": "Swipt tidak menyediakan \"{{module}}\" kepada sambungan; himpunkannya ke dalam extension.js.",
     "usedAtLoad": "{{name}} digunakan semasa extension.js dimuatkan; gunakannya di dalam run atau tindakan."
   },
@@ -325,7 +338,7 @@
     "conflictingTokens": "--token dan --random-token tidak boleh digunakan bersama.",
     "invalidToken": "Token terdiri daripada satu atau lebih aksara ASCII boleh cetak tanpa ruang.",
     "localNetwork": "Rangkaian setempat",
-    "noAutoUnlock": "Kunci {{device}} tidak dibuka secara automatik; tetapkan kod laluannya dengan --passcode. Tekan Ctrl-C untuk menghentikan pemacu.",
+    "noPasscode": "Swipt tidak dapat membuka kunci {{device}} apabila peranti meminta kod laluannya; untuk menetapkan kod laluan, hentikan pemacu dengan Ctrl-C dan jalankan \"swipt driver -d {{udid}} --passcode CODE\".",
     "quitSwipt": "Keluar Swipt",
     "quittingSwipt": "keluar Swipt pada {{device}}",
     "served": "Pemacu pada {{computer}} sudah melayani {{device}}; hentikan pemacu itu dahulu.",
