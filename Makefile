@@ -25,6 +25,7 @@ encodings:
 proto:
 	rm -rf cli/src/proto
 	node_modules/.bin/buf generate
+	node_modules/.bin/buf generate internal/android --template internal/android/buf.gen.yaml
 
 $(RUNTIME_BUNDLE): $(RUNTIME_BUNDLE_INPUTS)
 	mkdir -p build/runtime

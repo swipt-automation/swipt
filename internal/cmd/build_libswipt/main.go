@@ -12,17 +12,21 @@ import (
 
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing/common"
+	"github.com/swipt-automation/swipt/internal/cmd/toolchain"
 )
 
 const (
-	gomobileModule = "github.com/sagernet/gomobile"
-	iosVersion     = "15.0"
-	macOSVersion   = "14.0"
-	outputPath     = "Frameworks/LibSwipt.xcframework"
+	gomobileModule    = "github.com/sagernet/gomobile"
+	iosVersion        = "15.0"
+	macOSVersion      = "14.0"
+	androidAPI        = "34"
+	outputPath        = "Frameworks/LibSwipt.xcframework"
+	androidOutputPath = "android/app/libs/libswipt.aar"
+	androidPackage    = "io.nekohasekai"
 )
 
 func main() {
-	target := flag.String("target", "ios,iossimulator,macos", "gomobile bind target")
+	target := flag.String("target", "ios,iossimulator,macos", "gomobile bind target, or android")
 	flag.Parse()
 	binDirectory := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "bin")
 	gomobileVersion := pinnedGomobileVersion()
@@ -38,25 +42,39 @@ func main() {
 		run(install)
 	}
 
-	err := os.MkdirAll(filepath.Dir(outputPath), 0o755)
+	output, platformArgs := outputPath, []string{"-target", *target, "-iosversion", iosVersion, "-macosversion", macOSVersion}
+	env := os.Environ()
+	if *target == "android" {
+		output, platformArgs = androidOutputPath, []string{"-target", "android/arm64", "-androidapi", androidAPI, "-javapkg", androidPackage}
+		buildDirectory := toolchain.BuildDirectory()
+		toolchain.PruneDownloads(buildDirectory)
+		env = append(env, toolchain.Environment(buildDirectory, toolchain.Target{OS: "android", Arch: "arm64"})...)
+	}
+	err := os.MkdirAll(filepath.Dir(output), 0o755)
 	if err != nil {
 		log.Fatal(err)
 	}
-	bind := exec.Command(filepath.Join(binDirectory, "gomobile"),
+	arguments := append([]string{
 		"bind",
 		"-v",
-		"-target", *target,
-		"-iosversion", iosVersion,
-		"-macosversion", macOSVersion,
 		"-trimpath",
 		"-buildvcs=false",
 		"-ldflags", "-s -w -buildid= -checklinkname=0",
 		"-tags", "ts_omit_logtail,ts_omit_ssh,ts_omit_drive,ts_omit_taildrop,ts_omit_webclient,ts_omit_doctor,ts_omit_capture,ts_omit_kube,ts_omit_aws,ts_omit_synology,ts_omit_bird",
-		"-o", outputPath,
-		"./libswipt",
-	)
-	bind.Env = append(os.Environ(), "PATH="+binDirectory+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}, append(platformArgs, "-o", output, "./libswipt")...)
+	bind := exec.Command(filepath.Join(binDirectory, "gomobile"), arguments...)
+	bind.Env = append(env, "PATH="+binDirectory+string(os.PathListSeparator)+pathValue(env))
 	run(bind)
+}
+
+func pathValue(environment []string) string {
+	value := os.Getenv("PATH")
+	for _, entry := range environment {
+		if len(entry) >= 5 && entry[:5] == "PATH=" {
+			value = entry[5:]
+		}
+	}
+	return value
 }
 
 func pinnedGomobileVersion() string {

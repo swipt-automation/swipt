@@ -14,6 +14,10 @@ func (h *Host) availability() (<-chan struct{}, error) {
 	return h.options.Device.phone.Availability()
 }
 
+func (*Host) KeepAwake() (release func()) {
+	return func() {}
+}
+
 func (h *Host) deviceLost(err error, since time.Time) bool {
 	return errors.Is(err, fault.ErrUnavailable) && h.options.Device.phone.Disconnected(since)
 }

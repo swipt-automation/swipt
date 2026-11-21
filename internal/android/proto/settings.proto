@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package swipt.android;
+option go_package = "github.com/swipt-automation/swipt/internal/android/proto";
+option java_package = "io.nekohasekai.swipt.proto";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+
+service SettingsService {
+  rpc GetSettings(google.protobuf.Empty) returns (Settings);
+  rpc UpdateSettings(Settings) returns (Settings);
+  rpc ApplySetup(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc WatchSettings(google.protobuf.Empty) returns (stream Settings);
+  rpc WatchPublication(google.protobuf.Empty) returns (stream PublicationStatus);
+  rpc LogInCloudflare(google.protobuf.Empty) returns (stream LogInCloudflareResponse);
+  rpc LogInTailscale(google.protobuf.Empty) returns (stream LogInTailscaleResponse);
+  rpc LogOutTailscale(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+enum UnlockType {
+  UNLOCK_TYPE_UNSPECIFIED = 0;
+  UNLOCK_TYPE_NONE = 1;
+  UNLOCK_TYPE_PATTERN = 2;
+  UNLOCK_TYPE_PIN = 3;
+  UNLOCK_TYPE_PASSWORD = 4;
+}
+
+message Settings {
+  string unlock_passcode = 1;
+  LocalNetworkSettings local_network = 2;
+  CloudflareSettings cloudflare = 3;
+  TailscaleSettings tailscale = 4;
+  bool auto_unlock = 5;
+  UnlockType unlock_type = 6;
+}
+
+message LocalNetworkSettings {
+  bool enabled = 1;
+  uint32 port = 2;
+  string token = 3;
+  bool authenticates = 4;
+}
+
+enum CloudflareMode {
+  CLOUDFLARE_MODE_QUICK_TUNNEL = 0;
+  CLOUDFLARE_MODE_TUNNEL = 1;
+}
+
+message CloudflareAccount {
+  string credential = 1;
+  string name = 2;
+  string zone = 3;
+}
+
+message CloudflareSettings {
+  bool enabled = 1;
+  CloudflareMode mode = 2;
+  string path = 3;
+  string token = 4;
+  CloudflareAccount account = 5;
+  string hostname = 6;
+}
+
+message TailscaleSettings {
+  bool enabled = 1;
+  bool authenticates = 2;
+  string token = 3;
+}
+
+enum TailscaleState {
+  TAILSCALE_STATE_STARTING = 0;
+  TAILSCALE_STATE_STOPPED = 1;
+  TAILSCALE_STATE_NEEDS_LOGIN = 2;
+  TAILSCALE_STATE_NEEDS_MACHINE_AUTH = 3;
+  TAILSCALE_STATE_RUNNING = 4;
+}
+
+message TailscaleStatus {
+  TailscaleState state = 1;
+  string login_name = 2;
+  string tailnet = 3;
+  string dns_name = 4;
+  repeated string addresses = 5;
+}
+
+message PublicationStatus {
+  bool local_network = 1;
+  string local_network_error = 2;
+  string cloudflare_hostname = 3;
+  string cloudflare_error = 4;
+  TailscaleStatus tailscale = 5;
+  string tailscale_error = 6;
+  string local_network_hostname = 7;
+}
+
+message LogInCloudflareResponse {
+  oneof step {
+    string url = 1;
+    CloudflareAccount account = 2;
+  }
+}
+
+message LogInTailscaleResponse {
+  oneof step {
+    string url = 1;
+    google.protobuf.Empty completed = 2;
+  }
+}

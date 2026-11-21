@@ -1,0 +1,273 @@
+syntax = "proto3";
+
+package swipt.android;
+option go_package = "github.com/swipt-automation/swipt/internal/android/proto";
+option java_package = "io.nekohasekai.swipt.proto";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+service SwipletService {
+  rpc WatchSwiplets(google.protobuf.Empty) returns (stream ListSwipletsResponse);
+  rpc CallAction(CallActionRequest) returns (stream CallActionResponse);
+  rpc SetServiceEnabled(SetServiceEnabledRequest) returns (SetServiceEnabledResponse);
+  rpc WatchServices(WatchServicesRequest) returns (stream WatchServicesResponse);
+  rpc InspectSwiplet(stream DeploySwipletRequest) returns (InspectSwipletResponse);
+  rpc DeploySwiplet(stream DeploySwipletRequest) returns (DeploySwipletResponse);
+  rpc RemoveSwiplet(RemoveSwipletRequest) returns (google.protobuf.Empty);
+  rpc GetSwipletIcon(GetSwipletIconRequest) returns (GetSwipletIconResponse);
+  rpc GetSwipletInterface(GetSwipletInterfaceRequest) returns (GetSwipletInterfaceResponse);
+  rpc ReadSwipletFile(ReadSwipletFileRequest) returns (stream ReadSwipletFileResponse);
+  rpc ExportSwiplet(ExportSwipletRequest) returns (stream ExportSwipletResponse);
+  rpc GetSwipletDataSize(GetSwipletDataSizeRequest) returns (GetSwipletDataSizeResponse);
+  rpc ClearSwipletData(ClearSwipletDataRequest) returns (google.protobuf.Empty);
+  rpc FetchRepository(FetchRepositoryRequest) returns (FetchRepositoryResponse);
+  rpc DownloadSwiplet(DownloadSwipletRequest) returns (stream DownloadSwipletResponse);
+  rpc CheckCompatibility(CheckCompatibilityRequest) returns (CheckCompatibilityResponse);
+}
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_ERROR = 1;
+  LOG_LEVEL_WARN = 2;
+  LOG_LEVEL_INFO = 3;
+  LOG_LEVEL_DEBUG = 4;
+}
+
+message StackFrame {
+  string function = 1;
+  string file = 2;
+  uint32 line = 3;
+  uint32 column = 4;
+}
+
+message ScriptError {
+  string name = 1;
+  string message = 2;
+  repeated StackFrame stack = 3;
+}
+
+message ActionResult {
+  oneof outcome {
+    google.protobuf.Value output = 1;
+    ScriptError error = 2;
+  }
+}
+
+message SwipletAction {
+  string name = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Struct input_schema = 4;
+  google.protobuf.Struct output_schema = 5;
+  bool stream = 6;
+}
+
+message SwipletIcon {
+  string color = 1;
+  string symbol = 2;
+  string symbol_color = 3;
+  bool has_image = 4;
+}
+
+enum ServiceStatus {
+  SERVICE_STATUS_UNSPECIFIED = 0;
+  SERVICE_STATUS_STOPPED = 1;
+  SERVICE_STATUS_STARTING = 2;
+  SERVICE_STATUS_RUNNING = 3;
+  SERVICE_STATUS_FAILED = 4;
+}
+
+message ServiceState {
+  bool enabled = 1;
+  ServiceStatus status = 2;
+  ScriptError error = 3;
+  google.protobuf.Timestamp since = 4;
+}
+
+message Swiplet {
+  string id = 1;
+  string title = 2;
+  string version = 3;
+  bool has_service = 4;
+  ServiceState service = 5;
+  repeated SwipletAction actions = 6;
+  int64 version_code = 7;
+  map<string, string> localized_titles = 8;
+  SwipletIcon icon = 9;
+  bool needs_update = 10;
+  bool has_interface = 11;
+  google.protobuf.Timestamp installed = 12;
+}
+
+message ListSwipletsResponse {
+  repeated Swiplet swiplets = 1;
+}
+
+message CallActionRequest {
+  string swiplet_id = 1;
+  string action = 2;
+  google.protobuf.Value input = 3;
+}
+
+message CallActionResponse {
+  oneof part {
+    ActionResult result = 1;
+    google.protobuf.Value value = 2;
+  }
+}
+
+message SetServiceEnabledRequest {
+  string swiplet_id = 1;
+  bool enabled = 2;
+}
+
+message SetServiceEnabledResponse {
+  ServiceState service = 1;
+}
+
+message WatchServicesRequest {
+  string swiplet_id = 1;
+}
+
+message WatchServicesResponse {
+  string swiplet_id = 1;
+  ServiceState service = 2;
+}
+
+message DeploySwipletRequest {
+  bytes chunk = 1;
+}
+
+message DeploySwipletResponse {
+  Swiplet swiplet = 1;
+  bool replaced = 2;
+}
+
+message RemoveSwipletRequest {
+  string swiplet_id = 1;
+}
+
+enum Incompatibility {
+  INCOMPATIBILITY_UNSPECIFIED = 0;
+  INCOMPATIBILITY_SWIPT_OUTDATED = 1;
+  INCOMPATIBILITY_SWIPLET_OUTDATED = 2;
+  INCOMPATIBILITY_OS_OUTDATED = 3;
+  INCOMPATIBILITY_OS_UNSUPPORTED = 4;
+}
+
+message InspectSwipletResponse {
+  Swiplet swiplet = 1;
+  bytes icon = 2;
+  Incompatibility incompatibility = 3;
+  string minimum_os_version = 4;
+  string incompatibility_message = 5;
+}
+
+message GetSwipletIconRequest {
+  string swiplet_id = 1;
+}
+
+message GetSwipletIconResponse {
+  bytes image = 1;
+}
+
+message GetSwipletInterfaceRequest {
+  string swiplet_id = 1;
+}
+
+message GetSwipletInterfaceResponse {
+  string file = 1;
+  string source = 2;
+  string data_directory = 3;
+  string assets_directory = 4;
+  string cache_directory = 5;
+}
+
+message ReadSwipletFileRequest {
+  string swiplet_id = 1;
+  string root = 2;
+  string path = 3;
+}
+
+message ReadSwipletFileResponse {
+  bytes chunk = 1;
+}
+
+message ExportSwipletRequest {
+  string swiplet_id = 1;
+}
+
+message ExportSwipletResponse {
+  bytes chunk = 1;
+}
+
+message GetSwipletDataSizeRequest {
+  string swiplet_id = 1;
+}
+
+message GetSwipletDataSizeResponse {
+  int64 bytes = 1;
+}
+
+message ClearSwipletDataRequest {
+  string swiplet_id = 1;
+}
+
+message FetchRepositoryRequest {
+  string url = 1;
+  string entity_tag = 2;
+}
+
+message FetchRepositoryResponse {
+  bool not_modified = 1;
+  string entity_tag = 2;
+  Repository repository = 3;
+}
+
+message DownloadSwipletRequest {
+  string url = 1;
+  string sha256 = 2;
+}
+
+message DownloadSwipletResponse {
+  int64 total = 1;
+  bytes chunk = 2;
+}
+
+message Repository {
+  string name = 1;
+  map<string, string> localized_names = 2;
+  SwipletIcon icon = 3;
+  bytes image = 4;
+  repeated RepositorySwiplet swiplets = 5;
+}
+
+message RepositorySwiplet {
+  string id = 1;
+  string title = 2;
+  map<string, string> localized_titles = 3;
+  string description = 4;
+  string version = 5;
+  int64 version_code = 6;
+  int64 minimum_api_level = 7;
+  string minimum_os_version = 8;
+  SwipletIcon icon = 9;
+  string url = 10;
+  string sha256 = 11;
+}
+
+message Requirement {
+  int64 minimum_api_level = 1;
+  string minimum_os_version = 2;
+}
+
+message CheckCompatibilityRequest {
+  repeated Requirement requirements = 1;
+}
+
+message CheckCompatibilityResponse {
+  repeated Incompatibility incompatibilities = 1;
+}

@@ -114,14 +114,18 @@ func New(options Options) *Server {
 				return nil, err
 			}
 			defer release()
+			defer s.options.Swiplets.KeepAwake()()
 			return handler(ctx, request)
 		}),
-		grpc.StreamInterceptor(func(server any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		grpc.StreamInterceptor(func(server any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 			ctx, release, err := s.authorize(stream.Context())
 			if err != nil {
 				return err
 			}
 			defer release()
+			if info.FullMethod != proto.LogService_ReadLogs_FullMethodName && info.FullMethod != proto.SwipletService_WatchServices_FullMethodName {
+				defer s.options.Swiplets.KeepAwake()()
+			}
 			return handler(server, &authorizedStream{ServerStream: stream, ctx: ctx})
 		}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: keepaliveInterval}),

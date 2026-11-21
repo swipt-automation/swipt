@@ -87,6 +87,7 @@ func (s *Server) serveMCP(w http.ResponseWriter, r *http.Request, credential *Cr
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+	defer s.options.Swiplets.KeepAwake()()
 	s.mcpHTTP.ServeHTTP(w, r)
 }
 

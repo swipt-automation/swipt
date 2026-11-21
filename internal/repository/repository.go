@@ -148,7 +148,7 @@ func fetch(ctx context.Context, link string, etag string, target automation.OS) 
 		repository.Name = nameOf(base)
 	}
 	repository.LocalizedNames = parsed.LocalizedNames
-	if symbol := parsed.Icon.Symbol(target); symbol != "" {
+	if symbol := parsed.Icon.Symbol(target); parsed.Icon.Color != "" || parsed.Icon.SymbolColor != "" || symbol != "" {
 		repository.Icon = &Icon{Color: parsed.Icon.Color, SymbolColor: parsed.Icon.SymbolColor, Symbol: symbol}
 	}
 	for position, data := range parsed.Swiplets {

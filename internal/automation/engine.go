@@ -188,6 +188,7 @@ func (h *Host) Call(ctx context.Context, request CallRequest) (json.RawMessage, 
 		return nil, err
 	}
 	defer exit()
+	defer h.KeepAwake()()
 	index := slices.IndexFunc(swiplet.Manifest.Actions, func(action ActionInfo) bool { return action.Name == request.Action })
 	if index < 0 {
 		return nil, E.Cause1(ErrNotFound, E.New("the swiplet ", strconv.Quote(swiplet.ID), " has no action ", strconv.Quote(request.Action)))

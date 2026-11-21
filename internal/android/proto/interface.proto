@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package swipt.android;
+option go_package = "github.com/swipt-automation/swipt/internal/android/proto";
+option java_package = "io.nekohasekai.swipt.proto";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "proto/swiplets.proto";
+
+service InterfaceService {
+  rpc OpenInterface(OpenInterfaceRequest) returns (stream InterfaceEvent);
+  rpc QueryDatabase(QueryDatabaseRequest) returns (QueryDatabaseResponse);
+  rpc StartWeb(StartWebRequest) returns (StartWebResponse);
+  rpc CancelWeb(CancelWebRequest) returns (google.protobuf.Empty);
+  rpc PutWeb(PutWebRequest) returns (PutWebResponse);
+  rpc ReleaseWeb(ReleaseWebRequest) returns (google.protobuf.Empty);
+  rpc OpenWebFile(OpenWebFileRequest) returns (OpenWebFileResponse);
+  rpc OpenWebCompression(OpenWebCompressionRequest) returns (OpenWebCompressionResponse);
+  rpc WriteLog(WriteLogRequest) returns (google.protobuf.Empty);
+}
+
+message OpenInterfaceRequest {
+  string swiplet_id = 1;
+}
+
+message DatabaseChange {
+  string database = 1;
+  string path = 2;
+  string table = 3;
+  int64 row_id = 4;
+}
+
+message InterfaceEvent {
+  oneof event {
+    string session = 1;
+    DatabaseChange database_change = 2;
+    ServiceState service = 3;
+  }
+}
+
+message QueryDatabaseRequest {
+  string session = 1;
+  string request = 2;
+}
+
+message QueryDatabaseResponse {
+  string result = 1;
+}
+
+message StartWebRequest {
+  string session = 1;
+  string id = 2;
+  string name = 3;
+  string arguments = 4;
+}
+
+message StartWebResponse {
+  oneof result {
+    bytes data = 1;
+    string json = 2;
+    string failure = 3;
+  }
+}
+
+message CancelWebRequest {
+  string session = 1;
+  string id = 2;
+}
+
+message PutWebRequest {
+  string session = 1;
+  bytes data = 2;
+}
+
+message PutWebResponse {
+  string id = 1;
+}
+
+message ReleaseWebRequest {
+  string session = 1;
+  string id = 2;
+  string reason = 3;
+}
+
+message OpenWebFileRequest {
+  string session = 1;
+  string root = 2;
+  string path = 3;
+}
+
+message OpenWebFileResponse {
+  string id = 1;
+}
+
+message OpenWebCompressionRequest {
+  string session = 1;
+  string format = 2;
+  string mode = 3;
+}
+
+message OpenWebCompressionResponse {
+  repeated string ids = 1;
+}
+
+message WriteLogRequest {
+  string swiplet_id = 1;
+  LogLevel level = 2;
+  string message = 3;
+}
