@@ -8,6 +8,18 @@ RUNTIME_BUNDLE_INPUTS := $(shell find $(RUNTIME)/src $(RUNTIME)/patches -type f)
 lib: runtime
 	go run ./internal/cmd/build_libswipt
 
+lib_android: runtime
+	go run ./internal/cmd/build_libswipt -target android
+
+build_android: lib_android runtime_bundle_android
+	cd android && ./gradlew assembleDebug -q
+
+strings_android:
+	go run ./internal/cmd/build_android_strings
+
+material_icons:
+	go run ./internal/cmd/build_material_icons
+
 .PHONY: driver drivers
 driver:
 	go run ./internal/cmd/build_driver
@@ -33,6 +45,15 @@ $(RUNTIME_BUNDLE): $(RUNTIME_BUNDLE_INPUTS)
 	node_modules/hermes-compiler/hermesc/osx-bin/hermesc -emit-binary -O -w -out $@ build/runtime/main.js
 
 runtime_bundle: $(RUNTIME_BUNDLE)
+
+RUNTIME_BUNDLE_ANDROID := build/runtime/android/main.jsbundle
+
+$(RUNTIME_BUNDLE_ANDROID): $(RUNTIME_BUNDLE_INPUTS)
+	mkdir -p build/runtime/android
+	cd $(RUNTIME) && CI=1 bun expo export:embed --platform android --dev false --minify false --entry-file src/app/index.tsx --bundle-output ../../../build/runtime/main.android.js --assets-dest ../../../build/runtime/android-res
+	node_modules/hermes-compiler/hermesc/osx-bin/hermesc -emit-binary -O -w -out $@ build/runtime/main.android.js
+
+runtime_bundle_android: $(RUNTIME_BUNDLE_ANDROID)
 
 build_ios: runtime_bundle
 	xcodebuild build -skipMacroValidation -derivedDataPath build/DerivedData $(XCODEBUILD_FLAGS) -scheme Swipt -configuration Debug -destination 'generic/platform=iOS' | xcbeautify | grep -A 10 -e "Build Succeeded" -e "BUILD FAILED" -e "❌"
@@ -69,11 +90,11 @@ altstore_source: altstore_icon
 fmt:
 	golangci-lint fmt
 	bun fmt
-	go run ./internal/cmd/format_xcstrings $$(find Swipt -name '*.xcstrings')
+	go run ./internal/cmd/format_xcstrings $$(find Swipt -name '*.xcstrings') android/app/Localizable.xcstrings
 
 lint:
 	golangci-lint run ./...
-	go run ./internal/cmd/with_toolchain -target linux-arm64,win32-arm64 golangci-lint run ./...
+	go run ./internal/cmd/with_toolchain -target linux-arm64,win32-arm64,android-arm64 golangci-lint run ./...
 	! grep -n 'localizedDescription' internal/graphics/*.m | grep -v '^internal/graphics/error_darwin.m'
 	! grep -nE '[eE]rror:nil' internal/graphics/*.m | grep -vE 'removeItemAtURL|regularExpressionWithPattern|NSJSONSerialization'
 

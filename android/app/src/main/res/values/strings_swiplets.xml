@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="swiplets_empty">No swiplets</string>
+    <string name="swiplets_tap_to_add">Tap %1$s to add a swiplet.</string>
+    <string name="swiplets_add_swiplet">Add swiplet</string>
+    <string name="swiplets_updates">Updates</string>
+    <string name="swiplets_info">Info</string>
+    <string name="swiplets_share">Share</string>
+    <string name="swiplets_check_for_updates">Check for updates…</string>
+    <string name="swiplets_delete">Delete</string>
+    <string name="swiplets_confirm_delete">Delete “%1$s”?</string>
+    <string name="swiplets_outdated">Swiplet outdated</string>
+    <string name="swiplets_outdated_message">“%1$s” needs to be updated to work with this version of Swipt.</string>
+    <string name="swiplets_up_to_date">You’re up to date</string>
+    <string name="swiplets_couldnt_load">Couldn’t load the swiplets</string>
+    <string name="swiplets_couldnt_check_for_updates">Couldn’t check for updates</string>
+    <string name="swiplets_cant_delete_swiplet">Can’t delete the swiplet</string>
+    <string name="swiplets_cant_share_swiplet">Can’t share the swiplet</string>
+
+    <string name="swiplets_swiplet_info">Swiplet info</string>
+    <string name="swiplets_name">Name</string>
+    <string name="swiplets_version">Version</string>
+    <string name="swiplets_service_stopped">“%1$s” stopped</string>
+    <string name="swiplets_data">Data</string>
+    <string name="swiplets_data_size">Data size</string>
+    <string name="swiplets_clear_data">Clear data</string>
+    <string name="swiplets_couldnt_clear_data">Couldn’t clear the data</string>
+
+    <string name="swiplets_repository">Repository</string>
+    <string name="swiplets_official">Official swiplets</string>
+    <string name="swiplets_add_repository">Add repository</string>
+    <string name="swiplets_manual">Manual</string>
+    <string name="swiplets_import_from_file">Import from file</string>
+    <string name="swiplets_import_from_url">Import from URL</string>
+    <string name="swiplets_url">URL</string>
+    <string name="swiplets_import">Import</string>
+    <string name="swiplets_add">Add</string>
+    <string name="swiplets_cant_add_repository">Can’t add the repository</string>
+    <string name="swiplets_cant_open_swiplet">Can’t open the swiplet</string>
+    <string name="swiplets_cant_add_swiplet">Can’t add the swiplet</string>
+    <string name="swiplets_couldnt_refresh_repository">Couldn’t refresh the repository</string>
+    <string name="swiplets_repository_empty">No swiplets in this repository</string>
+    <string name="swiplets_repository_already_added">The repository is already added.</string>
+    <string name="swiplets_repository_sent_different">The repository sent a different swiplet.</string>
+
+    <string name="swiplets_update">Update</string>
+    <string name="swiplets_update_all">Update all</string>
+    <string name="swiplets_updatable">Updatable swiplets</string>
+    <string name="swiplets_cant_update_swiplet">Can’t update the swiplet</string>
+
+    <string name="swiplets_update_swiplet">Update swiplet</string>
+    <string name="swiplets_installed_copy_replaced">The installed copy will be replaced.</string>
+    <string name="swiplets_installed_version_replaced">Version %1$s is installed and will be replaced.</string>
+    <string name="swiplets_cant_import_swiplet">Can’t import the swiplet</string>
+    <string name="swiplets_file_not_swiplet">The file is not a swiplet.</string>
+    <string name="swiplets_requires_newer_swipt">This swiplet requires a newer version of Swipt.</string>
+    <string name="swiplets_learn_more">Learn more</string>
+    <string name="swiplets_requires_android">This swiplet requires Android API level %1$s or later.</string>
+    <string name="swiplets_unsupported_android">This swiplet doesn’t support Android.</string>
+</resources>

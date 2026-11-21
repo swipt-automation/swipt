@@ -4,19 +4,20 @@
 
 <h1 align="center">Swipt</h1>
 
-<p align="center">The universal iOS automation platform.</p>
+<p align="center">The universal automation platform for iOS and Android.</p>
 
 ## Requirements
 
 - iOS 27 (First-tier support)
 - iOS 17.4–26 (I do not have actual devices for testing)
+- Android 14 or later on arm64, with Shizuku or root
 
 ## Architecture
 
-- Swipt SDK: A TypeScript SDK built upon CoreDevice, Accessibility services, and other developer services.
-- Swipt API (MCP-compatible): Allows you to run a JS REPL based on the Swipt SDK directly, enabling you to control an iPhone or iPad, manage and debug Swiplets.
+- Swipt SDK: A TypeScript SDK built upon CoreDevice, Accessibility services, and other developer services on iOS, and upon system services reached through Shizuku or root on Android.
+- Swipt API (MCP-compatible): Allows you to run a JS REPL based on the Swipt SDK directly, enabling you to control an iPhone, iPad, or Android device, manage and debug Swiplets.
 - Swipt CLI: A client for the Swipt API that offers a more comprehensive set of features than MCP.
-- Swiplet: Apps that run within Swipt, built using the Swipt SDK and SwiftUI.
+- Swiplet: Apps that run within Swipt, built using the Swipt SDK and SwiftUI or Jetpack Compose.
 
 ## Documentation
 

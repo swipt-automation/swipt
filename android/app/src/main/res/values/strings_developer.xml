@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_local_network">Local network</string>
+    <string name="developer_local_network_description">Provides the Swipt API and MCP to the local network.</string>
+    <string name="developer_cloudflare_description">Securely provides the Swipt API and MCP to the internet through Cloudflare.</string>
+    <string name="developer_tailscale_description">Provides the Swipt API and MCP to your Tailscale network.</string>
+
+    <string name="developer_enabled">Enabled</string>
+    <string name="developer_published">Published</string>
+    <string name="developer_configuration">Configuration</string>
+    <string name="developer_port">Port</string>
+    <string name="developer_authentication">Authentication</string>
+    <string name="developer_token">Token</string>
+    <string name="developer_random_token">Random token</string>
+    <string name="developer_required">Required</string>
+    <string name="developer_host">Host</string>
+    <string name="developer_url">URL</string>
+
+    <string name="developer_mode">Mode</string>
+    <string name="developer_prefix">Prefix</string>
+    <string name="developer_random_path">Random path</string>
+    <string name="developer_quick_tunnel_description">Uses a domain provided by Cloudflare, which is released when turned off.</string>
+    <string name="developer_tunnel_description">Uses your own account and domain.</string>
+    <string name="developer_account">Account</string>
+    <string name="developer_name">Name</string>
+    <string name="developer_network">Network</string>
+    <string name="developer_domain">Domain</string>
+    <string name="developer_subdomain">Subdomain</string>
+    <string name="developer_log_in">Log in</string>
+    <string name="developer_reauthorize">Reauthorize</string>
+    <string name="developer_log_out">Log out</string>
+    <string name="developer_cant_log_in">Can’t log in</string>
+    <string name="developer_cant_log_out">Can’t log out</string>
+    <string name="developer_connecting">Connecting…</string>
+    <string name="developer_tailscale_needs_approval">Waiting for an admin of your Tailscale network to approve this device.</string>
+
+    <string name="developer_couldnt_publish">Couldn’t publish the Swipt API</string>
+</resources>

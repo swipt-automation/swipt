@@ -14,10 +14,12 @@
 - `bun run --cwd cli build` - Build the CLI
 - `bun typecheck` - Type-check cli and dev
 - `make lib` - Build the SDK runtime and libswipt
+- `make build_android` - Build libswipt and the runtime bundle for Android, and the Debug Android app
 - `make driver` / `make drivers` - Build swipt-driver for this computer / for every release target
 - `make build_ios` / `make build_macos` - Build the Debug app
 - `make runtime_bundle` - Bundle the Swiplet UI runtime
 - `make build_ios_ipa` - Build Swipt.ipa
 - `make proto` - Regenerate the gRPC code
+- `make strings_android` - Regenerate the Android translations from `Swipt/Resources/*.xcstrings` and `android/app/Localizable.xcstrings`
 - `make fmt` - Format the sources
 - `make lint` - Lint Go

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privilege_title">Privileges</string>
+    <string name="privilege_setup_message">Choose how Swipt gets the access it needs to automate this device.</string>
+    <string name="privilege_run_as">Run as</string>
+    <string name="privilege_shizuku" translatable="false">Shizuku</string>
+    <string name="privilege_root" translatable="false">Root</string>
+
+    <string name="privilege_shizuku_not_running">Shizuku isn’t running</string>
+    <string name="privilege_shizuku_not_allowed">Swipt isn’t allowed to use Shizuku</string>
+    <string name="privilege_shizuku_root">Shizuku is running as root</string>
+    <string name="privilege_root_denied">Swipt was denied root access</string>
+    <string name="privilege_exited">The device service stopped</string>
+
+    <string name="privilege_open_shizuku">Open Shizuku</string>
+    <string name="privilege_get_shizuku">Get Shizuku</string>
+    <string name="privilege_allow">Allow</string>
+    <string name="privilege_use_root">Use Root</string>
+    <string name="privilege_try_again">Try again</string>
+    <string name="privilege_reconnect">Reconnect</string>
+</resources>

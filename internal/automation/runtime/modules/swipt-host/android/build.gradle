@@ -1,0 +1,35 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'io.nekohasekai.swipt'
+version = '1.0.0'
+
+android {
+  namespace 'io.nekohasekai.swipt.runtime'
+  ndkVersion rootProject.ext.ndkVersion
+  buildFeatures {
+    prefab true
+  }
+  defaultConfig {
+    externalNativeBuild {
+      cmake {
+        arguments '-DANDROID_STL=c++_shared', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+        abiFilters(*reactNativeArchitectures.split(','))
+      }
+    }
+  }
+  externalNativeBuild {
+    cmake {
+      path 'CMakeLists.txt'
+    }
+  }
+  packagingOptions {
+    excludes += ['**/libc++_shared.so', '**/libjsi.so']
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+}

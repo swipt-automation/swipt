@@ -1,6 +1,9 @@
 {
-  "platforms": ["apple"],
+  "platforms": ["apple", "android"],
   "apple": {
     "modules": ["SwiptHostModule"]
+  },
+  "android": {
+    "modules": ["io.nekohasekai.swipt.runtime.SwiptHostModule"]
   }
 }
