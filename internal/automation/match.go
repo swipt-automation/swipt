@@ -10,34 +10,37 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/jsc"
+	"github.com/swipt-automation/swipt/internal/selector"
 )
 
 var errThrown = E.New("the selector function threw")
 
-type scriptCallbacks struct {
+type scriptCallbacks[T any] struct {
 	engine   *engine
 	callback jsc.Value
+	argument func(T) (string, error)
 }
 
-func shallow(element *device.ViewElement) (json.RawMessage, error) {
+func shallow(element *device.ViewElement) (string, error) {
 	copied := *element
 	copied.Children = nil
-	return json.Marshal(&copied)
+	data, err := json.Marshal(&copied)
+	return string(data), err
 }
 
-func (c scriptCallbacks) Predicate(id int, element *device.ViewElement) (bool, error) {
-	data, err := shallow(element)
+func (c scriptCallbacks[T]) Predicate(id int, element T) (bool, error) {
+	argument, err := c.argument(element)
 	if err != nil {
 		return false, err
 	}
-	return c.call("predicate", id, string(data))
+	return c.call("predicate", id, argument)
 }
 
-func (c scriptCallbacks) Match(id int, text string) (bool, error) {
+func (c scriptCallbacks[T]) Match(id int, text string) (bool, error) {
 	return c.call("match", id, text)
 }
 
-func (c scriptCallbacks) call(kind string, id int, value string) (bool, error) {
+func (c scriptCallbacks[T]) call(kind string, id int, value string) (bool, error) {
 	arguments := []jsc.Value{c.engine.context.NewString(kind), c.engine.context.NewString(strconv.Itoa(id)), c.engine.context.NewString(value)}
 	defer func() {
 		for _, argument := range arguments {
@@ -59,6 +62,30 @@ func (c scriptCallbacks) call(kind string, id int, value string) (bool, error) {
 	return answer == "true", nil
 }
 
+type tree[T comparable] interface {
+	Domain(scope string) (domain, universe []T, err error)
+}
+
+func search[T comparable](snapshot tree[T], vocabulary *selector.Vocabulary[T], scope string, encoded []byte, all bool, callbacks selector.Callbacks[T]) ([]T, error) {
+	parsed, err := selector.Parse(vocabulary, encoded)
+	if err != nil {
+		return nil, err
+	}
+	domain, universe, err := snapshot.Domain(scope)
+	if err != nil {
+		return nil, err
+	}
+	if all {
+		return parsed.FindAll(domain, universe, callbacks)
+	}
+	var none T
+	element, err := parsed.Find(domain, universe, callbacks)
+	if element == none {
+		return nil, err
+	}
+	return []T{element}, err
+}
+
 func (e *engine) match(arguments []jsc.Value) (any, error) {
 	values, err := texts(arguments, 4)
 	if err != nil {
@@ -72,21 +99,8 @@ func (e *engine) match(arguments []jsc.Value) (any, error) {
 	if err != nil {
 		return map[string]string{"failure": FailureOf(err)}, nil
 	}
-	found, err := func() ([]*device.ViewElement, error) {
-		selector, err := device.ParseSelector([]byte(encoded))
-		if err != nil {
-			return nil, err
-		}
-		callbacks := scriptCallbacks{engine: e, callback: arguments[4]}
-		if mode == "all" {
-			return view.FindAll(scope, selector, callbacks)
-		}
-		element, err := view.Find(scope, selector, callbacks)
-		if element == nil {
-			return nil, err
-		}
-		return []*device.ViewElement{element}, err
-	}()
+	callbacks := scriptCallbacks[*device.ViewElement]{engine: e, callback: arguments[4], argument: shallow}
+	found, err := search(view, device.Vocabulary, scope, []byte(encoded), mode == "all", callbacks)
 	switch {
 	case errors.Is(err, errThrown):
 		return map[string]bool{"thrown": true}, nil

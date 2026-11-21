@@ -10,11 +10,12 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 func (p *Phone) Find(ctx context.Context, selectors []*Selector, depth int64) (*View, uint64, error) {
 	if len(selectors) == 0 {
-		return nil, 0, E.Extend(ErrInvalid, "find needs a selector")
+		return nil, 0, E.Extend(fault.ErrInvalid, "find needs a selector")
 	}
 	if err := checkDepth(depth); err != nil {
 		return nil, 0, err
@@ -30,7 +31,7 @@ func (p *Phone) Find(ctx context.Context, selectors []*Selector, depth int64) (*
 	for _, selector := range selectors {
 		scripted = scripted || selector.Scripted()
 		fields = append(fields, selector.Fields()...)
-		switch app := selector.App(); {
+		switch app := selector.Exact("app"); {
 		case app == "":
 			unnamed = true
 		case !slices.Contains(named, app):
@@ -143,7 +144,7 @@ func (p *Phone) element(c *conn, ref string) (*PhoneNode, error) {
 	}
 	node := c.nodes.find(parsed, c.ax.current())
 	if node == nil {
-		return nil, E.Extend(ErrNotFound, "the element is not from a current read of the screen; read the screen again")
+		return nil, E.Extend(fault.ErrNotFound, "the element is not from a current read of the screen; read the screen again")
 	}
 	return node, nil
 }

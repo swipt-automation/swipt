@@ -19,6 +19,7 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
 	"github.com/swipt-automation/swipt/internal/coredevice/pasteboard"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 const (
@@ -124,7 +125,7 @@ func (p *Phone) Availability() (<-chan struct{}, error) {
 	s.access.Lock()
 	defer s.access.Unlock()
 	if s.unavailable != nil {
-		return s.availability, E.Cause1(ErrUnavailable, s.unavailable)
+		return s.availability, E.Cause1(fault.ErrUnavailable, s.unavailable)
 	}
 	return s.availability, nil
 }
@@ -567,7 +568,7 @@ func (p *Phone) Snapshot(ctx context.Context, options SnapshotOptions) (*View, e
 
 func checkDepth(depth int64) error {
 	if depth < 0 || depth > accessibility.MaxDepth {
-		return E.Extend(ErrInvalid, "depth must be an integer from 0 to ", accessibility.MaxDepth, ", the most one read of the device carries")
+		return E.Extend(fault.ErrInvalid, "depth must be an integer from 0 to ", accessibility.MaxDepth, ", the most one read of the device carries")
 	}
 	return nil
 }

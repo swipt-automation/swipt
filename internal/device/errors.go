@@ -13,14 +13,8 @@ import (
 )
 
 var (
-	ErrUnavailable  = E.New("the device is unavailable")
-	ErrDisconnected = E.New("the device is not connected")
-	ErrInvalid      = E.New("invalid argument")
-	ErrNotFound     = E.New("not found")
-	ErrLocked       = E.New("the device is locked")
-	ErrStalled      = E.New("the device's accessibility service stopped answering")
-	ErrNotAnswering = E.New("not answering")
-	ErrTimeout      = E.New("timed out")
+	ErrLocked  = E.New("the device is locked")
+	ErrStalled = E.New("the device's accessibility service stopped answering")
 )
 
 type Problem int

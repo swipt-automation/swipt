@@ -8,6 +8,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/logger"
 	"github.com/swipt-automation/swipt/internal/coredevice/pasteboard"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/rfb"
 )
 
@@ -104,7 +105,7 @@ func (c *clipboardBridge) read(ctx context.Context) (*rfb.Clipboard, error) {
 	}
 	a := c.connection.currentConn()
 	if a == nil {
-		return nil, ErrDisconnected
+		return nil, fault.ErrDisconnected
 	}
 	snapshot, err := a.pasteboard.Read(ctx)
 	if err != nil {

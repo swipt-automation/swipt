@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/rfb/media"
+	"github.com/swipt-automation/swipt/internal/screen"
 )
 
 const (
@@ -40,13 +40,13 @@ type decoder interface {
 
 type screenEvent struct {
 	unit  *media.AccessUnit
-	moved *device.ScreenInfo
+	moved *screen.Info
 }
 
 type screenStream struct {
 	engine   *engine
-	device   *device.ScreenStream
-	info     device.ScreenInfo
+	device   screen.Stream
+	info     screen.Info
 	events   chan screenEvent
 	dropped  atomic.Bool
 	done     chan struct{}
@@ -66,10 +66,7 @@ type screenStream struct {
 	closed     bool
 }
 
-func (e *engine) openScreen(ctx context.Context, options device.ScreenStreamOptions) (*screenStream, error) {
-	if options.Mode == "" {
-		options.Mode = device.ScreenModeRemoteDesktop
-	}
+func (e *engine) openScreen(ctx context.Context, options screen.Options) (*screenStream, error) {
 	stream := &screenStream{
 		engine:     e,
 		events:     make(chan screenEvent, screenBacklog),
@@ -80,7 +77,7 @@ func (e *engine) openScreen(ctx context.Context, options device.ScreenStreamOpti
 	}
 	ctx, cancel := context.WithTimeout(ctx, screenOpenLimit)
 	defer cancel()
-	opened, err := e.graphics.connection.OpenScreenStream(ctx, options, stream)
+	opened, err := e.graphics.screen.OpenScreenStream(ctx, options, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +101,7 @@ func (s *screenStream) ScreenUnit(unit *media.AccessUnit) {
 	}
 }
 
-func (s *screenStream) ScreenMoved(info device.ScreenInfo) {
+func (s *screenStream) ScreenMoved(info screen.Info) {
 	select {
 	case s.events <- screenEvent{moved: &info}:
 	case <-s.done:
@@ -159,7 +156,7 @@ func (s *screenStream) run() {
 	}
 }
 
-func (s *screenStream) move(info device.ScreenInfo) {
+func (s *screenStream) move(info screen.Info) {
 	s.access.Lock()
 	s.info = info
 	recordings := slices.Collect(maps.Keys(s.recordings))

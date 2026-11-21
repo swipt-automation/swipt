@@ -17,6 +17,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/api"
 	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
 	"github.com/swipt-automation/swipt/internal/version"
 )
@@ -34,7 +35,7 @@ const UpdateGuide = "https://swipt.io/"
 var (
 	ErrNotFound        = E.New("not found")
 	ErrNotAllowed      = E.New("not allowed")
-	ErrInvalid         = device.ErrInvalid
+	ErrInvalid         = fault.ErrInvalid
 	ErrOutdated        = E.New("Swipt is outdated")
 	ErrSwipletOutdated = E.New("the swiplet is outdated")
 

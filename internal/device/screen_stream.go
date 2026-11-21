@@ -12,6 +12,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
 	"github.com/swipt-automation/swipt/internal/rfb/media"
+	"github.com/swipt-automation/swipt/internal/screen"
 
 	"github.com/google/uuid"
 )
@@ -26,43 +27,24 @@ const (
 	defaultScreenBitrate = 10_000_000
 )
 
-type ScreenMode string
-
 const (
-	ScreenModeRemoteDesktop ScreenMode = "remoteDesktop"
-	ScreenModeCoreDevice    ScreenMode = "coreDevice"
+	ScreenModeRemoteDesktop = "remoteDesktop"
+	ScreenModeCoreDevice    = "coreDevice"
 )
-
-type ScreenStreamOptions struct {
-	Mode           ScreenMode
-	MaximumBitrate uint64
-}
-
-type ScreenInfo struct {
-	Width  int     `json:"width"`
-	Height int     `json:"height"`
-	Scale  float64 `json:"scale"`
-}
-
-type ScreenConsumer interface {
-	ScreenUnit(unit *media.AccessUnit)
-	ScreenMoved(info ScreenInfo)
-	ScreenEnded(err error)
-}
 
 type ScreenStream struct {
 	screens  *screenStreams
 	display  int
-	info     ScreenInfo
-	options  ScreenStreamOptions
-	consumer ScreenConsumer
+	info     screen.Info
+	options  screen.Options
+	consumer screen.Consumer
 	release  func()
 }
 
 type screenCapture struct {
 	cancel  context.CancelFunc
 	stream  *deviceStream
-	options ScreenStreamOptions
+	options screen.Options
 	restart bool
 }
 
@@ -82,7 +64,7 @@ func newScreenStreams(connection *Connection) *screenStreams {
 	return &screenStreams{connection: connection, open: make(map[*ScreenStream]struct{})}
 }
 
-func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamOptions, consumer ScreenConsumer) (*ScreenStream, error) {
+func (s *Connection) OpenScreenStream(ctx context.Context, options screen.Options, consumer screen.Consumer) (screen.Stream, error) {
 	c, release, err := s.acquire(ctx)
 	if err != nil {
 		return nil, err
@@ -104,15 +86,15 @@ func (s *Connection) OpenScreenStream(ctx context.Context, options ScreenStreamO
 	return stream, nil
 }
 
-func screenInfo(shown display.DisplayInfo) ScreenInfo {
-	return ScreenInfo{
+func screenInfo(shown display.DisplayInfo) screen.Info {
+	return screen.Info{
 		Width:  shown.StreamWidth,
 		Height: shown.StreamHeight,
 		Scale:  float64(max(shown.PointScale, 1)) * float64(shown.StreamWidth) / float64(shown.Width),
 	}
 }
 
-func (s *ScreenStream) Info() ScreenInfo {
+func (s *ScreenStream) Info() screen.Info {
 	s.screens.access.Lock()
 	defer s.screens.access.Unlock()
 	return s.info
@@ -170,16 +152,16 @@ func (s *screenStreams) remove(stream *ScreenStream) {
 	s.restartLocked()
 }
 
-func (s *screenStreams) mergedLocked() ScreenStreamOptions {
-	options := make([]ScreenStreamOptions, 0, len(s.open))
+func (s *screenStreams) mergedLocked() screen.Options {
+	options := make([]screen.Options, 0, len(s.open))
 	for stream := range s.open {
 		options = append(options, stream.options)
 	}
 	return mergeScreenStreamOptions(options)
 }
 
-func mergeScreenStreamOptions(options []ScreenStreamOptions) ScreenStreamOptions {
-	merged := ScreenStreamOptions{Mode: ScreenModeCoreDevice}
+func mergeScreenStreamOptions(options []screen.Options) screen.Options {
+	merged := screen.Options{Mode: ScreenModeCoreDevice}
 	for _, option := range options {
 		if option.Mode != ScreenModeCoreDevice {
 			merged.Mode = ScreenModeRemoteDesktop
@@ -386,7 +368,7 @@ func (s *screenStreams) steadySince(at time.Time) bool {
 	return time.Since(time.Unix(0, s.seen.Load())) < phoneGeometryLife && s.oriented.Load() < at.UnixNano()
 }
 
-func (s *Connection) startCapture(ctx context.Context, options ScreenStreamOptions) (*deviceStream, error) {
+func (s *Connection) startCapture(ctx context.Context, options screen.Options) (*deviceStream, error) {
 	ctx, cancel := context.WithTimeout(ctx, captureStartLimit)
 	defer cancel()
 	a, release, err := s.acquire(ctx)

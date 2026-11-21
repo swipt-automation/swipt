@@ -135,7 +135,7 @@ func Run(ctx context.Context, options Options) error {
 		Directory:   filepath.Join(directory, swipletsFolder),
 		Caches:      filepath.Join(caches, swipletsFolder),
 		LogFactory:  options.Logs,
-		Graphics:    graphics.New(graphics.Options{Connection: connection, Logger: options.Logs.NewLogger("graphics")}),
+		Graphics:    graphics.New(graphics.Options{Screen: connection, Logger: options.Logs.NewLogger("graphics")}),
 	})
 	swiplets.Start()
 	defer swiplets.Close()

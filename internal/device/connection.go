@@ -15,6 +15,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	"github.com/swipt-automation/swipt/internal/coredevice"
 	"github.com/swipt-automation/swipt/internal/coredevice/display"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/netwatch"
 	"github.com/swipt-automation/swipt/internal/rfb"
 	"github.com/swipt-automation/swipt/internal/version"
@@ -299,13 +300,13 @@ func (s *Connection) waitConn(ctx context.Context, persistent bool) (*conn, erro
 		switch {
 		case c != nil:
 		case s.closed:
-			err = E.Extend(ErrDisconnected, "the device connection is closing")
+			err = E.Extend(fault.ErrDisconnected, "the device connection is closing")
 		case s.unavailable != nil:
-			err = E.Cause1(ErrUnavailable, s.unavailable)
+			err = E.Cause1(fault.ErrUnavailable, s.unavailable)
 		case s.failure != nil:
-			err = E.Cause1(ErrUnavailable, s.failure)
+			err = E.Cause1(fault.ErrUnavailable, s.failure)
 		case !patient && s.attemptErr != nil && s.failedAttempts != attempts:
-			err = E.Cause1(ErrUnavailable, s.attemptErr)
+			err = E.Cause1(fault.ErrUnavailable, s.attemptErr)
 		}
 		s.access.Unlock()
 		if c != nil || err != nil {
@@ -324,7 +325,7 @@ func (s *Connection) waitConn(ctx context.Context, persistent bool) (*conn, erro
 			}
 			return nil, E.Cause(ctx.Err(), "wait for the device")
 		case <-s.ctx.Done():
-			return nil, E.Extend(ErrDisconnected, "the device connection is closing")
+			return nil, E.Extend(fault.ErrDisconnected, "the device connection is closing")
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 // UIKit dropped touches during a presentation while the accessibility hit test
@@ -87,7 +88,7 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 			return act(ctx, s, node, at)
 		})
 		s.grant.release()
-		if errors.Is(err, ErrNotAnswering) {
+		if errors.Is(err, fault.ErrNotAnswering) {
 			pending, err = err.Error(), nil
 		}
 		if err != nil || pending == "" {
@@ -106,9 +107,9 @@ func (p *Phone) aimed(ctx context.Context, ref string, timeout time.Duration, na
 		if !s.animating && !deadline.IsZero() && time.Now().After(deadline) {
 			p.connection.trace(started, name+".refused", pending, time.Since(started))
 			if timeout == 0 {
-				return E.Extend(ErrTimeout, pending)
+				return E.Extend(fault.ErrTimeout, pending)
 			}
-			return E.Extend(ErrTimeout, pending, "; gave up after ", timeout)
+			return E.Extend(fault.ErrTimeout, pending, "; gave up after ", timeout)
 		}
 		wait := delay
 		if !s.animating && !deadline.IsZero() {

@@ -91,7 +91,7 @@ func NewPlatform(options *PlatformOptions, handler PlatformHandler, deviceOption
 		LogFactory:  p.logFactory,
 		Dialog:      p.dialog,
 		Graphics: graphics.New(graphics.Options{
-			Connection:        p.device.connection,
+			Screen:            p.device.connection,
 			Logger:            p.logFactory.NewLogger("graphics"),
 			OnRecordingFailed: handler.OnRecordingFailed,
 		}),

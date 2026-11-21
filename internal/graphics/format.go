@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/rfb/media"
+	"github.com/swipt-automation/swipt/internal/screen"
 )
 
 type hevcFormat struct {
@@ -20,7 +20,7 @@ type hevcFormat struct {
 	configuration []byte
 }
 
-func newHEVCFormat(vps, sps, pps []byte, screen device.ScreenInfo) (*hevcFormat, error) {
+func newHEVCFormat(vps, sps, pps []byte, screen screen.Info) (*hevcFormat, error) {
 	sequence, err := media.ParseHEVCSequence(sps)
 	if err != nil {
 		return nil, err

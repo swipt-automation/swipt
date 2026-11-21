@@ -2,13 +2,16 @@ package device
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"sync"
 	"time"
 
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
+	"github.com/swipt-automation/swipt/internal/selector"
 )
 
 const screenViewingWindow = 10 * time.Second
@@ -166,13 +169,23 @@ func (c *conn) watchScreenViewing(received <-chan Event, stop func()) {
 	}
 }
 
-const screenViewingLabel = `^DEVICE HUB, .*This device was viewed remotely from Mac$`
+var screenViewingLabel = regexp.MustCompile(`(?i)^DEVICE HUB, .*This device was viewed remotely from Mac$`)
 
-var screenViewingBanner = &Selector{predicate: -1, fields: []selectorField{
-	{name: "app", text: &textMatch{text: springboardBundleID, script: -1}},
-	{name: "identifier", text: &textMatch{text: "NotificationShortLookView", script: -1}},
-	{name: "label", text: &textMatch{regular: true, source: screenViewingLabel, flags: "i", pattern: regexp.MustCompile("(?i)" + screenViewingLabel), script: -1}},
-}}
+var screenViewingBanner = common.Must1(selector.Parse(Vocabulary, common.Must1(json.Marshal(map[string]any{
+	"app":        springboardBundleID,
+	"identifier": "NotificationShortLookView",
+	"label":      map[string]any{"$regex": screenViewingLabel.String(), "$id": 0},
+}))))
+
+type screenViewingCallbacks struct{}
+
+func (screenViewingCallbacks) Predicate(int, *ViewElement) (bool, error) {
+	return false, selector.ErrScripted
+}
+
+func (screenViewingCallbacks) Match(_ int, text string) (bool, error) {
+	return screenViewingLabel.MatchString(text), nil
+}
 
 func (c *conn) dismissScreenViewingBanner(ctx context.Context) error {
 	dismissed := false
@@ -184,7 +197,11 @@ func (c *conn) dismissScreenViewingBanner(ctx context.Context) error {
 		if view == nil {
 			continue
 		}
-		banner, err := view.Find("", screenViewingBanner, nil)
+		domain, universe, err := view.Domain("")
+		if err != nil {
+			return err
+		}
+		banner, err := screenViewingBanner.Find(domain, universe, screenViewingCallbacks{})
 		if err != nil {
 			return err
 		}

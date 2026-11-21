@@ -14,8 +14,8 @@ import (
 
 	"github.com/swipt-automation/swipt/internal/atomicfile"
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/rfb/media"
+	"github.com/swipt-automation/swipt/internal/screen"
 )
 
 const recordingManifestFile = "recording.json"
@@ -30,14 +30,14 @@ type recordingSegment struct {
 type recordingManifest struct {
 	Start    float64            `json:"start"`
 	Duration float64            `json:"duration"`
-	Screen   device.ScreenInfo  `json:"screen"`
+	Screen   screen.Info        `json:"screen"`
 	Segments []recordingSegment `json:"segments"`
 }
 
 type recordingSession struct {
 	directory string
 	stream    *screenStream
-	screen    device.ScreenInfo
+	screen    screen.Info
 	began     chan struct{}
 
 	access   sync.Mutex

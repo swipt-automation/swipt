@@ -12,6 +12,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
 	"github.com/swipt-automation/swipt/internal/coredevice/instruments"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 const (
@@ -85,7 +86,7 @@ func (p *Phone) SignalProcess(ctx context.Context, pid uint64, signal syscall.Si
 	defer done()
 	running, err := apps.Signal(ctx, c.device, pid, signal)
 	if err == nil && !running {
-		err = E.Cause1(ErrNotFound, E.New("there is no process ", pid))
+		err = E.Cause1(fault.ErrNotFound, E.New("there is no process ", pid))
 	}
 	return err
 }

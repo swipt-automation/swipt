@@ -16,6 +16,7 @@ import (
 	"github.com/sagernet/sing/common/logger"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 const (
@@ -374,7 +375,7 @@ func (w *axWorker) stalled(job *axJob, stall error) error {
 		w.blamed = pid
 		detail := subject + " has not answered the accessibility service yet: " + reason + "; " + basis + ", so the service is left running"
 		w.logger.Warn(detail)
-		return E.Extend(ErrNotAnswering, detail)
+		return E.Extend(fault.ErrNotAnswering, detail)
 	}
 	w.blamed = 0
 	waited := "it waited on " + subject + "; " + basis
@@ -541,6 +542,6 @@ func (s *Connection) stallsAllowed() error {
 	if len(s.stalls) < stallLimit {
 		return nil
 	}
-	return E.Cause1(ErrUnavailable, E.New("the device's accessibility service stopped answering ", len(s.stalls), " times in ", stallWindow,
+	return E.Cause1(fault.ErrUnavailable, E.New("the device's accessibility service stopped answering ", len(s.stalls), " times in ", stallWindow,
 		" and was restarted each time; it is tried again ", time.Until(s.stalls[0].Add(stallWindow)).Round(time.Second), " from now"))
 }

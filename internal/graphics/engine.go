@@ -18,7 +18,7 @@ import (
 	"unsafe"
 
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/screen"
 )
 
 type reference interface {
@@ -109,7 +109,7 @@ func (e *engine) run(c *call, context *automation.GraphicsCall) (any, error) {
 	}
 	switch c.method {
 	case "screen.open":
-		stream, err := e.openScreen(context.Context(), device.ScreenStreamOptions{Mode: device.ScreenMode(arguments.Mode), MaximumBitrate: arguments.MaximumBitrate})
+		stream, err := e.openScreen(context.Context(), screen.Options{Mode: arguments.Mode, MaximumBitrate: arguments.MaximumBitrate})
 		if err != nil {
 			return nil, err
 		}

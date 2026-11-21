@@ -16,7 +16,9 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/jsc"
+	"github.com/swipt-automation/swipt/internal/selector"
 )
 
 type operation struct {
@@ -120,7 +122,7 @@ func (o *operation) decode(required int, values ...any) error {
 func (o *operation) phone() (*device.Phone, error) {
 	phone := o.engine.host.options.Device
 	if phone == nil {
-		return nil, E.Cause1(device.ErrUnavailable, E.New("this server has no device"))
+		return nil, E.Cause1(fault.ErrUnavailable, E.New("this server has no device"))
 	}
 	o.device = phone
 	return phone, nil
@@ -143,9 +145,9 @@ func (o *operation) droppedError(err error, doing string) error {
 		}
 	}
 	if errors.Is(err, context.Canceled) {
-		return E.Extend(device.ErrDisconnected, "the connection dropped ", doing)
+		return E.Extend(fault.ErrDisconnected, "the connection dropped ", doing)
 	}
-	return E.Extend(device.ErrDisconnected, "the connection dropped ", doing, ": ", err)
+	return E.Extend(fault.ErrDisconnected, "the connection dropped ", doing, ": ", err)
 }
 
 func (o *operation) screen(ctx context.Context) (*device.Phone, error) {
@@ -169,7 +171,7 @@ func screenAction(act func(ctx context.Context, phone *device.Phone, call *opera
 	}
 }
 
-var terseErrors = []error{ErrInvalid, ErrNotFound, ErrNotAllowed, errNetwork, device.ErrNotFound, device.ErrTimeout, device.ErrNotAnswering}
+var terseErrors = []error{ErrInvalid, ErrNotFound, ErrNotAllowed, errNetwork, fault.ErrNotFound, fault.ErrTimeout, fault.ErrNotAnswering}
 
 func Message(err error) string {
 	message := err.Error()
@@ -192,11 +194,11 @@ type failureKind struct {
 }
 
 var failureKinds = []failureKind{
-	{"UnavailableError", []error{device.ErrUnavailable, device.ErrDisconnected, device.ErrLocked, device.ErrStalled, device.ErrNotAnswering, accessibility.ErrStalled}},
-	{"TimeoutError", []error{context.DeadlineExceeded, device.ErrTimeout}},
+	{"UnavailableError", []error{fault.ErrUnavailable, fault.ErrDisconnected, device.ErrLocked, device.ErrStalled, fault.ErrNotAnswering, accessibility.ErrStalled}},
+	{"TimeoutError", []error{context.DeadlineExceeded, fault.ErrTimeout}},
 	{"AbortError", []error{context.Canceled, ErrDismissed, errReset, ErrSessionEnded}},
 	{"TypeError", []error{ErrInvalid, errNetwork}},
-	{"NotFoundError", []error{ErrNotFound, device.ErrNotFound, accessibility.ErrGone}},
+	{"NotFoundError", []error{ErrNotFound, fault.ErrNotFound, accessibility.ErrGone}},
 	{"NotAllowedError", []error{ErrNotAllowed}},
 }
 
@@ -605,18 +607,18 @@ func uiFind(ctx context.Context, call *operation) (any, error) {
 	}
 	selectors := make([]*device.Selector, 0, len(encoded))
 	for _, data := range encoded {
-		selector, err := device.ParseSelector(data)
+		parsed, err := selector.Parse(device.Vocabulary, data)
 		if err != nil {
 			return nil, err
 		}
-		selectors = append(selectors, selector)
+		selectors = append(selectors, parsed)
 	}
 	phone, err := call.screen(ctx)
 	if err != nil {
 		return nil, err
 	}
 	view, seen, err := phone.Find(ctx, selectors, depthOf(options.Depth))
-	if errors.Is(err, device.ErrNotAnswering) {
+	if errors.Is(err, fault.ErrNotAnswering) {
 		return map[string]any{"snapshot": nil, "seen": seen, "failure": FailureOf(err)}, nil
 	}
 	if err != nil {

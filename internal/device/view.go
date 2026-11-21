@@ -1,8 +1,6 @@
 package device
 
 import (
-	"bytes"
-	"encoding/json"
 	"math"
 	"slices"
 	"strconv"
@@ -14,6 +12,7 @@ import (
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 var roles = [...]string{
@@ -156,7 +155,7 @@ func parseRef(text string) (accessibility.ElementRef, error) {
 			return accessibility.ElementRef{PID: first, ObjectID: second}, nil
 		}
 	}
-	return accessibility.ElementRef{}, E.Extend(ErrInvalid, "the element reference ", strconv.Quote(text), " is not one a read of the screen answered")
+	return accessibility.ElementRef{}, E.Extend(fault.ErrInvalid, "the element reference ", strconv.Quote(text), " is not one a read of the screen answered")
 }
 
 func NewView(model *PhoneModel, raw bool) *View {
@@ -447,32 +446,4 @@ func tenth(value float64) float64 {
 		return rounded
 	}
 	return value
-}
-
-var lineFlags = []struct {
-	name string
-	set  func(*ViewElement) bool
-}{
-	{"selected", func(it *ViewElement) bool { return it.Selected }},
-	{"focused", func(it *ViewElement) bool { return it.Focused }},
-	{"disabled", func(it *ViewElement) bool { return it.Disabled }},
-	{"secure", func(it *ViewElement) bool { return it.Secure }},
-	{"partial", func(it *ViewElement) bool { return it.Partial }},
-	{"offScreen", func(it *ViewElement) bool { return it.OffScreen }},
-	{"inert", func(it *ViewElement) bool { return it.Inert }},
-	{"remote", func(it *ViewElement) bool { return it.Remote }},
-	{"truncated", func(it *ViewElement) bool { return it.Truncated }},
-}
-
-func quote(text string) string {
-	data, _ := marshalText(text)
-	return data
-}
-
-func marshalText(value any) (string, error) {
-	var out bytes.Buffer
-	encoder := json.NewEncoder(&out)
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(value)
-	return strings.TrimSuffix(out.String(), "\n"), err
 }

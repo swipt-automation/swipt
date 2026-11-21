@@ -6,25 +6,25 @@ import (
 	"runtime/cgo"
 
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/jsc"
 	"github.com/swipt-automation/swipt/internal/log"
+	"github.com/swipt-automation/swipt/internal/screen"
 )
 
 type Options struct {
-	Connection        *device.Connection
+	Screen            screen.Source
 	Logger            log.ContextLogger
 	OnRecordingFailed func(message string)
 }
 
 type Graphics struct {
-	connection        *device.Connection
+	screen            screen.Source
 	logger            log.ContextLogger
 	onRecordingFailed func(message string)
 }
 
 func New(options Options) *Graphics {
-	g := &Graphics{connection: options.Connection, logger: options.Logger, onRecordingFailed: options.OnRecordingFailed}
+	g := &Graphics{screen: options.Screen, logger: options.Logger, onRecordingFailed: options.OnRecordingFailed}
 	setupNative(g)
 	return g
 }

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
 )
 
@@ -332,7 +332,7 @@ func (r *runner) log(entry LogEntry) {
 
 func (h *Host) deviceLost(err error, since time.Time) bool {
 	phone := h.options.Device
-	return phone != nil && errors.Is(err, device.ErrUnavailable) && phone.Disconnected(since)
+	return phone != nil && errors.Is(err, fault.ErrUnavailable) && phone.Disconnected(since)
 }
 
 func (h *Host) publish(id string, state ServiceState) {

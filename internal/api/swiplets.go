@@ -18,7 +18,7 @@ import (
 	E "github.com/sagernet/sing/common/exceptions"
 	F "github.com/sagernet/sing/common/format"
 	"github.com/swipt-automation/swipt/internal/automation"
-	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
 	"github.com/swipt-automation/swipt/internal/proto"
 
@@ -103,7 +103,7 @@ func inputOf(value *structpb.Value) (json.RawMessage, error) {
 	}
 	data, err := protojson.Marshal(value)
 	if err != nil {
-		return nil, E.Cause1(device.ErrInvalid, err)
+		return nil, E.Cause1(fault.ErrInvalid, err)
 	}
 	return data, nil
 }
@@ -260,12 +260,12 @@ func (s *swipletService) DeploySwiplet(stream grpc.ClientStreamingServer[proto.D
 	}
 	reader, err := zip.NewReader(bytes.NewReader(archive.Bytes()), int64(archive.Len()))
 	if err != nil {
-		return apiError(E.Cause1(device.ErrInvalid, E.Cause(err, "open the archive")))
+		return apiError(E.Cause1(fault.ErrInvalid, E.Cause(err, "open the archive")))
 	}
 	contents, err := automation.ReadArchive(reader)
 	if err != nil {
-		if !errors.Is(err, device.ErrInvalid) {
-			err = E.Cause1(device.ErrInvalid, err)
+		if !errors.Is(err, fault.ErrInvalid) {
+			err = E.Cause1(fault.ErrInvalid, err)
 		}
 		return apiError(err)
 	}
@@ -288,14 +288,14 @@ func (s *swipletService) RemoveSwiplet(_ context.Context, request *proto.RemoveS
 
 func dataPath(name string) (string, error) {
 	if strings.HasPrefix(name, "/") && name != "/" {
-		return "", E.Extend(device.ErrInvalid, "the path ", strconv.Quote(name), " is absolute; give one within the swiplet's data directory, such as settings.json")
+		return "", E.Extend(fault.ErrInvalid, "the path ", strconv.Quote(name), " is absolute; give one within the swiplet's data directory, such as settings.json")
 	}
 	cleaned := path.Clean(strings.TrimPrefix(name, "/"))
 	if cleaned == "." {
 		return "", nil
 	}
 	if !fs.ValidPath(cleaned) {
-		return "", E.Extend(device.ErrInvalid, "the path ", strconv.Quote(name), " leaves the data directory")
+		return "", E.Extend(fault.ErrInvalid, "the path ", strconv.Quote(name), " leaves the data directory")
 	}
 	return cleaned, nil
 }
@@ -426,12 +426,12 @@ func (s *swipletService) WriteDataFile(stream grpc.ClientStreamingServer[proto.W
 		switch part := request.Part.(type) {
 		case *proto.WriteDataFileRequest_Header:
 			if header != nil {
-				return apiError(E.Extend(device.ErrInvalid, "the header was sent twice"))
+				return apiError(E.Extend(fault.ErrInvalid, "the header was sent twice"))
 			}
 			header = part.Header
 		case *proto.WriteDataFileRequest_Data:
 			if header == nil {
-				return apiError(E.Extend(device.ErrInvalid, "the data came before the header"))
+				return apiError(E.Extend(fault.ErrInvalid, "the data came before the header"))
 			}
 			if data.Len()+len(part.Data) > largestUpload {
 				return status.Error(codes.ResourceExhausted, F.ToString("the file is larger than ", largestUpload>>20, " MiB"))
@@ -440,11 +440,11 @@ func (s *swipletService) WriteDataFile(stream grpc.ClientStreamingServer[proto.W
 		}
 	}
 	if header == nil {
-		return apiError(E.Extend(device.ErrInvalid, "the header is missing"))
+		return apiError(E.Extend(fault.ErrInvalid, "the header is missing"))
 	}
 	name, err := dataPath(header.Path)
 	if err == nil && name == "" {
-		err = E.Extend(device.ErrInvalid, "the path names the data directory")
+		err = E.Extend(fault.ErrInvalid, "the path names the data directory")
 	}
 	if err == nil {
 		err = s.options.Swiplets.WriteFile(header.SwipletId, automation.DataFolder, name, data.Bytes())
@@ -463,7 +463,7 @@ func (s *swipletService) RemoveDataFile(_ context.Context, request *proto.Remove
 	id := request.SwipletId
 	name, err := dataPath(request.Path)
 	if err == nil && name == "" {
-		err = E.Extend(device.ErrInvalid, "the path names the data directory")
+		err = E.Extend(fault.ErrInvalid, "the path names the data directory")
 	}
 	var info *proto.FileInfo
 	if err == nil {

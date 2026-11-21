@@ -16,6 +16,7 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/accessibility"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
 	"github.com/swipt-automation/swipt/internal/coredevice/hid"
+	"github.com/swipt-automation/swipt/internal/fault"
 )
 
 const launchLimit = 3500 * time.Millisecond
@@ -104,7 +105,7 @@ func (s *axSession) perform(ctx context.Context, target *PhoneNode, name string)
 	custom := common.Find(actions, func(candidate accessibility.CustomAction) bool { return candidate.Name == name })
 	if !standard && custom.Identifier == "" {
 		names := append(slices.Sorted(maps.Keys(phoneActions)), common.Map(actions, func(it accessibility.CustomAction) string { return it.Name })...)
-		return E.Extend(ErrInvalid, describeElement(target.AX), " has no action ", strconv.Quote(name), "; its actions are ", strings.Join(names, ", "))
+		return E.Extend(fault.ErrInvalid, describeElement(target.AX), " has no action ", strconv.Quote(name), "; its actions are ", strings.Join(names, ", "))
 	}
 	batch := &accessibility.Batch{}
 	var perform *accessibility.Result[bool]
@@ -434,7 +435,7 @@ func (p *Phone) Pinch(ctx context.Context, center Point, scale float64, duration
 func (p *Phone) Key(ctx context.Context, combo string) error {
 	usages, err := parseKeyCombo(combo)
 	if err != nil {
-		return E.Cause1(ErrInvalid, err)
+		return E.Cause1(fault.ErrInvalid, err)
 	}
 	return p.act(ctx, action{name: "key " + combo, input: func(ctx context.Context, c *conn, _ phoneGeometry) error {
 		return p.gesture(ctx, c, func(input *hid.Client) error {
@@ -453,7 +454,7 @@ const springboardBundleID = "com.apple.springboard"
 func (p *Phone) Button(ctx context.Context, name string) error {
 	buttons, known := phoneButtons[name]
 	if !known {
-		return E.Extend(ErrInvalid, "unknown button ", strconv.Quote(name))
+		return E.Extend(fault.ErrInvalid, "unknown button ", strconv.Quote(name))
 	}
 	var check func(ctx context.Context, c *conn) error
 	if name == "home" {
@@ -499,7 +500,7 @@ func (p *Phone) Launch(ctx context.Context, bundleID, url string, restart, anima
 			}
 			list, listErr := apps.List(ctx, c.device)
 			if listErr == nil && !slices.ContainsFunc(list, func(app apps.App) bool { return app.BundleID == bundleID }) {
-				return E.Cause1(ErrNotFound, E.Cause(err, "no app with the bundle ID ", strconv.Quote(bundleID), " is listed"))
+				return E.Cause1(fault.ErrNotFound, E.Cause(err, "no app with the bundle ID ", strconv.Quote(bundleID), " is listed"))
 			}
 			return E.Append(err, listErr, func(err error) error { return E.Cause(err, "list the apps") })
 		},

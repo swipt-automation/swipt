@@ -11,6 +11,7 @@ import (
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 	"github.com/swipt-automation/swipt/internal/coredevice/vpnpeer"
 	"github.com/swipt-automation/swipt/internal/device"
+	"github.com/swipt-automation/swipt/internal/fault"
 	"github.com/swipt-automation/swipt/internal/log"
 	"github.com/swipt-automation/swipt/internal/rfb"
 )
@@ -117,7 +118,7 @@ func newDevice(options *DeviceOptions, handler DeviceHandler, logFactory *log.Fa
 		Connect: func(ctx context.Context) (*coredevice.Device, error) {
 			file := d.pairing.Load()
 			if file == nil {
-				return nil, E.Cause1(device.ErrUnavailable, E.New("the device is not paired"))
+				return nil, E.Cause1(fault.ErrUnavailable, E.New("the device is not paired"))
 			}
 			port := uint16(d.pairingPort.Load())
 			var udid string
