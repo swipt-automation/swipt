@@ -68,9 +68,6 @@ func Devices(ctx context.Context, emit func(ListedDevice) error) error {
 	}
 	var tasks sync.WaitGroup
 	for _, found := range preferUSB(listed) {
-		if strings.HasPrefix(found.UDID, virtualPrefix) {
-			continue
-		}
 		tasks.Go(func() {
 			name, err := peer{device: found}.name(ctx)
 			if ctx.Err() != nil {
@@ -81,7 +78,7 @@ func Devices(ctx context.Context, emit func(ListedDevice) error) error {
 			if ctx.Err() != nil {
 				return
 			}
-			report(ListedDevice{Name: name, UDID: found.UDID, Paired: isPaired})
+			report(ListedDevice{Name: name, UDID: found.UDID, Paired: isPaired, Virtual: coredevice.IsGuest(found.UDID)})
 		})
 	}
 	tasks.Go(func() {
@@ -90,20 +87,6 @@ func Devices(ctx context.Context, emit func(ListedDevice) error) error {
 		})
 		if ctx.Err() == nil {
 			fail(err)
-		}
-	})
-	tasks.Go(func() {
-		machines, err := virtualMachines(ctx)
-		if ctx.Err() != nil {
-			return
-		}
-		fail(err)
-		for _, machine := range machines {
-			isPaired := paired(machine.udid)
-			if ctx.Err() != nil {
-				return
-			}
-			report(ListedDevice{Name: machine.name, UDID: machine.udid, Paired: isPaired, Virtual: true})
 		}
 	})
 	tasks.Wait()
@@ -123,7 +106,7 @@ func Trust(ctx context.Context, udid string) error {
 	if _, err := usbmuxd.ReadPairRecord(ctx, udid); err == nil {
 		return nil
 	}
-	machine, err := findVirtualMachine(ctx, udid)
+	machine, err := findVirtualMachine(udid)
 	if err != nil {
 		return err
 	}

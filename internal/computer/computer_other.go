@@ -14,6 +14,10 @@ import (
 
 var systemDiskImages []string
 
+func virtualMachines() ([]virtualMachine, error) {
+	return nil, nil
+}
+
 func Name() string {
 	name, _ := os.Hostname()
 	return name

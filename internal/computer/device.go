@@ -197,7 +197,7 @@ type Session struct {
 }
 
 func OpenSession(ctx context.Context, udid string, logger log.ContextLogger) (*Session, error) {
-	machine, err := findVirtualMachine(ctx, udid)
+	machine, err := findVirtualMachine(udid)
 	if err != nil {
 		return nil, err
 	}

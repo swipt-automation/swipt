@@ -7,31 +7,21 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/fs"
 	"maps"
 	"net"
-	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/swipt-automation/swipt/internal/coredevice"
 	"github.com/swipt-automation/swipt/internal/coredevice/lockdown"
 
 	"howett.net/plist"
 )
 
 const (
-	// vphone guests are built with chip ID 0xFE01, which their UDID starts with
-	// (vphone-cli 8c3630c7, Research/Guest/xcode_install_signature_gate.md).
-	virtualPrefix     = "0000FE01-"
-	launchpadSocket   = "Library/Application Support/vphone-launchpad/control.sock"
-	launchpadCLI      = "vphone-launchpad-cli"
 	launchTimeout     = 30 * time.Second
 	launchRetry       = time.Second
 	lockdownRecords   = "/var/root/Library/Lockdown/pair_records"
@@ -43,52 +33,15 @@ const (
 var errNotVirtual = E.New("only a virtual machine does this")
 
 type virtualMachine struct {
-	name    string
 	udid    string
 	control vphoned
 }
 
-func virtualMachines(ctx context.Context) ([]virtualMachine, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	if _, err = os.Stat(filepath.Join(home, launchpadSocket)); errors.Is(err, fs.ErrNotExist) {
+func findVirtualMachine(udid string) (*virtualMachine, error) {
+	if !coredevice.IsGuest(udid) {
 		return nil, nil
 	}
-	output, err := exec.CommandContext(ctx, launchpadCLI, "vm", "list").Output()
-	if errors.Is(err, exec.ErrNotFound) {
-		return nil, nil
-	}
-	if exitError, exited := errors.AsType[*exec.ExitError](err); exited {
-		return nil, E.New(launchpadCLI, " vm list: ", strings.TrimSpace(string(exitError.Stderr)))
-	}
-	if err != nil {
-		return nil, err
-	}
-	var listed []struct {
-		Name          string `json:"name"`
-		UDID          string `json:"udid"`
-		State         string `json:"state"`
-		ControlSocket string `json:"controlSocket"`
-	}
-	if err = json.Unmarshal(output, &listed); err != nil {
-		return nil, E.Cause(err, launchpadCLI, " vm list")
-	}
-	var machines []virtualMachine
-	for _, it := range listed {
-		if it.State == "running" && it.UDID != "" && it.ControlSocket != "" {
-			machines = append(machines, virtualMachine{name: it.Name, udid: it.UDID, control: vphoned(it.ControlSocket)})
-		}
-	}
-	return machines, nil
-}
-
-func findVirtualMachine(ctx context.Context, udid string) (*virtualMachine, error) {
-	if !strings.HasPrefix(udid, virtualPrefix) {
-		return nil, nil
-	}
-	machines, err := virtualMachines(ctx)
+	machines, err := virtualMachines()
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +63,9 @@ func (socket vphoned) call(ctx context.Context, method string, params map[string
 	defer conn.Close()
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
 	defer stop()
+	if params == nil {
+		params = map[string]any{}
+	}
 	request, err := json.Marshal(map[string]any{"t": "rpc", "method": method, "params": params})
 	if err != nil {
 		return nil, err
