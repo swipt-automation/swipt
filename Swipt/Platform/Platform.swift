@@ -20,6 +20,7 @@ final class Platform {
     }
 
     let device: DeviceConnection
+    var isSettingUp = AutomatedSetupView.isRequested
     private var calls = 0
 
     @PerceptionIgnored private let core: LibSwiptPlatform
@@ -66,7 +67,7 @@ final class Platform {
     @PerceptionIgnored private var advertised: APIAdvertisement?
     @PerceptionIgnored private var dialogs: [Int64: Task<Void, Never>] = [:]
     @PerceptionIgnored private var reportedServices: Set<String> = []
-    @PerceptionIgnored private var wasActive = false
+    @PerceptionIgnored private var wasServing = false
     @PerceptionIgnored private var keepingAwake: Set<ObjectIdentifier> = []
     nonisolated private let isAppActive: LockedState<Bool>
 
@@ -367,21 +368,22 @@ final class Platform {
     }
 
     private func observeActivity() {
-        let active = withPerceptionTracking {
+        let (active, settingUp) = withPerceptionTracking {
             _ = (background.isEnabled, background.mode)
-            return isActive
+            return (isActive, isSettingUp)
         } onChange: { [weak self] in
             DispatchQueue.main.async { self?.observeActivity() }
         }
-        if active, !wasActive {
+        let serving = active && !settingUp
+        if serving, !wasServing {
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, error in
                 if let error {
                     Self.logger.error("Request notification authorization: \(error, privacy: .public)")
                 }
             }
         }
-        wasActive = active
-        let mode = active && background.isEnabled ? background.mode : nil
+        wasServing = serving
+        let mode = serving && background.isEnabled ? background.mode : nil
         if mode == .system {
             assertion.start()
         } else {

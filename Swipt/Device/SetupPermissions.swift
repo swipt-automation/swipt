@@ -5,16 +5,20 @@ import Perception
 import SwiftUI
 import UIKit
 import UserNotifications
+import dnssd
 
 enum SetupPermissions {
     static func request() async {
         let location = LocationPermission()
-        async let whenInUse: Void = location.requestWhenInUse()
+        let asksLocation = location.status == .notDetermined
+        async let whenInUse: Void = asksLocation ? location.requestWhenInUse() : ()
         async let notifications: Void = requestNotifications()
         async let localNetwork: Void = requestLocalNetwork()
         async let cellularData: Void = requestCellularData()
         _ = await (whenInUse, notifications, localNetwork, cellularData)
-        await location.requestAlways()
+        if asksLocation, #available(iOS 18, *) {
+            await location.requestAlways()
+        }
     }
 
     private static func requestNotifications() async {
@@ -39,13 +43,19 @@ enum SetupPermissions {
                 }
             }
             browser.stateUpdateHandler = { state in
-                if case .failed = state {
+                switch state {
+                case .failed, .waiting(.dns(DNSServiceErrorType(kDNSServiceErr_PolicyDenied))):
                     Task { @MainActor in resolution.resume() }
+                default:
+                    break
                 }
             }
             listener.stateUpdateHandler = { state in
-                if case .failed = state {
+                switch state {
+                case .failed, .waiting(.dns(DNSServiceErrorType(kDNSServiceErr_PolicyDenied))):
                     Task { @MainActor in resolution.resume() }
+                default:
+                    break
                 }
             }
             listener.start(queue: .main)
@@ -119,110 +129,59 @@ private final class LocationStatusObserver: NSObject, CLLocationManagerDelegate 
 
 private final class LocationPermission: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
-    private var resolution: Resolution?
-    private var waitingForActive = false
-    private var waitingForAlways = false
-    private var promptShown = false
-    private var timer: Task<Void, Never>?
-    private var settle: Task<Void, Never>?
+    private var isAlwaysDenied = false
+    private var waiting: (condition: () -> Bool, continuation: CheckedContinuation<Void, Never>)?
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(update), name: UIApplication.didBecomeActiveNotification, object: nil
+        )
+    }
+
+    var status: CLAuthorizationStatus { manager.authorizationStatus }
 
     func requestWhenInUse() async {
-        guard manager.authorizationStatus == .notDetermined else { return }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            resolution = Resolution(continuation)
-            manager.delegate = self
-            manager.requestWhenInUseAuthorization()
-        }
+        manager.requestWhenInUseAuthorization()
+        await wait { self.status != .notDetermined }
     }
 
+    @available(iOS 18, *)
     func requestAlways() async {
-        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
-        if UIApplication.shared.applicationState != .active {
-            await waitUntilActive()
-        }
-        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            resolution = Resolution(continuation)
-            waitingForAlways = true
-            promptShown = false
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(willResignActive), name: UIApplication.willResignActiveNotification, object: nil
-            )
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(didBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil
-            )
-            timer = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                guard !Task.isCancelled, let self, !self.promptShown else { return }
-                self.finish()
-            }
-            manager.delegate = self
-            manager.requestAlwaysAuthorization()
-        }
-    }
-
-    private func waitUntilActive() async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            resolution = Resolution(continuation)
-            waitingForActive = true
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(didBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil
-            )
-            if UIApplication.shared.applicationState == .active {
-                finish()
-                return
-            }
-            timer = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                guard !Task.isCancelled else { return }
-                self?.finish()
+        await wait { UIApplication.shared.applicationState == .active }
+        guard status == .authorizedWhenInUse else { return }
+        // The location alerts leave the app active, and Keep Only While Using on the Always alert reports no
+        // authorization change, only alwaysAuthorizationDenied of the session (iOS 27.3 24C5037i).
+        let session = CLServiceSession(authorization: .always)
+        let diagnostics = Task {
+            for try await diagnostic in session.diagnostics
+            where diagnostic.alwaysAuthorizationDenied || diagnostic.authorizationDenied
+                || diagnostic.authorizationDeniedGlobally || diagnostic.authorizationRestricted
+            {
+                isAlwaysDenied = true
+                update()
             }
         }
+        await wait { self.status != .authorizedWhenInUse || self.isAlwaysDenied }
+        diagnostics.cancel()
+        session.invalidate()
     }
 
-    private func finish() {
-        timer?.cancel()
-        timer = nil
-        settle?.cancel()
-        settle = nil
-        waitingForActive = false
-        waitingForAlways = false
-        promptShown = false
-        NotificationCenter.default.removeObserver(self)
-        let current = resolution
-        resolution = nil
-        current?.resume()
-    }
-
-    @objc private func willResignActive() {
-        guard waitingForAlways else { return }
-        promptShown = true
-        timer?.cancel()
-        timer = nil
-    }
-
-    @objc private func didBecomeActive() {
-        if waitingForActive {
-            finish()
-            return
+    private func wait(until condition: @escaping () -> Bool) async {
+        guard !condition() else { return }
+        await withCheckedContinuation { continuation in
+            waiting = (condition, continuation)
         }
-        guard waitingForAlways, promptShown else { return }
-        settle?.cancel()
-        settle = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
-            self?.finish()
-        }
+    }
+
+    @objc private func update() {
+        guard let waiting, waiting.condition() else { return }
+        self.waiting = nil
+        waiting.continuation.resume()
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        let status = manager.authorizationStatus
-        if waitingForAlways {
-            if status != .authorizedWhenInUse {
-                finish()
-            }
-        } else if !waitingForActive, status != .notDetermined {
-            finish()
-        }
+        update()
     }
 }

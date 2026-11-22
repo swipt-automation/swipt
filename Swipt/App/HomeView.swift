@@ -23,7 +23,6 @@ struct HomeView: View {
     #if os(iOS)
     @Environment(\.scenePhase) private var scenePhase
     @State private var isProbing = false
-    @State private var isSettingUp = AutomatedSetupView.isRequested
     private let developer = DeveloperSettings.shared
     #endif
 
@@ -33,8 +32,10 @@ struct HomeView: View {
             #if os(iOS)
             .modifier(SwipletOpener())
             .background {
-                if AutomatedSetupView.isRequested, !isSettingUp {
-                    AutomatedSetupFinished()
+                WithPerceptionTracking {
+                    if AutomatedSetupView.isRequested, Platform.isSupported, !Platform.shared.isSettingUp {
+                        AutomatedSetupFinished()
+                    }
                 }
             }
             #endif
@@ -51,8 +52,8 @@ struct HomeView: View {
     private var layout: some View {
         #if os(iOS)
         WithPerceptionTracking {
-            if Platform.isSupported, isSettingUp {
-                AutomatedSetupView { isSettingUp = false }
+            if Platform.isSupported, Platform.shared.isSettingUp {
+                AutomatedSetupView { Platform.shared.isSettingUp = false }
             } else if Platform.isSupported, SetupView.isNeeded {
                 SetupView()
             } else if #available(iOS 18, *) {

@@ -67,14 +67,8 @@ struct AutomatedSetupView: View {
         } actions: {
         }
         .task {
-            Task {
-                await SetupPermissions.request()
-                finished()
-            }
-            do {
-                try await Task.sleep(nanoseconds: 60_000_000_000)
-                finished()
-            } catch {}
+            await SetupPermissions.request()
+            finished()
         }
     }
 }
