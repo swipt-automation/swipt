@@ -31,21 +31,16 @@ async function tap(element) {
 
 async function dismiss(alert, index) {
   const until = Date.now() + 10_000;
-  let absent = 0;
+  let shown = alert;
   do {
-    const shown = await sheet();
-    if (shown === null) {
-      absent += 1;
-      if (absent === 2) {
-        return;
-      }
-      continue;
+    const button = shown.findAll({ role: "button" })[index];
+    if (button !== undefined) {
+      await tap(button);
     }
-    if (shown.label !== alert.label) {
+    shown = await sheet();
+    if (shown?.label !== alert.label) {
       return;
     }
-    absent = 0;
-    await tap(shown.findAll({ role: "button" })[index]);
   } while (Date.now() < until);
   throw new Error(`the alert stays: ${alert.label}`);
 }
