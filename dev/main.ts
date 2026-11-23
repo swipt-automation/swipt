@@ -5,17 +5,31 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-import { trustedDevice } from "@swipt/cli/driver";
+import { androidSwiptApp } from "@swipt/cli/adb";
 import { FalseResult, errorMessage } from "@swipt/cli/output";
-import { installAndOpen, installPasscode } from "@swipt/cli/sideload";
+import { validatePasscodeType } from "@swipt/cli/passcode";
+import {
+  installAndOpen,
+  installPasscode,
+  targetDevice,
+} from "@swipt/cli/sideload";
 import { bundleId, swiptApps } from "@swipt/cli/swipt-app";
 
 import { buildExpoModulesCore } from "./expo-modules-core";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const app = path.join(
+const iosApp = path.join(
   root,
   "build/DerivedData/Build/Products/Debug-iphoneos/Swipt.app",
+);
+const androidAar = "android/app/libs/libswipt.aar";
+const androidApk = path.join(
+  root,
+  "android/app/build/outputs/apk/debug/app-debug.apk",
+);
+const androidMetadata = path.join(
+  root,
+  "android/app/build/outputs/apk/debug/output-metadata.json",
 );
 const builds = path.join(root, "build/dev-install.json");
 const goSources = [
@@ -27,6 +41,17 @@ const goSources = [
   "internal",
   ":!internal/automation/runtime",
   ":!*_test.go",
+];
+const runtimeSources = [
+  "Makefile",
+  "package.json",
+  "bun.lock",
+  "bunfig.toml",
+  "api",
+  "internal/automation/runtime",
+  "internal/automation/bundles",
+  "internal/automation/rewrite.js",
+  "internal/automation/declarations",
 ];
 
 const driver = path.join(
@@ -136,20 +161,62 @@ const frameworks = () => {
 };
 
 async function installApp(context: Parameters<typeof installPasscode>[0]) {
-  const toolchain = [
-    capture("go", "version"),
-    capture("xcodebuild", "-version"),
-  ];
+  validatePasscodeType(context.options);
+  const goVersion = capture("go", "version");
   build(
     "driver",
     {
       paths: [...goSources, "cmd/swipt-driver", "cli/package.json"],
-      inputs: toolchain,
+      inputs: [goVersion],
       product: driver,
     },
     () => run("make", ["driver"]),
   );
-  const device = await trustedDevice(context, { required: false });
+  const device = await targetDevice(context, { required: false });
+  if (device.platform === "android") {
+    const current = await androidSwiptApp(device, context.signal);
+    const passcode = await installPasscode(context, device, current);
+    run("bun", ["install", "--frozen-lockfile"]);
+    build("runtime", { paths: runtimeSources }, () => run("make", ["runtime"]));
+    build(
+      "lib_android",
+      {
+        paths: [...goSources, "libswipt"],
+        inputs: [goVersion],
+        product: androidAar,
+      },
+      () => run("make", ["-o", "runtime", "lib_android"]),
+    );
+    build(
+      "app_android",
+      {
+        paths: [
+          "Makefile",
+          "package.json",
+          "bun.lock",
+          "android",
+          "internal/android",
+          "internal/automation/runtime",
+        ],
+        inputs: [goVersion, String(modified(androidAar) ?? "")],
+        product: androidApk,
+      },
+      () => run("make", ["-o", "lib_android", "build_android"]),
+    );
+    const metadata = JSON.parse(fs.readFileSync(androidMetadata, "utf8")) as {
+      elements: { versionCode: number }[];
+    };
+    await installAndOpen(
+      context,
+      { device, id: bundleId, current },
+      androidApk,
+      metadata.elements[0].versionCode,
+      { passcode },
+    );
+    return;
+  }
+
+  const toolchain = [goVersion, capture("xcodebuild", "-version")];
   const current = (await swiptApps(device)).find(
     (it) => it.bundleIdentifier === bundleId,
   );
@@ -158,25 +225,9 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
     process.env.XCODEBUILD_FLAGS,
     ...(device.virtual ? ["CODE_SIGNING_ALLOWED=NO"] : []),
   ].filter((flag) => flag !== undefined);
-  const info = path.join(app, "Info.plist");
+  const info = path.join(iosApp, "Info.plist");
   run("bun", ["install", "--frozen-lockfile"]);
-  build(
-    "runtime",
-    {
-      paths: [
-        "Makefile",
-        "package.json",
-        "bun.lock",
-        "bunfig.toml",
-        "api",
-        "internal/automation/runtime",
-        "internal/automation/bundles",
-        "internal/automation/rewrite.js",
-        "internal/automation/declarations",
-      ],
-    },
-    () => run("make", ["runtime"]),
-  );
+  build("runtime", { paths: runtimeSources }, () => run("make", ["runtime"]));
   build(
     "lib",
     {
@@ -194,6 +245,8 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
         ":!.github",
         ":!cli",
         ":!cmd",
+        ":!android",
+        ":!internal/android",
         ":!*.md",
         ":!LICENSE",
         ":!.gitignore",
@@ -212,7 +265,7 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
   await installAndOpen(
     context,
     { device, id: bundleId, current },
-    app,
+    iosApp,
     version,
     { passcode },
   );
@@ -220,7 +273,7 @@ async function installApp(context: Parameters<typeof installPasscode>[0]) {
 
 const commands = [
   ["frameworks", "Install the React Native frameworks"],
-  ["install [-d NAME|UDID]", "Build Swipt and install it on the device"],
+  ["install [-d NAME|ID]", "Build Swipt and install it on the device"],
 ];
 
 const usage = `usage: bun dev COMMAND

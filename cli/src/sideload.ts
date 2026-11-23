@@ -14,11 +14,26 @@ import { promisify } from "node:util";
 
 import select from "@inquirer/select";
 
+import {
+  type AndroidDevice,
+  adbAvailable,
+  androidSwiptApp,
+  authorizeAndroidDevice,
+  checkAndroidSupported,
+  forwardAndroidPort,
+  installAndroidAPK,
+  launchAndroidApp,
+  listAndroidDevices,
+  setupAndroidApp,
+  uninstallAndroidApp,
+} from "./adb";
 import type { Context } from "./cli/command";
 import { UsageError, open } from "./client";
 import {
   findPublished,
+  label,
   runningSwipt,
+  sameName,
   tryUnlock,
   withToken,
 } from "./connection";
@@ -27,30 +42,33 @@ import {
   DriverError,
   type Application,
   type Device,
-  type DeviceFilter,
   apps,
   configureVirtual,
+  driverAvailable,
   failures,
   installApp,
   launchApp,
+  listIOSDevices,
   mountDiskImage,
   openSettings,
   provisioningProfiles,
   randomToken,
   serve,
   terminateApp,
-  trustedDevice,
+  trustIOSDevice,
   uninstallApp,
   waitForDevice,
 } from "./driver";
 import { language, t } from "./i18n";
 import {
-  errorMessage,
+  type Choice,
   type PromptContext,
   choose,
   columns,
+  errorMessage,
   interactive,
   printScriptError,
+  selectStream,
   selectTheme,
   step,
 } from "./output";
@@ -59,6 +77,7 @@ import {
   type PasscodeOptions,
   askPasscode,
   passcodeOf,
+  validatePasscodeType,
 } from "./passcode";
 import { LogLevel, type ScriptError } from "./proto/common_pb";
 import type { ConsoleOutput } from "./proto/repl_pb";
@@ -76,6 +95,9 @@ import {
   swiptApps,
   teamPattern,
 } from "./swipt-app";
+
+export type IOSDevice = Device & { platform: "ios" };
+export type TargetDevice = IOSDevice | AndroidDevice;
 
 interface SetupOptions {
   "no-setup"?: boolean;
@@ -122,7 +144,28 @@ interface Release {
   tag: string;
   version: string;
   build: number;
-  ipa: GitHubAsset;
+  asset: GitHubAsset;
+}
+
+interface TargetFilter {
+  label: string;
+  empty: string;
+  match: (
+    device: TargetDevice,
+    signal: AbortSignal,
+  ) => Promise<boolean> | boolean;
+}
+
+interface TargetQuery {
+  required?: boolean;
+  virtual?: boolean;
+  checkSupport?: boolean;
+  filter?: TargetFilter;
+}
+
+interface InstalledApps {
+  ios: Map<string, SwiptApp[]>;
+  android: Map<string, Application | undefined>;
 }
 
 class GitHubError extends Error {
@@ -137,6 +180,7 @@ class GitHubError extends Error {
 const exec = promisify(execFile);
 
 const repository = "swipt-automation/swipt";
+const autoSelectGrace = 50;
 
 const guestTeam = "SWIPTLOCAL";
 // installd on a vphone guest accepts an ad hoc signature and needs
@@ -217,6 +261,7 @@ async function github(url: string, accept: string, signal: AbortSignal) {
 async function findRelease(
   nightly: boolean | undefined,
   signal: AbortSignal,
+  platform: "ios" | "android",
 ): Promise<Release> {
   const read = async (name: string) =>
     (await (
@@ -248,7 +293,7 @@ async function findRelease(
     tag: release.tag_name,
     version: metadata.version,
     build: metadata.build,
-    ipa: asset("Swipt.ipa"),
+    asset: asset(platform === "android" ? "Swipt.apk" : "Swipt.ipa"),
   };
 }
 
@@ -687,27 +732,342 @@ const teamChoice = ({ id, name }: Team) => ({
   value: id,
 });
 
+const targetKey = (device: TargetDevice) =>
+  device.platform === "ios" ? `ios:${device.udid}` : `android:${device.id}`;
+
+const targetIdentifier = (device: TargetDevice) =>
+  device.platform === "ios" ? device.udid : device.serial;
+
+const targetLine = (device: TargetDevice) =>
+  `  ${device.name}  ${targetIdentifier(device)}`;
+
+const targetChoice = (device: TargetDevice): Choice<TargetDevice> => ({
+  key: targetKey(device),
+  name: `${device.name}  ${targetIdentifier(device)}`,
+  short: device.name,
+  value: device,
+});
+
+const matchesIdentifier = (device: TargetDevice, given: string) =>
+  device.platform === "ios"
+    ? sameName(device.udid, given)
+    : sameName(device.serial, given) || sameName(device.id, given);
+
+async function findTargetDevice(
+  context: PromptContext,
+  { required = true, virtual = true, filter }: TargetQuery,
+): Promise<TargetDevice> {
+  if (
+    context.options.team !== undefined &&
+    !teamPattern.test(context.options.team)
+  ) {
+    throw new UsageError(
+      t("sideload.invalidTeam", {
+        value: JSON.stringify(context.options.team),
+        accounts: accountsHint,
+      }),
+    );
+  }
+  const given = context.options.device;
+  const includeAndroid =
+    context.options.team === undefined || given !== undefined;
+  const hasIOS = driverAvailable();
+  const hasAndroid = includeAndroid && adbAvailable();
+  if (!hasIOS && !hasAndroid) {
+    throw new Error(t("sideload.noTools"));
+  }
+
+  const search = new AbortController();
+  const signal = AbortSignal.any([context.signal, search.signal]);
+  if (given !== undefined || !interactive(context)) {
+    const devices: TargetDevice[] = [];
+    let iosFailure: unknown;
+    try {
+      await step(
+        t("driver.lookingForDevices"),
+        async () => {
+          await Promise.all([
+            hasIOS
+              ? listIOSDevices({
+                  virtual,
+                  signal,
+                  onDevice(device) {
+                    devices.push(device);
+                    if (
+                      given !== undefined &&
+                      matchesIdentifier(device, given)
+                    ) {
+                      search.abort();
+                    }
+                  },
+                }).catch((error) => {
+                  if (!search.signal.aborted) {
+                    iosFailure = error;
+                  }
+                })
+              : Promise.resolve(),
+            hasAndroid
+              ? listAndroidDevices({
+                  preferredSerial: given,
+                  virtual,
+                  signal,
+                  onDevice(device) {
+                    devices.push(device);
+                    if (
+                      given !== undefined &&
+                      matchesIdentifier(device, given)
+                    ) {
+                      search.abort();
+                    }
+                  },
+                }).catch((error) => {
+                  if (context.signal.aborted) {
+                    throw error;
+                  }
+                })
+              : Promise.resolve(),
+          ]);
+          context.signal.throwIfAborted();
+        },
+        { transient: true },
+      );
+    } finally {
+      search.abort();
+    }
+    const exact = given
+      ? devices.find((device) => matchesIdentifier(device, given))
+      : undefined;
+    if (exact !== undefined) {
+      return exact;
+    }
+    const matches = given
+      ? devices.filter((device) => sameName(label(device.name), label(given)))
+      : devices;
+    if ((given || !required) && matches.length === 1) {
+      return matches[0];
+    }
+    if (devices.length === 0) {
+      if (iosFailure !== undefined && !hasAndroid) {
+        throw iosFailure;
+      }
+      throw new Error(t("sideload.noDevice"));
+    }
+    const reason = !given
+      ? t("sideload.chooseDeviceHint")
+      : matches.length === 0
+        ? t("sideload.deviceNotFound", { name: given })
+        : t("sideload.ambiguousDevice", { name: given });
+    throw new Error(
+      `${t("sideload.connectedDevices", { reason })}\n${devices.map(targetLine).join("\n")}`,
+    );
+  }
+
+  const devices: TargetDevice[] = [];
+  const choices: Choice<TargetDevice>[] = [];
+  const listeners = new Set<() => void>();
+  let remainingSources = Number(hasIOS) + Number(hasAndroid);
+  let pending = 0;
+  let failure: unknown;
+  const notify = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
+  const onDevice = (device: TargetDevice) => {
+    devices.push(device);
+    if (filter === undefined) {
+      choices.push(targetChoice(device));
+      notify();
+      return;
+    }
+    pending++;
+    notify();
+    Promise.resolve(filter.match(device, signal))
+      .catch(() => !signal.aborted)
+      .then((matched) => {
+        pending--;
+        if (!signal.aborted && matched) {
+          choices.push(targetChoice(device));
+        }
+        notify();
+      });
+  };
+  const finishSource = (error?: unknown) => {
+    remainingSources--;
+    if (error !== undefined && !search.signal.aborted && !hasAndroid) {
+      failure = error;
+    }
+    notify();
+  };
+  if (hasIOS) {
+    listIOSDevices({ virtual, signal, onDevice }).then(
+      () => finishSource(),
+      (error) => finishSource(error),
+    );
+  }
+  if (hasAndroid) {
+    listAndroidDevices({ virtual, signal, onDevice }).then(
+      () => finishSource(),
+      () => finishSource(),
+    );
+  }
+
+  const waitFor = (ready: () => boolean) =>
+    new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        listeners.delete(check);
+        context.signal.removeEventListener("abort", check);
+      };
+      const check = () => {
+        if (context.signal.aborted) {
+          cleanup();
+          reject(context.signal.reason);
+        } else if (
+          failure !== undefined &&
+          remainingSources === 0 &&
+          choices.length === 0
+        ) {
+          cleanup();
+          reject(failure);
+        } else if (ready()) {
+          cleanup();
+          resolve();
+        }
+      };
+      listeners.add(check);
+      context.signal.addEventListener("abort", check, { once: true });
+      check();
+    });
+
+  const settleAutoSelect = async () => {
+    const listing = remainingSources > 0;
+    if (required || choices.length !== 1 || (!listing && pending === 0)) {
+      return;
+    }
+    let elapsed = false;
+    const timer = setTimeout(() => {
+      elapsed = true;
+      notify();
+    }, autoSelectGrace);
+    try {
+      await waitFor(
+        () =>
+          elapsed ||
+          choices.length > 1 ||
+          (remainingSources === 0 && pending === 0),
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  try {
+    await step(
+      t("driver.lookingForDevices"),
+      async () => {
+        await waitFor(() => choices.length > 0 || remainingSources === 0);
+        await settleAutoSelect();
+      },
+      { transient: true },
+    );
+    if (choices.length === 0 && pending > 0 && filter !== undefined) {
+      await step(
+        filter.label,
+        async () => {
+          await waitFor(() => choices.length > 0 || pending === 0);
+          await settleAutoSelect();
+        },
+        { transient: true },
+      );
+    }
+    if (choices.length === 0) {
+      throw new Error(
+        devices.length === 0 || filter === undefined
+          ? t("sideload.noDevice")
+          : filter.empty,
+      );
+    }
+    if (
+      !required &&
+      remainingSources === 0 &&
+      pending === 0 &&
+      choices.length === 1
+    ) {
+      return choices[0].value;
+    }
+    return await selectStream(context, t("driver.chooseDevice"), {
+      current: () => ({
+        choices: [...choices],
+        loading:
+          remainingSources > 0
+            ? t("driver.lookingForDevices")
+            : pending > 0
+              ? filter?.label
+              : undefined,
+        autoSelect: !required,
+      }),
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    });
+  } finally {
+    search.abort();
+  }
+}
+
+export async function targetDevice(
+  context: PromptContext,
+  query: TargetQuery = {},
+): Promise<TargetDevice> {
+  const device = await findTargetDevice(context, query);
+  if (device.platform === "android") {
+    if (context.options.team !== undefined) {
+      throw new UsageError(t("sideload.teamIOSOnly"));
+    }
+    const authorized = await authorizeAndroidDevice(device, context.signal);
+    if (query.checkSupport !== false) {
+      checkAndroidSupported(authorized);
+    }
+    return authorized;
+  }
+  return trustIOSDevice(device, context.signal);
+}
+
 function sideloadedFilter(
-  installed: Map<string, SwiptApp[]>,
+  installed: InstalledApps,
   empty: string,
-): DeviceFilter {
+): TargetFilter {
   return {
     label: t("sideload.looking"),
     empty,
-    match: (device, signal) =>
-      swiptApps(device, signal).then(
+    match: (device, signal) => {
+      if (device.platform === "android") {
+        if (!device.authorized) {
+          return true;
+        }
+        return androidSwiptApp(device, signal).then(
+          (app) => {
+            installed.android.set(device.id, app);
+            return app !== undefined;
+          },
+          () => true,
+        );
+      }
+      return swiptApps(device, signal).then(
         (found) => {
-          installed.set(device.udid, found);
+          installed.ios.set(device.udid, found);
           return found.length > 0;
         },
         () => true,
-      ),
+      );
+    },
   };
 }
 
-async function locate(
+async function locateIOS(
   context: PromptContext,
-  device: Device,
+  device: IOSDevice,
   {
     fresh = false,
     installed,
@@ -783,6 +1143,21 @@ async function locate(
   return { team: found[0]?.team, current: found[0] };
 }
 
+async function locateAndroid(
+  context: Pick<PromptContext, "signal">,
+  device: AndroidDevice,
+  installed?: Map<string, Application | undefined>,
+) {
+  if (installed?.has(device.id)) {
+    return installed.get(device.id);
+  }
+  return step(
+    t("sideload.checking", { device: device.name }),
+    () => androidSwiptApp(device, context.signal),
+    { transient: true },
+  );
+}
+
 const buildText = (app: Application) =>
   `Swipt ${app.version} (${app.bundleVersion})`;
 
@@ -828,26 +1203,38 @@ function expirationText(time: number) {
 
 export async function installPasscode(
   context: PasscodeSetupContext,
-  device: Device,
+  device: Pick<TargetDevice, "platform" | "virtual">,
   current: Application | undefined,
 ) {
+  const platform = device.platform ?? "ios";
   return current === undefined &&
     !device.virtual &&
     interactive(context) &&
     context.options.passcode === undefined &&
     context.options["passcode-type"] === undefined &&
     !context.options["no-setup"]
-    ? askPasscode(context)
-    : passcodeOf(context.options);
+    ? askPasscode(context, platform)
+    : passcodeOf(context.options, platform);
 }
 
-async function findInstalled(context: PromptContext) {
-  const installed = new Map<string, SwiptApp[]>();
-  const device = await trustedDevice(context, {
+async function findInstalled(context: PromptContext, checkSupport = true) {
+  const installed: InstalledApps = {
+    ios: new Map(),
+    android: new Map(),
+  };
+  const device = await targetDevice(context, {
+    checkSupport,
     filter: sideloadedFilter(installed, t("sideload.noneInstalledHint")),
   });
-  const { team, current } = await locate(context, device, {
-    installed: installed.get(device.udid),
+  if (device.platform === "android") {
+    const current = await locateAndroid(context, device, installed.android);
+    if (current === undefined) {
+      throw new Error(t("sideload.notInstalledHint", { device: device.name }));
+    }
+    return { device, current };
+  }
+  const { team, current } = await locateIOS(context, device, {
+    installed: installed.ios.get(device.udid),
   });
   if (current === undefined) {
     throw new Error(
@@ -859,29 +1246,33 @@ async function findInstalled(context: PromptContext) {
   return { device, team, current };
 }
 
-async function downloadIPA(context: Pick<Context, "signal">, release: Release) {
-  const name = `Swipt-${release.ipa.id}.ipa`;
-  const ipa = path.join(downloads, name);
-  if (fs.existsSync(ipa)) {
-    return ipa;
+async function downloadReleaseAsset(
+  context: Pick<Context, "signal">,
+  release: Release,
+  extension: "ipa" | "apk",
+) {
+  const name = `Swipt-${release.asset.id}.${extension}`;
+  const target = path.join(downloads, name);
+  if (fs.existsSync(target)) {
+    return target;
   }
   fs.mkdirSync(downloads, { recursive: true });
-  const partial = `${ipa}.download`;
+  const partial = `${target}.download`;
   await step(
     t("sideload.downloading", {
       version: release.version,
       build: release.build,
       release: release.tag,
     }),
-    (update) => download(release.ipa.url, partial, context.signal, update),
+    (update) => download(release.asset.url, partial, context.signal, update),
   );
-  fs.renameSync(partial, ipa);
+  fs.renameSync(partial, target);
   for (const entry of fs.readdirSync(downloads)) {
-    if (entry !== name) {
+    if (entry !== name && entry.endsWith(`.${extension}`)) {
       fs.rmSync(path.join(downloads, entry), { force: true });
     }
   }
-  return ipa;
+  return target;
 }
 
 async function prepareDiskImage(
@@ -912,19 +1303,117 @@ async function prepareDiskImage(
   }
 }
 
-async function deploy(
+async function confirmDowngrade(
   context: DeployContext,
-  {
-    device,
-    team,
-    current,
-  }: { device: Device; team?: string; current: Application | undefined },
+  deviceName: string,
+  current: Application,
+  release: Release,
+  updateOnly: boolean,
+) {
+  const installed = Number(current.bundleVersion);
+  const parameters = {
+    build: buildText(current),
+    device: deviceName,
+    release: release.tag,
+    releaseBuild: release.build,
+  };
+  const asks =
+    !updateOnly &&
+    !context.options.force &&
+    installed > release.build &&
+    interactive(context);
+  if (installed >= release.build && !asks) {
+    console.log(
+      installed === release.build
+        ? t("sideload.upToDate", parameters)
+        : t("sideload.laterThanRelease", parameters),
+    );
+  }
+  const versions = {
+    device: deviceName,
+    version: `${current.version} (${current.bundleVersion})`,
+    releaseVersion: `${release.version} (${release.build})`,
+  };
+  const replaces = asks
+    ? await select(
+        {
+          message:
+            release.tag === "nightly"
+              ? t("sideload.downgradePrompt", versions)
+              : t("sideload.downgradeToStablePrompt", versions),
+          theme: selectTheme,
+          choices: [
+            { name: t("sideload.downgrade"), value: true },
+            { name: t("noThanks"), value: false },
+          ],
+        },
+        { output: process.stderr, signal: context.signal },
+      )
+    : !updateOnly && Boolean(context.options.force);
+  return { installed, parameters, replaces };
+}
+
+async function deployAndroid(
+  context: DeployContext,
+  device: AndroidDevice,
+  current: Application | undefined,
   updateOnly: boolean,
 ) {
   const passcode = await installPasscode(context, device, current);
   const release = await step(
     t("sideload.checkingRelease"),
-    () => findRelease(context.options.nightly, context.signal),
+    () => findRelease(context.options.nightly, context.signal, "android"),
+    { transient: true },
+  );
+  if (current !== undefined) {
+    const { installed, replaces } = await confirmDowngrade(
+      context,
+      device.name,
+      current,
+      release,
+      updateOnly,
+    );
+    if (!replaces && installed >= release.build) {
+      const saves = !updateOnly && passcode !== undefined;
+      if (!saves) {
+        return;
+      }
+      if (context.options["no-setup"]) {
+        await step(t("sideload.opening", { device: device.name }), () =>
+          launchAndroidApp(device, context.signal),
+        );
+        return;
+      }
+      await configureAndOpenAndroid(context, device, passcode);
+      return;
+    }
+  }
+  const apk = await downloadReleaseAsset(context, release, "apk");
+  await installAndOpen(
+    context,
+    { device, id: bundleId, current },
+    apk,
+    release.build,
+    {
+      passcode,
+      saves: !updateOnly,
+    },
+  );
+}
+
+async function deployIOS(
+  context: DeployContext,
+  {
+    device,
+    team,
+    current,
+  }: { device: IOSDevice; team?: string; current: Application | undefined },
+  updateOnly: boolean,
+) {
+  const passcode = await installPasscode(context, device, current);
+  const release = await step(
+    t("sideload.checkingRelease"),
+    () => findRelease(context.options.nightly, context.signal, "ios"),
     { transient: true },
   );
   const id =
@@ -932,48 +1421,15 @@ async function deploy(
       ? bundleId
       : `${bundleId}.${team}`;
   if (current !== undefined) {
-    const installed = Number(current.bundleVersion);
     const signing =
       team === undefined ? undefined : await signingPeriod(device, id, team);
-    const parameters = {
-      build: buildText(current),
-      device: device.name,
-      release: release.tag,
-      releaseBuild: release.build,
-    };
-    const asks =
-      !updateOnly &&
-      !context.options.force &&
-      installed > release.build &&
-      interactive(context);
-    if (installed >= release.build && !asks) {
-      console.log(
-        installed === release.build
-          ? t("sideload.upToDate", parameters)
-          : t("sideload.laterThanRelease", parameters),
-      );
-    }
-    const versions = {
-      device: device.name,
-      version: `${current.version} (${current.bundleVersion})`,
-      releaseVersion: `${release.version} (${release.build})`,
-    };
-    const replaces = asks
-      ? await select(
-          {
-            message:
-              release.tag === "nightly"
-                ? t("sideload.downgradePrompt", versions)
-                : t("sideload.downgradeToStablePrompt", versions),
-            theme: selectTheme,
-            choices: [
-              { name: t("sideload.downgrade"), value: true },
-              { name: t("noThanks"), value: false },
-            ],
-          },
-          { output: process.stderr, signal: context.signal },
-        )
-      : !updateOnly && context.options.force;
+    const { installed, parameters, replaces } = await confirmDowngrade(
+      context,
+      device.name,
+      current,
+      release,
+      updateOnly,
+    );
     if (
       !replaces &&
       installed >= release.build &&
@@ -1032,7 +1488,7 @@ async function deploy(
             }),
             (update) => provision(work, id, team, device, update),
           );
-    const ipa = await downloadIPA(context, release);
+    const ipa = await downloadReleaseAsset(context, release, "ipa");
     const app =
       signing === undefined
         ? await unpack(ipa, work)
@@ -1075,13 +1531,84 @@ async function installOnGuest(device: Device, id: string, app: string) {
   }
 }
 
+async function unlockRunningIfPresent(
+  context: Pick<Context, "signal">,
+  deviceName: string,
+) {
+  const running = await step(
+    t("sideload.checking", { device: deviceName }),
+    () => runningSwipt(deviceName, context.signal),
+    { transient: true },
+  );
+  if (running !== undefined) {
+    await step(
+      t("sideload.unlocking"),
+      () => tryUnlock(running, context.signal),
+      { transient: true },
+    );
+  }
+}
+
+async function configureAndOpenAndroid(
+  context: SetupContext,
+  device: AndroidDevice,
+  passcode: Passcode | undefined,
+) {
+  const publishes = !context.options["no-setup-api"];
+  const outcome = await step(
+    t("sideload.opening", { device: device.name }),
+    (update) => {
+      if (passcode !== undefined) {
+        update(t("sideload.settingUpAutoUnlock"));
+      }
+      return setupAndroidApp(device, {
+        passcode,
+        publishLocalNetwork: publishes,
+        signal: context.signal,
+        onWaitingPrivilege(mode) {
+          update(
+            mode === "Root"
+              ? t("sideload.allowRoot", { device: device.name })
+              : t("sideload.allowShizuku", { device: device.name }),
+          );
+        },
+      });
+    },
+  );
+  if (!outcome.ready) {
+    console.log(t("sideload.needsPrivilege", { device: device.name }));
+    return;
+  }
+  console.log(t("sideload.running", { app: "Swipt" }));
+  if (!publishes) {
+    return;
+  }
+  if (device.virtual && outcome.port !== undefined) {
+    await forwardAndroidPort(device, outcome.port, context.signal);
+    const base = `http://127.0.0.1:${outcome.port}`;
+    const url = outcome.authenticates ? withToken(base) : base;
+    console.log(
+      columns([
+        ["CLI", url],
+        ["MCP", `${url}/mcp`],
+      ]),
+    );
+    return;
+  }
+  await printAPI(context, device.name);
+}
+
 export async function installAndOpen(
   context: SetupContext,
   {
     device,
     id,
     current,
-  }: { device: Device; id: string; current: Application | undefined },
+  }: {
+    device: Device | TargetDevice;
+    id: string;
+    current: Application | undefined;
+  },
   app: string,
   build: number,
   {
@@ -1090,19 +1617,48 @@ export async function installAndOpen(
   }: { passcode: Passcode | undefined; saves?: boolean },
 ) {
   if (current !== undefined) {
-    const running = await step(
+    await unlockRunningIfPresent(context, device.name);
+  }
+  if (device.platform === "android") {
+    await step(t("sideload.installing", { device: device.name }), () =>
+      installAndroidAPK(device, app, {
+        downgrade:
+          current !== undefined && Number(current.bundleVersion) >= build,
+        signal: context.signal,
+      }),
+    );
+    const result = await step(
       t("sideload.checking", { device: device.name }),
-      () => runningSwipt(device.name, context.signal),
+      () => androidSwiptApp(device, context.signal),
       { transient: true },
     );
-    if (running !== undefined) {
-      await step(
-        t("sideload.unlocking"),
-        () => tryUnlock(running, context.signal),
-        { transient: true },
+    if (result === undefined || Number(result.bundleVersion) !== build) {
+      throw new Error(
+        result === undefined
+          ? `${device.name} does not list ${id} after the install`
+          : `${device.name} has ${buildText(result)} after the install`,
       );
     }
+    const parameters = { build: buildText(result), device: device.name };
+    console.log(
+      current !== undefined && Number(current.bundleVersion) < build
+        ? t("sideload.updated", parameters)
+        : t("sideload.installed", parameters),
+    );
+    if (context.options["no-setup"]) {
+      await step(t("sideload.opening", { device: device.name }), () =>
+        launchAndroidApp(device, context.signal),
+      );
+      return;
+    }
+    await configureAndOpenAndroid(
+      context,
+      device,
+      saves ? passcode : undefined,
+    );
+    return;
   }
+
   await prepareDiskImage(context, device);
   if (device.virtual) {
     await installOnGuest(device, id, app);
@@ -1165,14 +1721,14 @@ export async function installAndOpen(
   );
 }
 
-async function printAPI(context: Pick<Context, "signal">, device: Device) {
+async function printAPI(context: Pick<Context, "signal">, deviceName: string) {
   const found = await step(
-    t("sideload.checking", { device: device.name }),
-    () => findPublished(device.name, context.signal),
+    t("sideload.checking", { device: deviceName }),
+    () => findPublished(deviceName, context.signal),
     { transient: true },
   );
   if (found === undefined) {
-    console.error(t("sideload.notOnNetwork", { device: device.name }));
+    console.error(t("sideload.notOnNetwork", { device: deviceName }));
     return;
   }
   const url = found.authenticates ? withToken(found.url) : found.url;
@@ -1207,7 +1763,7 @@ async function openConfigured(
     await trustAndOpen(context, device, id, passcode, updated);
   }
   if (publishes) {
-    await printAPI(context, device);
+    await printAPI(context, device.name);
   }
 }
 
@@ -1236,27 +1792,45 @@ async function launch(device: Device, id: string) {
 }
 
 export async function install(context: DeployContext) {
-  const device = await trustedDevice(context);
-  await deploy(
+  validatePasscodeType(context.options);
+  const device = await targetDevice(context);
+  if (device.platform === "android") {
+    const current = await locateAndroid(context, device);
+    await deployAndroid(context, device, current, false);
+    return;
+  }
+  await deployIOS(
     context,
-    { device, ...(await locate(context, device, { fresh: true })) },
+    { device, ...(await locateIOS(context, device, { fresh: true })) },
     false,
   );
 }
 
 export async function update(context: DeployContext) {
-  await deploy(context, await findInstalled(context), true);
+  validatePasscodeType(context.options);
+  const { device, team, current } = await findInstalled(context);
+  if (device.platform === "android") {
+    await deployAndroid(context, device, current, true);
+    return;
+  }
+  await deployIOS(context, { device, team, current }, true);
 }
 
 export async function setup(context: PasscodeSetupContext) {
-  const given = passcodeOf(context.options);
+  validatePasscodeType(context.options);
   const { device, current } = await findInstalled(context);
-  const id = current.bundleIdentifier;
+  const platform = device.platform;
+  const given = passcodeOf(context.options, platform);
   const passcode =
     given ??
     (interactive(context) && !device.virtual
-      ? await askPasscode(context)
+      ? await askPasscode(context, platform)
       : undefined);
+  if (device.platform === "android") {
+    await configureAndOpenAndroid(context, device, passcode);
+    return;
+  }
+  const id = current.bundleIdentifier;
   await prepareDiskImage(context, device);
   if (passcode !== undefined) {
     await step(t("sideload.settingUpAutoUnlock"), () =>
@@ -1494,12 +2068,32 @@ async function trustAndOpen(
 }
 
 export async function uninstall(context: PromptContext) {
-  const installed = new Map<string, SwiptApp[]>();
-  const device = await trustedDevice(context, {
+  const installed: InstalledApps = {
+    ios: new Map(),
+    android: new Map(),
+  };
+  const device = await targetDevice(context, {
+    checkSupport: false,
     filter: sideloadedFilter(installed, t("sideload.noneInstalled")),
   });
-  const { team, current } = await locate(context, device, {
-    installed: installed.get(device.udid),
+  if (device.platform === "android") {
+    const current = await locateAndroid(context, device, installed.android);
+    if (current === undefined) {
+      throw new Error(t("sideload.notInstalled", { device: device.name }));
+    }
+    await step(t("sideload.removing", { device: device.name }), () =>
+      uninstallAndroidApp(device, current.bundleIdentifier, context.signal),
+    );
+    console.log(
+      t("sideload.removed", {
+        build: buildText(current),
+        device: device.name,
+      }),
+    );
+    return;
+  }
+  const { team, current } = await locateIOS(context, device, {
+    installed: installed.ios.get(device.udid),
   });
   if (current === undefined) {
     throw new Error(

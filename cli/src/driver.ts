@@ -46,6 +46,11 @@ function driverPath() {
   }
 }
 
+export const driverAvailable = () => {
+  const file = driverPath();
+  return file !== undefined && fs.existsSync(file);
+};
+
 const diskImage = () =>
   path.dirname(require.resolve("@swipt/developer-disk-image/package.json"));
 
@@ -159,6 +164,7 @@ const driver = <Result = void>(args: string[], options?: Invocation) =>
   start(args, options).exited as Promise<Result>;
 
 export interface Device {
+  platform?: "ios";
   name: string;
   udid: string;
   paired: boolean;
@@ -467,6 +473,43 @@ async function findDevice(
   } finally {
     search.abort();
   }
+}
+
+export async function listIOSDevices({
+  virtual = true,
+  signal,
+  onDevice,
+}: {
+  virtual?: boolean;
+  signal: AbortSignal;
+  onDevice: (device: Device & { platform: "ios" }) => void;
+}) {
+  await driver(["device", "list"], {
+    signal,
+    onResult(result) {
+      const raw = result as Device;
+      if (!virtual && raw.virtual) {
+        return;
+      }
+      onDevice({ ...raw, platform: "ios", name: raw.name || raw.udid });
+    },
+  });
+}
+
+export async function trustIOSDevice(
+  device: Device & { platform: "ios" },
+  signal: AbortSignal,
+) {
+  if (!device.paired) {
+    await step(
+      device.virtual
+        ? t("driver.pairing", { device: device.name })
+        : t("driver.trustPrompt", { device: device.name }),
+      () => onDevice(device, "trust", [], { signal }),
+      { transient: device.virtual },
+    );
+  }
+  return { ...device, paired: true };
 }
 
 export async function trustedDevice(

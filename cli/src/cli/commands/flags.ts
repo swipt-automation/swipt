@@ -20,7 +20,12 @@ export const udidDeviceOption: Options = {
 };
 
 export const sideloadOptions: Options = {
-  ...udidDeviceOption,
+  device: {
+    type: "string",
+    short: "d",
+    value: "NAME|ID",
+    help: t("flags.device"),
+  },
   team: {
     type: "string",
     value: "ID",
@@ -34,6 +39,15 @@ export const passcodeOptions = (help: string): Options => ({
     type: "string",
     value: "TYPE",
     help: t("flags.passcodeType"),
+  },
+});
+
+export const sideloadPasscodeOptions = (help: string): Options => ({
+  passcode: { type: "string", value: "CODE", help },
+  "passcode-type": {
+    type: "string",
+    value: "TYPE",
+    help: t("flags.sideloadPasscodeType"),
   },
 });
 
