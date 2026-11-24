@@ -59,6 +59,10 @@
         "description": "Eszköz hozzáadása az URL-címe alapján; távoli vagy tokent igénylő eszköz esetén szükséges"
       },
       "description": "Eszközök kezelése és naplóik olvasása",
+      "jit": {
+        "description": "JIT bekapcsolása egy futó apphoz",
+        "enabled": "JIT bekapcsolva: {{bundleId}}"
+      },
       "list": {
         "description": "Eszközök listázása a helyi hálózaton talált eszközök hozzáadásával"
       },

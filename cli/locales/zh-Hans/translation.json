@@ -55,6 +55,10 @@
         "description": "通过 URL 添加设备；远程设备或需要令牌的设备需要这样添加"
       },
       "description": "管理设备并读取其日志",
+      "jit": {
+        "description": "为正在运行的 App 启用 JIT",
+        "enabled": "已为 {{bundleId}} 启用 JIT"
+      },
       "list": {
         "description": "列出设备，并添加在本地网络上发现的设备"
       },

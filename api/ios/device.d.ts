@@ -60,6 +60,17 @@ export declare function launchApplication(
   bundleId: string,
   options?: CallOptions & { url?: string; restart?: boolean },
 ): Promise<void>;
+/**
+ * Attaches a debugger to the running app, which lets it run code it writes, and
+ * answers its `brk #0xf00d` requests until it asks to detach or exits. The request
+ * is in x16: 1 prepares the x1 bytes at x0 for code and answers x0, or 0 when the
+ * device refuses; 0 detaches. With `pid`, attaches to that process without looking
+ * the app up.
+ */
+export declare function enableJIT(
+  bundleId: string,
+  options?: CallOptions & { pid?: number },
+): Promise<void>;
 
 export declare function pasteboard(
   options?: CallOptions,

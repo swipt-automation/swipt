@@ -67,6 +67,10 @@
         "description": "Pridať zariadenie podľa adresy URL; je to potrebné, ak je vzdialené alebo vyžaduje token"
       },
       "description": "Spravovať zariadenia a čítať ich záznamy",
+      "jit": {
+        "description": "Zapnúť JIT pre spustenú apku",
+        "enabled": "JIT zapnutý pre {{bundleId}}"
+      },
       "list": {
         "description": "Vypísať zariadenia a pridať tie, ktoré sa našli v lokálnej sieti"
       },

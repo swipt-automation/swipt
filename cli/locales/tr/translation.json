@@ -59,6 +59,10 @@
         "description": "Bir aygıtı URL’siyle ekle; aygıt uzaktaysa veya belirteç gerektiriyorsa gereklidir"
       },
       "description": "Aygıtları yönet ve günlüklerini oku",
+      "jit": {
+        "description": "Çalışan bir uygulama için JIT’i etkinleştir",
+        "enabled": "{{bundleId}} için JIT etkinleştirildi"
+      },
       "list": {
         "description": "Aygıtları listele ve yerel ağda bulunanları ekle"
       },

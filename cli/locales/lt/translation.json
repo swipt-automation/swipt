@@ -67,6 +67,10 @@
         "description": "Pridėti įrenginį pagal jo URL adresą; būtina, kai įrenginys nuotolinis arba reikia žetono"
       },
       "description": "Tvarkyti įrenginius ir skaityti jų žurnalus",
+      "jit": {
+        "description": "Įjungti JIT veikiančiai programai",
+        "enabled": "JIT įjungta: {{bundleId}}"
+      },
       "list": {
         "description": "Išvardyti įrenginius ir pridėti vietiniame tinkle rastus"
       },

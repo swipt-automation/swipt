@@ -63,6 +63,10 @@
         "description": "Afegeix un dispositiu amb l’URL; cal fer-ho si és remot o requereix un token"
       },
       "description": "Gestiona els dispositius i llegeix-ne els registres",
+      "jit": {
+        "description": "Activa JIT per a una app en execució",
+        "enabled": "JIT activat per a {{bundleId}}"
+      },
       "list": {
         "description": "Llista els dispositius i afegeix els que es trobin a la xarxa local"
       },

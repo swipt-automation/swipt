@@ -15,6 +15,7 @@ import {
 import type { GenService } from "@bufbuild/protobuf/codegenv2";
 
 import { resolveHost } from "./mdns";
+import { DeviceService } from "./proto/device_pb";
 import { LogService } from "./proto/logs_pb";
 import { REPLService } from "./proto/repl_pb";
 import { SwipletService } from "./proto/swiplets_pb";
@@ -476,6 +477,7 @@ export function open({ url, token }: { url: string; token: string }) {
     logs: bind(LogService, connection),
     swiplets: bind(SwipletService, connection),
     repl: bind(REPLService, connection),
+    device: bind(DeviceService, connection),
   };
 }
 

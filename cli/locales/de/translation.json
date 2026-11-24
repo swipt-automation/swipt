@@ -59,6 +59,10 @@
         "description": "Gerät über seine URL hinzufügen; erforderlich, wenn es sich nicht im lokalen Netzwerk befindet oder ein Token erfordert"
       },
       "description": "Geräte verwalten und ihre Protokolle lesen",
+      "jit": {
+        "description": "JIT für eine laufende App aktivieren",
+        "enabled": "JIT für {{bundleId}} aktiviert"
+      },
       "list": {
         "description": "Geräte auflisten und die im lokalen Netzwerk gefundenen hinzufügen"
       },

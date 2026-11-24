@@ -134,6 +134,7 @@ func New(options Options) *Server {
 	proto.RegisterLogServiceServer(s.grpc, &logService{Server: s})
 	proto.RegisterSwipletServiceServer(s.grpc, &swipletService{Server: s})
 	proto.RegisterREPLServiceServer(s.grpc, &replService{Server: s})
+	proto.RegisterDeviceServiceServer(s.grpc, &deviceService{Server: s})
 	s.mcp, s.mcpHTTP = s.newMCP()
 	return s
 }

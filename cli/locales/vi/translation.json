@@ -59,6 +59,10 @@
         "description": "Thêm thiết bị bằng URL; cần thiết khi thiết bị ở xa hoặc yêu cầu mã thông báo"
       },
       "description": "Quản lý các thiết bị và đọc nhật ký của thiết bị",
+      "jit": {
+        "description": "Bật JIT cho một ứng dụng đang chạy",
+        "enabled": "Đã bật JIT cho {{bundleId}}"
+      },
       "list": {
         "description": "Liệt kê các thiết bị, đồng thời thêm các thiết bị tìm thấy trên mạng cục bộ"
       },

@@ -76,6 +76,15 @@ export const launchApplication = (
     [bundleIdOf(bundleId), optionsOf(options, ["url", "restart"])],
     options,
   );
+export const enableJIT = (
+  bundleId: string,
+  options?: Options & { readonly pid?: number },
+) =>
+  act(
+    "device.enableJIT",
+    [bundleIdOf(bundleId), optionsOf(options, ["pid"])],
+    options,
+  );
 
 export const pasteboard = (options?: Options) =>
   invoke<string | null>("device.pasteboard", [], {

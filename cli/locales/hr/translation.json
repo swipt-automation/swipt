@@ -63,6 +63,10 @@
         "description": "Dodaj uređaj putem URL-a; potrebno kada je uređaj udaljen ili zahtijeva token"
       },
       "description": "Upravljaj uređajima i čitaj njihove zapise",
+      "jit": {
+        "description": "Uključi JIT za pokrenutu aplikaciju",
+        "enabled": "JIT uključen za {{bundleId}}"
+      },
       "list": {
         "description": "Prikaži popis uređaja i dodaj one pronađene na lokalnoj mreži"
       },

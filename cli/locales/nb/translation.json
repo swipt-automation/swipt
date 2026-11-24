@@ -59,6 +59,10 @@
         "description": "Legg til en enhet med URL‑en; nødvendig når enheten er ekstern eller krever token"
       },
       "description": "Administrer enhetene og les loggene deres",
+      "jit": {
+        "description": "Aktiver JIT for en app som kjører",
+        "enabled": "JIT aktivert for {{bundleId}}"
+      },
       "list": {
         "description": "List opp enhetene, og legg til dem som blir funnet på det lokale nettverket"
       },

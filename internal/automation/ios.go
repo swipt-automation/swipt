@@ -50,6 +50,7 @@ var deviceOperations = map[string]operationFunc{
 	"device.pasteboard":            deviceClipboard,
 	"device.setPasteboard":         deviceSetClipboard,
 	"device.setSimulatedLocation":  deviceSetLocation,
+	"device.enableJIT":             deviceEnableJIT,
 	"input.tap":                    screenAction(deviceTap),
 	"input.swipe":                  screenAction(deviceGesture),
 	"input.drag":                   screenAction(deviceGesture),

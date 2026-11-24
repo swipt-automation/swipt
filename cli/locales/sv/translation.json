@@ -59,6 +59,10 @@
         "description": "Lägg till en enhet via dess URL; behövs när enheten är fjärransluten eller kräver en token"
       },
       "description": "Hantera enheterna och läs deras loggar",
+      "jit": {
+        "description": "Aktivera JIT för en app som körs",
+        "enabled": "JIT aktiverat för {{bundleId}}"
+      },
       "list": {
         "description": "Visa enheterna och lägg till de som hittas i det lokala nätverket"
       },

@@ -3,6 +3,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/swipt-automation/swipt/internal/device"
 	"github.com/swipt-automation/swipt/internal/proto"
 )
@@ -17,6 +19,10 @@ func NewDevice(connection *device.Connection) Device {
 
 func (d connectedDevice) Identifier() string {
 	return d.DeviceInfo().UDID
+}
+
+func (d connectedDevice) EnableJIT(ctx context.Context, bundleID string, pid uint64) error {
+	return d.Phone().EnableJIT(ctx, bundleID, pid)
 }
 
 func (d connectedDevice) Status() *proto.DeviceConnection {

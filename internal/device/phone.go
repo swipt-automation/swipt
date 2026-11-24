@@ -66,6 +66,9 @@ type Phone struct {
 
 	locationAccess sync.Mutex
 	location       *simulatedLocation
+
+	jitAccess   sync.Mutex
+	jitSessions map[uint64]*jitSession
 }
 
 type simulatedLocation struct {

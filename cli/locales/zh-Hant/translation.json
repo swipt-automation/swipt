@@ -55,6 +55,10 @@
         "description": "透過 URL 加入裝置；遠端裝置或需要權杖的裝置需要這樣加入"
       },
       "description": "管理裝置並讀取其記錄",
+      "jit": {
+        "description": "為執行中的 App 啟用 JIT",
+        "enabled": "已為 {{bundleId}} 啟用 JIT"
+      },
       "list": {
         "description": "列出裝置，並加入在區域網路上找到的裝置"
       },

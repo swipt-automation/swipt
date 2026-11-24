@@ -59,6 +59,10 @@
         "description": "Voeg een apparaat toe via de URL. Nodig als het apparaat niet op het lokale netwerk staat of een token vereist"
       },
       "description": "Beheer de apparaten en lees de logs ervan",
+      "jit": {
+        "description": "Schakel JIT in voor een actieve app",
+        "enabled": "JIT ingeschakeld voor {{bundleId}}"
+      },
       "list": {
         "description": "Toon de apparaten en voeg de apparaten toe die op het lokale netwerk zijn gevonden"
       },

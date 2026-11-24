@@ -67,6 +67,10 @@
         "description": "Dodaj napravo z njenim URL-jem; potrebno, če je oddaljena ali zahteva žeton"
       },
       "description": "Upravljaj naprave in preberi njihove dnevnike",
+      "jit": {
+        "description": "Vklopi JIT za aplikacijo, ki se izvaja",
+        "enabled": "JIT vklopljen za {{bundleId}}"
+      },
       "list": {
         "description": "Izpiši naprave in dodaj tiste, ki so najdene v lokalnem omrežju"
       },

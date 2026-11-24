@@ -198,6 +198,17 @@ func deviceLaunch(ctx context.Context, phone *device.Phone, call *operation) err
 	return phone.Launch(ctx, bundleID, options.URL, options.Restart, true)
 }
 
+func deviceEnableJIT(ctx context.Context, call *operation) (any, error) {
+	var bundleID string
+	var options struct {
+		PID uint64 `json:"pid"`
+	}
+	if err := call.decode(1, &bundleID, &strict{&options}); err != nil {
+		return nil, err
+	}
+	return nil, call.phone().EnableJIT(ctx, bundleID, options.PID)
+}
+
 func deviceClipboard(ctx context.Context, call *operation) (any, error) {
 	if err := call.decode(0); err != nil {
 		return nil, err

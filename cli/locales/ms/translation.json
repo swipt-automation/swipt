@@ -55,6 +55,10 @@
         "description": "Tambah peranti melalui URL; diperlukan apabila peranti berada jauh atau memerlukan token"
       },
       "description": "Urus peranti dan baca log peranti",
+      "jit": {
+        "description": "Dayakan JIT untuk app yang sedang berjalan",
+        "enabled": "JIT didayakan untuk {{bundleId}}"
+      },
       "list": {
         "description": "Senaraikan peranti, serta tambah peranti yang ditemui pada rangkaian setempat"
       },

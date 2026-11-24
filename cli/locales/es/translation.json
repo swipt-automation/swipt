@@ -63,6 +63,10 @@
         "description": "Añadir un dispositivo por su URL; es necesario si es remoto o requiere un token"
       },
       "description": "Gestionar los dispositivos y leer sus registros",
+      "jit": {
+        "description": "Activar JIT para una app en ejecución",
+        "enabled": "JIT activado para {{bundleId}}"
+      },
       "list": {
         "description": "Listar los dispositivos y añadir los encontrados en la red local"
       },

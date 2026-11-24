@@ -59,6 +59,10 @@
         "description": "Lisää laite sen URL-osoitteella; tarvitaan, jos laite on etälaite tai vaatii tunnuksen"
       },
       "description": "Hallitse laitteita ja lue niiden lokeja",
+      "jit": {
+        "description": "Ota JIT käyttöön käynnissä olevalle apille",
+        "enabled": "JIT otettu käyttöön: {{bundleId}}"
+      },
       "list": {
         "description": "Näytä laitteet ja lisää lähiverkosta löydetyt laitteet"
       },

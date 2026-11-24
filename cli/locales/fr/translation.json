@@ -63,6 +63,10 @@
         "description": "Ajouter un appareil via son URL ; nécessaire s’il est distant ou requiert un jeton"
       },
       "description": "Gérer les appareils et lire leurs journaux",
+      "jit": {
+        "description": "Activer le JIT pour une app en cours d’exécution",
+        "enabled": "JIT activé pour {{bundleId}}"
+      },
       "list": {
         "description": "Répertorier les appareils, en ajoutant ceux détectés sur le réseau local"
       },

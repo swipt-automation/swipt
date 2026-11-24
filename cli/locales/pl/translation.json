@@ -67,6 +67,10 @@
         "description": "Dodaj urządzenie na podstawie adresu URL; konieczne, gdy urządzenie jest zdalne lub wymaga tokenu"
       },
       "description": "Zarządzaj urządzeniami i odczytuj ich dzienniki",
+      "jit": {
+        "description": "Włącz JIT dla uruchomionej aplikacji",
+        "enabled": "JIT włączony dla {{bundleId}}"
+      },
       "list": {
         "description": "Wyświetl listę urządzeń, dodając te znalezione w sieci lokalnej"
       },

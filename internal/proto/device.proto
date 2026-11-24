@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package swipt;
+option go_package = "github.com/swipt-automation/swipt/internal/proto";
+
+import "google/protobuf/empty.proto";
+
+service DeviceService {
+  rpc EnableJIT(EnableJITRequest) returns (google.protobuf.Empty);
+}
+
+message EnableJITRequest {
+  string bundle_id = 1;
+  uint64 pid = 2;
+}

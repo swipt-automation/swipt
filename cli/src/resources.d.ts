@@ -61,6 +61,10 @@ export default interface Resources {
           "description": "Add a device by its URL; needed when it's remote or requires a token"
         },
         "description": "Manage the devices and read their logs",
+        "jit": {
+          "description": "Enable JIT for a running app",
+          "enabled": "JIT enabled for {{bundleId}}"
+        },
         "list": {
           "description": "List the devices, adding the ones found on the local network"
         },

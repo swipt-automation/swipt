@@ -63,6 +63,10 @@
         "description": "Adaugă un dispozitiv prin URL; este necesar dacă acesta este la distanță sau solicită un token"
       },
       "description": "Gestionează dispozitivele și citește jurnalele acestora",
+      "jit": {
+        "description": "Activează JIT pentru o aplicație care rulează",
+        "enabled": "JIT activat pentru {{bundleId}}"
+      },
       "list": {
         "description": "Listează dispozitivele și adaugă-le pe cele găsite în rețeaua locală"
       },

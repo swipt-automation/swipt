@@ -55,6 +55,10 @@
         "description": "Tambahkan perangkat melalui URL-nya; diperlukan jika perangkat diakses dari jarak jauh atau memerlukan token"
       },
       "description": "Kelola perangkat dan baca log-nya",
+      "jit": {
+        "description": "Aktifkan JIT untuk app yang sedang berjalan",
+        "enabled": "JIT diaktifkan untuk {{bundleId}}"
+      },
       "list": {
         "description": "Tampilkan daftar perangkat, dan tambahkan yang ditemukan di jaringan lokal"
       },
