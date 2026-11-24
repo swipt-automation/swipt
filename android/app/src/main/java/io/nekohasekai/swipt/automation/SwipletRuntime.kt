@@ -29,15 +29,15 @@ import io.nekohasekai.swipt.proto.writeLogRequest
 import io.nekohasekai.swipt.runtime.JavaScriptInterrupter
 import io.nekohasekai.swipt.runtime.SwiptHostDelegate
 import io.nekohasekai.swipt.runtime.SwiptHostModule
-import java.io.File
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 @OptIn(UnstableReactNativeAPI::class)
 class SwipletRuntime(private val application: Application, val entry: SwipletEntry) : SwiptHostDelegate {
@@ -93,12 +93,15 @@ class SwipletRuntime(private val application: Application, val entry: SwipletEnt
             putString("assetsDirectory", directoryURI(source.assetsDirectory))
             putString("cacheDirectory", directoryURI(source.cacheDirectory))
             putStringArray("streams", entry.swiplet.streams.toTypedArray())
-            putBundle("service", Bundle().apply {
-                putBoolean("enabled", service?.enabled ?: false)
-                putString("status", service?.statusName ?: "stopped")
-                putString("error", service?.error.orEmpty())
-                putDouble("since", service?.since?.toDouble() ?: 0.0)
-            })
+            putBundle(
+                "service",
+                Bundle().apply {
+                    putBoolean("enabled", service?.enabled ?: false)
+                    putString("status", service?.statusName ?: "stopped")
+                    putString("error", service?.error.orEmpty())
+                    putDouble("since", service?.since?.toDouble() ?: 0.0)
+                },
+            )
         }
         val context = MutableContextWrapper(application)
         val reactSurface = host.createSurface(context, "main", props)

@@ -62,8 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.nekohasekai.swipt.R
 import io.nekohasekai.swipt.app.PageScaffold
 import io.nekohasekai.swipt.core.Core
-import kotlin.math.hypot
 import kotlinx.coroutines.launch
+import kotlin.math.hypot
 
 @Composable
 internal fun AutoUnlockSetupScreen(onSaved: () -> Unit, navigationIcon: @Composable () -> Unit) {

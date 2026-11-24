@@ -7,14 +7,11 @@ import io.nekohasekai.swipt.app.AlertState
 import io.nekohasekai.swipt.app.ErrorAlert
 import io.nekohasekai.swipt.app.SwiptApplication
 import io.nekohasekai.swipt.core.Core
-import io.nekohasekai.swipt.proto.CloudflareMode as CoreCloudflareMode
 import io.nekohasekai.swipt.proto.LogInCloudflareResponse
 import io.nekohasekai.swipt.proto.LogInTailscaleResponse
 import io.nekohasekai.swipt.proto.PublicationStatus
-import io.nekohasekai.swipt.proto.Settings as CoreSettings
 import io.nekohasekai.swipt.proto.TailscaleState
 import io.nekohasekai.swipt.proto.cloudflareAccount
-import java.security.SecureRandom
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +22,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
+import io.nekohasekai.swipt.proto.CloudflareMode as CoreCloudflareMode
+import io.nekohasekai.swipt.proto.Settings as CoreSettings
 
 object API {
     const val MCP_PATH = "/mcp"
@@ -46,7 +46,7 @@ object API {
         val hostname: String,
         val runningHostname: String,
     ) {
-        val isComplete: Boolean get() = mode == CloudflareMode.QuickTunnel || account != null && hostname.isNotEmpty()
+        val isComplete: Boolean get() = mode == CloudflareMode.QuickTunnel || (account != null && hostname.isNotEmpty())
 
         val pathPrefix: String get() = if (path == "/") "" else path
 

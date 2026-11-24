@@ -88,12 +88,14 @@ class SwipletSession(swiplet: String, event: (String, Map<String, Any?>) -> Unit
     override fun start(id: String, name: String, arguments: String, completion: (SwiptHostWebResult) -> Unit) {
         scope.launch {
             val result = try {
-                val response = Core.interfaces.startWeb(startWebRequest {
-                    this.session = awaitSession()
-                    this.id = id
-                    this.name = name
-                    this.arguments = arguments
-                })
+                val response = Core.interfaces.startWeb(
+                    startWebRequest {
+                        this.session = awaitSession()
+                        this.id = id
+                        this.name = name
+                        this.arguments = arguments
+                    },
+                )
                 when (response.resultCase) {
                     StartWebResponse.ResultCase.DATA -> SwiptHostWebResult.Bytes(response.data.toByteArray())
                     StartWebResponse.ResultCase.FAILURE -> SwiptHostWebResult.Failure(response.failure)
@@ -109,54 +111,66 @@ class SwipletSession(swiplet: String, event: (String, Map<String, Any?>) -> Unit
     override fun cancel(id: String) {
         scope.launch {
             runCatching {
-                Core.interfaces.cancelWeb(cancelWebRequest {
-                    session = awaitSession()
-                    this.id = id
-                })
+                Core.interfaces.cancelWeb(
+                    cancelWebRequest {
+                        session = awaitSession()
+                        this.id = id
+                    },
+                )
             }
         }
     }
 
     override fun put(data: ByteArray): String = call { session ->
-        Core.interfaces.putWeb(putWebRequest {
-            this.session = session
-            this.data = ByteString.copyFrom(data)
-        }).id
+        Core.interfaces.putWeb(
+            putWebRequest {
+                this.session = session
+                this.data = ByteString.copyFrom(data)
+            },
+        ).id
     }
 
     override fun release(id: String, reason: String) {
         scope.launch {
             runCatching {
-                Core.interfaces.releaseWeb(releaseWebRequest {
-                    session = awaitSession()
-                    this.id = id
-                    this.reason = reason
-                })
+                Core.interfaces.releaseWeb(
+                    releaseWebRequest {
+                        session = awaitSession()
+                        this.id = id
+                        this.reason = reason
+                    },
+                )
             }
         }
     }
 
     override fun openFile(root: String, path: String): String = call { session ->
-        Core.interfaces.openWebFile(openWebFileRequest {
-            this.session = session
-            this.root = root
-            this.path = path
-        }).id
+        Core.interfaces.openWebFile(
+            openWebFileRequest {
+                this.session = session
+                this.root = root
+                this.path = path
+            },
+        ).id
     }
 
     override fun compression(format: String, mode: String): List<String> = call { session ->
-        Core.interfaces.openWebCompression(openWebCompressionRequest {
-            this.session = session
-            this.format = format
-            this.mode = mode
-        }).idsList
+        Core.interfaces.openWebCompression(
+            openWebCompressionRequest {
+                this.session = session
+                this.format = format
+                this.mode = mode
+            },
+        ).idsList
     }
 
     override fun database(request: String): String = call { session ->
-        Core.interfaces.queryDatabase(queryDatabaseRequest {
-            this.session = session
-            this.request = request
-        }).result
+        Core.interfaces.queryDatabase(
+            queryDatabaseRequest {
+                this.session = session
+                this.request = request
+            },
+        ).result
     }
 
     override fun close() {
@@ -164,7 +178,6 @@ class SwipletSession(swiplet: String, event: (String, Map<String, Any?>) -> Unit
     }
 
     private companion object {
-        fun failure(error: Exception): String =
-            JsonObject(mapOf("name" to JsonPrimitive("Error"), "message" to JsonPrimitive(error.description))).toString()
+        fun failure(error: Exception): String = JsonObject(mapOf("name" to JsonPrimitive("Error"), "message" to JsonPrimitive(error.description))).toString()
     }
 }

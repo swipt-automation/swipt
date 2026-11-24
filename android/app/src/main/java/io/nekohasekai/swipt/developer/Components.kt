@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,8 +55,7 @@ internal val API.CloudflareMode.title: String
 
 private fun maskedToken(token: String): String = "•".repeat(min(token.length, 3))
 
-internal fun maskedHost(host: String, revealed: Boolean): String =
-    if (revealed || !host.endsWith(".trycloudflare.com")) host else "***" + host.dropWhile { it != '.' }
+internal fun maskedHost(host: String, revealed: Boolean): String = if (revealed || !host.endsWith(".trycloudflare.com")) host else "***" + host.dropWhile { it != '.' }
 
 private fun apiURL(scheme: String, address: String, token: String?, revealed: Boolean): String {
     val credentials = token?.let { (if (revealed) Uri.encode(it) else maskedToken(it)) + "@" }.orEmpty()

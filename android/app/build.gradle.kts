@@ -1,4 +1,8 @@
 import com.google.protobuf.gradle.proto
+import java.io.ByteArrayInputStream
+import java.io.FileInputStream
+import java.util.Base64
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.KotlinApiPlugin
@@ -12,6 +16,29 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.facebook.react")
     id("com.google.protobuf")
+    id("com.diffplug.spotless")
+}
+
+fun getProps(propName: String): String {
+    val propsInEnv = System.getenv("LOCAL_PROPERTIES")
+    if (propsInEnv != null) {
+        val props = Properties()
+        props.load(ByteArrayInputStream(Base64.getDecoder().decode(propsInEnv)))
+        val value = props.getProperty(propName)
+        if (value != null) {
+            return value
+        }
+    }
+    val propsFile = rootProject.file("local.properties")
+    if (propsFile.exists()) {
+        val props = Properties()
+        props.load(FileInputStream(propsFile))
+        val value = props.getProperty(propName)
+        if (value != null) {
+            return value
+        }
+    }
+    return ""
 }
 
 val grpcVersion = "1.85.1"
@@ -36,13 +63,43 @@ android {
     defaultConfig {
         applicationId = "io.nekohasekai.swipt"
         minSdk = 34
-        targetSdk = 36
-        versionCode = 1
-        versionName = "0.0.1"
+        targetSdk = 37
+        versionCode = providers.gradleProperty("versionCode").orNull?.toInt() ?: 1
+        versionName = providers.gradleProperty("versionName").orNull ?: "0.1.0"
+        base.archivesName.set("Swipt")
         buildConfigField("String", "CHANNEL", "\"${providers.gradleProperty("swiptChannel").getOrElse("nightly")}\"")
         ndk {
             abiFilters += "arm64-v8a"
         }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.keystore")
+            storePassword = getProps("KEYSTORE_PASS")
+            keyAlias = getProps("ALIAS_NAME")
+            keyPassword = getProps("ALIAS_PASS")
+        }
+    }
+
+    buildTypes {
+        debug {
+            if (getProps("KEYSTORE_PASS").isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+            vcsInfo.include = false
+        }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     compileOptions {
@@ -58,6 +115,16 @@ android {
         aidl = true
         buildConfig = true
         compose = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    lint {
+        fatal += "NewApi"
     }
 
     sourceSets["main"].assets.srcDir("../../build/runtime/android")
@@ -116,6 +183,12 @@ val compileDeviceStubs = tasks.register<JavaCompile>("compileDeviceStubs") {
     options.compilerArgs.add("-nowarn")
 }
 
+val deviceStubsJar = tasks.register<Jar>("deviceStubsJar") {
+    from(compileDeviceStubs.flatMap { it.destinationDirectory })
+    destinationDirectory.set(layout.buildDirectory.dir("intermediates/device"))
+    archiveFileName.set("device-stubs.jar")
+}
+
 val kotlinApi = plugins.apply(KotlinApiPlugin::class.java)
 val kotlinStdlib = configurations.detachedConfiguration(dependencies.create("org.jetbrains.kotlin:kotlin-stdlib:${getKotlinPluginVersion()}"))
 
@@ -132,7 +205,7 @@ compileDevice.configure {
     multiPlatformEnabled.set(false)
     useModuleDetection.set(false)
     source(fileTree("../device/src"))
-    libraries.from(files(compileDeviceStubs) + androidJar + files(libswiptClasses.map { it.destinationDir.resolve("classes.jar") }).builtBy(libswiptClasses) + kotlinStdlib)
+    libraries.from(files(deviceStubsJar) + androidJar + files(libswiptClasses.map { it.destinationDir.resolve("classes.jar") }).builtBy(libswiptClasses) + kotlinStdlib)
     destinationDirectory.set(layout.buildDirectory.dir("intermediates/device/classes"))
 }
 
@@ -143,6 +216,7 @@ val deviceJar = tasks.register<Jar>("deviceJar") {
 }
 
 dependencies {
+    compileOnly(files(deviceStubsJar))
     implementation(files(deviceJar))
     implementation(files("libs/libswipt.aar"))
     val shizukuVersion = "13.1.5"
@@ -173,4 +247,22 @@ dependencies {
     implementation("io.grpc:grpc-stub:$grpcVersion")
     implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
     implementation("com.google.protobuf:protobuf-kotlin-lite:$protobufVersion")
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt", "../device/src/**/*.kt")
+        ktlint("1.8.0")
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_standard_backing-property-naming" to "disabled",
+                    "ktlint_standard_blank-line-before-declaration" to "disabled",
+                    "ktlint_standard_blank-line-between-when-conditions" to "disabled",
+                    "ktlint_standard_filename" to "disabled",
+                    "ktlint_standard_max-line-length" to "disabled",
+                    "ktlint_standard_property-naming" to "disabled",
+                    "ktlint_standard_function-naming" to "disabled",
+                ),
+            )
+    }
 }

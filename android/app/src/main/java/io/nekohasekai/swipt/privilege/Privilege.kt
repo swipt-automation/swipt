@@ -15,11 +15,11 @@ import com.topjohnwu.superuser.ipc.RootService
 import io.nekohasekai.swipt.BuildConfig
 import io.nekohasekai.swipt.app.SwiptApplication
 import io.nekohasekai.swipt.model.Settings
-import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import rikka.shizuku.Shizuku
+import java.io.IOException
 
 object Privilege {
     enum class Mode { Shizuku, Root }

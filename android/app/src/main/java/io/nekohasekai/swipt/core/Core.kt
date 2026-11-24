@@ -18,15 +18,12 @@ import io.nekohasekai.swipt.proto.InterfaceServiceGrpcKt.InterfaceServiceCorouti
 import io.nekohasekai.swipt.proto.PublicationStatus
 import io.nekohasekai.swipt.proto.ServiceState
 import io.nekohasekai.swipt.proto.ServiceStatus
-import io.nekohasekai.swipt.proto.Settings as CoreSettings
 import io.nekohasekai.swipt.proto.SettingsServiceGrpcKt.SettingsServiceCoroutineStub
-import io.nekohasekai.swipt.proto.Swiplet as CoreSwiplet
 import io.nekohasekai.swipt.proto.SwipletServiceGrpcKt.SwipletServiceCoroutineStub
 import io.nekohasekai.swipt.proto.SystemServiceGrpcKt.SystemServiceCoroutineStub
 import io.nekohasekai.swipt.proto.callActionRequest
 import io.nekohasekai.swipt.proto.setServiceEnabledRequest
 import io.nekohasekai.swipt.proto.watchServicesRequest
-import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +45,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import io.nekohasekai.swipt.proto.Settings as CoreSettings
+import io.nekohasekai.swipt.proto.Swiplet as CoreSwiplet
 
 object Core {
     sealed interface State {
@@ -227,10 +227,12 @@ object Core {
     }
 
     suspend fun setServiceEnabled(swiplet: String, enabled: Boolean) {
-        val response = swiplets.setServiceEnabled(setServiceEnabledRequest {
-            swipletId = swiplet
-            this.enabled = enabled
-        })
+        val response = swiplets.setServiceEnabled(
+            setServiceEnabledRequest {
+                swipletId = swiplet
+                this.enabled = enabled
+            },
+        )
         _services.update { it + (swiplet to Service(response.service)) }
     }
 

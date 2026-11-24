@@ -25,21 +25,20 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import io.nekohasekai.swipt.core.Core
 import io.nekohasekai.swipt.proto.readSwipletFileRequest
-import java.io.File
-import java.io.FileNotFoundException
-import java.net.URI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileNotFoundException
+import java.net.URI
 
 object SwipletSandbox {
     internal data class SwipletFile(val swipletId: String, val root: String, val path: String)
 
     private val fileScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun packages(application: Application): List<ReactPackage> =
-        PackageList(application).packages.map { if (it is ExpoModulesPackage) expoModules() else it } + SandboxPackage()
+    fun packages(application: Application): List<ReactPackage> = PackageList(application).packages.map { if (it is ExpoModulesPackage) expoModules() else it } + SandboxPackage()
 
     internal fun resolveFile(rawPath: String?): SwipletFile {
         if (rawPath.isNullOrEmpty() || '\u0000' in rawPath) {
@@ -72,11 +71,13 @@ object SwipletSandbox {
         fileScope.launch {
             try {
                 ParcelFileDescriptor.AutoCloseOutputStream(writeEnd).use { output ->
-                    Core.swiplets.readSwipletFile(readSwipletFileRequest {
-                        swipletId = target.swipletId
-                        root = target.root
-                        path = target.path
-                    }).collect { part ->
+                    Core.swiplets.readSwipletFile(
+                        readSwipletFileRequest {
+                            swipletId = target.swipletId
+                            root = target.root
+                            path = target.path
+                        },
+                    ).collect { part ->
                         part.chunk.writeTo(output)
                     }
                 }
@@ -100,8 +101,7 @@ object SwipletSandbox {
     }
 
     private class SandboxPackage : BaseReactPackage() {
-        override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
-            if (name == NativeImageStoreAndroidSpec.NAME) SwipletImageStore(reactContext) else null
+        override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? = if (name == NativeImageStoreAndroidSpec.NAME) SwipletImageStore(reactContext) else null
 
         override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
             mapOf(

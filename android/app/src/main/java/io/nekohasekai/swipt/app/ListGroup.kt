@@ -197,4 +197,3 @@ fun <T> ChoiceDialog(title: String, choices: List<Pair<T, String>>, selected: T,
         },
     )
 }
-

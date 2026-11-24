@@ -1,4 +1,16 @@
 pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "com.diffplug.spotless") {
+                useVersion("8.8.0")
+            }
+        }
+    }
     val runtime = file("../internal/automation/runtime")
     fun resolve(request: String): File = File(
         providers.exec {

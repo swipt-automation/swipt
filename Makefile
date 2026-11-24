@@ -3,7 +3,9 @@ SHELL := /bin/bash -o pipefail
 
 RUNTIME := internal/automation/runtime
 RUNTIME_BUNDLE := build/runtime/main.jsbundle
+RUNTIME_BUNDLE_ANDROID := build/runtime/android/main.jsbundle
 RUNTIME_BUNDLE_INPUTS := $(shell find $(RUNTIME)/src $(RUNTIME)/patches -type f) $(addprefix $(RUNTIME)/,package.json app.json babel.config.js metro.config.js metro.transformer.js slots.mjs) package.json bun.lock
+HERMESC := node_modules/hermes-compiler/hermesc/$(if $(filter Linux,$(shell uname -s)),linux64-bin,osx-bin)/hermesc
 
 lib: runtime
 	go run ./internal/cmd/build_libswipt
@@ -12,7 +14,15 @@ lib_android: runtime
 	go run ./internal/cmd/build_libswipt -target android
 
 build_android: lib_android runtime_bundle_android
-	cd android && ./gradlew assembleDebug -q
+	cd android && ./gradlew :app:assembleDebug --console=plain -q
+
+build_android_apk: lib_android archive_android
+
+archive_android: runtime_bundle_android
+	rm -f build/Swipt.apk
+	cd android && ./gradlew :app:assembleRelease --console=plain -q $(GRADLE_FLAGS)
+	mkdir -p build
+	cp android/app/build/outputs/apk/release/Swipt-release.apk build/Swipt.apk
 
 strings_android:
 	go run ./internal/cmd/build_android_strings
@@ -42,16 +52,14 @@ proto:
 $(RUNTIME_BUNDLE): $(RUNTIME_BUNDLE_INPUTS)
 	mkdir -p build/runtime
 	cd $(RUNTIME) && CI=1 bun expo export:embed --platform ios --dev false --minify false --entry-file src/app/index.tsx --bundle-output ../../../build/runtime/main.js --assets-dest ../../../build/runtime/assets
-	node_modules/hermes-compiler/hermesc/osx-bin/hermesc -emit-binary -O -w -out $@ build/runtime/main.js
+	$(HERMESC) -emit-binary -O -w -out $@ build/runtime/main.js
 
 runtime_bundle: $(RUNTIME_BUNDLE)
-
-RUNTIME_BUNDLE_ANDROID := build/runtime/android/main.jsbundle
 
 $(RUNTIME_BUNDLE_ANDROID): $(RUNTIME_BUNDLE_INPUTS)
 	mkdir -p build/runtime/android
 	cd $(RUNTIME) && CI=1 bun expo export:embed --platform android --dev false --minify false --entry-file src/app/index.tsx --bundle-output ../../../build/runtime/main.android.js --assets-dest ../../../build/runtime/android-res
-	node_modules/hermes-compiler/hermesc/osx-bin/hermesc -emit-binary -O -w -out $@ build/runtime/main.android.js
+	$(HERMESC) -emit-binary -O -w -out $@ build/runtime/main.android.js
 
 runtime_bundle_android: $(RUNTIME_BUNDLE_ANDROID)
 
@@ -91,6 +99,7 @@ fmt:
 	golangci-lint fmt
 	bun fmt
 	go run ./internal/cmd/format_xcstrings $$(find Swipt -name '*.xcstrings') android/app/Localizable.xcstrings
+	cd android && ./gradlew :app:spotlessApply --console=plain -q
 
 lint:
 	golangci-lint run ./...

@@ -25,7 +25,7 @@ const iosApp = path.join(
 const androidAar = "android/app/libs/libswipt.aar";
 const androidApk = path.join(
   root,
-  "android/app/build/outputs/apk/debug/app-debug.apk",
+  "android/app/build/outputs/apk/debug/Swipt-debug.apk",
 );
 const androidMetadata = path.join(
   root,

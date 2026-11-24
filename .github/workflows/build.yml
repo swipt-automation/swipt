@@ -21,7 +21,7 @@ concurrency:
 env:
   PACKAGE_PATHS: >-
     .github/publish_packages.sh api cli cmd/swipt-driver internal go.mod go.sum Swipt/Resources/DeveloperDiskImage
-    :!internal/automation/runtime :!internal/cmd/build_altstore_source :!internal/cmd/build_libswipt :!internal/cmd/format_xcstrings :!internal/cmd/with_toolchain :!*_test.go
+    :!internal/automation/runtime :!internal/cmd/build_altstore_source :!internal/cmd/build_android_strings :!internal/cmd/build_libswipt :!internal/cmd/build_material_icons :!internal/cmd/format_xcstrings :!internal/cmd/with_toolchain :!*_test.go
 
 jobs:
   calculate_version:
@@ -29,6 +29,7 @@ jobs:
     if: github.event_name != 'release' && !inputs.release
     runs-on: ubuntu-latest
     outputs:
+      android: ${{ secrets.LOCAL_PROPERTIES != '' }}
       app_changed: ${{ steps.outputs.outputs.app_changed }}
       build_number: ${{ steps.outputs.outputs.build_number }}
       library_hash: ${{ steps.outputs.outputs.library_hash }}
@@ -57,8 +58,10 @@ jobs:
           if retry git fetch --depth=1 origin tag nightly; then
             PREVIOUS=$(git tag -l --format='%(contents:subject)' nightly)
             RELEASED=$(curl -fsSL --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/metadata.json" | jq -r '"\(.version) \(.build)"' || true)
-            if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] && git diff --quiet 'nightly^{commit}' HEAD -- . \
-              ':!.github' ':!cli' ':!cmd' ':!internal/cmd/build_driver' ':!internal/cmd/with_toolchain' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!*_test.go'; then
+            if [ "$GITHUB_EVENT_NAME" = push ] && [ "$RELEASED" = "$VERSION $PREVIOUS" ] \
+              && { [ "$ANDROID" != true ] || curl -fsSI --retry 3 "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/Swipt.apk" > /dev/null 2>&1; } \
+              && git diff --quiet 'nightly^{commit}' HEAD -- . \
+                ':!.github' ':!cli' ':!cmd' ':!dev' ':!internal/cmd/build_android_strings' ':!internal/cmd/build_driver' ':!internal/cmd/build_material_icons' ':!internal/cmd/format_xcstrings' ':!internal/cmd/with_toolchain' ':!*.md' ':!LICENSE' ':!.gitignore' ':!.golangci.yml' ':!.prettierignore' ':!*_test.go'; then
               APP_CHANGED=false
             fi
           fi
@@ -80,6 +83,7 @@ jobs:
           echo "build_number=$((PREVIOUS + 1))" >> "$GITHUB_OUTPUT"
           echo "library_hash=${{ hashFiles('go.mod', 'go.sum', 'api/*.go', 'api/package.json', 'libswipt/**', 'internal/**', '!internal/automation/runtime/**', '!internal/cmd/**', 'internal/cmd/build_libswipt/**', 'internal/cmd/toolchain/**', '!**/*_test.go') }}" >> "$GITHUB_OUTPUT"
         env:
+          ANDROID: ${{ secrets.LOCAL_PROPERTIES != '' }}
           GH_TOKEN: ${{ github.token }}
       - name: Check API level
         if: steps.outputs.outputs.stable != ''
@@ -245,6 +249,129 @@ jobs:
             build/metadata.json
             build/altstore
           if-no-files-found: error
+  build_android_library:
+    name: Build Android library
+    if: needs.calculate_version.outputs.android == 'true' && needs.calculate_version.outputs.app_changed == 'true'
+    runs-on: ubuntu-latest
+    needs:
+      - calculate_version
+    steps:
+      - name: Cache library
+        id: library
+        uses: actions/cache@v4
+        with:
+          path: android/app/libs/libswipt.aar
+          key: libswipt-android-${{ needs.calculate_version.outputs.library_hash }}
+          lookup-only: true
+      - name: Checkout
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 1
+      - name: Get Go version
+        id: go
+        if: steps.library.outputs.cache-hit != 'true'
+        run: echo "version=$(sed -n 's/^go //p' go.mod)" >> "$GITHUB_OUTPUT"
+      - name: Cache Go toolchain
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.tool_cache }}/go/${{ steps.go.outputs.version }}
+          key: go-toolchain-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.version }}
+      - name: Setup Go
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Cache Go modules
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-${{ hashFiles('go.sum') }}
+          restore-keys: go-mod-
+      - name: Cache Go build
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-libswipt-android-${{ needs.calculate_version.outputs.library_hash }}
+          restore-keys: go-build-libswipt-android-
+      - name: Cache library dependencies
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: build/downloads
+          key: android-library-dependencies-${{ hashFiles('internal/cmd/build_libswipt/**', 'internal/cmd/toolchain/**') }}
+          restore-keys: android-library-dependencies-
+      - name: Install LLVM
+        if: steps.library.outputs.cache-hit != 'true'
+        run: |-
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/llvm.gpg] http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-23 main" | sudo tee /etc/apt/sources.list.d/llvm.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-23 lld-23 llvm-23
+      - name: Build library
+        if: steps.library.outputs.cache-hit != 'true'
+        run: go run ./internal/cmd/build_libswipt -target android
+  build_android:
+    name: Build Android (APK)
+    if: needs.calculate_version.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    needs:
+      - calculate_version
+      - build_android_library
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 1
+          submodules: true
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Restore library
+        uses: actions/cache/restore@v4
+        with:
+          path: android/app/libs/libswipt.aar
+          key: libswipt-android-${{ needs.calculate_version.outputs.library_hash }}
+          fail-on-cache-miss: true
+      - name: Cache runtime bundle
+        id: runtime_bundle
+        uses: actions/cache@v4
+        with:
+          path: |-
+            build/runtime/android
+            build/runtime/android-res
+          key: runtime-bundle-android-${{ hashFiles('package.json', 'bun.lock', 'internal/automation/runtime/**', '!**/node_modules/**') }}
+      - name: Keep runtime bundle
+        if: steps.runtime_bundle.outputs.cache-hit == 'true'
+        run: touch build/runtime/android/main.jsbundle
+      - name: Build
+        run: make archive_android
+        env:
+          GRADLE_FLAGS: -PversionName=${{ needs.calculate_version.outputs.version }} -PversionCode=${{ needs.calculate_version.outputs.build_number }}
+          LOCAL_PROPERTIES: ${{ secrets.LOCAL_PROPERTIES }}
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swipt-Android-APK
+          path: build/Swipt.apk
+          if-no-files-found: error
   list_driver_targets:
     name: List driver targets
     if: ${{ !inputs.release }}
@@ -398,6 +525,7 @@ jobs:
     needs:
       - calculate_version
       - build_ios_ipa
+      - build_android
       - build_driver
     steps:
       - name: Checkout
@@ -425,10 +553,13 @@ jobs:
           else
             NOTES=$(git log --format='* %s')
           fi
+          ASSETS=(build/Swipt.ipa build/Swipt-iOS.dSYMs.zip build/metadata.json build/altstore/altstore.json build/altstore/icon.png)
+          if [ -f build/Swipt.apk ]; then
+            ASSETS+=(build/Swipt.apk)
+          fi
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -a -f nightly -m "$BUILD_NUMBER" "$GITHUB_SHA"
           retry git push -f origin refs/tags/nightly
-          DRAFT=$(retry create_draft nightly-draft --prerelease --target "$GITHUB_SHA" --title "Nightly build" --notes "$NOTES" \
-            build/Swipt.ipa build/Swipt-iOS.dSYMs.zip build/metadata.json build/altstore/altstore.json build/altstore/icon.png)
+          DRAFT=$(retry create_draft nightly-draft --prerelease --target "$GITHUB_SHA" --title "Nightly build" --notes "$NOTES" "${ASSETS[@]}")
           if PREVIOUS=$(retry gh api "repos/$GITHUB_REPOSITORY/releases/tags/nightly" --jq .url); then
             retry delete "$PREVIOUS"
           fi
@@ -466,6 +597,7 @@ jobs:
     needs:
       - calculate_version
       - build_ios_ipa
+      - build_android
       - build_driver
     steps:
       - name: Checkout
@@ -482,17 +614,109 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ github.token }}
-  release:
-    name: Release
-    if: inputs.release && github.ref == 'refs/heads/main'
-    runs-on: xcode-27
-    permissions:
-      contents: write
+  release_android:
+    name: Release Android
+    if: inputs.release && github.ref == 'refs/heads/main' && secrets.LOCAL_PROPERTIES != ''
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
+      - name: Checkout nightly
+        id: nightly
+        run: |-
+          source .github/github.sh
+          retry gh release download nightly -D build --clobber -p metadata.json
+          if [ "$(jq .build build/metadata.json)" != "$(git tag -l --format='%(contents:subject)' nightly)" ]; then
+            echo "nightly was updated during the release, run it again" >&2
+            exit 1
+          fi
+          echo "version=$(jq -r .version build/metadata.json)" >> "$GITHUB_OUTPUT"
+          echo "build=$(jq .build build/metadata.json)" >> "$GITHUB_OUTPUT"
+          git checkout 'nightly^{commit}'
+          git submodule update --init --recursive
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Restore library
+        id: library
+        uses: actions/cache/restore@v4
+        with:
+          path: android/app/libs/libswipt.aar
+          key: libswipt-android-${{ hashFiles('go.mod', 'go.sum', 'api/*.go', 'api/package.json', 'libswipt/**', 'internal/**', '!internal/automation/runtime/**', '!internal/cmd/**', 'internal/cmd/build_libswipt/**', 'internal/cmd/toolchain/**', '!**/*_test.go') }}
+      - name: Setup Go
+        if: steps.library.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Install LLVM
+        if: steps.library.outputs.cache-hit != 'true'
+        run: |-
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/llvm.gpg] http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-23 main" | sudo tee /etc/apt/sources.list.d/llvm.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-23 lld-23 llvm-23
+      - name: Build library
+        if: steps.library.outputs.cache-hit != 'true'
+        run: go run ./internal/cmd/build_libswipt -target android
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Restore runtime bundle
+        id: runtime_bundle
+        uses: actions/cache/restore@v4
+        with:
+          path: |-
+            build/runtime/android
+            build/runtime/android-res
+          key: runtime-bundle-android-${{ hashFiles('package.json', 'bun.lock', 'internal/automation/runtime/**', '!**/node_modules/**') }}
+      - name: Keep runtime bundle
+        if: steps.runtime_bundle.outputs.cache-hit == 'true'
+        run: touch build/runtime/android/main.jsbundle
+      - name: Build
+        run: make archive_android
+        env:
+          GRADLE_FLAGS: -PversionName=${{ steps.nightly.outputs.version }} -PversionCode=${{ steps.nightly.outputs.build }} -PswiptChannel=stable
+          LOCAL_PROPERTIES: ${{ secrets.LOCAL_PROPERTIES }}
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swipt-Android-APK
+          path: build/Swipt.apk
+          if-no-files-found: error
+  release:
+    name: Release
+    if: "!cancelled() && !failure() && inputs.release && github.ref == 'refs/heads/main'"
+    runs-on: xcode-27
+    permissions:
+      contents: write
+    needs:
+      - release_android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+      - name: Download Android build
+        if: needs.release_android.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: Swipt-Android-APK
+          path: build
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -520,7 +744,10 @@ jobs:
           rm build/Swipt.ipa
           (cd build/stable && zip -qry ../Swipt.ipa Payload)
           go run ./internal/cmd/build_altstore_source -tag "$TAG"
-          retry create_draft "$TAG" --target "$(git rev-parse 'nightly^{commit}')" --notes "" \
-            build/Swipt.ipa build/Swipt-iOS.dSYMs.zip build/metadata.json build/icon.png build/altstore/altstore.json
+          ASSETS=(build/Swipt.ipa build/Swipt-iOS.dSYMs.zip build/metadata.json build/icon.png build/altstore/altstore.json)
+          if [ -f build/Swipt.apk ]; then
+            ASSETS+=(build/Swipt.apk)
+          fi
+          retry create_draft "$TAG" --target "$(git rev-parse 'nightly^{commit}')" --notes "" "${ASSETS[@]}"
         env:
           GH_TOKEN: ${{ github.token }}

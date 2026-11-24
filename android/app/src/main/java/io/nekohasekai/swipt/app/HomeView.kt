@@ -55,9 +55,13 @@ fun HomeView() {
     val privilege by Privilege.state.collectAsStateWithLifecycle()
     var isSettingUp by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(privilege) {
-        if (privilege.isSetupNeeded) isSettingUp = true else if (privilege == Privilege.State.Connected) isSettingUp = false
+        if (privilege.isSetupNeeded) {
+            isSettingUp = true
+        } else if (privilege == Privilege.State.Connected) {
+            isSettingUp = false
+        }
     }
-    if (privilege.isSetupNeeded || isSettingUp && privilege != Privilege.State.Connected) {
+    if (privilege.isSetupNeeded || (isSettingUp && privilege != Privilege.State.Connected)) {
         SetupView()
     } else {
         Tabs()

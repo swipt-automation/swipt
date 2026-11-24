@@ -6,8 +6,8 @@ import io.nekohasekai.swipt.R
 import io.nekohasekai.swipt.app.ErrorAlert
 import io.nekohasekai.swipt.app.SwiptApplication
 import io.nekohasekai.swipt.core.Core
-import io.nekohasekai.swipt.proto.Settings as CoreSettings
 import io.nekohasekai.swipt.proto.UnlockType
+import io.nekohasekai.swipt.proto.Settings as CoreSettings
 
 enum class AndroidUnlockType(
     val proto: UnlockType,

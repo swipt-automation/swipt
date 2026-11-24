@@ -168,7 +168,7 @@ object SwipletHost {
         val iterator = prepared.iterator()
         while (iterator.hasNext()) {
             val (name, surface) = iterator.next()
-            if (name !in wanted && !isPresented(name) || surface.entry != interfaces[name]) {
+            if ((name !in wanted && !isPresented(name)) || surface.entry != interfaces[name]) {
                 iterator.remove()
                 surface.stop()
             }

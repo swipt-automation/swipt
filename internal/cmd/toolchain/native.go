@@ -54,7 +54,7 @@ const llvmVersion = "23"
 
 func llvmEnvironment() []string {
 	var directories []string
-	for _, prefix := range []string{os.Getenv("LLVM_PREFIX"), "/opt/homebrew/opt/llvm@" + llvmVersion, "/opt/homebrew/opt/lld@" + llvmVersion, "/usr/local/opt/llvm@" + llvmVersion, "/usr/local/opt/lld@" + llvmVersion} {
+	for _, prefix := range []string{os.Getenv("LLVM_PREFIX"), "/opt/homebrew/opt/llvm@" + llvmVersion, "/opt/homebrew/opt/lld@" + llvmVersion, "/usr/local/opt/llvm@" + llvmVersion, "/usr/local/opt/lld@" + llvmVersion, "/usr/lib/llvm-" + llvmVersion} {
 		if prefix == "" {
 			continue
 		}

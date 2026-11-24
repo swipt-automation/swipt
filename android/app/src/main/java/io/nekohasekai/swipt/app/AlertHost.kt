@@ -56,4 +56,3 @@ fun AlertHost(alert: AlertState?, onDismiss: () -> Unit) {
 fun ErrorAlertHost() {
     AlertHost(ErrorAlert.alert, ErrorAlert::dismiss)
 }
-

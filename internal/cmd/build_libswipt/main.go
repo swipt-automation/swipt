@@ -1,9 +1,11 @@
 package main
 
 import (
+	"archive/zip"
 	"debug/buildinfo"
 	"flag"
 	"go/build"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -23,6 +25,7 @@ const (
 	outputPath        = "Frameworks/LibSwipt.xcframework"
 	androidOutputPath = "android/app/libs/libswipt.aar"
 	androidPackage    = "io.nekohasekai"
+	androidProguard   = "-keep class go.** { *; }\n-keep class io.nekohasekai.libSwipt.** { *; }\n"
 )
 
 func main() {
@@ -43,9 +46,12 @@ func main() {
 	}
 
 	output, platformArgs := outputPath, []string{"-target", *target, "-iosversion", iosVersion, "-macosversion", macOSVersion}
+	ldflags := "-s -w -buildid= -checklinkname=0"
 	env := os.Environ()
-	if *target == "android" {
+	android := *target == "android"
+	if android {
 		output, platformArgs = androidOutputPath, []string{"-target", "android/arm64", "-androidapi", androidAPI, "-javapkg", androidPackage}
+		ldflags += " -extldflags=-Wl,-z,max-page-size=16384"
 		buildDirectory := toolchain.BuildDirectory()
 		toolchain.PruneDownloads(buildDirectory)
 		env = append(env, toolchain.Environment(buildDirectory, toolchain.Target{OS: "android", Arch: "arm64"})...)
@@ -59,12 +65,58 @@ func main() {
 		"-v",
 		"-trimpath",
 		"-buildvcs=false",
-		"-ldflags", "-s -w -buildid= -checklinkname=0",
+		"-ldflags", ldflags,
 		"-tags", "ts_omit_logtail,ts_omit_ssh,ts_omit_drive,ts_omit_taildrop,ts_omit_webclient,ts_omit_doctor,ts_omit_capture,ts_omit_kube,ts_omit_aws,ts_omit_synology,ts_omit_bird",
 	}, append(platformArgs, "-o", output, "./libswipt")...)
 	bind := exec.Command(filepath.Join(binDirectory, "gomobile"), arguments...)
 	bind.Env = append(env, "PATH="+binDirectory+string(os.PathListSeparator)+pathValue(env))
 	run(bind)
+	if android {
+		replaceProguardRules(output)
+	}
+}
+
+func replaceProguardRules(path string) {
+	reader, err := zip.OpenReader(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	temporaryPath := path + ".tmp"
+	file, err := os.Create(temporaryPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	writer := zip.NewWriter(file)
+	for _, entry := range reader.File {
+		if entry.Name != "proguard.txt" {
+			err = writer.Copy(entry)
+			if err != nil {
+				log.Fatal(err)
+			}
+			continue
+		}
+		rules, err := writer.Create(entry.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = io.WriteString(rules, androidProguard)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = writer.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader.Close()
+	err = os.Rename(temporaryPath, path)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func pathValue(environment []string) string {

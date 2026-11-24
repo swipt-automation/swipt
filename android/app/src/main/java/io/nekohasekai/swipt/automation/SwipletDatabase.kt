@@ -103,8 +103,7 @@ abstract class SwipletDatabase {
     abstract fun removeRepository(url: String)
 
     @Transaction
-    open fun loadRepositories(): List<Pair<RepositoryRecord, List<RepositorySwipletRecord>>> =
-        repositories().map { it to repositorySwiplets(it.url) }
+    open fun loadRepositories(): List<Pair<RepositoryRecord, List<RepositorySwipletRecord>>> = repositories().map { it to repositorySwiplets(it.url) }
 
     @Transaction
     open fun save(repository: RepositoryRecord, swiplets: List<RepositorySwipletRecord>) {

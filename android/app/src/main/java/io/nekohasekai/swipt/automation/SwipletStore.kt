@@ -25,8 +25,6 @@ import io.nekohasekai.swipt.model.AppDirectory
 import io.nekohasekai.swipt.proto.Incompatibility
 import io.nekohasekai.swipt.proto.InspectSwipletResponse
 import io.nekohasekai.swipt.proto.ServiceStatus
-import io.nekohasekai.swipt.proto.Swiplet as CoreSwiplet
-import io.nekohasekai.swipt.proto.SwipletIcon as CoreSwipletIcon
 import io.nekohasekai.swipt.proto.checkCompatibilityRequest
 import io.nekohasekai.swipt.proto.clearSwipletDataRequest
 import io.nekohasekai.swipt.proto.deploySwipletRequest
@@ -37,13 +35,6 @@ import io.nekohasekai.swipt.proto.getSwipletDataSizeRequest
 import io.nekohasekai.swipt.proto.getSwipletIconRequest
 import io.nekohasekai.swipt.proto.removeSwipletRequest
 import io.nekohasekai.swipt.proto.requirement
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.InputStream
-import java.io.OutputStream
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.NonCancellable
@@ -57,6 +48,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
+import io.nekohasekai.swipt.proto.Swiplet as CoreSwiplet
+import io.nekohasekai.swipt.proto.SwipletIcon as CoreSwipletIcon
 
 class Swiplet(
     val id: String,
@@ -338,14 +338,16 @@ object SwipletStore {
         scope.launch {
             val requirements = repositories.flatMap { it.swiplets }.map { it.minimumAPILevel to it.minimumOSVersion }.distinct()
             try {
-                val checked = Core.swiplets.checkCompatibility(checkCompatibilityRequest {
-                    this.requirements += requirements.map { (level, version) ->
-                        requirement {
-                            minimumApiLevel = level
-                            minimumOsVersion = version
+                val checked = Core.swiplets.checkCompatibility(
+                    checkCompatibilityRequest {
+                        this.requirements += requirements.map { (level, version) ->
+                            requirement {
+                                minimumApiLevel = level
+                                minimumOsVersion = version
+                            }
                         }
-                    }
-                }).incompatibilitiesList
+                    },
+                ).incompatibilitiesList
                 compatible = requirements.filterIndexed { index, _ -> checked.getOrNull(index) == Incompatibility.INCOMPATIBILITY_UNSPECIFIED }.toSet()
             } catch (e: Exception) {
                 Log.w(TAG, "check the compatibility of the repositories", e)
@@ -459,8 +461,7 @@ object SwipletStore {
         Core.swiplets.clearSwipletData(clearSwipletDataRequest { swipletId = swiplet.id })
     }
 
-    suspend fun dataSize(swiplet: Swiplet): Long =
-        Core.swiplets.getSwipletDataSize(getSwipletDataSizeRequest { swipletId = swiplet.id }).bytes
+    suspend fun dataSize(swiplet: Swiplet): Long = Core.swiplets.getSwipletDataSize(getSwipletDataSizeRequest { swipletId = swiplet.id }).bytes
 
     fun preferredName(name: String, localized: Map<String, String>): String {
         if (localized.isEmpty()) return name
@@ -545,8 +546,12 @@ object SwipletStore {
     }
 
     private fun repository(record: RepositoryRecord, swiplets: List<RepositorySwipletRecord>) = Repository(
-        record.url, record.name, record.localizedNames, record.iconSymbol?.let { SwipletIcon(record.iconColor, it, record.iconSymbolColor) },
-        record.image, record.etag,
+        record.url,
+        record.name,
+        record.localizedNames,
+        record.iconSymbol?.let { SwipletIcon(record.iconColor, it, record.iconSymbolColor) },
+        record.image,
+        record.etag,
         swiplets.map {
             RepositorySwiplet(
                 it.id, it.name, it.localizedNames, it.description, it.version, it.versionCode, it.minimumAPILevel, it.minimumOSVersion,
@@ -556,15 +561,28 @@ object SwipletStore {
     )
 
     private suspend fun fetchRepository(url: String, etag: String): Repository? {
-        val fetched = Core.swiplets.fetchRepository(fetchRepositoryRequest {
-            this.url = url
-            entityTag = etag
-        })
+        val fetched = Core.swiplets.fetchRepository(
+            fetchRepositoryRequest {
+                this.url = url
+                entityTag = etag
+            },
+        )
         if (fetched.notModified) return null
         val index = fetched.repository
-        val icon = if (index.hasIcon()) iconOf(index.icon) else if (Repository.isOfficialURL(url)) Repository.official.icon else null
+        val icon = if (index.hasIcon()) {
+            iconOf(index.icon)
+        } else if (Repository.isOfficialURL(url)) {
+            Repository.official.icon
+        } else {
+            null
+        }
         return Repository(
-            url, index.name, index.localizedNamesMap, icon, index.image.takeIf { !it.isEmpty }?.toByteArray(), fetched.entityTag,
+            url,
+            index.name,
+            index.localizedNamesMap,
+            icon,
+            index.image.takeIf { !it.isEmpty }?.toByteArray(),
+            fetched.entityTag,
             index.swipletsList.map {
                 RepositorySwiplet(
                     it.id, it.title, it.localizedTitlesMap, it.description, it.version, it.versionCode, it.minimumApiLevel,
@@ -580,10 +598,12 @@ object SwipletStore {
             withContext(Dispatchers.IO) {
                 file.outputStream().use { output ->
                     var received = 0L
-                    Core.swiplets.downloadSwiplet(downloadSwipletRequest {
-                        url = link
-                        sha256 = checksum
-                    }).collect { part ->
+                    Core.swiplets.downloadSwiplet(
+                        downloadSwipletRequest {
+                            url = link
+                            sha256 = checksum
+                        },
+                    ).collect { part ->
                         part.chunk.writeTo(output)
                         received += part.chunk.size()
                         if (progressOf != null && latest.getAndSet(DownloadProgress(received, part.total)) == null) {
