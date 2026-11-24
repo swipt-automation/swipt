@@ -4,15 +4,12 @@ import (
 	"context"
 	"slices"
 	"strconv"
-	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice/apps"
 	"github.com/swipt-automation/swipt/internal/coredevice/debugserver"
 	"github.com/swipt-automation/swipt/internal/fault"
 )
-
-const jitServeTimeout = time.Minute
 
 type jitSession struct {
 	cancel context.CancelFunc
@@ -42,7 +39,7 @@ func (p *Phone) EnableJIT(ctx context.Context, bundleID string, pid uint64) erro
 	if err != nil {
 		return err
 	}
-	serveCtx, cancel := context.WithTimeout(c.ctx, jitServeTimeout)
+	serveCtx, cancel := context.WithCancel(c.ctx)
 	session := &jitSession{cancel: cancel}
 	p.jitAccess.Lock()
 	if previous := p.jitSessions[pid]; previous != nil {
