@@ -1,11 +1,16 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
-import { sameName } from "./connection";
+import Bonjour, { type Service } from "bonjour-service";
+
+import { label, sameName } from "./connection";
 import { type Application, randomToken } from "./driver";
 import { t } from "./i18n";
+import { multicastOptions, resolveHost } from "./mdns";
 import { step } from "./output";
 import type { Passcode } from "./passcode";
 import { bundleId } from "./swipt-app";
@@ -13,7 +18,9 @@ import { bundleId } from "./swipt-app";
 const minimumAndroidSDK = 34;
 const requiredAndroidABI = "arm64-v8a";
 const mdnsBrowseTimeoutMs = 1500;
+const mdnsBrowseRequeryMs = 300;
 const mdnsConnectTimeoutMs = 2000;
+const probeTimeoutMs = 3000;
 const setupPromptDelayMs = 4000;
 const setupTimeoutMs = 75_000;
 const setupRequestFile = "/data/local/tmp/swipt-setup.json";
@@ -204,52 +211,34 @@ function parseDevicesOutput(output: string): RawAdbEntry[] {
   return entries;
 }
 
-async function connectWirelessServices(
-  attached: Set<string>,
-  signal: AbortSignal,
-) {
-  let output: string;
-  try {
-    output = await runAdb(["mdns", "services"], {
-      signal,
-      timeoutMs: mdnsBrowseTimeoutMs,
-    });
-  } catch {
-    return false;
+const connectedPattern = /^(?:connected|already connected) to\b/im;
+const noRoutePattern = /\bNo route to host\b/i;
+
+const matchesPreferred = (device: AndroidDevice, preferred: string) =>
+  sameName(device.serial, preferred) ||
+  sameName(device.id, preferred) ||
+  sameName(label(device.name), label(preferred));
+
+async function serviceEndpoint(service: Service, signal: AbortSignal) {
+  if (!service.port) {
+    return undefined;
   }
-  const endpoints: string[] = [];
-  for (const raw of output.split(/\r?\n/)) {
-    const match = /^(\S+)\s+_adb-tls-connect\._tcp\.?\s+(\S+)$/.exec(
-      raw.trim(),
-    );
-    if (!match) {
-      continue;
-    }
-    const [, instance, endpoint] = match;
-    const hardwareSerial = /^adb-([^-]+)-/.exec(instance)?.[1];
-    if (
-      attached.has(endpoint) ||
-      (hardwareSerial !== undefined && attached.has(hardwareSerial))
-    ) {
-      continue;
-    }
-    endpoints.push(endpoint);
+  const addresses = service.addresses ?? [];
+  const ipv4 =
+    addresses.find((it) => net.isIPv4(it)) ??
+    (service.referer?.family === "IPv4" && net.isIPv4(service.referer.address)
+      ? service.referer.address
+      : undefined);
+  const ipv6 = addresses.find((it) => net.isIPv6(it) && !/^fe[89ab]/i.test(it));
+  const host = service.host?.replace(/\.$/, "");
+  const address =
+    ipv4 ?? ipv6 ?? (host ? await resolveHost(host, signal) : undefined);
+  if (!address) {
+    return undefined;
   }
-  if (endpoints.length === 0) {
-    return false;
-  }
-  const results = await Promise.all(
-    endpoints.map((endpoint) =>
-      runAdb(["connect", endpoint], {
-        signal,
-        timeoutMs: mdnsConnectTimeoutMs,
-      }).then(
-        (text) => /\bconnected to\b/i.test(text),
-        () => false,
-      ),
-    ),
-  );
-  return results.some(Boolean);
+  return net.isIPv6(address)
+    ? `[${address}]:${service.port}`
+    : `${address}:${service.port}`;
 }
 
 async function probeDevice(
@@ -270,7 +259,10 @@ async function probeDevice(
   }
   try {
     const lines = (
-      await onSerial(entry.serial, ["shell", identityProbe], { signal })
+      await onSerial(entry.serial, ["shell", identityProbe], {
+        signal,
+        timeoutMs: probeTimeoutMs,
+      })
     )
       .replaceAll("\r", "")
       .split("\n");
@@ -288,6 +280,12 @@ async function probeDevice(
   } catch (error) {
     if (signal.aborted) {
       throw error;
+    }
+    if (entry.serial.includes(":")) {
+      await runAdb(["disconnect", entry.serial], {
+        signal,
+        timeoutMs: mdnsConnectTimeoutMs,
+      }).catch(() => {});
     }
     return undefined;
   }
@@ -314,6 +312,214 @@ function preferTransport(
   return candidateUSB && !currentUSB ? candidate : current;
 }
 
+async function discoverWirelessDevices({
+  attached,
+  emitted,
+  canRestartServer,
+  preferredSerial,
+  virtual,
+  signal,
+  onDevice,
+}: {
+  attached: Set<string>;
+  emitted: Set<string>;
+  canRestartServer: boolean;
+  preferredSerial: string | undefined;
+  virtual: boolean;
+  signal: AbortSignal;
+  onDevice: (device: AndroidDevice) => void;
+}) {
+  const seenEndpoints = new Set<string>(attached);
+  const connectingSerials = new Set<string>();
+  const pending: Promise<void>[] = [];
+  const enough = new AbortController();
+  const browseSignal = AbortSignal.any([signal, enough.signal]);
+  let restartPromise: Promise<void> | undefined;
+
+  const connectEndpoint = async (endpoint: string) => {
+    const attempt = () =>
+      runAdb(["connect", endpoint], {
+        signal,
+        timeoutMs: mdnsConnectTimeoutMs,
+      });
+    let text: string;
+    try {
+      text = await attempt();
+    } catch (error) {
+      if (signal.aborted) {
+        throw error;
+      }
+      text = error instanceof Error ? error.message : String(error);
+    }
+    if (connectedPattern.test(text)) {
+      return true;
+    }
+    if (
+      process.platform === "darwin" &&
+      canRestartServer &&
+      noRoutePattern.test(text)
+    ) {
+      restartPromise ??= runAdb(["kill-server"], {
+        signal,
+        timeoutMs: mdnsConnectTimeoutMs,
+      }).then(
+        () => {},
+        () => {},
+      );
+      await restartPromise;
+      try {
+        return connectedPattern.test(await attempt());
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  };
+
+  const tryCandidate = (
+    endpoint: string,
+    hardwareSerial: string | undefined,
+  ) => {
+    if (
+      seenEndpoints.has(endpoint) ||
+      signal.aborted ||
+      enough.signal.aborted
+    ) {
+      return;
+    }
+    const wantsEndpoint =
+      preferredSerial !== undefined && sameName(endpoint, preferredSerial);
+    if (
+      !wantsEndpoint &&
+      hardwareSerial !== undefined &&
+      (attached.has(hardwareSerial) ||
+        emitted.has(hardwareSerial) ||
+        connectingSerials.has(hardwareSerial))
+    ) {
+      return;
+    }
+    seenEndpoints.add(endpoint);
+    if (hardwareSerial !== undefined) {
+      connectingSerials.add(hardwareSerial);
+    }
+    pending.push(
+      (async () => {
+        try {
+          if (!(await connectEndpoint(endpoint))) {
+            return;
+          }
+          const entries = parseDevicesOutput(
+            await runAdb(["devices", "-l"], { signal }),
+          );
+          const entry = entries.find((it) => it.serial === endpoint) ?? {
+            serial: endpoint,
+            state: "device" as const,
+          };
+          const device = await probeDevice(entry, signal);
+          if (
+            device === undefined ||
+            (!virtual && device.virtual) ||
+            emitted.has(device.id)
+          ) {
+            return;
+          }
+          emitted.add(device.id);
+          attached.add(device.serial);
+          onDevice(device);
+          if (
+            preferredSerial !== undefined &&
+            matchesPreferred(device, preferredSerial)
+          ) {
+            enough.abort();
+          }
+        } catch (error) {
+          if (signal.aborted) {
+            throw error;
+          }
+        } finally {
+          if (hardwareSerial !== undefined) {
+            connectingSerials.delete(hardwareSerial);
+          }
+        }
+      })(),
+    );
+  };
+
+  const responders = multicastOptions().map(
+    (options) =>
+      new Bonjour(options as ConstructorParameters<typeof Bonjour>[0]),
+  );
+  try {
+    const browsers = responders.map((bonjour) =>
+      bonjour.find({ type: "adb-tls-connect" }, (service) => {
+        const txtSerial =
+          typeof service.txt?.serial === "string"
+            ? service.txt.serial.trim()
+            : "";
+        const hardwareSerial =
+          txtSerial || /^adb-([^-]+)-/.exec(service.name)?.[1];
+        pending.push(
+          serviceEndpoint(service, browseSignal).then(
+            (endpoint) => {
+              if (endpoint !== undefined) {
+                tryCandidate(endpoint, hardwareSerial);
+              }
+            },
+            () => {},
+          ),
+        );
+      }),
+    );
+    pending.push(
+      runAdb(["mdns", "services"], {
+        signal: browseSignal,
+        timeoutMs: mdnsBrowseTimeoutMs,
+      }).then(
+        (output) => {
+          for (const raw of output.split(/\r?\n/)) {
+            const match = /^(\S+)\s+_adb-tls-connect\._tcp\.?\s+(\S+)$/.exec(
+              raw.trim(),
+            );
+            if (!match) {
+              continue;
+            }
+            const [, instance, endpoint] = match;
+            tryCandidate(endpoint, /^adb-([^-]+)-/.exec(instance)?.[1]);
+          }
+        },
+        () => {},
+      ),
+    );
+    const requery = setInterval(() => {
+      for (const browser of browsers) {
+        browser.update();
+      }
+    }, mdnsBrowseRequeryMs);
+    try {
+      await sleep(mdnsBrowseTimeoutMs, undefined, { signal: browseSignal });
+    } catch (error) {
+      if (signal.aborted) {
+        throw error;
+      }
+    } finally {
+      clearInterval(requery);
+    }
+    for (const browser of browsers) {
+      browser.stop();
+    }
+  } finally {
+    for (const bonjour of responders) {
+      bonjour.destroy();
+    }
+  }
+  let length = 0;
+  while (pending.length > length) {
+    const slice = pending.slice(length);
+    length = pending.length;
+    await Promise.all(slice);
+  }
+}
+
 export async function listAndroidDevices({
   preferredSerial,
   virtual = true,
@@ -328,19 +534,13 @@ export async function listAndroidDevices({
   if (!adbAvailable()) {
     return;
   }
-  let entries = parseDevicesOutput(await runAdb(["devices", "-l"], { signal }));
-  const attached = new Set(entries.map((it) => it.serial));
-  if (
-    preferredSerial === undefined ||
-    !entries.some((it) => sameName(it.serial, preferredSerial))
-  ) {
-    if (await connectWirelessServices(attached, signal)) {
-      entries = parseDevicesOutput(await runAdb(["devices", "-l"], { signal }));
-    }
-  }
+  const entries = parseDevicesOutput(
+    await runAdb(["devices", "-l"], { signal }),
+  );
   const probed = (
     await Promise.all(entries.map((entry) => probeDevice(entry, signal)))
   ).filter((device): device is AndroidDevice => device !== undefined);
+  const attached = new Set(probed.map((it) => it.serial));
   const byId = new Map<string, AndroidDevice>();
   for (const device of probed) {
     if (!virtual && device.virtual) {
@@ -354,9 +554,27 @@ export async function listAndroidDevices({
         : preferTransport(existing, device, preferredSerial),
     );
   }
+  const emitted = new Set<string>();
   for (const device of byId.values()) {
+    emitted.add(device.id);
     onDevice(device);
   }
+  if (
+    signal.aborted ||
+    (preferredSerial !== undefined &&
+      [...byId.values()].some((it) => matchesPreferred(it, preferredSerial)))
+  ) {
+    return;
+  }
+  await discoverWirelessDevices({
+    attached,
+    emitted,
+    canRestartServer: probed.length === 0,
+    preferredSerial,
+    virtual,
+    signal,
+    onDevice,
+  });
 }
 
 export async function authorizeAndroidDevice(
