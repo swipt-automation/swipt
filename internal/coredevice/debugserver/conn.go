@@ -10,6 +10,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/swipt-automation/swipt/internal/coredevice"
@@ -20,25 +21,31 @@ import (
 // pymobiledevice3/remote/remote_service_discovery.py:370-381).
 const serviceName = "com.apple.internal.dt.remote.debugproxy"
 
+const exchangeTimeout = 3 * time.Second
+
 type Conn struct {
 	conn   net.Conn
 	reader *bufio.Reader
 }
 
 func Dial(ctx context.Context, device *coredevice.Device) (*Conn, error) {
+	ctx, cancel := context.WithTimeout(ctx, exchangeTimeout)
+	defer cancel()
 	conn, err := device.DialService(ctx, serviceName)
 	if err != nil {
 		return nil, E.Cause(err, "debugserver: connect")
 	}
 	c := &Conn{conn: conn, reader: bufio.NewReader(conn)}
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
-	defer stop()
 	err = c.Commands("QStartNoAckMode")
 	if err == nil {
 		_, err = conn.Write([]byte{'+'})
 	}
 	if err == nil {
 		err = c.Commands("QSetDetachOnError:1", "QThreadSuffixSupported")
+	}
+	if !stop() && err == nil {
+		err = ctx.Err()
 	}
 	if err != nil {
 		conn.Close()
@@ -97,6 +104,7 @@ func decode(raw []byte) string {
 }
 
 func (c *Conn) Query(packet string) (string, error) {
+	_ = c.conn.SetDeadline(time.Now().Add(exchangeTimeout))
 	if _, err := c.conn.Write(frame(packet)); err != nil {
 		return "", err
 	}
@@ -117,6 +125,7 @@ func (c *Conn) Commands(packets ...string) error {
 	for _, packet := range packets {
 		batch = append(batch, frame(packet)...)
 	}
+	_ = c.conn.SetDeadline(time.Now().Add(exchangeTimeout))
 	written := make(chan error, 1)
 	go func() {
 		_, err := c.conn.Write(batch)
@@ -154,6 +163,23 @@ func (c *Conn) Resume(packet string) (Stop, error) {
 	if err != nil {
 		return Stop{}, err
 	}
+	return parseStop(packet, reply)
+}
+
+func (c *Conn) Continue(packet string) (Stop, error) {
+	_ = c.conn.SetDeadline(time.Now().Add(exchangeTimeout))
+	if _, err := c.conn.Write(frame(packet)); err != nil {
+		return Stop{}, err
+	}
+	_ = c.conn.SetDeadline(time.Time{})
+	reply, err := c.receive()
+	if err != nil {
+		return Stop{}, err
+	}
+	return parseStop(packet, reply)
+}
+
+func parseStop(packet, reply string) (Stop, error) {
 	if reply == "" {
 		return Stop{}, E.New("debugserver: ", packet, ": empty reply")
 	}

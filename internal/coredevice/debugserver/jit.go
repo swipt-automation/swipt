@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	E "github.com/sagernet/sing/common/exceptions"
@@ -23,6 +24,7 @@ const (
 	commandDetach  = 0
 	commandPrepare = 1
 	preparedPage   = 16 << 10
+	preparedBatch  = 128
 
 	registerX0  = 0
 	registerX1  = 1
@@ -42,8 +44,11 @@ func AttachJIT(ctx context.Context, device *coredevice.Device, pid uint64) (*JIT
 		return nil, err
 	}
 	stop := context.AfterFunc(ctx, func() { conn.Close() })
-	defer stop()
-	if _, err = conn.Resume("vAttach;" + strconv.FormatUint(pid, 16)); err != nil {
+	_, err = conn.Resume("vAttach;" + strconv.FormatUint(pid, 16))
+	if !stop() && err == nil {
+		err = ctx.Err()
+	}
+	if err != nil {
 		conn.Close()
 		return nil, E.Errors(ctx.Err(), E.Cause(err, "debugserver: attach to process ", pid))
 	}
@@ -54,7 +59,7 @@ func (j *JIT) Serve(ctx context.Context) error {
 	defer j.conn.Close()
 	stopClosing := context.AfterFunc(ctx, func() { j.conn.Close() })
 	defer stopClosing()
-	stop, err := j.conn.Resume("c")
+	stop, err := j.conn.Continue("c")
 	for err == nil {
 		packet := fmt.Sprintf("C%02x", stop.Signal)
 		if stop.Signal == signalTrap {
@@ -67,7 +72,7 @@ func (j *JIT) Serve(ctx context.Context) error {
 				packet = "c"
 			}
 		}
-		stop, err = j.conn.Resume(packet)
+		stop, err = j.conn.Continue(packet)
 	}
 	if exited := (*ExitedError)(nil); errors.As(err, &exited) {
 		return nil
@@ -122,5 +127,10 @@ func (j *JIT) prepare(address, length uint64) error {
 	for offset := uint64(0); offset < length; offset += preparedPage {
 		packets = append(packets, fmt.Sprintf("M%x,1:69", address+offset))
 	}
-	return j.conn.Commands(packets...)
+	for batch := range slices.Chunk(packets, preparedBatch) {
+		if err := j.conn.Commands(batch...); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -13,6 +13,7 @@ import (
 
 type jitSession struct {
 	cancel context.CancelFunc
+	done   chan struct{}
 }
 
 func (p *Phone) EnableJIT(ctx context.Context, bundleID string, pid uint64) error {
@@ -34,17 +35,18 @@ func (p *Phone) EnableJIT(ctx context.Context, bundleID string, pid uint64) erro
 		}
 		pid = listing.processes[index].PID
 	}
-	p.cancelJITSession(pid)
+	p.jitAttach.Lock()
+	defer p.jitAttach.Unlock()
+	if err := p.cancelJITSession(ctx, pid); err != nil {
+		return err
+	}
 	jit, err := debugserver.AttachJIT(ctx, c.device, pid)
 	if err != nil {
 		return err
 	}
 	serveCtx, cancel := context.WithCancel(c.ctx)
-	session := &jitSession{cancel: cancel}
+	session := &jitSession{cancel: cancel, done: make(chan struct{})}
 	p.jitAccess.Lock()
-	if previous := p.jitSessions[pid]; previous != nil {
-		previous.cancel()
-	}
 	if p.jitSessions == nil {
 		p.jitSessions = make(map[uint64]*jitSession)
 	}
@@ -53,6 +55,7 @@ func (p *Phone) EnableJIT(ctx context.Context, bundleID string, pid uint64) erro
 	release := p.connection.hold()
 	go func() {
 		defer release()
+		defer close(session.done)
 		defer func() {
 			cancel()
 			p.jitAccess.Lock()
@@ -68,12 +71,18 @@ func (p *Phone) EnableJIT(ctx context.Context, bundleID string, pid uint64) erro
 	return nil
 }
 
-func (p *Phone) cancelJITSession(pid uint64) {
+func (p *Phone) cancelJITSession(ctx context.Context, pid uint64) error {
 	p.jitAccess.Lock()
 	session := p.jitSessions[pid]
 	delete(p.jitSessions, pid)
 	p.jitAccess.Unlock()
 	if session != nil {
 		session.cancel()
+		select {
+		case <-session.done:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
+	return nil
 }
