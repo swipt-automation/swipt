@@ -616,7 +616,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
   release_android:
     name: Release Android
-    if: inputs.release && github.ref == 'refs/heads/main' && secrets.LOCAL_PROPERTIES != ''
+    if: inputs.release && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
