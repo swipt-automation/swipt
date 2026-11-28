@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 import { checkout } from "../../../checkout";
-import { UsageError } from "../../../client";
+import { UsageError } from "../../../errors";
 import { t } from "../../../i18n";
 import { isOS, type OS } from "../../../platform";
 import { type Context, defineCommand } from "../../command";

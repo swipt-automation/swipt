@@ -1,14 +1,13 @@
 import { t } from "../../../i18n";
-import { printData } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
 const printDeclarations = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
-    const { typescript } = await client.repl.getDeclarations(
-      {},
-      { signal: context.signal },
-    );
+    const [{ printData }, { typescript }] = await Promise.all([
+      import("../../../output"),
+      client.repl.getDeclarations({}, { signal: context.signal }),
+    ]);
     printData(Buffer.from(typescript));
   });
 

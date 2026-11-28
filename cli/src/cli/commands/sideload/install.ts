@@ -1,5 +1,4 @@
 import { t } from "../../../i18n";
-import * as sideload from "../../../sideload";
 import { defineCommand } from "../../command";
 import { nightlyOption, setupOptions, sideloadPasscodeOptions } from "../flags";
 
@@ -16,5 +15,5 @@ export const install = defineCommand({
     },
     ...setupOptions,
   },
-  run: sideload.install,
+  run: async (context) => (await import("../../../sideload")).install(context),
 });

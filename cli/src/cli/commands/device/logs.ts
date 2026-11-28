@@ -1,10 +1,6 @@
-import { create } from "@bufbuild/protobuf";
-import { timestampFromMs } from "@bufbuild/protobuf/wkt";
-
-import { UsageError } from "../../../client";
+import { UsageError } from "../../../errors";
 import { t } from "../../../i18n";
-import { printLog } from "../../../output";
-import { LogEntrySchema, LogLevel } from "../../../proto/common_pb";
+import type { LogLevel } from "../../../proto/common_pb";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { deviceOption } from "../flags";
@@ -17,13 +13,6 @@ const durationUnits = new Map([
   ["s", 1000],
   ["m", 60_000],
   ["h", 3_600_000],
-]);
-
-const levels = new Map([
-  ["error", LogLevel.ERROR],
-  ["warn", LogLevel.WARN],
-  ["info", LogLevel.INFO],
-  ["debug", LogLevel.DEBUG],
 ]);
 
 function parseDuration(text: string | undefined, option: string) {
@@ -77,6 +66,23 @@ async function readLogs(
     swiplet?: string;
   }>,
 ) {
+  const [
+    { create },
+    { timestampFromMs },
+    { printLog },
+    { LogEntrySchema, LogLevel: Levels },
+  ] = await Promise.all([
+    import("@bufbuild/protobuf"),
+    import("@bufbuild/protobuf/wkt"),
+    import("../../../output"),
+    import("../../../proto/common_pb"),
+  ]);
+  const levels = new Map<string, LogLevel>([
+    ["error", Levels.ERROR],
+    ["warn", Levels.WARN],
+    ["info", Levels.INFO],
+    ["debug", Levels.DEBUG],
+  ]);
   const { options } = context;
   const tail = parseCount(options.tail, "--tail");
   const since = parseDuration(options.since, "--since");

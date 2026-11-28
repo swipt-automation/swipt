@@ -1,7 +1,6 @@
 import type { JsonObject } from "@bufbuild/protobuf";
 
 import { t } from "../../../i18n";
-import { serviceText } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
@@ -13,10 +12,10 @@ const notInstalled = (id: string) =>
 
 const showSwiplet = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
-    const { swiplets } = await client.swiplets.listSwiplets(
-      {},
-      { signal: context.signal },
-    );
+    const [{ serviceText }, { swiplets }] = await Promise.all([
+      import("../../../output"),
+      client.swiplets.listSwiplets({}, { signal: context.signal }),
+    ]);
     const swiplet = swiplets.find((it) => it.id === context.args[0]);
     if (!swiplet) {
       throw notInstalled(context.args[0]);

@@ -1,4 +1,3 @@
-import * as serving from "../../../serve";
 import { t } from "../../../i18n";
 import { defineCommand } from "../../command";
 import { passcodeOptions, udidDeviceOption } from "../flags";
@@ -21,5 +20,5 @@ export const driver = defineCommand({
       help: t("commands.driver.randomToken"),
     },
   },
-  run: serving.run,
+  run: async (context) => (await import("../../../serve")).run(context),
 });

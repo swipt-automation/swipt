@@ -1,18 +1,14 @@
 import { t } from "../../../i18n";
-import {
-  columns,
-  serviceEnabledText,
-  serviceStatusText,
-} from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 
 const listSwiplets = (context: Context<{ device?: string }>) =>
   session(context, async (client) => {
-    const { swiplets } = await client.swiplets.listSwiplets(
-      {},
-      { signal: context.signal },
-    );
+    const [{ columns, serviceEnabledText, serviceStatusText }, { swiplets }] =
+      await Promise.all([
+        import("../../../output"),
+        client.swiplets.listSwiplets({}, { signal: context.signal }),
+      ]);
     const rows = swiplets.map((swiplet) => {
       let service = "";
       let status = "";

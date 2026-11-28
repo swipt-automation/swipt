@@ -14,12 +14,15 @@ import {
 } from "@bufbuild/protobuf";
 import type { GenService } from "@bufbuild/protobuf/codegenv2";
 
+import { Code, RpcError, UsageError } from "./errors";
 import { resolveHost } from "./mdns";
 import { DeviceService } from "./proto/device_pb";
 import { LogService } from "./proto/logs_pb";
 import { REPLService } from "./proto/repl_pb";
 import { SwipletService } from "./proto/swiplets_pb";
 import { SystemService } from "./proto/system_pb";
+
+export { Code, RpcError, UsageError };
 
 const largestMessage = 128 << 20;
 const resolveLimit = 5000;
@@ -28,28 +31,6 @@ const webSocketSubprotocol = "grpc-websockets";
 const { apiLevel } = createRequire(import.meta.url)("@swipt/api/package.json");
 
 dns.setDefaultResultOrder("ipv4first");
-
-export const Code = {
-  Canceled: 1,
-  Unknown: 2,
-  DeadlineExceeded: 4,
-  NotFound: 5,
-  Unimplemented: 12,
-  Internal: 13,
-  Unavailable: 14,
-  Unauthenticated: 16,
-};
-
-export class UsageError extends Error {}
-
-export class RpcError extends Error {
-  declare code: number;
-
-  constructor(code: number, message?: string) {
-    super(message);
-    this.code = code;
-  }
-}
 
 const httpStatusCodes: Record<number, number> = {
   400: Code.Internal,

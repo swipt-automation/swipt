@@ -1,7 +1,7 @@
 import type { Client } from "../client";
-import { attach } from "../connection";
+import type { Context } from "./command";
 
-export const session = <Result>(
-  context: Parameters<typeof attach>[0],
+export const session = async <Result>(
+  context: Pick<Context<{ device?: string }>, "options" | "signal" | "target">,
   run: (client: Client) => Result,
-) => attach(context).then(run);
+) => run(await (await import("../connection")).attach(context));

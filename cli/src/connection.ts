@@ -15,9 +15,12 @@ import {
   open,
 } from "./client";
 import { configDirectory } from "./directories";
+import { withToken } from "./errors";
 import { t } from "./i18n";
-import { multicastOptions } from "./mdns";
+import { browseHostDNS, multicastOptions } from "./mdns";
 import { columns, errorMessage } from "./output";
+
+export { withToken };
 import {
   type DeviceConnection,
   DeviceConnectionProblem,
@@ -95,9 +98,6 @@ function parseURL(text: string) {
   };
 }
 
-export const withToken = (url: string, token = "TOKEN") =>
-  url.replace("://", `://${encodeURIComponent(token)}@`);
-
 export interface Published {
   name: string;
   url: string;
@@ -112,6 +112,28 @@ async function browse(
   until?: Enough,
   limit = browseLimit,
 ) {
+  const unicastDeadline = AbortSignal.any([signal, AbortSignal.timeout(limit)]);
+  const unicast = await browseHostDNS("swipt", unicastDeadline);
+  if (unicast !== undefined) {
+    if (signal.aborted) {
+      throw signal.reason;
+    }
+    const found = new Map<string, Published>();
+    for (const service of unicast) {
+      if (!service.host || found.has(service.name)) {
+        continue;
+      }
+      const host = service.host.replace(/\.$/, "").toLowerCase();
+      found.set(service.name, {
+        name: label(service.name),
+        url: `http://${host.includes(":") ? `[${host}]` : host}:${service.port}`,
+        authenticates: service.txt.auth === "1",
+        udid: service.txt.udid,
+      });
+    }
+    return [...found.values()];
+  }
+
   // bonjour-service hands its options to multicast-dns as they are
   // (bonjour-service 1.4.4, dist/lib/bonjour.js:15, dist/lib/mdns-server.js:13).
   const responders = multicastOptions().map(

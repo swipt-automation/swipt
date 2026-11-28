@@ -2,23 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { create } from "@bufbuild/protobuf";
-
-import { AvailabilityChecker } from "../../../availability";
-import { unauthenticated } from "../../../client";
-import { attach } from "../../../connection";
+import { Code, RpcError, errorMessage } from "../../../errors";
 import { t } from "../../../i18n";
-import { Ignorer, relativePath } from "../../../ignore";
-import { errorMessage, printLog, serviceText } from "../../../output";
-import { buildProject, loadProject } from "../../../project";
-import { LogEntrySchema } from "../../../proto/common_pb";
-import { ServiceStatus } from "../../../proto/swiplets_pb";
 import { type Context, defineCommand } from "../../command";
-import { deploy, printDeployed } from "../../deploy";
 import { deviceOption } from "../flags";
 
 const rebuildDelay = 300;
 const logReconnect = 2000;
+
+const unauthenticated = (error: unknown) =>
+  error instanceof RpcError && error.code === Code.Unauthenticated;
 
 function elapsed(since: number) {
   const ms = Date.now() - since;
@@ -63,6 +56,27 @@ async function follow(
 async function developProject(
   context: Context<{ device?: string; "no-logs"?: boolean }>,
 ) {
+  const [
+    { create },
+    { AvailabilityChecker },
+    { attach },
+    { Ignorer, relativePath },
+    { printLog, serviceText },
+    { buildProject, loadProject },
+    { LogEntrySchema },
+    { ServiceStatus },
+    { deploy, printDeployed },
+  ] = await Promise.all([
+    import("@bufbuild/protobuf"),
+    import("../../../availability"),
+    import("../../../connection"),
+    import("../../../ignore"),
+    import("../../../output"),
+    import("../../../project"),
+    import("../../../proto/common_pb"),
+    import("../../../proto/swiplets_pb"),
+    import("../../deploy"),
+  ]);
   const { signal, printError } = context;
   const project = loadProject(path.resolve(context.args[0] ?? "."));
   const root = project.root;

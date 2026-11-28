@@ -3,10 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { UsageError } from "../../../client";
+import { UsageError } from "../../../errors";
 import { t } from "../../../i18n";
-import { printScriptError } from "../../../output";
-import { LogLevel } from "../../../proto/common_pb";
 import { type Context, defineCommand } from "../../command";
 import { readStdin } from "../../io";
 import { session } from "../../session";
@@ -79,6 +77,10 @@ async function runScript(
 ) {
   const { args, options, signal } = context;
   const script = readScript(args);
+  const [{ printScriptError }, { LogLevel }] = await Promise.all([
+    import("../../../output"),
+    import("../../../proto/common_pb"),
+  ]);
   await session(context, async (client) => {
     const images = new ImageSink(options.output);
     let failure;

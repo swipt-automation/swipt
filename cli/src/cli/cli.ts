@@ -1,9 +1,14 @@
 import { parseArgs } from "node:util";
 
-import { Code, RpcError, UsageError } from "../client";
-import * as connection from "../connection";
+import {
+  Code,
+  FalseResult,
+  RpcError,
+  UsageError,
+  errorMessage,
+  withToken,
+} from "../errors";
 import { t } from "../i18n";
-import { FalseResult, errorMessage } from "../output";
 import type { Command, Options } from "./command";
 import { root } from "./commands";
 
@@ -193,7 +198,7 @@ function printError(
       case Code.Unauthenticated:
         message = t("cli.unauthenticated", {
           message,
-          url: connection.withToken(target.url),
+          url: withToken(target.url),
         });
         break;
       case Code.Unimplemented:

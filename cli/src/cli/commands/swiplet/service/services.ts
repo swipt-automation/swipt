@@ -1,5 +1,4 @@
 import type { Client } from "../../../../client";
-import { serviceText } from "../../../../output";
 import type { Context } from "../../../command";
 import { session } from "../../../session";
 
@@ -8,6 +7,7 @@ export async function watchServices(
   id: string,
   signal: AbortSignal,
 ) {
+  const { serviceText } = await import("../../../../output");
   for await (const response of client.swiplets.watchServices(
     { swipletId: id },
     { signal },
@@ -21,10 +21,13 @@ export const setService =
   (context: Context<{ device?: string; watch?: boolean }>) =>
     session(context, async (client) => {
       const id = context.args[0];
-      const response = await client.swiplets.setServiceEnabled(
-        { swipletId: id, enabled },
-        { signal: context.signal },
-      );
+      const [{ serviceText }, response] = await Promise.all([
+        import("../../../../output"),
+        client.swiplets.setServiceEnabled(
+          { swipletId: id, enabled },
+          { signal: context.signal },
+        ),
+      ]);
       if (context.options.watch) {
         await watchServices(client, id, context.signal);
         return;

@@ -1,5 +1,4 @@
 import { t } from "../../../i18n";
-import * as sideload from "../../../sideload";
 import { defineCommand } from "../../command";
 import { setupStepOptions, sideloadPasscodeOptions } from "../flags";
 
@@ -11,5 +10,5 @@ export const setup = defineCommand({
     ...sideloadPasscodeOptions(t("commands.sideload.passcode")),
     ...setupStepOptions,
   },
-  run: sideload.setup,
+  run: async (context) => (await import("../../../sideload")).setup(context),
 });

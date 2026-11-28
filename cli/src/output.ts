@@ -20,6 +20,7 @@ import {
 import select from "@inquirer/select";
 import stringWidth from "string-width";
 
+import { FalseResult, errorMessage } from "./errors";
 import { t } from "./i18n";
 import {
   type LogEntry,
@@ -30,10 +31,7 @@ import {
 } from "./proto/common_pb";
 import { type ServiceState, ServiceStatus } from "./proto/swiplets_pb";
 
-export class FalseResult extends Error {}
-
-export const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+export { FalseResult, errorMessage };
 
 export function printData(data: Uint8Array) {
   process.stdout.write(data);

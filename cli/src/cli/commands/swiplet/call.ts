@@ -1,42 +1,46 @@
 import fs from "node:fs";
 
-import { fromJson, toJson } from "@bufbuild/protobuf";
-import { ValueSchema } from "@bufbuild/protobuf/wkt";
-
-import { UsageError } from "../../../client";
+import { UsageError, errorMessage } from "../../../errors";
 import { t } from "../../../i18n";
-import { errorMessage, printLog, printScriptError } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { readStdin } from "../../io";
 import { session } from "../../session";
 
-function readInput(value: string | undefined) {
-  if (value === undefined || value === "") {
-    return undefined;
-  }
-  let data = value;
-  try {
-    if (value === "-") {
-      data = readStdin().toString();
-    } else if (value.startsWith("@")) {
-      data = fs.readFileSync(value.slice(1), "utf8");
-    }
-  } catch (error) {
-    throw new Error(`read --input: ${errorMessage(error)}`);
-  }
-  try {
-    return fromJson(ValueSchema, JSON.parse(data));
-  } catch (error) {
-    throw new UsageError(
-      t("commands.swiplet.call.invalidInput", {
-        error: errorMessage(error),
-      }),
-    );
-  }
-}
-
 const callAction = (context: Context<{ device?: string; input?: string }>) =>
   session(context, async (client) => {
+    const [
+      { fromJson, toJson },
+      { ValueSchema },
+      { printLog, printScriptError },
+    ] = await Promise.all([
+      import("@bufbuild/protobuf"),
+      import("@bufbuild/protobuf/wkt"),
+      import("../../../output"),
+    ]);
+    const readInput = (value: string | undefined) => {
+      if (value === undefined || value === "") {
+        return undefined;
+      }
+      let data = value;
+      try {
+        if (value === "-") {
+          data = readStdin().toString();
+        } else if (value.startsWith("@")) {
+          data = fs.readFileSync(value.slice(1), "utf8");
+        }
+      } catch (error) {
+        throw new Error(`read --input: ${errorMessage(error)}`);
+      }
+      try {
+        return fromJson(ValueSchema, JSON.parse(data));
+      } catch (error) {
+        throw new UsageError(
+          t("commands.swiplet.call.invalidInput", {
+            error: errorMessage(error),
+          }),
+        );
+      }
+    };
     const [id, action] = context.args;
     const input = readInput(context.options.input);
     let result;

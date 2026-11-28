@@ -1,5 +1,4 @@
 import { t } from "../../../i18n";
-import { columns, dateTime } from "../../../output";
 import { type Context, defineCommand } from "../../command";
 import { session } from "../../session";
 import { type ResolveTarget, operandCount } from "./operand";
@@ -12,14 +11,17 @@ const listFiles =
         id,
         args: [directory = ""],
       } = target(context.args);
-      const { files } = await client.swiplets.listDataFiles(
-        {
-          swipletId: id,
-          path: directory,
-          recursive: context.options.recursive,
-        },
-        { signal: context.signal },
-      );
+      const [{ columns, dateTime }, { files }] = await Promise.all([
+        import("../../../output"),
+        client.swiplets.listDataFiles(
+          {
+            swipletId: id,
+            path: directory,
+            recursive: context.options.recursive,
+          },
+          { signal: context.signal },
+        ),
+      ]);
       const rows = files.map((file) => [
         file.directory ? "-" : String(file.size),
         dateTime(file.modified),

@@ -1,5 +1,4 @@
 import { t } from "../../../i18n";
-import * as sideload from "../../../sideload";
 import { defineCommand } from "../../command";
 import { nightlyOption, setupOptions, sideloadPasscodeOptions } from "../flags";
 
@@ -12,5 +11,5 @@ export const update = defineCommand({
     ...nightlyOption,
     ...setupOptions,
   },
-  run: sideload.update,
+  run: async (context) => (await import("../../../sideload")).update(context),
 });
