@@ -24,7 +24,7 @@ const (
 	commandDetach  = 0
 	commandPrepare = 1
 	preparedPage   = 16 << 10
-	preparedBatch  = 128
+	preparedBatch  = 1024
 
 	registerX0  = 0
 	registerX1  = 1
