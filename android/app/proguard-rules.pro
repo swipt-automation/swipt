@@ -19,3 +19,6 @@
 -keep class expo.modules.ExpoModulesPackageList {
     public *;
 }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    <fields>;
+}
