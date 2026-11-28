@@ -1,6 +1,5 @@
 package io.nekohasekai.swipt.device
 
-import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import dalvik.system.PathClassLoader
@@ -12,9 +11,9 @@ object CoreBootstrap {
     private var closeCore: Method? = null
 
     @Synchronized
-    fun connect(apk: String): ParcelFileDescriptor {
+    fun connect(apk: String, nativeLibraryDirectory: String): ParcelFileDescriptor {
         val connect = connectCore ?: run {
-            val loader = PathClassLoader(apk, "$apk!/lib/${Build.SUPPORTED_64_BIT_ABIS[0]}", ClassLoader.getSystemClassLoader().parent)
+            val loader = PathClassLoader(apk, nativeLibraryDirectory, ClassLoader.getSystemClassLoader().parent)
             val coreProcess = loader.loadClass("io.nekohasekai.swipt.device.CoreProcess")
             closeCore = coreProcess.getMethod("close")
             coreProcess.getMethod("connect", String::class.java).also { connectCore = it }

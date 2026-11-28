@@ -43,7 +43,7 @@ class CoreService(private val context: Context) : ICoreService.Stub() {
             Log.w(TAG, "allow notifications", e)
         }
         return try {
-            CoreBootstrap.connect(context.packageCodePath)
+            CoreBootstrap.connect(context.packageCodePath, context.applicationInfo.nativeLibraryDir)
         } catch (e: Exception) {
             throw IllegalStateException(e.message ?: e.toString())
         }
